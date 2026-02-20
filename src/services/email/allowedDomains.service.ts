@@ -5,7 +5,7 @@
 
 import { API_ENDPOINTS } from "@/config/api.config";
 import type { UpdateAllowedDomainsDto } from "@/types/email";
-import { apiService } from "../api.service";
+import http from "../http";
 
 /**
  * Allowed Domains Service
@@ -16,7 +16,10 @@ class AllowedDomainsService {
    * @requires ADMIN role
    */
   async getAllowedDomains(): Promise<string[]> {
-    return apiService.get<string[]>(API_ENDPOINTS.email.allowedDomains.base);
+    const res = await http.get<string[]>(
+      API_ENDPOINTS.email.allowedDomains.base,
+    );
+    return res.data;
   }
 
   /**
@@ -26,7 +29,7 @@ class AllowedDomainsService {
    * @requires ADMIN role
    */
   async updateAllowedDomains(data: UpdateAllowedDomainsDto): Promise<void> {
-    return apiService.put<void>(API_ENDPOINTS.email.allowedDomains.base, data);
+    await http.put(API_ENDPOINTS.email.allowedDomains.base, data);
   }
 }
 

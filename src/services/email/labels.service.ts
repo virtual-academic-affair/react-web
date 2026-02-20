@@ -9,7 +9,7 @@ import type {
   LabelMappingDto,
   UpdateLabelsDto,
 } from "@/types/email";
-import { apiService } from "../api.service";
+import http from "../http";
 
 /**
  * Labels Service
@@ -20,7 +20,10 @@ class LabelsService {
    * @requires ADMIN role
    */
   async getGmailLabels(): Promise<GmailLabel[]> {
-    return apiService.get<GmailLabel[]>(API_ENDPOINTS.email.labels.gmailLabels);
+    const res = await http.get<GmailLabel[]>(
+      API_ENDPOINTS.email.labels.gmailLabels,
+    );
+    return res.data;
   }
 
   /**
@@ -28,7 +31,10 @@ class LabelsService {
    * @requires ADMIN role
    */
   async getLabels(): Promise<LabelMappingDto> {
-    return apiService.get<LabelMappingDto>(API_ENDPOINTS.email.labels.base);
+    const res = await http.get<LabelMappingDto>(
+      API_ENDPOINTS.email.labels.base,
+    );
+    return res.data;
   }
 
   /**
@@ -37,7 +43,7 @@ class LabelsService {
    * @requires ADMIN role
    */
   async updateLabels(data: UpdateLabelsDto): Promise<void> {
-    return apiService.put<void>(API_ENDPOINTS.email.labels.base, data);
+    await http.put(API_ENDPOINTS.email.labels.base, data);
   }
 
   /**
@@ -46,9 +52,10 @@ class LabelsService {
    * @requires ADMIN role
    */
   async autoCreateLabels(): Promise<LabelMappingDto> {
-    return apiService.post<LabelMappingDto>(
+    const res = await http.post<LabelMappingDto>(
       API_ENDPOINTS.email.labels.autoCreate,
     );
+    return res.data;
   }
 }
 

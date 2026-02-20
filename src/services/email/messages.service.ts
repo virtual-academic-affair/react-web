@@ -6,7 +6,7 @@
 import { API_ENDPOINTS } from "@/config/api.config";
 import type { PaginatedResponse } from "@/types/common";
 import type { GetMessagesParams, Message } from "@/types/email";
-import { apiService } from "../api.service";
+import http from "../http";
 
 /**
  * Email Messages Service
@@ -17,7 +17,7 @@ class MessagesService {
    * @requires ADMIN role
    */
   async syncEmails(): Promise<void> {
-    return apiService.post<void>(API_ENDPOINTS.email.messages.sync);
+    await http.post(API_ENDPOINTS.email.messages.sync);
   }
 
   /**
@@ -28,15 +28,11 @@ class MessagesService {
   async getMessages(
     params?: GetMessagesParams,
   ): Promise<PaginatedResponse<Message>> {
-    return apiService.get<PaginatedResponse<Message>>(
+    const res = await http.get<PaginatedResponse<Message>>(
       API_ENDPOINTS.email.messages.base,
-      {
-        params: params as Record<
-          string,
-          string | number | boolean | string[] | undefined
-        >,
-      },
+      { params },
     );
+    return res.data;
   }
 
   /**
@@ -45,7 +41,8 @@ class MessagesService {
    * @requires ADMIN role
    */
   async getMessageById(id: number): Promise<Message> {
-    return apiService.get<Message>(API_ENDPOINTS.email.messages.byId(id));
+    const res = await http.get<Message>(API_ENDPOINTS.email.messages.byId(id));
+    return res.data;
   }
 }
 

@@ -5,7 +5,7 @@
 
 import { API_ENDPOINTS } from "@/config/api.config";
 import type { CodeDto } from "@/types/email";
-import { apiService } from "../api.service";
+import http from "../http";
 
 /**
  * Grants Service
@@ -17,7 +17,8 @@ class GrantsService {
    * @returns Google OAuth URL
    */
   async getGmailAuthUrl(): Promise<string> {
-    return apiService.get<string>(API_ENDPOINTS.email.grants.base);
+    const res = await http.get<string>(API_ENDPOINTS.email.grants.base);
+    return res.data;
   }
 
   /**
@@ -26,7 +27,7 @@ class GrantsService {
    * @requires ADMIN role
    */
   async grantGmailAccess(data: CodeDto): Promise<void> {
-    return apiService.post<void>(API_ENDPOINTS.email.grants.base, data);
+    await http.post(API_ENDPOINTS.email.grants.base, data);
   }
 }
 

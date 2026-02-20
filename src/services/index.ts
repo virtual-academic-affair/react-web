@@ -3,8 +3,8 @@
  * Central export for all service modules
  */
 
-// Core API service
-export { ApiError, apiService } from "./api.service";
+// Core HTTP client
+export { ApiError, default as http } from "./http";
 
 // Email services
 export * from "./email";

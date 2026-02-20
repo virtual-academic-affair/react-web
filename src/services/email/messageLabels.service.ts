@@ -5,7 +5,7 @@
 
 import { API_ENDPOINTS } from "@/config/api.config";
 import type { UpdateMessageLabelDto } from "@/types/email";
-import { apiService } from "../api.service";
+import http from "../http";
 
 /**
  * Message Labels Service
@@ -18,7 +18,7 @@ class MessageLabelsService {
    * @requires ADMIN role
    */
   async updateMessageLabel(data: UpdateMessageLabelDto): Promise<void> {
-    return apiService.put<void>(API_ENDPOINTS.email.messageLabels.update, data);
+    await http.put(API_ENDPOINTS.email.messageLabels.update, data);
   }
 }
 
