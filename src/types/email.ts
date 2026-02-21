@@ -2,7 +2,7 @@
  * Email module types
  */
 
-import type { PaginationParams, SortOrder } from "./common";
+import type { ResourceQueryDto } from "./common";
 
 /**
  * System label values
@@ -37,11 +37,8 @@ export interface Message {
 /**
  * Query parameters for fetching emails
  */
-export interface GetMessagesParams extends PaginationParams {
-  search?: string;
+export interface GetMessagesParams extends ResourceQueryDto {
   systemLabels?: SystemLabel[];
-  sortBy?: "id" | "sentAt";
-  sortOrder?: SortOrder;
 }
 
 /**

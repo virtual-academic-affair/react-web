@@ -41,7 +41,7 @@ const http: AxiosInstance = axios.create({
 
 // ── Request interceptor: attach JWT ──────────────────────────────────────────
 http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const token = localStorage.getItem("authToken");
+  const token = import.meta.env.VITE_TEMP_TOKEN;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

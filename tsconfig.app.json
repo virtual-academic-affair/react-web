@@ -19,7 +19,8 @@
     /* Path mapping */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "routes": ["src/routes.tsx"]
     },
 
     /* Linting */

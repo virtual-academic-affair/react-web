@@ -47,6 +47,11 @@ export const API_ENDPOINTS = {
     },
   },
 
+  // Shared
+  shared: {
+    dynamicData: "/shared/dynamic-data",
+  },
+
   // Inquiry
   inquiry: {
     base: "/inquiry",

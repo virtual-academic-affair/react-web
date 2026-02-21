@@ -9,13 +9,16 @@ export { ApiError, default as http } from "./http";
 // Email services
 export * from "./email";
 
+// Shared services
+export * from "./shared";
+
 // Re-export common types
 export type {
   ApiErrorResponse,
   ApiResponse,
   PaginatedResponse,
-  PaginationMeta,
   PaginationParams,
+  ResourceQueryDto,
   SortOrder,
   ValidationError,
 } from "../types/common";

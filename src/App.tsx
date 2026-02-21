@@ -1,9 +1,13 @@
+import AdminLayout from "@/layouts/admin";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+
 export default function App() {
   return (
-    <div className="flex justify-center items-center h-screen">
-      <h1 className="text-3xl font-bold text-red-600 underline">
-        Hello Vite + React!
-      </h1>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/admin/*" element={<AdminLayout />} />
+        <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 }

@@ -1,1 +1,348 @@
 @import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────────────────────
+   CLASS-BASED DARK MODE
+   Horizon UI toggles by adding/removing the `.dark` class on <html>.
+   Tailwind v4 defaults to prefers-color-scheme; override it here so that
+   dark: utilities only fire when an ancestor has class="dark".
+   ───────────────────────────────────────────────────────────────────────── */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ─────────────────────────────────────────────────────────────────────────
+   THEME  — Full Horizon UI v3 config migrated to Tailwind v4 @theme blocks.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* 1. Replace the entire default color palette with Horizon's exact palette  */
+@theme {
+  --color-*: initial;
+
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-lightPrimary: #f4f7fe;
+  --color-blueSecondary: #4318ff;
+  --color-brandLinear: #868cff;
+
+  /* gray */
+  --color-gray-50: #f8f9fa;
+  --color-gray-100: #edf2f7;
+  --color-gray-200: #e9ecef;
+  --color-gray-300: #cbd5e0;
+  --color-gray-400: #a0aec0;
+  --color-gray-500: #adb5bd;
+  --color-gray-600: #a3aed0;
+  --color-gray-700: #707eae;
+  --color-gray-800: #252f40;
+  --color-gray-900: #1b2559;
+
+  /* navy */
+  --color-navy-50: #d0dcfb;
+  --color-navy-100: #aac0fe;
+  --color-navy-200: #a3b9f8;
+  --color-navy-300: #728fea;
+  --color-navy-400: #3652ba;
+  --color-navy-500: #1b3bbb;
+  --color-navy-600: #24388a;
+  --color-navy-700: #1b254b;
+  --color-navy-800: #111c44;
+  --color-navy-900: #0b1437;
+
+  /* brand */
+  --color-brand-50: #e9e3ff;
+  --color-brand-100: #c0b8fe;
+  --color-brand-200: #a195fd;
+  --color-brand-300: #8171fc;
+  --color-brand-400: #7551ff;
+  --color-brand-500: #422afb;
+  --color-brand-600: #3311db;
+  --color-brand-700: #2111a5;
+  --color-brand-800: #190793;
+  --color-brand-900: #11047a;
+
+  /* red */
+  --color-red-50: #ee5d501a;
+  --color-red-100: #fee2e2;
+  --color-red-200: #fecaca;
+  --color-red-300: #fca5a5;
+  --color-red-400: #f87171;
+  --color-red-500: #f53939;
+  --color-red-600: #ea0606;
+  --color-red-700: #b91c1c;
+  --color-red-800: #991b1b;
+  --color-red-900: #7f1d1d;
+
+  /* orange */
+  --color-orange-50: #fff7ed;
+  --color-orange-100: #ffedd5;
+  --color-orange-200: #fed7aa;
+  --color-orange-300: #fdba74;
+  --color-orange-400: #fb923c;
+  --color-orange-500: #f97316;
+  --color-orange-600: #ea580c;
+  --color-orange-700: #c2410c;
+  --color-orange-800: #9a3412;
+  --color-orange-900: #7c2d12;
+
+  /* amber */
+  --color-amber-50: #fffbeb;
+  --color-amber-100: #fef3c7;
+  --color-amber-200: #fde68a;
+  --color-amber-300: #fcd34d;
+  --color-amber-400: #fbbf24;
+  --color-amber-500: #f59e0b;
+  --color-amber-600: #d97706;
+  --color-amber-700: #b45309;
+  --color-amber-800: #92400e;
+  --color-amber-900: #78350f;
+
+  /* yellow */
+  --color-yellow-50: #fefce8;
+  --color-yellow-100: #fef9c3;
+  --color-yellow-200: #fef08a;
+  --color-yellow-300: #fde047;
+  --color-yellow-400: #fbcf33;
+  --color-yellow-500: #eab308;
+  --color-yellow-600: #ca8a04;
+  --color-yellow-700: #a16207;
+  --color-yellow-800: #854d0e;
+  --color-yellow-900: #713f12;
+
+  /* lime */
+  --color-lime-50: #f7fee7;
+  --color-lime-100: #ecfccb;
+  --color-lime-200: #d9f99d;
+  --color-lime-300: #bef264;
+  --color-lime-400: #98ec2d;
+  --color-lime-500: #82d616;
+  --color-lime-600: #65a30d;
+  --color-lime-700: #4d7c0f;
+  --color-lime-800: #3f6212;
+  --color-lime-900: #365314;
+
+  /* green */
+  --color-green-50: #05cd991a;
+  --color-green-100: #dcfce7;
+  --color-green-200: #bbf7d0;
+  --color-green-300: #86efac;
+  --color-green-400: #4ade80;
+  --color-green-500: #22c55e;
+  --color-green-600: #17ad37;
+  --color-green-700: #15803d;
+  --color-green-800: #166534;
+  --color-green-900: #14532d;
+
+  /* teal */
+  --color-teal-50: #f0fdfa;
+  --color-teal-100: #ccfbf1;
+  --color-teal-200: #99f6e4;
+  --color-teal-300: #5eead4;
+  --color-teal-400: #2dd4bf;
+  --color-teal-500: #14b8a6;
+  --color-teal-600: #0d9488;
+  --color-teal-700: #0f766e;
+  --color-teal-800: #115e59;
+  --color-teal-900: #134e4a;
+
+  /* cyan */
+  --color-cyan-50: #ecfeff;
+  --color-cyan-100: #cffafe;
+  --color-cyan-200: #a5f3fc;
+  --color-cyan-300: #67e8f9;
+  --color-cyan-400: #21d4fd;
+  --color-cyan-500: #17c1e8;
+  --color-cyan-600: #0891b2;
+  --color-cyan-700: #0e7490;
+  --color-cyan-800: #155e75;
+  --color-cyan-900: #164e63;
+
+  /* blue */
+  --color-blue-50: #eff6ff;
+  --color-blue-100: #dbeafe;
+  --color-blue-200: #bfdbfe;
+  --color-blue-300: #93c5fd;
+  --color-blue-400: #60a5fa;
+  --color-blue-500: #3b82f6;
+  --color-blue-600: #2152ff;
+  --color-blue-700: #1d4ed8;
+  --color-blue-800: #344e86;
+  --color-blue-900: #00007d;
+
+  /* indigo */
+  --color-indigo-50: #eef2ff;
+  --color-indigo-100: #e0e7ff;
+  --color-indigo-200: #c7d2fe;
+  --color-indigo-300: #a5b4fc;
+  --color-indigo-400: #818cf8;
+  --color-indigo-500: #6366f1;
+  --color-indigo-600: #4f46e5;
+  --color-indigo-700: #4338ca;
+  --color-indigo-800: #3730a3;
+  --color-indigo-900: #312e81;
+
+  /* purple */
+  --color-purple-50: #faf5ff;
+  --color-purple-100: #f3e8ff;
+  --color-purple-200: #e9d5ff;
+  --color-purple-300: #d8b4fe;
+  --color-purple-400: #c084fc;
+  --color-purple-500: #a855f7;
+  --color-purple-600: #9333ea;
+  --color-purple-700: #7928ca;
+  --color-purple-800: #6b21a8;
+  --color-purple-900: #581c87;
+
+  /* pink */
+  --color-pink-50: #fdf2f8;
+  --color-pink-100: #fce7f3;
+  --color-pink-200: #fbcfe8;
+  --color-pink-300: #f9a8d4;
+  --color-pink-400: #f472b6;
+  --color-pink-500: #ff0080;
+  --color-pink-600: #db2777;
+  --color-pink-700: #be185d;
+  --color-pink-800: #9d174d;
+  --color-pink-900: #831843;
+
+  /* shadow utility token */
+  --color-shadow-500: rgba(112, 144, 176, 0.08);
+}
+
+/* 2. Replace breakpoints with Horizon's custom scale (px → rem)
+      Default Tailwind: sm=40rem(640px) md=48rem(768px) lg=64rem(1024px) …
+      Horizon v3:       sm=576px        md=768px         lg=992px  … */
+@theme {
+  --breakpoint-*: initial;
+
+  --breakpoint-sm: 36rem; /* 576px  */
+  --breakpoint-md: 48rem; /* 768px  */
+  --breakpoint-lg: 62rem; /* 992px  */
+  --breakpoint-xl: 75rem; /* 1200px */
+  --breakpoint-2xl: 82.5rem; /* 1320px */
+  --breakpoint-3xl: 100rem; /* 1600px */
+  --breakpoint-4xl: 115.625rem; /* 1850px */
+}
+
+/* 3. Fonts, shadows, radius — extend (no reset needed) */
+@theme {
+  --font-dm: "DM Sans", sans-serif;
+  --font-poppins: "Poppins", sans-serif;
+
+  --shadow-3xl: 14px 17px 40px 4px;
+  --shadow-inset: inset 0px 18px 22px;
+  --shadow-darkinset: 0px 4px 4px inset;
+
+  --radius-primary: 20px;
+}
+
+/* 4. Percentage-width utilities (w-1p … w-99p).
+      In v4 the --spacing-* namespace drives w-*, h-*, p-*, m-*, gap-* etc.
+      Only actually-used values are included in the output bundle.           */
+@theme {
+  --spacing-1p: 1%;
+  --spacing-2p: 2%;
+  --spacing-3p: 3%;
+  --spacing-4p: 4%;
+  --spacing-5p: 5%;
+  --spacing-6p: 6%;
+  --spacing-7p: 7%;
+  --spacing-8p: 8%;
+  --spacing-9p: 9%;
+  --spacing-10p: 10%;
+  --spacing-11p: 11%;
+  --spacing-12p: 12%;
+  --spacing-13p: 13%;
+  --spacing-14p: 14%;
+  --spacing-15p: 15%;
+  --spacing-16p: 16%;
+  --spacing-17p: 17%;
+  --spacing-18p: 18%;
+  --spacing-19p: 19%;
+  --spacing-20p: 20%;
+  --spacing-21p: 21%;
+  --spacing-22p: 22%;
+  --spacing-23p: 23%;
+  --spacing-24p: 24%;
+  --spacing-25p: 25%;
+  --spacing-26p: 26%;
+  --spacing-27p: 27%;
+  --spacing-28p: 28%;
+  --spacing-29p: 29%;
+  --spacing-30p: 30%;
+  --spacing-31p: 31%;
+  --spacing-32p: 32%;
+  --spacing-33p: 33%;
+  --spacing-34p: 34%;
+  --spacing-35p: 35%;
+  --spacing-36p: 36%;
+  --spacing-37p: 37%;
+  --spacing-38p: 38%;
+  --spacing-39p: 39%;
+  --spacing-40p: 40%;
+  --spacing-41p: 41%;
+  --spacing-42p: 42%;
+  --spacing-43p: 43%;
+  --spacing-44p: 44%;
+  --spacing-45p: 45%;
+  --spacing-46p: 46%;
+  --spacing-47p: 47%;
+  --spacing-48p: 48%;
+  --spacing-49p: 49%;
+  --spacing-50p: 50%;
+  --spacing-51p: 51%;
+  --spacing-52p: 52%;
+  --spacing-53p: 53%;
+  --spacing-54p: 54%;
+  --spacing-55p: 55%;
+  --spacing-56p: 56%;
+  --spacing-57p: 57%;
+  --spacing-58p: 58%;
+  --spacing-59p: 59%;
+  --spacing-60p: 60%;
+  --spacing-61p: 61%;
+  --spacing-62p: 62%;
+  --spacing-63p: 63%;
+  --spacing-64p: 64%;
+  --spacing-65p: 65%;
+  --spacing-66p: 66%;
+  --spacing-67p: 67%;
+  --spacing-68p: 68%;
+  --spacing-69p: 69%;
+  --spacing-70p: 70%;
+  --spacing-71p: 71%;
+  --spacing-72p: 72%;
+  --spacing-73p: 73%;
+  --spacing-74p: 74%;
+  --spacing-75p: 75%;
+  --spacing-76p: 76%;
+  --spacing-77p: 77%;
+  --spacing-78p: 78%;
+  --spacing-79p: 79%;
+  --spacing-80p: 80%;
+  --spacing-81p: 81%;
+  --spacing-82p: 82%;
+  --spacing-83p: 83%;
+  --spacing-84p: 84%;
+  --spacing-85p: 85%;
+  --spacing-86p: 86%;
+  --spacing-87p: 87%;
+  --spacing-88p: 88%;
+  --spacing-89p: 89%;
+  --spacing-90p: 90%;
+  --spacing-91p: 91%;
+  --spacing-92p: 92%;
+  --spacing-93p: 93%;
+  --spacing-94p: 94%;
+  --spacing-95p: 95%;
+  --spacing-96p: 96%;
+  --spacing-97p: 97%;
+  --spacing-98p: 98%;
+  --spacing-99p: 99%;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   BASE
+   ───────────────────────────────────────────────────────────────────────── */
+html,
+body,
+#root {
+  height: 100%;
+}

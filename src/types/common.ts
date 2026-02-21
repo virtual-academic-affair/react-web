@@ -31,32 +31,31 @@ export interface ValidationError {
 }
 
 /**
- * Paginated response structure
+ * Paginated response structure (matches ResourceQueryDto response shape)
  */
 export interface PaginatedResponse<T> {
-  data: T[];
-  meta: PaginationMeta;
-}
-
-/**
- * Pagination metadata
- */
-export interface PaginationMeta {
+  items: T[];
+  total: number;
   page: number;
   limit: number;
-  total: number;
   totalPages: number;
 }
 
 /**
- * Query parameters for pagination
+ * Common query parameters shared by all list endpoints (ResourceQueryDto)
  */
-export interface PaginationParams {
+export interface ResourceQueryDto {
   page?: number;
   limit?: number;
+  keyword?: string;
+  orderCol?: string;
+  orderDir?: SortOrder;
 }
 
+/** @deprecated Use ResourceQueryDto */
+export type PaginationParams = Pick<ResourceQueryDto, "page" | "limit">;
+
 /**
- * Sort order enum
+ * Sort direction
  */
 export type SortOrder = "ASC" | "DESC";
