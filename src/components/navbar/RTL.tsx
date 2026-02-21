@@ -57,7 +57,7 @@ const Navbar = (props: {
           </p>
           <input
             type="text"
-            placeholder="Search..."
+            placeholder="Tìm kiếm..."
             className="bg-lightPrimary text-navy-700 dark:bg-navy-900 block h-full w-full rounded-full text-sm font-medium outline-none placeholder:!text-gray-400 sm:w-fit dark:text-white dark:placeholder:!text-white"
           />
         </div>
