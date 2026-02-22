@@ -225,6 +225,7 @@
 @theme {
   --font-dm: "DM Sans", sans-serif;
   --font-poppins: "Poppins", sans-serif;
+  --font-momo: "Momo Trust Sans", sans-serif;
 
   --shadow-3xl: 14px 17px 40px 4px;
   --shadow-inset: inset 0px 18px 22px;
@@ -345,4 +346,21 @@ html,
 body,
 #root {
   height: 100%;
+}
+
+/* Global font */
+body {
+  font-family:
+    var(--font-momo),
+    var(--font-dm),
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    "Noto Sans",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
