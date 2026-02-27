@@ -1,4 +1,4 @@
-/* eslint-disable */
+ 
 
 import { HiX } from "react-icons/hi";
 import { SidebarLinks as Links } from "./components/Links";
@@ -58,10 +58,10 @@ const Sidebar = (props: {
 
         {/* Wordmark */}
         <div className="flex flex-col leading-tight">
-          <span className="font-poppins text-navy-800 text-base font-extrabold tracking-widest uppercase dark:text-white">
+          <span className="text-navy-800 text-base font-extrabold tracking-widest uppercase dark:text-white">
             Virtual
           </span>
-          <span className="font-poppins text-brand-500 text-sm font-semibold tracking-wider uppercase">
+          <span className="text-brand-500 text-sm font-semibold tracking-wider uppercase">
             Academic Assistant
           </span>
         </div>
