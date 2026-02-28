@@ -223,9 +223,10 @@
 
 /* 3. Fonts, shadows, radius — extend (no reset needed) */
 @theme {
-  --font-dm: "DM Sans", sans-serif;
+  --font-dm: "Momo Trust Sans", sans-serif;
   --font-poppins: "Poppins", sans-serif;
   --font-momo: "Momo Trust Sans", sans-serif;
+  --font-sans: "Momo Trust Sans", ui-sans-serif, system-ui, sans-serif;
 
   --shadow-3xl: 14px 17px 40px 4px;
   --shadow-inset: inset 0px 18px 22px;
@@ -352,7 +353,7 @@ body,
 body {
   font-family:
     var(--font-momo),
-    var(--font-dm),
+    var(--font-sans),
     system-ui,
     -apple-system,
     "Segoe UI",

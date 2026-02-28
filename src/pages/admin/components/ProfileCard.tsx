@@ -1,6 +1,4 @@
-import Card from "@/components/card";
 import type { DynamicDataResponse } from "@/types/shared";
-import { MdAccessTime, MdEmail } from "react-icons/md";
 
 export function formatDate(iso: string | undefined): string {
   if (!iso) return "—";
@@ -23,70 +21,104 @@ interface ProfileCardProps {
 const ProfileCard: React.FC<ProfileCardProps> = ({ data, loading }) => {
   const profile = data?.settings?.["email.superEmail"];
   const lastPullAt = data?.settings?.["email.lastPullAt"];
+  const labels = data?.settings?.["email.labels"];
 
   if (loading) {
     return (
-      <Card extra="p-6 flex flex-col items-center gap-4 animate-pulse">
-        <div className="dark:bg-navy-700 h-24 w-24 rounded-full bg-gray-200" />
-        <div className="dark:bg-navy-700 h-5 w-40 rounded bg-gray-200" />
-        <div className="dark:bg-navy-700 h-4 w-56 rounded bg-gray-200" />
-        <div className="dark:bg-navy-700 h-4 w-48 rounded bg-gray-200" />
-      </Card>
+      <div className="z-5 relative flex w-full flex-col items-center rounded-[20px] bg-white bg-clip-border p-4 shadow-3xl shadow-shadow-500 dark:!bg-navy-800 dark:text-white dark:shadow-none">
+        <div className="relative mt-1 flex h-32 w-full justify-center rounded-xl bg-gray-200 dark:!bg-navy-700 animate-pulse" />
+        <div className="absolute -bottom-12 flex h-[87px] w-[87px] items-center justify-center rounded-full border-4 border-white bg-gray-300 dark:!border-navy-700 animate-pulse" />
+        <div className="mt-16 flex flex-col items-center gap-2">
+          <div className="h-6 w-40 rounded bg-gray-200 dark:!bg-navy-700 animate-pulse" />
+          <div className="h-4 w-32 rounded bg-gray-200 dark:!bg-navy-700 animate-pulse" />
+        </div>
+        <div className="mt-6 mb-3 flex gap-4 md:!gap-14">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex flex-col items-center justify-center gap-1">
+              <div className="h-8 w-8 rounded bg-gray-200 dark:!bg-navy-700 animate-pulse" />
+              <div className="h-3 w-12 rounded bg-gray-200 dark:!bg-navy-700 animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </div>
     );
   }
 
   if (!profile) {
     return (
-      <Card extra="p-6 flex flex-col items-center gap-2">
+      <div className="z-5 relative flex w-full flex-col items-center rounded-[20px] bg-white bg-clip-border p-6 shadow-3xl shadow-shadow-500 dark:!bg-navy-800 dark:text-white dark:shadow-none">
         <p className="text-gray-500 dark:text-gray-400">
           No profile data available.
         </p>
-      </Card>
+      </div>
     );
   }
 
+  const labelCount = Array.isArray(labels) ? labels.length : 0;
+
   return (
-    <Card extra="p-6 flex flex-col items-center gap-4">
-      {/* Avatar */}
-      {profile.picture ? (
-        <img
-          src={profile.picture}
-          alt={profile.name}
-          className="ring-brand-500/30 h-24 w-24 rounded-full object-cover shadow-lg ring-4"
-          referrerPolicy="no-referrer"
-        />
-      ) : (
-        <div className="bg-brand-500 flex h-24 w-24 items-center justify-center rounded-full text-3xl font-bold text-white shadow-lg">
-          {profile.name?.charAt(0) ?? "?"}
+    <div className="z-5 relative flex w-full flex-col items-center rounded-[20px] bg-white bg-clip-border p-4 shadow-3xl shadow-shadow-500 dark:!bg-navy-800 dark:text-white dark:shadow-none">
+      {/* Banner */}
+      <div
+        className="relative mt-1 flex h-32 w-full justify-center rounded-xl bg-cover"
+        style={{
+          backgroundImage:
+            "url('https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800&q=80')",
+        }}
+      >
+        {/* Avatar */}
+        <div className="absolute -bottom-12 flex h-[87px] w-[87px] items-center justify-center rounded-full border-4 border-white bg-pink-400 dark:!border-navy-700">
+          {profile.picture ? (
+            <img
+              className="h-full w-full rounded-full object-cover"
+              src={profile.picture}
+              alt={profile.name}
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <span className="text-3xl font-bold text-white">
+              {profile.name?.charAt(0) ?? "?"}
+            </span>
+          )}
         </div>
-      )}
+      </div>
 
-      {/* Name */}
-      <div className="text-center">
-        <h2 className="text-navy-700 text-xl font-bold dark:text-white">
+      {/* Name & Role */}
+      <div className="mt-16 flex flex-col items-center">
+        <h4 className="text-xl font-bold text-navy-700 dark:text-white">
           {profile.name}
-        </h2>
-
-        {/* Email */}
-        <div className="mt-1 flex items-center justify-center gap-1 text-sm text-gray-500 dark:text-gray-400">
-          <MdEmail className="h-4 w-4 shrink-0" />
-          <span>{profile.email}</span>
-        </div>
+        </h4>
+        <p className="text-base font-normal text-gray-600 dark:text-gray-400">
+          {profile.email}
+        </p>
       </div>
 
-      {/* Last Pull At */}
-      <div className="dark:bg-navy-700 flex w-full items-center gap-2 rounded-xl bg-gray-50 px-4 py-3">
-        <MdAccessTime className="text-brand-500 h-5 w-5 shrink-0" />
-        <div>
-          <p className="text-xs font-medium tracking-wide text-gray-400 uppercase dark:text-gray-500">
-            Lần đồng bộ cuối cùng
+      {/* Stats */}
+      <div className="mt-6 mb-3 flex gap-4 md:!gap-14">
+        <div className="flex flex-col items-center justify-center">
+          <p className="text-2xl font-bold text-navy-700 dark:text-white">
+            {labelCount}
           </p>
-          <p className="text-navy-700 mt-0.5 text-sm font-semibold dark:text-white">
-            {formatDate(lastPullAt)}
+          <p className="text-sm font-normal text-gray-600 dark:text-gray-400">
+            Email nhận
+          </p>
+        </div>
+        <div className="flex flex-col items-center justify-center">
+          <p className="text-2xl font-bold text-navy-700 dark:text-white">18K</p>
+          <p className="text-sm font-normal text-gray-600 dark:text-gray-400">
+            Email xử lý tự động
+          </p>
+        </div>
+        <div className="flex flex-col items-center justify-center">
+          <p className="text-2xl font-bold text-navy-700 dark:text-white">
+            {lastPullAt ? "1" : "0"}
+          </p>
+          <p className="text-sm font-normal text-gray-600 dark:text-gray-400">
+            Lần đồng bộ
           </p>
         </div>
       </div>
-    </Card>
+    </div>
   );
 };
 
