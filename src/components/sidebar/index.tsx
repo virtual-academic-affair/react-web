@@ -1,5 +1,3 @@
- 
-
 import { HiX } from "react-icons/hi";
 import { SidebarLinks as Links } from "./components/Links";
 
@@ -25,7 +23,7 @@ const Sidebar = (props: {
 
       <div className="mx-8 mt-10 flex items-center gap-3">
         {/* Icon badge */}
-        <div className="from-brand-400 to-brand-600 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br shadow-md">
+        <div className="from-brand-400 to-brand-600 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br shadow-md">
           <svg
             width="22"
             height="22"

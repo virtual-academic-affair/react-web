@@ -1,4 +1,4 @@
-import React from "react";
+import React, { type JSX } from "react";
 
 function useOutsideAlerter(ref: any, setX: any): void {
   React.useEffect(() => {

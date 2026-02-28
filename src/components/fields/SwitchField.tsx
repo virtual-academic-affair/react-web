@@ -13,7 +13,7 @@ const SwitchField = (props: {
     <div className={`flex justify-between ${mt} ${mb} items-center`}>
       <label
         htmlFor={id}
-        className="max-w-[80%] hover:cursor-pointer lg:max-w-[65%]"
+        className="max-w-80p lg:max-w-65p hover:cursor-pointer"
       >
         <h5 className="text-navy-700 text-base font-bold dark:text-white">
           {label}

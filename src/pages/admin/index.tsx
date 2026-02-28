@@ -51,11 +51,11 @@ const AdminPage: React.FC<AdminPageProps> = ({
 
         {/* ── Actions Panel ──────────────────────────────────────────────── */}
         <div className="lg:col-span-3">
-          <div className="font-dm shadow-3xl shadow-shadow-500 dark:!bg-navy-800 grid h-full w-full grid-cols-1 gap-3 rounded-[20px] bg-white bg-clip-border p-3 lg:grid-cols-11 dark:shadow-none">
+          <div className="font-dm shadow-3xl shadow-shadow-500 dark:bg-navy-800! rounded-primary grid h-full w-full grid-cols-1 gap-3 bg-white bg-clip-border p-3 lg:grid-cols-11 dark:shadow-none">
             {/* Left side - Icon */}
             <div className="col-span-5 h-full w-full rounded-xl p-3 lg:col-span-5 lg:pb-0">
               <div className="flex h-full w-full flex-col items-center justify-center rounded-xl py-3">
-                <div className="text-brand-500 bg-lightPrimary dark:!bg-navy-700 mt-2 flex items-center justify-center rounded-full p-[26px] text-5xl font-bold dark:text-white">
+                <div className="text-brand-500 bg-lightPrimary dark:bg-navy-700! mt-2 flex items-center justify-center rounded-full p-[26px] text-5xl font-bold dark:text-white">
                   <svg
                     stroke="currentColor"
                     fill="currentColor"
@@ -76,7 +76,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
             </div>
 
             {/* Right side - Content */}
-            <div className="dark:!bg-navy-800 col-span-5 flex h-full w-full flex-col justify-center overflow-hidden rounded-xl bg-white pl-3 lg:col-span-6">
+            <div className="dark:bg-navy-800! col-span-5 flex h-full w-full flex-col justify-center overflow-hidden rounded-xl bg-white pl-3 lg:col-span-6">
               {/* Description */}
               <h5 className="text-navy-700 mb-5 text-left text-xl leading-9 font-bold dark:text-white">
                 Đồng bộ tự động

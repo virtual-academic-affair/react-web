@@ -50,7 +50,7 @@ const Navbar = (props: {
         </p>
       </div>
 
-      <div className="shadow-shadow-500 dark:!bg-navy-800 relative mt-[3px] flex h-[61px] w-[355px] flex-grow items-center justify-around gap-2 rounded-full bg-white px-2 py-2 shadow-xl md:w-[365px] md:flex-grow-0 md:gap-1 xl:w-[365px] xl:gap-2 dark:shadow-none">
+      <div className="shadow-shadow-500 dark:bg-navy-800! relative mt-[3px] flex h-[61px] w-[355px] grow items-center justify-around gap-2 rounded-full bg-white px-2 py-2 shadow-xl md:w-[365px] md:grow-0 md:gap-1 xl:w-[365px] xl:gap-2 dark:shadow-none">
         <div className="bg-lightPrimary text-navy-700 dark:bg-navy-900 flex h-full items-center rounded-full xl:w-[225px] dark:text-white">
           <p className="ps-3 pe-2 text-xl">
             <FiSearch className="h-4 w-4 text-gray-400 dark:text-white" />
@@ -58,7 +58,7 @@ const Navbar = (props: {
           <input
             type="text"
             placeholder="Tìm kiếm..."
-            className="bg-lightPrimary text-navy-700 dark:bg-navy-900 block h-full w-full rounded-full text-sm font-medium outline-none placeholder:!text-gray-400 sm:w-fit dark:text-white dark:placeholder:!text-white"
+            className="bg-lightPrimary text-navy-700 dark:bg-navy-900 block h-full w-full rounded-full text-sm font-medium outline-none placeholder:text-gray-400! sm:w-fit dark:text-white dark:placeholder:text-white!"
           />
         </div>
         <span
@@ -76,7 +76,7 @@ const Navbar = (props: {
           }
           animation="origin-[65%_0%] md:origin-top-start transition-all duration-300 ease-in-out"
           children={
-            <div className="shadow-shadow-500 dark:!bg-navy-700 flex w-[360px] flex-col gap-3 rounded-[20px] bg-white p-4 shadow-xl sm:w-[460px] dark:text-white dark:shadow-none">
+            <div className="shadow-shadow-500 dark:bg-navy-700! rounded-primary flex w-[360px] flex-col gap-3 bg-white p-4 shadow-xl sm:w-[460px] dark:text-white dark:shadow-none">
               <div className="flex items-center justify-between">
                 <p className="text-navy-700 text-base font-bold dark:text-white">
                   Notification
@@ -87,7 +87,7 @@ const Navbar = (props: {
               </div>
 
               <button className="flex w-full items-center">
-                <div className="from-brandLinear to-brand-500 flex h-full w-[85px] items-center justify-center rounded-xl bg-gradient-to-b py-4 text-2xl text-white">
+                <div className="from-brandLinear to-brand-500 flex h-full w-[85px] items-center justify-center rounded-xl bg-linear-to-b py-4 text-2xl text-white">
                   <BsArrowBarUp />
                 </div>
                 <div className="ms-2 flex h-full w-full flex-col justify-center rounded-lg px-1 text-sm">
@@ -101,7 +101,7 @@ const Navbar = (props: {
               </button>
 
               <button className="flex w-full items-center">
-                <div className="from-brandLinear to-brand-500 flex h-full w-[85px] items-center justify-center rounded-xl bg-gradient-to-b py-4 text-2xl text-white">
+                <div className="from-brandLinear to-brand-500 flex h-full w-[85px] items-center justify-center rounded-xl bg-linear-to-b py-4 text-2xl text-white">
                   <BsArrowBarUp />
                 </div>
                 <div className="ms-2 flex h-full w-full flex-col justify-center rounded-lg px-1 text-sm">
@@ -115,7 +115,7 @@ const Navbar = (props: {
               </button>
             </div>
           }
-          classNames={"py-2 top-4 -start-[230px] md:-start-[440px] w-max"}
+          classNames={"py-2 top-4 -inset-s-[230px] md:-inset-s-[440px] w-max"}
         />
         {/* start Horizon PRO */}
         <Dropdown
@@ -125,7 +125,7 @@ const Navbar = (props: {
             </p>
           }
           children={
-            <div className="shadow-shadow-500 dark:!bg-navy-700 flex w-[350px] flex-col gap-2 rounded-[20px] bg-white p-4 shadow-xl dark:text-white dark:shadow-none">
+            <div className="shadow-shadow-500 dark:bg-navy-700! rounded-primary flex w-[350px] flex-col gap-2 bg-white p-4 shadow-xl dark:text-white dark:shadow-none">
               <div
                 style={{
                   backgroundImage: `url(${navbarimage})`,
@@ -144,7 +144,7 @@ const Navbar = (props: {
               <a
                 target="blank"
                 href="https://horizon-ui.com/docs-tailwind/docs/react/installation?ref=live-free-tailwind-react"
-                className="px-full linear text-navy-700 hover:text-navy-700 flex cursor-pointer items-center justify-center rounded-xl border py-[11px] font-bold transition duration-200 hover:bg-gray-200 dark:!border-white/10 dark:text-white dark:hover:bg-white/20 dark:hover:text-white dark:active:bg-white/10"
+                className="px-full linear text-navy-700 hover:text-navy-700 flex cursor-pointer items-center justify-center rounded-xl border py-[11px] font-bold transition duration-200 hover:bg-gray-200 dark:border-white/10! dark:text-white dark:hover:bg-white/20 dark:hover:text-white dark:active:bg-white/10"
               >
                 See Documentation
               </a>
@@ -157,7 +157,7 @@ const Navbar = (props: {
               </a>
             </div>
           }
-          classNames={"py-2 top-6 -start-[250px] md:-start-[330px] w-max"}
+          classNames={"py-2 top-6 -inset-s-[250px] md:-inset-s-[330px] w-max"}
           animation="origin-[75%_0%] md:origin-top-start transition-all duration-300 ease-in-out"
         />
         <div
@@ -188,7 +188,7 @@ const Navbar = (props: {
             />
           }
           children={
-            <div className="shadow-shadow-500 dark:!bg-navy-700 flex h-48 w-56 flex-col justify-start rounded-[20px] bg-white bg-cover bg-no-repeat shadow-xl dark:text-white dark:shadow-none">
+            <div className="shadow-shadow-500 dark:bg-navy-700! rounded-primary flex h-48 w-56 flex-col justify-start bg-white bg-cover bg-no-repeat shadow-xl dark:text-white dark:shadow-none">
               <div className="ms-4 mt-3">
                 <div className="flex items-center gap-2">
                   <p className="text-navy-700 text-sm font-bold dark:text-white">
@@ -220,7 +220,7 @@ const Navbar = (props: {
               </div>
             </div>
           }
-          classNames={"py-2 top-8 -start-[180px] w-max"}
+          classNames={"py-2 top-8 -inset-s-[180px] w-max"}
         />
       </div>
     </nav>

@@ -1,4 +1,5 @@
-import { Popover, PopoverTrigger, PopoverContent } from "@chakra-ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@chakra-ui/popover";
+import type { JSX } from "react";
 const PopoverHorizon = (props: {
   trigger: JSX.Element;
   extra?: string;
@@ -9,7 +10,7 @@ const PopoverHorizon = (props: {
     <Popover>
       <PopoverTrigger>{trigger}</PopoverTrigger>
       <PopoverContent
-        className={`w-max rounded-xl bg-white py-3 px-4 text-sm shadow-xl shadow-shadow-500 dark:!bg-navy-700 dark:shadow-none ${extra}`}
+        className={`shadow-shadow-500 dark:bg-navy-700! w-max rounded-xl bg-white px-4 py-3 text-sm shadow-xl dark:shadow-none ${extra}`}
       >
         {content}
       </PopoverContent>

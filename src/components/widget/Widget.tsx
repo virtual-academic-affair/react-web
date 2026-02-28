@@ -1,4 +1,5 @@
 import Card from "@/components/card";
+import type { JSX } from "react";
 
 const Widget = (props: {
   icon: JSX.Element;
@@ -7,8 +8,8 @@ const Widget = (props: {
 }) => {
   const { icon, title, subtitle } = props;
   return (
-    <Card extra="!flex-row flex-grow items-center rounded-[20px]">
-      <div className="ml-[18px] flex h-[90px] w-auto flex-row items-center">
+    <Card extra="flex-row! grow items-center rounded-primary">
+      <div className="ml-4.5 flex h-22.5 w-auto flex-row items-center">
         <div className="bg-lightPrimary dark:bg-navy-700 rounded-full p-3">
           <span className="text-brand-500 flex items-center dark:text-white">
             {icon}

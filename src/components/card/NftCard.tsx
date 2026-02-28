@@ -15,7 +15,7 @@ const NftCard = (props: {
   const [heart, setHeart] = useState(true);
   return (
     <Card
-      extra={`flex flex-col w-full h-full !p-4 3xl:p-![18px] bg-white ${extra}`}
+      extra={`flex flex-col w-full h-full p-4! 3xl:p-![18px] bg-white ${extra}`}
     >
       <div className="h-full w-full">
         <div className="relative w-full">
@@ -50,13 +50,13 @@ const NftCard = (props: {
           </div>
 
           <div className="flex flex-row-reverse md:mt-2 lg:mt-0">
-            <span className="text-navy-700 dark:!border-navy-800 z-0 ml-px inline-flex h-8 w-8 items-center justify-center rounded-full border border-white bg-[#E0E5F2] text-xs dark:bg-gray-800 dark:text-white">
+            <span className="text-navy-700 dark:border-navy-800! z-0 ml-px inline-flex h-8 w-8 items-center justify-center rounded-full border border-white bg-[#E0E5F2] text-xs dark:bg-gray-800 dark:text-white">
               +5
             </span>
             {bidders.map((avt, key) => (
               <span
                 key={key}
-                className="dark:!border-navy-800 z-10 -mr-3 h-8 w-8 rounded-full border border-white"
+                className="dark:border-navy-800! z-10 -mr-3 h-8 w-8 rounded-full border border-white"
               >
                 <img
                   className="h-full w-full rounded-full object-cover"
