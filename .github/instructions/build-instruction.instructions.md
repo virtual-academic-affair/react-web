@@ -6,6 +6,7 @@ applyTo: "**/*.{ts,tsx}"
 # Project Coding Guidelines
 
 ## Tech Stack
+
 - React 19 + TypeScript + Vite
 - Tailwind CSS v4 (`@tailwindcss/vite` plugin) — all theme tokens live in `src/index.css` via `@theme`; no `tailwind.config.js`
 - Horizon UI component library (free tier)
@@ -15,7 +16,9 @@ applyTo: "**/*.{ts,tsx}"
 ## Component Usage
 
 ### Prefer Horizon UI components
+
 Always reach for existing Horizon UI components before writing new ones:
+
 - `Card` → `src/components/card`
 - `Dropdown` → `src/components/dropdown`
 - `InputField` / `SwitchField` → `src/components/fields`
@@ -25,6 +28,7 @@ Always reach for existing Horizon UI components before writing new ones:
 Only create a custom component when no Horizon UI component fits the use case.
 
 ### Component file separation
+
 - Do **not** put multiple named components in `index.tsx`.
 - Each distinct component gets its **own file** (e.g., `ProfileCard.tsx`, `ActionsPanel.tsx`).
 - `index.tsx` for a page should only contain the main page component and its direct composition — no inlined sub-components.
@@ -38,6 +42,7 @@ Only create a custom component when no Horizon UI component fits the use case.
   ```
 
 ## Notifications & Feedback
+
 - Use **Ant Design `message`** for transient toast notifications:
   ```ts
   import { message } from "antd";
@@ -49,14 +54,17 @@ Only create a custom component when no Horizon UI component fits the use case.
 - Do **not** render inline status divs, alert banners, or custom toast components for feedback that fits `message` or `notification`.
 
 ## Dark Mode
+
 - Dark mode is class-based: Horizon UI toggles `.dark` on `document.body`.
 - The custom variant is declared in `src/index.css`: `@custom-variant dark (&:where(.dark, .dark *));`
 - Always add `dark:` variants alongside light styles (e.g., `text-navy-700 dark:text-white`).
 
 ## Data Fetching
+
 - Lift shared data fetches to the nearest layout that owns all consumers — avoid duplicate API calls for the same data.
 - Pass data down as props; do not re-fetch the same endpoint in child components.
 
 ## Styling
+
 - Use Tailwind utility classes exclusively; no inline `style={{}}` except for dynamic values that cannot be expressed as utilities.
 - Color tokens follow the Horizon UI palette defined in `src/index.css` (e.g., `text-navy-700`, `bg-brand-500`).
