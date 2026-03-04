@@ -109,13 +109,13 @@ const UsersOverview: React.FC = () => {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             {/* Search Input */}
             <form onSubmit={handleSearch} className="relative">
-              <MdSearch className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+              <MdSearch className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-700" />
               <input
                 type="text"
                 placeholder="Tìm kiếm theo email, tên..."
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
-                className="dark:bg-navy-700 dark:border-navy-600 h-10 w-full rounded-lg border border-gray-300 bg-white pl-10 pr-4 text-sm text-gray-700 outline-none transition-colors focus:border-blue-500 dark:text-white sm:w-64"
+                className="dark:bg-navy-700 dark:border-navy-600 h-10 w-full rounded-lg border border-gray-300 bg-white pl-10 pr-4 text-sm text-black outline-none transition-colors focus:border-blue-500 dark:text-white sm:w-64"
               />
             </form>
 
@@ -134,13 +134,13 @@ const UsersOverview: React.FC = () => {
             </select>
           </div>
 
-          {/* Right: Assign Role Button */}
+          {/* Right: Create Account Button */}
           <button
             onClick={() => setAssignDrawerOpen(true)}
-            className="bg-brand-500 hover:bg-brand-600 active:bg-brand-700 flex h-10 items-center gap-2 rounded-lg px-4 text-sm font-medium text-white transition-colors"
+            className="bg-brand-500 hover:bg-brand-600 active:bg-brand-700 flex h-10 items-center gap-2 rounded-lg px-4 text-base font-medium text-white transition-colors"
           >
             <MdAdd className="h-5 w-5" />
-            Gán vai trò
+            Tạo tài khoản
           </button>
         </div>
 

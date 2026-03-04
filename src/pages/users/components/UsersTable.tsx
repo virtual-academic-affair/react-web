@@ -53,22 +53,22 @@ const UsersTable: React.FC<UsersTableProps> = ({
       <table className="w-full min-w-[640px]">
         <thead>
           <tr className="border-b border-gray-200 dark:border-gray-700">
-            <th className="pb-3 text-left text-xs font-medium tracking-wide text-gray-500 dark:text-gray-400">
+            <th className="pb-3 text-left text-sm font-semibold tracking-wide text-gray-600 dark:text-gray-400">
               NGƯỜI DÙNG
             </th>
-            <th className="pb-3 text-left text-xs font-medium tracking-wide text-gray-500 dark:text-gray-400">
+            <th className="pb-3 text-left text-sm font-semibold tracking-wide text-gray-600 dark:text-gray-400">
               EMAIL
             </th>
-            <th className="pb-3 text-left text-xs font-medium tracking-wide text-gray-500 dark:text-gray-400">
+            <th className="pb-3 text-center text-sm font-semibold tracking-wide text-gray-600 dark:text-gray-400">
               VAI TRÒ
             </th>
-            <th className="pb-3 text-left text-xs font-medium tracking-wide text-gray-500 dark:text-gray-400">
+            <th className="pb-3 text-center text-sm font-semibold tracking-wide text-gray-600 dark:text-gray-400">
               TRẠNG THÁI
             </th>
-            <th className="pb-3 text-left text-xs font-medium tracking-wide text-gray-500 dark:text-gray-400">
+            <th className="pb-3 text-center text-sm font-semibold tracking-wide text-gray-600 dark:text-gray-400">
               NGÀY TẠO
             </th>
-            <th className="pb-3 text-right text-xs font-medium tracking-wide text-gray-500 dark:text-gray-400">
+            <th className="pb-3 text-center text-sm font-semibold tracking-wide text-gray-600 dark:text-gray-400">
               THAO TÁC
             </th>
           </tr>
@@ -94,34 +94,34 @@ const UsersTable: React.FC<UsersTableProps> = ({
                     </div>
                   )}
                   <div>
-                    <p className="text-navy-700 text-sm font-medium dark:text-white">
+                    <p className="text-navy-700 text-base font-semibold dark:text-white">
                       {user.name || "Chưa cập nhật"}
                     </p>
-                    <p className="text-xs text-gray-500">ID: {user.id}</p>
+                    <p className="text-sm text-gray-500">ID: {user.id}</p>
                   </div>
                 </div>
               </td>
 
               {/* Email */}
               <td className="py-4">
-                <p className="text-navy-700 text-sm font-medium dark:text-white">
+                <p className="text-navy-700 text-base font-medium dark:text-white">
                   {user.email}
                 </p>
               </td>
 
               {/* Role Badge */}
-              <td className="py-4">
+              <td className="py-4 text-center">
                 <span
-                  className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${RoleColors[user.role as Role]?.bg || "bg-gray-100"} ${RoleColors[user.role as Role]?.text || "text-gray-800"}`}
+                  className={`inline-flex rounded-full px-3 py-1.5 text-sm font-medium ${RoleColors[user.role as Role]?.bg || "bg-gray-100"} ${RoleColors[user.role as Role]?.text || "text-gray-800"}`}
                 >
                   {RoleLabels[user.role as Role] || user.role}
                 </span>
               </td>
 
               {/* Status */}
-              <td className="py-4">
+              <td className="py-4 text-center">
                 <span
-                  className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
+                  className={`inline-flex rounded-full px-3 py-1.5 text-sm font-medium ${
                     user.isActive
                       ? "bg-green-100 text-green-800"
                       : "bg-gray-100 text-gray-800"
@@ -132,21 +132,21 @@ const UsersTable: React.FC<UsersTableProps> = ({
               </td>
 
               {/* Created Date */}
-              <td className="py-4">
-                <p className="text-navy-700 text-sm font-medium dark:text-white">
+              <td className="py-4 text-center">
+                <p className="text-navy-700 text-base font-medium dark:text-white">
                   {new Date(user.createdAt).toLocaleDateString("vi-VN")}
                 </p>
               </td>
 
               {/* Actions */}
               <td className="py-4">
-                <div className="flex items-center justify-end">
+                <div className="flex items-center justify-center">
                   <button
                     onClick={() => onViewDetail(user)}
-                    className="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-blue-600 dark:hover:bg-gray-700"
+                    className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-gray-600 transition-all hover:bg-blue-100 hover:text-blue-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-blue-900/30 dark:hover:text-blue-400"
                     title="Xem chi tiết"
                   >
-                    <MdVisibility className="h-6 w-6" />
+                    <MdVisibility className="h-5 w-5" />
                   </button>
                 </div>
               </td>
@@ -157,7 +157,7 @@ const UsersTable: React.FC<UsersTableProps> = ({
 
       {/* Pagination */}
       <div className="mt-4 flex flex-col items-center justify-between gap-4 sm:flex-row">
-        <p className="text-sm text-gray-600 dark:text-gray-400">
+        <p className="text-base text-gray-600 dark:text-gray-400">
           Hiển thị {total > 0 ? (currentPage - 1) * limit + 1 : 0} -{" "}
           {Math.min(currentPage * limit, total)} / {total} người dùng
         </p>
@@ -165,7 +165,7 @@ const UsersTable: React.FC<UsersTableProps> = ({
           <button
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+            className="rounded-lg border border-gray-200 px-3 py-1.5 text-base font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
           >
             Trước
           </button>
@@ -210,7 +210,7 @@ const UsersTable: React.FC<UsersTableProps> = ({
           <button
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage >= totalPages || totalPages === 0}
-            className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+            className="rounded-lg border border-gray-200 px-3 py-1.5 text-base font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
           >
             Sau
           </button>

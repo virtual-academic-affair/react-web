@@ -30,7 +30,7 @@ export const RoleLabels: Record<Role, string> = {
 export const RoleColors: Record<Role, { bg: string; text: string }> = {
   [Role.Student]: { bg: "bg-blue-100", text: "text-blue-800" },
   [Role.Admin]: { bg: "bg-red-100", text: "text-red-800" },
-  [Role.Lecture]: { bg: "bg-green-100", text: "text-green-800" },
+  [Role.Lecture]: { bg: "bg-yellow-100", text: "text-yellow-800" },
 };
 
 /**

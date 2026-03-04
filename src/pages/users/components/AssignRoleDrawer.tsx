@@ -63,11 +63,11 @@ const AssignRoleDrawer: React.FC<AssignRoleDrawerProps> = ({
     setLoading(true);
     try {
       await usersService.assignRole(formData);
-      message.success("Gán vai trò thành công!");
+      message.success("Tạo tài khoản thành công!");
       onSuccess();
     } catch (err) {
       const msg =
-        err instanceof Error ? err.message : "Không thể gán vai trò";
+        err instanceof Error ? err.message : "Không thể tạo tài khoản";
       message.error(msg);
     } finally {
       setLoading(false);
@@ -97,10 +97,10 @@ const AssignRoleDrawer: React.FC<AssignRoleDrawerProps> = ({
               </div>
               <div>
                 <h2 className="text-navy-700 text-lg font-bold dark:text-white">
-                  Gán vai trò
+                  Tạo tài khoản
                 </h2>
                 <p className="text-sm text-gray-500">
-                  Gán vai trò cho người dùng
+                  Tạo tài khoản mới với vai trò xác định
                 </p>
               </div>
             </div>
@@ -198,7 +198,7 @@ const AssignRoleDrawer: React.FC<AssignRoleDrawerProps> = ({
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="mt-0.5 inline-block h-2 w-2 rounded-full bg-green-500" />
+                  <span className="mt-0.5 inline-block h-2 w-2 rounded-full bg-yellow-500" />
                   <span>
                     <strong>Giảng viên:</strong> Quyền quản lý lớp học
                   </span>
@@ -235,7 +235,7 @@ const AssignRoleDrawer: React.FC<AssignRoleDrawerProps> = ({
                     Đang xử lý...
                   </>
                 ) : (
-                  "Gán vai trò"
+                  "Tạo"
                 )}
               </button>
             </div>
