@@ -1,10 +1,11 @@
 import Dropdown from "@/components/dropdown";
+import { removeAllTokens } from "@/utils/cookie.util";
 import React from "react";
 import { BsArrowBarUp } from "react-icons/bs";
 import { FiAlignJustify, FiSearch } from "react-icons/fi";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { RiMoonFill, RiSunFill } from "react-icons/ri";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const Navbar = (props: {
   onOpenSidenav: () => void;
@@ -15,6 +16,12 @@ const Navbar = (props: {
 }) => {
   const { onOpenSidenav, brandText, avatarUrl, userName } = props;
   const [darkmode, setDarkmode] = React.useState(false);
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    removeAllTokens();
+    navigate("/auth/login", { replace: true });
+  };
 
   return (
     <nav className="sticky top-4 z-40 flex flex-row flex-wrap items-center justify-between rounded-xl bg-white/10 py-2 pr-2 pl-0 backdrop-blur-xl dark:bg-[#0b14374d]">
@@ -173,12 +180,12 @@ const Navbar = (props: {
                 >
                   Cài đặt Newsletter
                 </a>
-                <a
-                  href=" "
-                  className="mt-3 text-sm font-medium text-red-500 hover:text-red-500"
+                <button
+                  onClick={handleLogout}
+                  className="mt-3 text-left text-sm font-medium text-red-500 hover:text-red-500 cursor-pointer"
                 >
                   Đăng xuất
-                </a>
+                </button>
               </div>
             </div>
           }

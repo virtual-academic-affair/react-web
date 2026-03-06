@@ -9,6 +9,9 @@ export { ApiError, default as http } from "./http";
 // Email services
 export * from "./email";
 
+// Auth services
+export * from "./auth";
+
 // Shared services
 export * from "./shared";
 
