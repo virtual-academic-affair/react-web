@@ -14,9 +14,9 @@ export const API_CONFIG = {
 export const API_ENDPOINTS = {
   // Authentication
   auth: {
-    login: "/auth/login",
-    logout: "/auth/logout",
-    refresh: "/auth/refresh",
+    googleUrl: "/authentication/google",       // GET  → lấy Google Auth URL
+    googleCallback: "/authentication/google",  // POST → đổi code → tokens
+    refresh: "/authentication/auth/refresh", // POST → refresh tokens
   },
 
   // Authentication - Users
