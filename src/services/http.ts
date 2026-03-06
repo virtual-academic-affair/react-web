@@ -36,7 +36,7 @@ const http: AxiosInstance = axios.create({
   timeout: API_CONFIG.timeout,
   headers: { "Content-Type": "application/json" },
   // Serialize arrays as repeated keys: ?systemLabels=a&systemLabels=b
-  paramsSerializer: { indexes: null },
+  paramsSerializer: { indexes: false },
 });
 
 // ── Request interceptor: attach JWT ──────────────────────────────────────────

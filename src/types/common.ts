@@ -31,14 +31,16 @@ export interface ValidationError {
 }
 
 /**
- * Paginated response structure (matches ResourceQueryDto response shape)
+ * Paginated response structure (matches ResourceService response shape)
  */
 export interface PaginatedResponse<T> {
   items: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+  pagination: {
+    total: number;
+    currentPage: number;
+    limit: number;
+    totalPages: number;
+  };
 }
 
 /**
