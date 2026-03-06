@@ -19,6 +19,15 @@ export const API_ENDPOINTS = {
     refresh: "/authentication/auth/refresh", // POST → refresh tokens
   },
 
+  // Authentication - Users
+  authentication: {
+    users: {
+      base: "/authentication/users",
+      byId: (id: number) => `/authentication/users/${id}`,
+      assignRole: "/authentication/users/assignRole",
+    },
+  },
+
   // Class Registration
   classRegistration: {
     base: "/class-registration",

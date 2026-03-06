@@ -44,7 +44,8 @@ const http: AxiosInstance = axios.create({
   baseURL: API_CONFIG.baseURL,
   timeout: API_CONFIG.timeout,
   headers: { "Content-Type": "application/json" },
-  paramsSerializer: { indexes: null },
+  // Serialize arrays as repeated keys: ?systemLabels=a&systemLabels=b
+  paramsSerializer: { indexes: false },
 });
 
 // ── Plain instance for refresh calls only (no interceptors → no loops) ───────

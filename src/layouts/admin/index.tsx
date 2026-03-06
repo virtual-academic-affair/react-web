@@ -7,6 +7,7 @@
 
 import Navbar from "@/components/navbar";
 import Sidebar from "@/components/sidebar";
+import UsersOverview from "@/pages/users";
 import routes from "@/routes";
 import { dynamicDataService } from "@/services/shared";
 import type { DynamicDataResponse } from "@/types/shared";
@@ -87,6 +88,7 @@ const AdminLayout: React.FC = () => {
                 />
               }
             />
+            <Route path="users" element={<UsersOverview />} />
             <Route
               path="/"
               element={<Navigate to="/admin/dashboard" replace />}

@@ -3,7 +3,7 @@
  * Used by the Sidebar to render navigation links.
  */
 
-import { MdAdminPanelSettings } from "react-icons/md";
+import { MdAdminPanelSettings, MdPeople } from "react-icons/md";
 
 const routes: RoutesType[] = [
   {
@@ -11,6 +11,12 @@ const routes: RoutesType[] = [
     layout: "/admin",
     path: "dashboard",
     icon: <MdAdminPanelSettings className="h-6 w-6" />,
+  },
+  {
+    name: "Người dùng",
+    layout: "/admin",
+    path: "users",
+    icon: <MdPeople className="h-6 w-6" />,
   },
 ];
 

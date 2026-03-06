@@ -15,6 +15,9 @@ export * from "./auth";
 // Shared services
 export * from "./shared";
 
+// Users services
+export * from "./users";
+
 // Re-export common types
 export type {
   ApiErrorResponse,
