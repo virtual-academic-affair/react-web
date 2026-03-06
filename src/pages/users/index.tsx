@@ -39,7 +39,7 @@ const UsersOverview: React.FC = () => {
         page,
         limit,
         keyword: keyword || undefined,
-        role: roleFilter || undefined,
+        roles: roleFilter ? [roleFilter] : undefined,
       };
       const result = await usersService.getUsers(params);
       setData(result);

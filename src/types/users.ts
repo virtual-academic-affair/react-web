@@ -52,7 +52,7 @@ export interface User {
  * Query params for users list
  */
 export interface GetUsersParams extends ResourceQueryDto {
-  role?: Role;
+  roles?: Role[];
 }
 
 /**
