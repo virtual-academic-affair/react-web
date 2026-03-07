@@ -62,10 +62,10 @@ export interface GmailLabel {
  * Label mapping between system labels and Gmail label IDs
  */
 export interface LabelMappingDto {
-  classRegistration: string | null;
   task: string | null;
-  inquiry: string | null;
   other: string | null;
+  inquiry: string | null;
+  classRegistration: string | null;
 }
 
 /**
