@@ -7,6 +7,7 @@
 
 import Navbar from "@/components/navbar";
 import Sidebar from "@/components/sidebar";
+import EmailsPage from "@/pages/emails";
 import UsersOverview from "@/pages/users";
 import routes from "@/routes";
 import { dynamicDataService } from "@/services/shared";
@@ -89,6 +90,16 @@ const AdminLayout: React.FC = () => {
               }
             />
             <Route path="users" element={<UsersOverview />} />
+            <Route
+              path="emails"
+              element={
+                <EmailsPage
+                  data={data}
+                  dataLoading={dataLoading}
+                  onRefresh={fetchData}
+                />
+              }
+            />
             <Route
               path="/"
               element={<Navigate to="/admin/dashboard" replace />}
