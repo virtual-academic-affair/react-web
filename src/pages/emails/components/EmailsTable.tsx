@@ -114,7 +114,7 @@ const EmailsTable: React.FC<EmailsTableProps> = ({
     <div className="flex flex-col gap-4">
       {/* Search bar */}
       <div className="flex items-center gap-2">
-        <div className="bg-lightPrimary dark:bg-navy-800 flex flex-1 items-center gap-2 rounded-xl px-3 py-2">
+        <div className="bg-lightPrimary dark:bg-navy-900 flex flex-1 items-center gap-2 rounded-xl px-3 py-2">
           <MdSearch className="h-5 w-5 shrink-0 text-gray-400" />
           <input
             type="text"
@@ -122,7 +122,7 @@ const EmailsTable: React.FC<EmailsTableProps> = ({
             onChange={(e) => onKeywordChange(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Tìm kiếm theo tiêu đề, người gửi..."
-            className="bg-lightPrimary dark:bg-navy-800 w-full text-sm text-gray-700 outline-none placeholder:text-gray-400 dark:text-white dark:placeholder:text-gray-500"
+            className="bg-lightPrimary dark:bg-navy-900 w-full text-sm text-gray-700 outline-none placeholder:text-gray-400 dark:text-white dark:placeholder:text-gray-500"
           />
         </div>
         <button
@@ -276,7 +276,7 @@ const EmailsTable: React.FC<EmailsTableProps> = ({
           {/* Dropdown panel */}
           <div
             style={{ top: dropdownPos.top, left: dropdownPos.left }}
-            className="dark:bg-navy-800 fixed z-50 min-w-44 rounded-2xl border border-gray-100 bg-white p-3 shadow-lg dark:border-white/10"
+            className="dark:bg-navy-900 fixed z-50 min-w-44 rounded-2xl border border-gray-100 bg-white p-3 shadow-lg dark:border-white/10"
           >
             <p className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
               Nhãn hệ thống

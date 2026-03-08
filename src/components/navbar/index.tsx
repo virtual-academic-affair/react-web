@@ -14,7 +14,9 @@ const Navbar = (props: {
   userName?: string;
 }) => {
   const { onOpenSidenav, brandText, avatarUrl, userName } = props;
-  const [darkmode, setDarkmode] = React.useState(false);
+  const [darkmode, setDarkmode] = React.useState(
+    document.body.classList.contains("dark"),
+  );
 
   return (
     <nav className="sticky top-4 z-40 flex flex-row flex-wrap items-center justify-between rounded-xl bg-white/10 py-2 pr-2 pl-0 backdrop-blur-xl dark:bg-[#0b14374d]">
@@ -120,9 +122,11 @@ const Navbar = (props: {
           onClick={() => {
             if (darkmode) {
               document.body.classList.remove("dark");
+              localStorage.setItem("theme", "light");
               setDarkmode(false);
             } else {
               document.body.classList.add("dark");
+              localStorage.setItem("theme", "dark");
               setDarkmode(true);
             }
           }}
