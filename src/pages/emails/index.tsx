@@ -84,10 +84,12 @@ const EmailsPage: React.FC<EmailsPageProps> = ({
           loading={loading}
           keyword={keyword}
           page={page}
+          systemLabelEnum={data?.enums?.["shared.systemLabel"]}
           onKeywordChange={setKeyword}
           onSearch={handleSearch}
           onPageChange={handlePageChange}
           onRowClick={(msg) => setSelectedId(msg.id)}
+          onLabelChanged={handleLabelChanged}
         />
       </Card>
 
@@ -97,6 +99,7 @@ const EmailsPage: React.FC<EmailsPageProps> = ({
       {/* Email detail drawer */}
       <EmailDetailDrawer
         messageId={selectedId}
+        systemLabelEnum={data?.enums?.["shared.systemLabel"]}
         onClose={() => setSelectedId(null)}
         onLabelChanged={handleLabelChanged}
       />

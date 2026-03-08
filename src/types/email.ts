@@ -51,6 +51,13 @@ export interface UpdateMessageLabelDto {
 }
 
 /**
+ * Update all system labels for a specific message (replaces the full list)
+ */
+export interface UpdateMessageSystemLabelsDto {
+  systemLabels: SystemLabel[];
+}
+
+/**
  * Gmail label structure
  */
 export interface GmailLabel {
