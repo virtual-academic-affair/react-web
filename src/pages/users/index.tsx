@@ -108,22 +108,24 @@ const UsersOverview: React.FC = () => {
           {/* Left: Search & Filter */}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             {/* Search Input */}
-            <form onSubmit={handleSearch} className="relative">
-              <MdSearch className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-700" />
-              <input
-                type="text"
-                placeholder="Tìm kiếm theo email, tên..."
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                className="dark:bg-navy-700 dark:border-navy-600 h-10 w-full rounded-lg border border-gray-300 bg-white pl-10 pr-4 text-sm text-black outline-none transition-colors focus:border-blue-500 dark:text-white sm:w-64"
-              />
+            <form onSubmit={handleSearch} className="flex items-center gap-2">
+              <div className="bg-lightPrimary dark:bg-navy-900 flex items-center gap-2 rounded-xl px-3 py-2 sm:w-64">
+                <MdSearch className="h-5 w-5 shrink-0 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm theo email, tên..."
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  className="bg-lightPrimary dark:bg-navy-900 w-full text-sm text-gray-700 outline-none placeholder:text-gray-400 dark:text-white dark:placeholder:text-gray-500"
+                />
+              </div>
             </form>
 
             {/* Role Filter */}
             <select
               value={roleFilter}
               onChange={handleRoleFilterChange}
-              className="dark:bg-navy-700 dark:border-navy-600 h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-700 outline-none transition-colors focus:border-blue-500 dark:text-white"
+              className="bg-lightPrimary dark:bg-navy-900 rounded-xl px-3 py-2 text-sm text-gray-700 outline-none dark:text-white"
             >
               <option value="">Tất cả vai trò</option>
               {Object.values(Role).map((role) => (
