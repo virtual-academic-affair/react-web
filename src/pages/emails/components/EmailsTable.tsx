@@ -1,21 +1,30 @@
+import { messagesService } from "@/services/email";
 import type { PaginatedResponse } from "@/types/common";
-import type { Message } from "@/types/email";
+import type { Message, SystemLabel } from "@/types/email";
+import type { SystemLabelEnumData } from "@/types/shared";
+import { message } from "antd";
 import React from "react";
-import { MdChevronLeft, MdChevronRight, MdSearch } from "react-icons/md";
+import {
+  MdChevronLeft,
+  MdChevronRight,
+  MdLabel,
+  MdSearch,
+} from "react-icons/md";
 
-const SYSTEM_LABEL_VI: Record<string, string> = {
-  classRegistration: "Đăng ký lớp",
-  task: "Nhiệm vụ",
-  inquiry: "Thắc mắc",
-  other: "Khác",
-};
+function getLabelVi(sl: string, enumData?: SystemLabelEnumData | null): string {
+  return enumData?.[sl]?.vi ?? sl;
+}
 
-const SYSTEM_LABEL_COLOR: Record<string, string> = {
-  classRegistration: "bg-blue-100 text-blue-700",
-  task: "bg-amber-100 text-amber-700",
-  inquiry: "bg-purple-100 text-purple-700",
-  other: "bg-gray-100 text-gray-600",
-};
+function getLabelColor(
+  sl: string,
+  enumData?: SystemLabelEnumData | null,
+): string {
+  return enumData?.[sl]?.color ?? "#888";
+}
+
+function labelPillStyle(color: string): React.CSSProperties {
+  return { backgroundColor: color + "20", color };
+}
 
 function formatDate(iso: string | Date): string {
   const d = new Date(iso);
@@ -34,10 +43,12 @@ interface EmailsTableProps {
   loading: boolean;
   keyword: string;
   page: number;
+  systemLabelEnum?: SystemLabelEnumData | null;
   onKeywordChange: (v: string) => void;
   onSearch: () => void;
   onPageChange: (p: number) => void;
   onRowClick: (msg: Message) => void;
+  onLabelChanged?: () => void;
 }
 
 const EmailsTable: React.FC<EmailsTableProps> = ({
@@ -45,12 +56,55 @@ const EmailsTable: React.FC<EmailsTableProps> = ({
   loading,
   keyword,
   page,
+  systemLabelEnum,
   onKeywordChange,
   onSearch,
   onPageChange,
   onRowClick,
+  onLabelChanged,
 }) => {
   const { items = [], pagination } = result ?? { items: [], pagination: null };
+
+  // ── inline label editor state ──────────────────────────────────────────────
+  const [editingId, setEditingId] = React.useState<number | null>(null);
+  const [draftLabels, setDraftLabels] = React.useState<SystemLabel[]>([]);
+  const [dropdownPos, setDropdownPos] = React.useState({ top: 0, left: 0 });
+  const [saving, setSaving] = React.useState(false);
+
+  const openEdit = (e: React.MouseEvent, msg: Message) => {
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setDropdownPos({ top: rect.bottom + 4, left: rect.left });
+    setEditingId(msg.id);
+    setDraftLabels([...msg.systemLabels]);
+  };
+
+  const closeEdit = () => {
+    setEditingId(null);
+    setDraftLabels([]);
+  };
+
+  const toggleDraftLabel = (label: SystemLabel) => {
+    setDraftLabels((prev) =>
+      prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label],
+    );
+  };
+
+  const saveLabels = async (msgId: number) => {
+    setSaving(true);
+    try {
+      await messagesService.updateMessageLabels(msgId, {
+        systemLabels: draftLabels,
+      });
+      message.success("Cập nhật nhãn thành công.");
+      closeEdit();
+      onLabelChanged?.();
+    } catch {
+      message.error("Không thể cập nhật nhãn.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") onSearch();
@@ -138,19 +192,29 @@ const EmailsTable: React.FC<EmailsTableProps> = ({
                     <p className="text-xs text-gray-400">{msg.senderEmail}</p>
                   </td>
                   <td className="py-3 pr-4">
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap items-center gap-1">
                       {msg.systemLabels?.length ? (
                         msg.systemLabels.map((sl) => (
                           <span
                             key={sl}
-                            className={`rounded-full px-2 py-0.5 text-xs font-medium ${SYSTEM_LABEL_COLOR[sl] ?? "bg-gray-100 text-gray-600"}`}
+                            style={labelPillStyle(
+                              getLabelColor(sl, systemLabelEnum),
+                            )}
+                            className="rounded-full px-2 py-0.5 text-xs font-medium"
                           >
-                            {SYSTEM_LABEL_VI[sl] ?? sl}
+                            {getLabelVi(sl, systemLabelEnum)}
                           </span>
                         ))
                       ) : (
                         <span className="text-xs text-gray-400 italic">—</span>
                       )}
+                      <button
+                        onClick={(e) => openEdit(e, msg)}
+                        title="Chỉnh sửa nhãn"
+                        className="hover:text-brand-500 dark:hover:text-brand-400 ml-0.5 rounded p-0.5 text-gray-300 transition-colors dark:text-gray-600"
+                      >
+                        <MdLabel className="h-4 w-4" />
+                      </button>
                     </div>
                   </td>
                   <td className="py-3 text-sm text-gray-500 dark:text-gray-400">
@@ -203,9 +267,56 @@ const EmailsTable: React.FC<EmailsTableProps> = ({
           </div>
         </div>
       )}
+
+      {/* Inline label editor dropdown (fixed so table overflow doesn't clip) */}
+      {editingId !== null && (
+        <>
+          {/* Backdrop */}
+          <div className="fixed inset-0 z-40" onClick={closeEdit} />
+          {/* Dropdown panel */}
+          <div
+            style={{ top: dropdownPos.top, left: dropdownPos.left }}
+            className="dark:bg-navy-800 fixed z-50 min-w-44 rounded-2xl border border-gray-100 bg-white p-3 shadow-lg dark:border-white/10"
+          >
+            <p className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+              Nhãn hệ thống
+            </p>
+            <div className="flex flex-col gap-2">
+              {(Object.keys(systemLabelEnum ?? {}) as SystemLabel[]).map(
+                (sl) => (
+                  <label
+                    key={sl}
+                    className="flex cursor-pointer items-center gap-2"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={draftLabels.includes(sl)}
+                      onChange={() => toggleDraftLabel(sl)}
+                      className="accent-brand-500 h-3.5 w-3.5 rounded"
+                    />
+                    <span
+                      style={labelPillStyle(getLabelColor(sl, systemLabelEnum))}
+                      className="rounded-full px-2 py-0.5 text-xs font-medium"
+                    >
+                      {getLabelVi(sl, systemLabelEnum)}
+                    </span>
+                  </label>
+                ),
+              )}
+            </div>
+            <button
+              onClick={() => saveLabels(editingId)}
+              disabled={saving}
+              className="bg-brand-500 hover:bg-brand-600 mt-3 w-full rounded-lg px-3 py-1.5 text-xs font-medium text-white transition-colors disabled:opacity-50"
+            >
+              {saving ? "Đang lưu..." : "Lưu"}
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 };
 
-export { formatDate, SYSTEM_LABEL_COLOR, SYSTEM_LABEL_VI };
+export { formatDate, getLabelColor, getLabelVi, labelPillStyle };
 export default EmailsTable;

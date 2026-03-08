@@ -1,37 +1,34 @@
-import { messageLabelsService, messagesService } from "@/services/email";
-import type {
-  Message,
-  SystemLabel,
-  UpdateMessageLabelDto,
-} from "@/types/email";
+import { messagesService } from "@/services/email";
+import type { Message, SystemLabel } from "@/types/email";
+import type { SystemLabelEnumData } from "@/types/shared";
 import { message as toast } from "antd";
-import React from "react";
+import { useEffect, useState } from "react";
 import { MdClose, MdEmail, MdLabel, MdLabelOff } from "react-icons/md";
-import { SYSTEM_LABEL_COLOR, SYSTEM_LABEL_VI, formatDate } from "./EmailsTable";
-
-const ALL_SYSTEM_LABELS: SystemLabel[] = [
-  "classRegistration",
-  "task",
-  "inquiry",
-  "other",
-];
+import {
+  formatDate,
+  getLabelColor,
+  getLabelVi,
+  labelPillStyle,
+} from "./EmailsTable";
 
 interface EmailDetailDrawerProps {
   messageId: number | null;
+  systemLabelEnum?: SystemLabelEnumData | null;
   onClose: () => void;
   onLabelChanged: () => void;
 }
 
 const EmailDetailDrawer: React.FC<EmailDetailDrawerProps> = ({
   messageId,
+  systemLabelEnum,
   onClose,
   onLabelChanged,
 }) => {
-  const [detail, setDetail] = React.useState<Message | null>(null);
-  const [loading, setLoading] = React.useState(false);
-  const [updatingLabel, setUpdatingLabel] = React.useState<string | null>(null);
+  const [detail, setDetail] = useState<Message | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [updatingLabel, setUpdatingLabel] = useState<string | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (messageId == null) {
       setDetail(null);
       return;
@@ -51,26 +48,17 @@ const EmailDetailDrawer: React.FC<EmailDetailDrawerProps> = ({
   const toggleLabel = async (sl: SystemLabel) => {
     if (!detail) return;
     const hasLabel = detail.systemLabels?.includes(sl);
-    const dto: UpdateMessageLabelDto = {
-      messageId: detail.id,
-      systemLabel: sl,
-      isRemove: !!hasLabel,
-    };
+    const newLabels = hasLabel
+      ? (detail.systemLabels ?? []).filter((l) => l !== sl)
+      : [...(detail.systemLabels ?? []), sl];
     setUpdatingLabel(sl);
     try {
-      await messageLabelsService.updateMessageLabel(dto);
+      await messagesService.updateMessageLabels(detail.id, {
+        systemLabels: newLabels,
+      });
       toast.success(hasLabel ? "Đã gỡ nhãn." : "Đã gán nhãn.");
       // optimistic update
-      setDetail((prev) =>
-        prev
-          ? {
-              ...prev,
-              systemLabels: hasLabel
-                ? (prev.systemLabels ?? []).filter((l) => l !== sl)
-                : [...(prev.systemLabels ?? []), sl],
-            }
-          : prev,
-      );
+      setDetail((prev) => (prev ? { ...prev, systemLabels: newLabels } : prev));
       onLabelChanged();
     } catch (err: unknown) {
       const msg =
@@ -186,34 +174,38 @@ const EmailDetailDrawer: React.FC<EmailDetailDrawerProps> = ({
                   Nhãn hệ thống
                 </p>
                 <div className="flex flex-col gap-2">
-                  {ALL_SYSTEM_LABELS.map((sl) => {
-                    const active = detail.systemLabels?.includes(sl);
-                    const busy = updatingLabel === sl;
-                    return (
-                      <button
-                        key={sl}
-                        onClick={() => toggleLabel(sl)}
-                        disabled={busy}
-                        className={`flex items-center gap-3 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all ${
-                          active
-                            ? `${SYSTEM_LABEL_COLOR[sl]} border-transparent`
-                            : "hover:border-brand-300 border-gray-200 text-gray-500 dark:border-white/10 dark:text-gray-400"
-                        } disabled:opacity-60`}
-                      >
-                        {active ? (
-                          <MdLabel className="h-4 w-4 shrink-0" />
-                        ) : (
-                          <MdLabelOff className="h-4 w-4 shrink-0" />
-                        )}
-                        {SYSTEM_LABEL_VI[sl]}
-                        {active && (
-                          <span className="ml-auto text-xs opacity-70">
-                            Đang gán
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
+                  {(Object.keys(systemLabelEnum ?? {}) as SystemLabel[]).map(
+                    (sl) => {
+                      const active = detail.systemLabels?.includes(sl);
+                      const busy = updatingLabel === sl;
+                      const color = getLabelColor(sl, systemLabelEnum);
+                      return (
+                        <button
+                          key={sl}
+                          onClick={() => toggleLabel(sl)}
+                          disabled={busy}
+                          style={active ? labelPillStyle(color) : undefined}
+                          className={`flex items-center gap-3 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all ${
+                            active
+                              ? "border-transparent"
+                              : "hover:border-brand-300 border-gray-200 text-gray-500 dark:border-white/10 dark:text-gray-400"
+                          } disabled:opacity-60`}
+                        >
+                          {active ? (
+                            <MdLabel className="h-4 w-4 shrink-0" />
+                          ) : (
+                            <MdLabelOff className="h-4 w-4 shrink-0" />
+                          )}
+                          {getLabelVi(sl, systemLabelEnum)}
+                          {active && (
+                            <span className="ml-auto text-xs opacity-70">
+                              Đang gán
+                            </span>
+                          )}
+                        </button>
+                      );
+                    },
+                  )}
                 </div>
               </div>
 
