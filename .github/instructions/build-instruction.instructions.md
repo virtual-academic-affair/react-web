@@ -30,6 +30,7 @@ applyTo: "**/*.{ts,tsx}"
 ### Component Library Priority
 
 **Priority Order:**
+
 1. **Custom Components** (`src/components/`) - Reuse Card, Widget, Charts, etc.
 2. **Chakra UI** - Modal, Popover, Tooltip
 3. **Ant Design** - message, notification, Drawer, Spin, Select
@@ -83,8 +84,8 @@ Only create a custom component when no existing component fits the use case.
 - Use **Ant Design `Spin`** for loading states
 - Do **not** render inline status divs, alert banners, or custom toast components for feedback that fits `message` or `notification`
 
-
 **Backend Response Structure:**
+
 ```typescript
 // Backend returns nested pagination
 interface PaginatedResponse<T> {
@@ -101,15 +102,18 @@ interface PaginatedResponse<T> {
 ## Naming Conventions
 
 **Files:**
+
 - Components: PascalCase — `UsersTable.tsx`, `UserDetailDrawer.tsx`
 - Services: camelCase — `users.service.ts`, `messages.service.ts`
 - Types: camelCase — `users.ts`, `email.ts`, `common.ts`
 
 **Component Props:**
+
 - Event handlers (props): `onSubmit`, `onClick`, `onSuccess`, `onClose`
 - Event handlers (internal): `handleSubmit`, `handleClick`, `handleSuccess`
 
 **State Variables:**
+
 - Boolean: `isLoading`, `isOpen`, `hasError`
 - Arrays: plural — `messages`, `users`, `labels`
 - Single items: singular — `selectedUser`, `currentPage`
@@ -128,16 +132,17 @@ Use **CSS transitions** via Tailwind utilities:
 
 ```tsx
 // Standard transition
-className="transition-all duration-200 hover:shadow-lg"
+className = "transition-all duration-200 hover:shadow-lg";
 
 // Color transition
-className="transition-colors duration-150 hover:bg-brand-600"
+className = "transition-colors duration-150 hover:bg-brand-600";
 
 // Transform
-className="transition-transform hover:scale-105"
+className = "transition-transform hover:scale-105";
 ```
 
 **Animation Guidelines:**
+
 - Duration: 150-300ms for UI feedback (hover, active)
 - Use `ease-in-out` or `ease-out` for natural feel
 - Keep animations subtle — avoid overload
@@ -160,18 +165,20 @@ className="transition-transform hover:scale-105"
 - Color tokens follow the Horizon UI palette defined in `src/index.css` (e.g., `text-navy-700`, `bg-brand-500`)
 
 **Key Tailwind Patterns in This Project:**
+
 ```tsx
 // Cards - modern dashboard aesthetic
-className="rounded-3xl bg-white shadow-md shadow-[#F3F3F3] dark:bg-navy-800"
+className = "rounded-3xl bg-white shadow-md shadow-[#F3F3F3] dark:bg-navy-800";
 
 // Responsive grids
-className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3"
+className = "grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3";
 
 // Dark mode support
-className="bg-white dark:bg-navy-800 text-navy-700 dark:text-white"
+className = "bg-white dark:bg-navy-800 text-navy-700 dark:text-white";
 
 // Buttons with transitions
-className="rounded-lg bg-brand-500 px-4 py-2 text-white transition-colors hover:bg-brand-600"
+className =
+  "rounded-lg bg-brand-500 px-4 py-2 text-white transition-colors hover:bg-brand-600";
 ```
 
 ### Modern Dashboard Aesthetic
@@ -195,4 +202,13 @@ className="rounded-lg bg-brand-500 px-4 py-2 text-white transition-colors hover:
 - Maintain spacing consistency: `gap-4` or `gap-5` between card grids
 
 ### Responsive Design
+
 - Try to use or create responsive utilities to ensure the UI looks good on all screen sizes
+
+## Localization
+
+- All user-facing UI text must be written in **Vietnamese**.
+- When generating or editing components, use Vietnamese for labels, buttons, headings, help text, and notifications.
+- Keep translations concise, natural, and professional — prefer a polite/formal tone (e.g., "Đồng bộ ngay", "Đang đồng bộ...").
+- Use existing i18n utilities or translation files if the project already has them. If none exist, place Vietnamese strings directly in the component and add a `// TODO: extract to i18n` comment for future extraction.
+- Do not mix languages within the same view — keep UI text consistently Vietnamese across the page.

@@ -41,22 +41,8 @@ export interface SystemLabelLangItem {
   color: string;
 }
 
-/** Shape returned for the "shared.systemLabel" enum path */
-export interface SystemLabelEnumData {
-  SystemLabel: {
-    ClassRegistration: "classRegistration";
-    Task: "task";
-    Inquiry: "inquiry";
-    Other: "other";
-  };
-  SystemLabelLang: {
-    classRegistration: SystemLabelLangItem;
-    task: SystemLabelLangItem;
-    inquiry: SystemLabelLangItem;
-    other: SystemLabelLangItem;
-    parent: SystemLabelLangItem;
-  };
-}
+/** Shape returned for the "shared.systemLabel" enum path — flat record of label key → i18n+color */
+export type SystemLabelEnumData = Record<string, SystemLabelLangItem>;
 
 /** Role values */
 export const Role = {

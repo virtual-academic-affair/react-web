@@ -5,7 +5,11 @@
 
 import { API_ENDPOINTS } from "@/config/api.config";
 import type { PaginatedResponse } from "@/types/common";
-import type { GetMessagesParams, Message } from "@/types/email";
+import type {
+  GetMessagesParams,
+  Message,
+  UpdateMessageSystemLabelsDto,
+} from "@/types/email";
 import http from "../http";
 
 /**
@@ -43,6 +47,19 @@ class MessagesService {
   async getMessageById(id: number): Promise<Message> {
     const res = await http.get<Message>(API_ENDPOINTS.email.messages.byId(id));
     return res.data;
+  }
+
+  /**
+   * Replace all system labels for a specific email message
+   * @param id - Message ID
+   * @param data - Full list of system labels to apply
+   * @requires ADMIN role
+   */
+  async updateMessageLabels(
+    id: number,
+    data: UpdateMessageSystemLabelsDto,
+  ): Promise<void> {
+    await http.put(API_ENDPOINTS.email.messages.byIdLabels(id), data);
   }
 }
 

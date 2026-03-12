@@ -10,19 +10,23 @@ import type { GetUsersParams, User } from "@/types/users";
 import { Role, RoleLabels } from "@/types/users";
 import { message, Spin } from "antd";
 import React from "react";
-import { MdAdd, MdSearch } from "react-icons/md";
+import { MdAdd, MdKeyboardArrowDown, MdSearch } from "react-icons/md";
+import { useSearchParams } from "react-router-dom";
 import AssignRoleDrawer from "./components/AssignRoleDrawer";
 import UserDetailDrawer from "./components/UserDetailDrawer";
 import UsersTable from "./components/UsersTable";
 
 const UsersOverview: React.FC = () => {
   // ── State ────────────────────────────────────────────────────────────────
+  const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = React.useState(false);
   const [data, setData] = React.useState<PaginatedResponse<User> | null>(null);
 
   // Filter state
   const [keyword, setKeyword] = React.useState("");
-  const [roleFilter, setRoleFilter] = React.useState<Role | "">("");
+  const [roleFilter, setRoleFilter] = React.useState<Role | "">(
+    (searchParams.get("role") as Role) || "",
+  );
   const [page, setPage] = React.useState(1);
   const [limit] = React.useState(10);
 
@@ -30,6 +34,7 @@ const UsersOverview: React.FC = () => {
   const [assignDrawerOpen, setAssignDrawerOpen] = React.useState(false);
   const [detailDrawerOpen, setDetailDrawerOpen] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
+  const [roleSelectOpen, setRoleSelectOpen] = React.useState(false);
 
   // ── Data fetching ────────────────────────────────────────────────────────
   const fetchUsers = React.useCallback(async () => {
@@ -64,8 +69,16 @@ const UsersOverview: React.FC = () => {
   };
 
   const handleRoleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setRoleFilter(e.target.value as Role | "");
+    const value = e.target.value as Role | "";
+    setRoleFilter(value);
+    setRoleSelectOpen(false);
     setPage(1);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (value) next.set("role", value);
+      else next.delete("role");
+      return next;
+    });
   };
 
   const handleViewDetail = (user: User) => {
@@ -108,30 +121,39 @@ const UsersOverview: React.FC = () => {
           {/* Left: Search & Filter */}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             {/* Search Input */}
-            <form onSubmit={handleSearch} className="relative">
-              <MdSearch className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-700" />
-              <input
-                type="text"
-                placeholder="Tìm kiếm theo email, tên..."
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                className="dark:bg-navy-700 dark:border-navy-600 h-10 w-full rounded-lg border border-gray-300 bg-white pl-10 pr-4 text-sm text-black outline-none transition-colors focus:border-blue-500 dark:text-white sm:w-64"
-              />
+            <form onSubmit={handleSearch} className="flex items-center gap-2">
+              <div className="bg-lightPrimary dark:bg-navy-900 flex items-center gap-2 rounded-xl px-3 py-2 sm:w-64">
+                <MdSearch className="h-5 w-5 shrink-0 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm theo email, tên..."
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  className="bg-lightPrimary dark:bg-navy-900 w-full text-sm text-gray-700 outline-none placeholder:text-gray-400 dark:text-white dark:placeholder:text-gray-500"
+                />
+              </div>
             </form>
 
             {/* Role Filter */}
-            <select
-              value={roleFilter}
-              onChange={handleRoleFilterChange}
-              className="dark:bg-navy-700 dark:border-navy-600 h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-700 outline-none transition-colors focus:border-blue-500 dark:text-white"
-            >
-              <option value="">Tất cả vai trò</option>
-              {Object.values(Role).map((role) => (
-                <option key={role} value={role}>
-                  {RoleLabels[role]}
-                </option>
-              ))}
-            </select>
+            <div className="bg-lightPrimary dark:bg-navy-900 group relative flex items-center rounded-xl px-3 py-2">
+              <select
+                value={roleFilter}
+                onChange={handleRoleFilterChange}
+                onMouseDown={() => setRoleSelectOpen((v) => !v)}
+                onBlur={() => setRoleSelectOpen(false)}
+                className="bg-lightPrimary dark:bg-navy-900 appearance-none pr-5 text-sm text-gray-700 outline-none dark:text-white"
+              >
+                <option value="">Tất cả vai trò</option>
+                {Object.values(Role).map((role) => (
+                  <option key={role} value={role}>
+                    {RoleLabels[role]}
+                  </option>
+                ))}
+              </select>
+              <MdKeyboardArrowDown
+                className={`pointer-events-none absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2 text-gray-400 transition-transform duration-200 ${roleSelectOpen ? "rotate-180" : ""}`}
+              />
+            </div>
           </div>
 
           {/* Right: Create Account Button */}

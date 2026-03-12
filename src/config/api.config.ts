@@ -39,9 +39,7 @@ export const API_ENDPOINTS = {
       base: "/email/messages",
       sync: "/email/messages/sync",
       byId: (id: number) => `/email/messages/${id}`,
-    },
-    messageLabels: {
-      update: "/email/messageLabels",
+      byIdLabels: (id: number) => `/email/messages/${id}/labels`,
     },
     labels: {
       base: "/email/labels",

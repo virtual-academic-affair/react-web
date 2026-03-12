@@ -7,6 +7,7 @@
 
 import Navbar from "@/components/navbar";
 import Sidebar from "@/components/sidebar";
+import EmailsPage from "@/pages/emails";
 import UsersOverview from "@/pages/users";
 import routes from "@/routes";
 import { dynamicDataService } from "@/services/shared";
@@ -60,11 +61,11 @@ const AdminLayout: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full w-full">
+    <div className="flex min-h-full w-full">
       <Sidebar open={open} onClose={() => setOpen(false)} />
 
       {/* Main content */}
-      <div className="bg-lightPrimary dark:bg-navy-900! relative flex h-full w-full flex-col xl:ml-78.25">
+      <div className="bg-lightPrimary dark:bg-navy-900! relative flex min-h-full w-full flex-col xl:ml-78.25">
         {/* Navbar */}
         <div className="mx-auto w-[calc(100vw-6%)] md:w-[calc(100vw-8%)] lg:w-[calc(100vw-6%)] xl:w-[calc(100vw-375px)] 2xl:w-[calc(100vw-375px)]">
           <Navbar
@@ -89,6 +90,16 @@ const AdminLayout: React.FC = () => {
               }
             />
             <Route path="users" element={<UsersOverview />} />
+            <Route
+              path="emails"
+              element={
+                <EmailsPage
+                  data={data}
+                  dataLoading={dataLoading}
+                  onRefresh={fetchData}
+                />
+              }
+            />
             <Route
               path="/"
               element={<Navigate to="/admin/dashboard" replace />}
