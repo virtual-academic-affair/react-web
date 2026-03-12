@@ -50,7 +50,9 @@ const AllowedDomainsCard: React.FC = () => {
 
   const handleAdd = () => {
     const trimmed = newDomain.trim();
-    if (!trimmed) return;
+    if (!trimmed) {
+      return;
+    }
     if (draft.includes(trimmed)) {
       message.warning("Tên miền đã tồn tại.");
       return;
@@ -95,7 +97,7 @@ const AllowedDomainsCard: React.FC = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <MdDomain className="text-brand-500 h-5 w-5 shrink-0" />
-          <h3 className="text-navy-700 font-semibold dark:text-white">
+          <h3 className="text-navy-700 text-xl font-bold dark:text-white">
             Tên miền được phép
           </h3>
         </div>
@@ -129,7 +131,7 @@ const AllowedDomainsCard: React.FC = () => {
         )}
       </div>
 
-      <p className="text-sm text-gray-500 dark:text-gray-400">
+      <p className="mt-2 text-base text-gray-600 dark:text-gray-400">
         Chỉ những email từ các tên miền này mới được đồng bộ.
       </p>
 
@@ -144,7 +146,7 @@ const AllowedDomainsCard: React.FC = () => {
           ))}
         </div>
       ) : displayList.length === 0 ? (
-        <p className="text-sm text-gray-400 italic dark:text-gray-500">
+        <p className="text-sm text-gray-600 italic dark:text-gray-400">
           Chưa có tên miền nào được cấu hình.
         </p>
       ) : (
@@ -177,7 +179,7 @@ const AllowedDomainsCard: React.FC = () => {
             value={newDomain}
             onChange={(e) => setNewDomain(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="e.g. example.com"
+            placeholder="vd: example.com"
             className="dark:bg-navy-700 focus:border-brand-500 flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 outline-none dark:border-white/10 dark:text-white dark:placeholder:text-gray-500"
           />
           <button

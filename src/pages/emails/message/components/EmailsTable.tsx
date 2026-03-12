@@ -7,60 +7,39 @@ import React from "react";
 import {
   MdChevronLeft,
   MdChevronRight,
+  MdInfoOutline,
   MdLabel,
-  MdSearch,
 } from "react-icons/md";
+import { SiGmail } from "react-icons/si";
 
-function getLabelVi(sl: string, enumData?: SystemLabelEnumData | null): string {
-  return enumData?.[sl]?.vi ?? sl;
-}
-
-function getLabelColor(
-  sl: string,
-  enumData?: SystemLabelEnumData | null,
-): string {
-  return enumData?.[sl]?.color ?? "#888";
-}
-
-function labelPillStyle(color: string): React.CSSProperties {
-  return { backgroundColor: color + "20", color };
-}
-
-function formatDate(iso: string | Date): string {
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("vi-VN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+import {
+  formatDate,
+  getLabelColor,
+  getLabelVi,
+  labelPillStyle,
+} from "../labelUtils";
+import SystemLabelSelector from "./SystemLabelSelector";
+import Tooltip from "./Tooltip";
 
 interface EmailsTableProps {
   result: PaginatedResponse<Message> | null;
   loading: boolean;
-  keyword: string;
   page: number;
   systemLabelEnum?: SystemLabelEnumData | null;
-  onKeywordChange: (v: string) => void;
-  onSearch: () => void;
+  gmailAccount?: string;
   onPageChange: (p: number) => void;
-  onRowClick: (msg: Message) => void;
+  onOpenDetail: (msg: Message) => void;
   onLabelChanged?: () => void;
 }
 
 const EmailsTable: React.FC<EmailsTableProps> = ({
   result,
   loading,
-  keyword,
   page,
   systemLabelEnum,
-  onKeywordChange,
-  onSearch,
+  gmailAccount,
   onPageChange,
-  onRowClick,
+  onOpenDetail,
   onLabelChanged,
 }) => {
   const { items = [], pagination } = result ?? { items: [], pagination: null };
@@ -84,12 +63,6 @@ const EmailsTable: React.FC<EmailsTableProps> = ({
     setDraftLabels([]);
   };
 
-  const toggleDraftLabel = (label: SystemLabel) => {
-    setDraftLabels((prev) =>
-      prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label],
-    );
-  };
-
   const saveLabels = async (msgId: number) => {
     setSaving(true);
     try {
@@ -106,49 +79,27 @@ const EmailsTable: React.FC<EmailsTableProps> = ({
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") onSearch();
-  };
-
   return (
     <div className="flex flex-col gap-4">
-      {/* Search bar */}
-      <div className="flex items-center gap-2">
-        <div className="bg-lightPrimary dark:bg-navy-900 flex flex-1 items-center gap-2 rounded-xl px-3 py-2">
-          <MdSearch className="h-5 w-5 shrink-0 text-gray-400" />
-          <input
-            type="text"
-            value={keyword}
-            onChange={(e) => onKeywordChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Tìm kiếm theo tiêu đề, người gửi..."
-            className="bg-lightPrimary dark:bg-navy-900 w-full text-sm text-gray-700 outline-none placeholder:text-gray-400 dark:text-white dark:placeholder:text-gray-500"
-          />
-        </div>
-        <button
-          onClick={onSearch}
-          className="bg-brand-500 hover:bg-brand-600 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors"
-        >
-          Tìm kiếm
-        </button>
-      </div>
-
       {/* Table */}
-      <div className="overflow-x-auto rounded-2xl">
+      <div className="rounded-2xl">
         <table className="w-full">
           <thead>
             <tr className="border-b border-gray-100 dark:border-white/10">
-              <th className="py-3 pr-4 text-left text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+              <th className="w-[400px] max-w-[450px] px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                 Tiêu đề
               </th>
-              <th className="py-3 pr-4 text-left text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+              <th className="w-[400px] max-w-[250px] px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                 Người gửi
               </th>
-              <th className="py-3 pr-4 text-left text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+              <th className="px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                 Nhãn hệ thống
               </th>
-              <th className="py-3 text-left text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+              <th className="px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                 Thời gian gửi
+              </th>
+              <th className="py-3 text-center text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                Thao tác
               </th>
             </tr>
           </thead>
@@ -160,7 +111,7 @@ const EmailsTable: React.FC<EmailsTableProps> = ({
                   className="border-b border-gray-50 dark:border-white/5"
                 >
                   {[1, 2, 3, 4].map((c) => (
-                    <td key={c} className="py-3 pr-4">
+                    <td key={c} className="px-4 py-3">
                       <div className="dark:bg-navy-700 h-4 animate-pulse rounded bg-gray-200" />
                     </td>
                   ))}
@@ -169,29 +120,33 @@ const EmailsTable: React.FC<EmailsTableProps> = ({
             ) : items.length === 0 ? (
               <tr>
                 <td
-                  colSpan={4}
-                  className="py-12 text-center text-sm text-gray-400"
+                  colSpan={5}
+                  className="text-navy-700 py-12 text-center text-base dark:text-white"
                 >
-                  Không tìm thấy email nào.
+                  Không tìm thấy dữ liệu.
                 </td>
               </tr>
             ) : (
               items.map((msg) => (
                 <tr
                   key={msg.id}
-                  onClick={() => onRowClick(msg)}
                   className="hover:bg-lightPrimary dark:hover:bg-navy-700 cursor-pointer border-b border-gray-50 transition-colors dark:border-white/5"
                 >
-                  <td className="max-w-70 truncate py-3 pr-4 text-sm font-medium text-gray-800 dark:text-white">
-                    {msg.subject || "(Không có tiêu đề)"}
+                  <td className="max-w-[400px] py-3">
+                    <Tooltip label={msg.subject || "(Không có tiêu đề)"}>
+                      <p className="text-navy-700 w-full max-w-[400px] truncate px-4 text-base font-medium dark:text-white">
+                        {msg.subject || "(Không có tiêu đề)"}
+                      </p>
+                    </Tooltip>
                   </td>
-                  <td className="py-3 pr-4">
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                      {msg.senderName}
-                    </p>
-                    <p className="text-xs text-gray-400">{msg.senderEmail}</p>
+                  <td className="max-w-[200px] py-3">
+                    <Tooltip label={msg.senderName}>
+                      <p className="text-navy-700 w-full max-w-[250px] truncate px-4 text-sm dark:text-white">
+                        {msg.senderName}
+                      </p>
+                    </Tooltip>
                   </td>
-                  <td className="py-3 pr-4">
+                  <td className="px-4 py-3">
                     <div className="flex flex-wrap items-center gap-1">
                       {msg.systemLabels?.length ? (
                         msg.systemLabels.map((sl) => (
@@ -217,8 +172,40 @@ const EmailsTable: React.FC<EmailsTableProps> = ({
                       </button>
                     </div>
                   </td>
-                  <td className="py-3 text-sm text-gray-500 dark:text-gray-400">
+                  <td className="text-navy-700 px-4 py-3 text-sm dark:text-white">
                     {formatDate(msg.sentAt)}
+                  </td>
+                  <td className="py-3 pr-2">
+                    <div className="flex items-center justify-center gap-2">
+                      <Tooltip label="Chi tiết">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenDetail(msg);
+                          }}
+                          className="bg-brand-500 hover:bg-brand-600 dark:bg-brand-500 dark:hover:bg-brand-400 flex h-10 w-10 items-center justify-center rounded-2xl text-white transition-colors dark:text-white"
+                        >
+                          <MdInfoOutline className="h-4 w-4" />
+                        </button>
+                      </Tooltip>
+
+                      <Tooltip label="Gmail">
+                        <a
+                          href={
+                            gmailAccount
+                              ? `https://mail.google.com/mail/u/${gmailAccount}/#inbox/${msg.threadId}`
+                              : `https://mail.google.com/mail/u/0/#inbox/${msg.threadId}`
+                          }
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex h-10 w-10 items-center justify-center rounded-2xl bg-pink-500 text-white transition-colors hover:bg-pink-600 dark:bg-pink-500 dark:text-white dark:hover:bg-pink-400"
+                        >
+                          <SiGmail className="h-4 w-4" />
+                        </a>
+                      </Tooltip>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -230,9 +217,9 @@ const EmailsTable: React.FC<EmailsTableProps> = ({
       {/* Pagination */}
       {pagination && pagination.totalPages > 1 && (
         <div className="flex items-center justify-between pt-1">
-          <p className="text-sm text-gray-400">
-            Trang {pagination.currentPage} / {pagination.totalPages}{" "}
-            &nbsp;·&nbsp; {pagination.total} email
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Trang {pagination.currentPage} trên {pagination.totalPages}{" "}
+            <span className="mx-2">·</span> {pagination.total} bản ghi
           </p>
           <div className="flex items-center gap-1">
             <button
@@ -242,25 +229,65 @@ const EmailsTable: React.FC<EmailsTableProps> = ({
             >
               <MdChevronLeft className="h-5 w-5" />
             </button>
-            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(
-              (p) => (
-                <button
-                  key={p}
-                  onClick={() => onPageChange(p)}
-                  className={`min-w-8 rounded-lg px-2 py-1 text-sm font-medium transition-colors ${
-                    p === pagination.currentPage
-                      ? "bg-brand-500 text-white"
-                      : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/10"
-                  }`}
-                >
-                  {p}
-                </button>
-              ),
-            )}
+            {/* Condensed page numbers: 1 ... prev, current, next ... last */}
+            {(() => {
+              const total = pagination.totalPages;
+              const current = pagination.currentPage;
+              const pages: (number | "...")[] = [];
+
+              if (total <= 5) {
+                for (let i = 1; i <= total; i += 1) {
+                  pages.push(i);
+                }
+              } else {
+                pages.push(1);
+
+                const start = Math.max(2, current - 1);
+                const end = Math.min(total - 1, current + 1);
+
+                if (start > 2) {
+                  pages.push("...");
+                }
+
+                for (let i = start; i <= end; i += 1) {
+                  pages.push(i);
+                }
+
+                if (end < total - 1) {
+                  pages.push("...");
+                }
+
+                pages.push(total);
+              }
+
+              return pages.map((p, idx) =>
+                p === "..." ? (
+                  <span
+                    key={`dots-${idx}`}
+                    className="flex h-8 w-8 items-center justify-center text-sm text-gray-400"
+                  >
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={p}
+                    onClick={() => onPageChange(p)}
+                    className={`flex h-8 w-8 items-center justify-center rounded-2xl text-sm font-medium transition-colors ${
+                      p === current
+                        ? "bg-brand-500 text-white"
+                        : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/10"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ),
+              );
+            })()}
+
             <button
               onClick={() => onPageChange(page + 1)}
               disabled={page >= pagination.totalPages}
-              className="flex items-center rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 disabled:opacity-40 dark:text-gray-400 dark:hover:bg-white/10"
+              className="dark:hover:bg:white/10 flex items-center rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 disabled:opacity-40 dark:text-gray-400"
             >
               <MdChevronRight className="h-5 w-5" />
             </button>
@@ -281,29 +308,12 @@ const EmailsTable: React.FC<EmailsTableProps> = ({
             <p className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
               Nhãn hệ thống
             </p>
-            <div className="flex flex-col gap-2">
-              {(Object.keys(systemLabelEnum ?? {}) as SystemLabel[]).map(
-                (sl) => (
-                  <label
-                    key={sl}
-                    className="flex cursor-pointer items-center gap-2"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={draftLabels.includes(sl)}
-                      onChange={() => toggleDraftLabel(sl)}
-                      className="accent-brand-500 h-3.5 w-3.5 rounded"
-                    />
-                    <span
-                      style={labelPillStyle(getLabelColor(sl, systemLabelEnum))}
-                      className="rounded-full px-2 py-0.5 text-xs font-medium"
-                    >
-                      {getLabelVi(sl, systemLabelEnum)}
-                    </span>
-                  </label>
-                ),
-              )}
-            </div>
+            <SystemLabelSelector
+              value={draftLabels}
+              onChange={setDraftLabels}
+              systemLabelEnum={systemLabelEnum}
+              className="flex flex-wrap gap-2"
+            />
             <button
               onClick={() => saveLabels(editingId)}
               disabled={saving}
@@ -318,5 +328,4 @@ const EmailsTable: React.FC<EmailsTableProps> = ({
   );
 };
 
-export { formatDate, getLabelColor, getLabelVi, labelPillStyle };
 export default EmailsTable;
