@@ -5,11 +5,9 @@
 
 import { API_ENDPOINTS } from "@/config/api.config";
 import http from "@/services/http";
+import type { AuthTokens } from "@/services/http";
 
-export interface AuthTokens {
-  accessToken: string;
-  refreshToken: string;
-}
+export type { AuthTokens };
 
 export const authService = {
   /**
@@ -31,6 +29,14 @@ export const authService = {
       { code },
     );
     return data;
+  },
+
+  /**
+   * POST /authentication/auth/logout
+   * Logs the user out by clearing the HttpOnly cookie tokens.
+   */
+  async logout(): Promise<void> {
+    await http.post(API_ENDPOINTS.auth.logout);
   },
 
 };

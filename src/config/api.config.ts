@@ -6,17 +6,15 @@
 export const API_CONFIG = {
   baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:3000",
   timeout: 30000, // 30 seconds
-  headers: {
-    "Content-Type": "application/json",
-  },
 } as const;
 
 export const API_ENDPOINTS = {
   // Authentication
   auth: {
-    googleUrl: "/authentication/google",       // GET  → lấy Google Auth URL
-    googleCallback: "/authentication/google",  // POST → đổi code → tokens
-    refresh: "/authentication/auth/refresh", // POST → refresh tokens
+    googleUrl: "/authentication/google",       
+    googleCallback: "/authentication/google", 
+    refresh: "/authentication/auth/refresh",
+    logout: "/authentication/auth/logout",
   },
 
   // Authentication - Users

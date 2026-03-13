@@ -1,46 +1,31 @@
-/**
- * Protected Route
- * - Có access token → cho vào
- * - Không có access token nhưng có refresh token → thử refresh
- * - Không có gì → redirect về login
- */
-
 import { refreshTokens } from "@/services/http";
-import {
-    getAccessToken,
-    getRefreshToken,
-    removeAllTokens,
-    setAccessToken,
-    setRefreshToken,
-} from "@/utils/cookie.util";
+import { useAuthStore } from "@/stores/auth.store";
 import { useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 
 export default function ProtectedRoute() {
-    const accessToken = getAccessToken();
-    const currentRefreshToken = getRefreshToken();
+    const accessToken = useAuthStore((state) => state.accessToken);
 
     const [status, setStatus] = useState<"checking" | "authenticated" | "unauthenticated">(
-        accessToken ? "authenticated" : currentRefreshToken ? "checking" : "unauthenticated",
+        accessToken ? "authenticated" : "checking",
     );
 
     useEffect(() => {
-        if (status !== "checking" || !currentRefreshToken) return;
+        if (status !== "checking") return;
 
         const tryRefresh = async () => {
             try {
-                const tokens = await refreshTokens(currentRefreshToken);
-                setAccessToken(tokens.accessToken);
-                setRefreshToken(tokens.refreshToken);
+                const tokens = await refreshTokens();
+                useAuthStore.getState().setAccessToken(tokens.accessToken);
                 setStatus("authenticated");
             } catch {
-                removeAllTokens();
+                useAuthStore.getState().clearAuth();
                 setStatus("unauthenticated");
             }
         };
 
         tryRefresh();
-    }, [status, currentRefreshToken]);
+    }, [status]);
 
     if (status === "checking") {
         return (

@@ -1,6 +1,8 @@
 import AdminLayout from "@/layouts/admin";
+import UserLayout from "@/layouts/user";
 import AuthLayout from "@/layouts/auth";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import RoleRoute from "@/components/auth/RoleRoute";
 import LoginPage from "@/pages/auth/login";
 import GoogleCallbackPage from "@/pages/auth/login/callback";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
@@ -9,7 +11,6 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Auth routes (public) — wrapped in AuthLayout */}
         <Route path="/auth" element={<AuthLayout />}>
           <Route path="login" element={<LoginPage />} />
           <Route path="callback" element={<GoogleCallbackPage />} />
@@ -17,11 +18,18 @@ export default function App() {
 
         {/* Protected routes */}
         <Route element={<ProtectedRoute />}>
-          <Route path="/admin/*" element={<AdminLayout />} />
+          {/* Admin-only routes */}
+          <Route element={<RoleRoute allowedRoles={["admin"]} />}>
+            <Route path="/admin/*" element={<AdminLayout />} />
+          </Route>
+
+          {/* Non-admin routes (student, lecture) */}
+          <Route element={<RoleRoute allowedRoles={["student", "lecture"]} />}>
+            <Route path="/user/*" element={<UserLayout />} />
+          </Route>
         </Route>
 
-        {/* Default redirect */}
-        <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/auth/login" replace />} />
       </Routes>
     </BrowserRouter>
   );

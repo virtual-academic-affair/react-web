@@ -1,11 +1,12 @@
 /**
  * Google OAuth Callback Page
  * Receives the authorization code from Google, exchanges it for JWT tokens,
- * stores the access token in a cookie, and redirects to the dashboard.
+ * stores the access token in memory (Zustand), and redirects to the dashboard.
  */
 
 import { authService } from "@/services/auth";
-import { setAccessToken, setRefreshToken } from "@/utils/cookie.util";
+import { useAuthStore } from "@/stores/auth.store";
+import { getRolePath } from "@/utils/auth.util";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
@@ -28,11 +29,10 @@ export default function GoogleCallbackPage() {
 
         const authenticate = async () => {
             try {
-                const { accessToken, refreshToken } = await authService.authenticateWithGoogle(code);
-                console.log(accessToken, refreshToken);
-                setAccessToken(accessToken);
-                setRefreshToken(refreshToken);
-                navigate("/admin/dashboard", { replace: true });
+                const { accessToken } = await authService.authenticateWithGoogle(code);
+                useAuthStore.getState().setAccessToken(accessToken);
+                const role = useAuthStore.getState().userRole;
+                navigate(getRolePath(role), { replace: true });
             } catch {
                 setError("Authentication failed. Please try again.");
             }

@@ -4,9 +4,16 @@
  * decorative panel on the right.
  */
 
-import { Outlet } from "react-router-dom";
+import { useAuthStore } from "@/stores/auth.store";
+import { getRolePath } from "@/utils/auth.util";
+import { Navigate, Outlet } from "react-router-dom";
 
 export default function AuthLayout() {
+    const accessToken = useAuthStore((s) => s.accessToken);
+    const userRole = useAuthStore((s) => s.userRole);
+
+    if (accessToken) return <Navigate to={getRolePath(userRole)} replace />;
+
     return (
         <div className="relative float-right h-full min-h-screen w-full !bg-white dark:!bg-navy-900">
             <main className="mx-auto min-h-screen">

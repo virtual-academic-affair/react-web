@@ -1,5 +1,6 @@
 import Dropdown from "@/components/dropdown";
-import { removeAllTokens } from "@/utils/cookie.util";
+import { authService } from "@/services/auth";
+import { useAuthStore } from "@/stores/auth.store";
 import React from "react";
 import { BsArrowBarUp } from "react-icons/bs";
 import { FiAlignJustify, FiSearch } from "react-icons/fi";
@@ -18,6 +19,18 @@ const Navbar = (props: {
   const [darkmode, setDarkmode] = React.useState(
     document.body.classList.contains("dark"),
   );
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch (e) {
+      console.error("Logout error", e);
+    } finally {
+      useAuthStore.getState().clearAuth();
+      navigate("/auth/login");
+    }
+  };
 
   return (
     <nav className="sticky top-4 z-40 flex flex-row flex-wrap items-center justify-between rounded-xl bg-white/10 py-2 pr-2 pl-0 backdrop-blur-xl dark:bg-[#0b14374d]">

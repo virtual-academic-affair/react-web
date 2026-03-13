@@ -13,13 +13,7 @@ import type {
   AxiosResponse,
   InternalAxiosRequestConfig,
 } from "axios";
-import {
-  getAccessToken,
-  getRefreshToken,
-  removeAllTokens,
-  setAccessToken,
-  setRefreshToken,
-} from "@/utils/cookie.util";
+import { useAuthStore } from "@/stores/auth.store";
 import axios from "axios";
 
 // ── ApiError ─────────────────────────────────────────────────────────────────
@@ -43,6 +37,7 @@ export class ApiError extends Error {
 const http: AxiosInstance = axios.create({
   baseURL: API_CONFIG.baseURL,
   timeout: API_CONFIG.timeout,
+  withCredentials: true,
   headers: { "Content-Type": "application/json" },
   // Serialize arrays as repeated keys: ?systemLabels=a&systemLabels=b
   paramsSerializer: { indexes: false },
@@ -52,31 +47,25 @@ const http: AxiosInstance = axios.create({
 const refreshHttp = axios.create({
   baseURL: API_CONFIG.baseURL,
   timeout: API_CONFIG.timeout,
+  withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });
 
 // ── Shared refresh helper (used by interceptor + ProtectedRoute) ─────────────
 export interface AuthTokens {
   accessToken: string;
-  refreshToken: string;
 }
 
-/**
- * Gọi API refresh để lấy cặp token mới.
- * Dùng `refreshHttp` (plain axios, không interceptor) → không bị loop.
- * Backend trả về { accessToken, refreshToken } trực tiếp.
- */
-export async function refreshTokens(token: string): Promise<AuthTokens> {
-  const { data } = await refreshHttp.post<AuthTokens>(
-    API_ENDPOINTS.auth.refresh,
-    { refreshToken: token },
+export async function refreshTokens(): Promise<AuthTokens> {
+  const { data } = await refreshHttp.post<ApiResponse<AuthTokens>>(
+    API_ENDPOINTS.auth.refresh
   );
-  return data;
+  return data.data as AuthTokens;
 }
 
 // ── Request interceptor: attach JWT ──────────────────────────────────────────
 http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const token = getAccessToken();
+  const token = useAuthStore.getState().accessToken;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -125,24 +114,16 @@ http.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const currentRefreshToken = getRefreshToken();
-      if (!currentRefreshToken) {
-        removeAllTokens();
-        window.location.href = "/auth/login";
-        return Promise.reject(error);
-      }
-
       try {
-        const tokens = await refreshTokens(currentRefreshToken);
-        setAccessToken(tokens.accessToken);
-        setRefreshToken(tokens.refreshToken);
+        const tokens = await refreshTokens();
+        useAuthStore.getState().setAccessToken(tokens.accessToken);
 
         originalRequest.headers.Authorization = `Bearer ${tokens.accessToken}`;
         processQueue(null, tokens.accessToken);
         return http(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        removeAllTokens();
+        useAuthStore.getState().clearAuth();
         window.location.href = "/auth/login";
         return Promise.reject(refreshError);
       } finally {
