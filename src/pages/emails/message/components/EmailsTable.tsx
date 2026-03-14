@@ -12,14 +12,10 @@ import {
 } from "react-icons/md";
 import { SiGmail } from "react-icons/si";
 
-import {
-  formatDate,
-  getLabelColor,
-  getLabelVi,
-  labelPillStyle,
-} from "../labelUtils";
+import Tag from "@/components/tag/Tag";
+import { formatDate, getLabelColor, getLabelVi } from "../labelUtils";
 import SystemLabelSelector from "./SystemLabelSelector";
-import Tooltip from "./Tooltip";
+import Tooltip from "../../../../components/tooltip/Tooltip.tsx";
 
 interface EmailsTableProps {
   result: PaginatedResponse<Message> | null;
@@ -121,7 +117,7 @@ const EmailsTable: React.FC<EmailsTableProps> = ({
               <tr>
                 <td
                   colSpan={5}
-                  className="text-navy-700 py-12 text-center text-base dark:text-white"
+                  className="py-12 text-center text-base font-semibold text-gray-500"
                 >
                   Không tìm thấy dữ liệu.
                 </td>
@@ -150,15 +146,12 @@ const EmailsTable: React.FC<EmailsTableProps> = ({
                     <div className="flex flex-wrap items-center gap-1">
                       {msg.systemLabels?.length ? (
                         msg.systemLabels.map((sl) => (
-                          <span
+                          <Tag
                             key={sl}
-                            style={labelPillStyle(
-                              getLabelColor(sl, systemLabelEnum),
-                            )}
-                            className="rounded-full px-2 py-0.5 text-xs font-medium"
+                            color={getLabelColor(sl, systemLabelEnum)}
                           >
                             {getLabelVi(sl, systemLabelEnum)}
-                          </span>
+                          </Tag>
                         ))
                       ) : (
                         <span className="text-xs text-gray-400 italic">—</span>

@@ -9,10 +9,6 @@ Use the following typography and color standards consistently in all page-level 
 - Parent header (section/page/card top title): `text-xl font-bold text-navy-700 dark:text-white`
 - Parent description (text below parent header): `mt-2 text-base text-gray-600 dark:text-gray-400`
 - Child header (item title/content title under a section): `text-base font-medium text-navy-700 dark:text-white`
-- Child description (helper/meta/secondary text under child header): `mt-2 text-sm text-gray-600 dark:text-gray-400`
-
-Additional notes:
-
-- Keep dark mode pairings for all heading/description text.
+- Child description (helper/meta/secondary text under child header): `mt-2 text-sm text-gray-600 dark:text-gray-400`Additional notes:- Keep dark mode pairings for all heading/description text.
 - For inline action links inside descriptions, use `font-medium text-brand-500 hover:text-brand-500 dark:text-white`.
 - Reuse these text levels before introducing other font sizes in page content.

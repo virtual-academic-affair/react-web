@@ -1,14 +1,20 @@
-import Card from "@/components/card";
+import TableLayout, {
+  type TableAction,
+  type TableColumn,
+} from "@/components/table/TableLayout";
 import { messagesService } from "@/services/email";
 import type { PaginatedResponse } from "@/types/common";
 import type { Message, SystemLabel } from "@/types/email";
 import type { DynamicDataResponse, SystemLabelEnumData } from "@/types/shared";
 import React from "react";
-import { MdFilterList, MdSearch } from "react-icons/md";
+import { MdInfoOutline } from "react-icons/md";
+import { SiGmail } from "react-icons/si";
 import { useSearchParams } from "react-router-dom";
 import AdvancedFilterModal from "./components/AdvancedFilterModal";
 import EmailDetailDrawer from "./components/EmailDetailDrawer";
-import EmailsTable from "./components/EmailsTable";
+import MessageLabelEditor from "./components/MessageLabelEditor";
+import Tooltip from "../../../components/tooltip/Tooltip.tsx";
+import { formatDate } from "./labelUtils";
 
 const PAGE_SIZE = 10;
 
@@ -103,9 +109,22 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
     setPage(p);
   };
 
-  const handleLabelChanged = () => {
-    fetchEmails(page, keyword, systemLabelsFilter);
-  };
+  const handleLabelChanged = React.useCallback(
+    (id: number, labels: SystemLabel[]) => {
+      // Optimistic local update for systemLabels on a message
+      setResult((prev) =>
+        prev
+          ? {
+              ...prev,
+              items: prev.items.map((m) =>
+                m.id === id ? { ...m, systemLabels: labels } : m,
+              ),
+            }
+          : prev,
+      );
+    },
+    [],
+  );
 
   const handleKeywordChange = (value: string) => {
     setKeyword(value);
@@ -135,11 +154,14 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
     setFilterOpen(false);
   };
 
-  const handleOpenDetail = (msg: Message) => {
-    const next = new URLSearchParams(searchParams);
-    next.set("id", String(msg.id));
-    setSearchParams(next, { replace: true });
-  };
+  const handleOpenDetail = React.useCallback(
+    (msg: Message) => {
+      const next = new URLSearchParams(searchParams);
+      next.set("id", String(msg.id));
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
 
   const handleCloseDetail = () => {
     const next = new URLSearchParams(searchParams);
@@ -147,47 +169,110 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
     setSearchParams(next, { replace: true });
   };
 
-  return (
-    <div className="flex flex-col gap-4 pb-10">
-      {/* Search + filter bar (outside card) */}
-      <div className="flex items-center gap-3">
-        <div className="dark:bg-navy-800 flex flex-1 items-center gap-2 rounded-2xl bg-white px-3 py-2">
-          <MdSearch className="h-5 w-5 shrink-0 text-gray-400 dark:text-gray-500" />
-          <input
-            name="keyword"
-            type="text"
-            value={keyword}
-            onChange={(e) => handleKeywordChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                handleSearch();
-              }
-            }}
-            placeholder="Tìm kiếm theo tiêu đề, người gửi..."
-            className="w-full bg-transparent py-1 text-sm text-gray-700 outline-none placeholder:text-gray-500 dark:bg-transparent dark:text-white dark:placeholder:text-gray-400"
+  // Define table columns
+  const columns: TableColumn<Message>[] = React.useMemo(
+    () => [
+      {
+        key: "subject",
+        header: "Tiêu đề",
+        width: "400px",
+        maxWidth: "450px",
+        render: (msg) => (
+          <Tooltip label={msg.subject || "(Không có tiêu đề)"}>
+            <p className="text-navy-700 w-full max-w-[400px] truncate text-base font-medium dark:text-white">
+              {msg.subject || "(Không có tiêu đề)"}
+            </p>
+          </Tooltip>
+        ),
+      },
+      {
+        key: "sender",
+        header: "Người gửi",
+        width: "400px",
+        maxWidth: "250px",
+        render: (msg) => (
+          <Tooltip label={msg.senderName}>
+            <p className="text-navy-700 w-full max-w-[250px] truncate text-sm dark:text-white">
+              {msg.senderName}
+            </p>
+          </Tooltip>
+        ),
+      },
+      {
+        key: "systemLabels",
+        header: "Nhãn hệ thống",
+        render: (msg) => (
+          <MessageLabelEditor
+            message={msg}
+            systemLabelEnum={systemLabelEnum}
+            onLabelChanged={handleLabelChanged}
           />
-        </div>
-        <button
-          type="button"
-          onClick={handleOpenFilter}
-          className="bg-brand-500 hover:bg-brand-600 dark:bg-brand-500 dark:hover:bg-brand-400 flex h-10 w-10 items-center justify-center rounded-2xl text-white transition-colors dark:text-white"
-        >
-          <MdFilterList className="h-5 w-5" />
-        </button>
-      </div>
+        ),
+      },
+      {
+        key: "sentAt",
+        header: "Thời gian gửi",
+        render: (msg) => (
+          <p className="text-navy-700 text-sm dark:text-white">
+            {formatDate(msg.sentAt)}
+          </p>
+        ),
+      },
+    ],
+    [systemLabelEnum, handleLabelChanged],
+  );
 
-      <Card extra="p-6">
-        <EmailsTable
-          result={result}
-          loading={loading}
-          page={page}
-          systemLabelEnum={data?.enums?.["shared.systemLabel"]}
-          gmailAccount={superEmail?.email}
-          onPageChange={handlePageChange}
-          onOpenDetail={handleOpenDetail}
-          onLabelChanged={handleLabelChanged}
-        />
-      </Card>
+  // Define table actions
+  const actions: TableAction<Message>[] = React.useMemo(
+    () => [
+      {
+        key: "detail",
+        icon: <MdInfoOutline className="h-4 w-4" />,
+        label: "Chi tiết",
+        onClick: handleOpenDetail,
+      },
+      {
+        key: "gmail",
+        icon: <SiGmail className="h-4 w-4" />,
+        label: "Gmail",
+        onClick: (msg) => {
+          const url = superEmail?.email
+            ? `https://mail.google.com/mail/u/${superEmail.email}/#inbox/${msg.threadId}`
+            : `https://mail.google.com/mail/u/0/#inbox/${msg.threadId}`;
+          window.open(url, "_blank", "noopener,noreferrer");
+        },
+        className:
+          "flex h-10 w-10 items-center justify-center rounded-2xl bg-pink-500 text-white transition-colors hover:bg-pink-600 dark:bg-pink-500 dark:text-white dark:hover:bg-pink-400",
+      },
+    ],
+    [handleOpenDetail, superEmail?.email],
+  );
+
+  return (
+    <>
+      <TableLayout
+        result={result}
+        loading={loading}
+        page={page}
+        pageSize={PAGE_SIZE}
+        searchValue={keyword}
+        onSearchChange={handleKeywordChange}
+        onSearch={handleSearch}
+        searchPlaceholder="Tìm kiếm theo tiêu đề, người gửi..."
+        showFilter={true}
+        onFilterClick={handleOpenFilter}
+        columns={columns}
+        actions={actions}
+        onPageChange={handlePageChange}
+        detailDrawer={
+          <EmailDetailDrawer
+            messageId={selectedId}
+            systemLabelEnum={data?.enums?.["shared.systemLabel"]}
+            onClose={handleCloseDetail}
+            onLabelChanged={handleLabelChanged}
+          />
+        }
+      />
 
       <AdvancedFilterModal
         open={filterOpen}
@@ -198,14 +283,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
         onApply={handleApplyFilter}
         onRequestClose={handleCloseFilter}
       />
-
-      <EmailDetailDrawer
-        messageId={selectedId}
-        systemLabelEnum={data?.enums?.["shared.systemLabel"]}
-        onClose={handleCloseDetail}
-        onLabelChanged={handleLabelChanged}
-      />
-    </div>
+    </>
   );
 };
 

@@ -30,7 +30,22 @@ export const API_ENDPOINTS = {
 
   // Class Registration
   classRegistration: {
-    base: "/class-registration",
+    registrations: {
+      base: "/classRegistration/classRegistrations",
+      byId: (id: number) => `/classRegistration/classRegistrations/${id}`,
+      stats: "/classRegistration/classRegistrations/stats",
+      previewReply: (id: number) =>
+        `/classRegistration/classRegistrations/${id}/reply`,
+      reply: (id: number) => `/classRegistration/classRegistrations/${id}/reply`,
+      items: (parentId: number) =>
+        `/classRegistration/classRegistrations/${parentId}/items`,
+      itemById: (parentId: number, id: number) =>
+        `/classRegistration/classRegistrations/${parentId}/items/${id}`,
+    },
+    cancelReasons: {
+      base: "/classRegistration/cancelReasons",
+      byId: (id: number) => `/classRegistration/cancelReasons/${id}`,
+    },
   },
 
   // Email

@@ -1,24 +1,24 @@
 import Card from "@/components/card";
 import {
-    getLabelColor,
-    getLabelVi,
-    labelPillStyle,
+  getLabelColor,
+  getLabelVi,
+  labelPillStyle,
 } from "@/pages/emails/message/labelUtils";
 import { labelsService } from "@/services/email";
 import type {
-    GmailLabel,
-    LabelMappingDto,
-    UpdateLabelsDto,
+  GmailLabel,
+  LabelMappingDto,
+  UpdateLabelsDto,
 } from "@/types/email.ts";
 import type { SystemLabelEnumData } from "@/types/shared";
 import { message as toast } from "antd";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-    MdAutoAwesome,
-    MdEdit,
-    MdExpandMore,
-    MdLabel,
-    MdSave,
+  MdAutoAwesome,
+  MdEdit,
+  MdExpandMore,
+  MdLabel,
+  MdSave,
 } from "react-icons/md";
 
 interface LabelsCardProps {
@@ -158,14 +158,14 @@ const LabelsCard: React.FC<LabelsCardProps> = ({ systemLabelEnum }) => {
             <>
               <button
                 onClick={handleCancel}
-                className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-100 dark:hover:bg-white/10"
+                className="flex items-center gap-1 rounded-xl px-3 py-1.5 text-sm text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10"
               >
                 Hủy
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="bg-brand-500 hover:bg-brand-600 flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-60"
+                className="bg-brand-500 hover:bg-brand-600 flex items-center gap-1 rounded-xl px-4 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-50"
               >
                 <MdSave className="h-4 w-4" />
                 {saving ? "Đang lưu..." : "Lưu"}
@@ -217,7 +217,7 @@ const LabelsCard: React.FC<LabelsCardProps> = ({ systemLabelEnum }) => {
                         {draft?.[key]
                           ? (gmailLabels.find((g) => g.value === draft?.[key])
                               ?.label ?? draft?.[key])
-                          : "----"}
+                          : "—"}
                       </span>
                       <MdExpandMore className="h-3.5 w-3.5 text-gray-400" />
                     </span>
@@ -232,7 +232,7 @@ const LabelsCard: React.FC<LabelsCardProps> = ({ systemLabelEnum }) => {
                       }
                       className="dark:bg-navy-700 absolute inset-0 h-full w-full cursor-pointer opacity-0 focus-visible:outline-none"
                     >
-                      <option value="">----</option>
+                      <option value="">—</option>
                       {gmailLabels.map((gl) => (
                         <option key={gl.value} value={gl.value}>
                           {gl.label}
@@ -249,7 +249,7 @@ const LabelsCard: React.FC<LabelsCardProps> = ({ systemLabelEnum }) => {
                       </span>
                     ) : (
                       <span className="text-sm text-gray-400 italic dark:text-gray-500">
-                        ----
+                        —
                       </span>
                     )}
                   </div>

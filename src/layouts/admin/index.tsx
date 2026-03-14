@@ -7,6 +7,12 @@
 
 import Navbar from "@/components/navbar";
 import Sidebar from "@/components/sidebar";
+import UsersPage from "@/pages/auth/accounts";
+import AssignRolePage from "@/pages/auth/assign-role";
+import CancelReasonsPage from "@/pages/class-registration/cancel-reasons";
+import ClassRegistrationCreatePage from "@/pages/class-registration/create";
+import ClassRegistrationsPage from "@/pages/class-registration/registrations";
+import ClassRegistrationStatsPage from "@/pages/class-registration/stats";
 import GmailConfigPage from "@/pages/emails/config";
 import MessagesPage from "@/pages/emails/message";
 import routes from "@/routes";
@@ -111,6 +117,28 @@ const AdminLayout: React.FC = () => {
             <Route
               path="email/messages"
               element={<MessagesPage data={data} />}
+            />
+            <Route path="auth/accounts" element={<UsersPage data={data} />} />
+            <Route path="auth/assign-role" element={<AssignRolePage />} />
+            <Route
+              path="class-registration/registrations"
+              element={<ClassRegistrationsPage />}
+            />
+            <Route
+              path="class-registration/create"
+              element={<ClassRegistrationCreatePage />}
+            />
+            <Route
+              path="class-registration/cancel-reasons"
+              element={<CancelReasonsPage />}
+            />
+            <Route
+              path="class-registration/stats"
+              element={<ClassRegistrationStatsPage />}
+            />
+            <Route
+              path="class-registration"
+              element={<Navigate to="/admin/class-registration/registrations" replace />}
             />
             <Route
               path="/"
