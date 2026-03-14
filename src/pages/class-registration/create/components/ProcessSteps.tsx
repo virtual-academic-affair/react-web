@@ -42,13 +42,7 @@ const ProcessSteps: React.FC<ProcessStepsProps> = ({ currentStep }) => {
                 step.number
               )}
             </div>
-            <span
-              className={`text-xs font-medium ${
-                currentStep >= step.number
-                  ? "text-brand-500 dark:text-brand-400"
-                  : "text-gray-400 dark:text-gray-500"
-              }`}
-            >
+            <span className={`text-xs font-medium text-white dark:text-white`}>
               {step.label}
             </span>
           </div>
@@ -56,11 +50,7 @@ const ProcessSteps: React.FC<ProcessStepsProps> = ({ currentStep }) => {
           {/* Connector line */}
           {index < steps.length - 1 && (
             <div
-              className={`h-0.5 w-16 transition-all ${
-                currentStep > step.number
-                  ? "bg-brand-500"
-                  : "bg-gray-300 dark:bg-gray-600"
-              }`}
+              className={`dark:bg-gray h-0.5 w-16 bg-gray-300 transition-all`}
             />
           )}
         </React.Fragment>

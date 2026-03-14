@@ -1,33 +1,35 @@
 import Drawer from "@/components/drawer/Drawer";
 import Switch from "@/components/switch";
 import {
-  cancelReasonsService,
-  classRegistrationItemsService,
-  classRegistrationsService,
+    cancelReasonsService,
+    classRegistrationItemsService,
+    classRegistrationsService,
 } from "@/services/class-registration";
 import type {
-  CancelReason,
-  ClassRegistration,
-  ClassRegistrationItem,
-  CreateClassRegistrationItemDto,
-  ItemStatus,
-  MessageStatus,
+    CancelReason,
+    ClassRegistration,
+    ClassRegistrationItem,
+    CreateClassRegistrationItemDto,
+    ItemStatus,
+    MessageStatus,
 } from "@/types/classRegistration";
 import {
-  ItemStatusColors,
-  ItemStatusLabels,
-  type UpdateClassRegistrationDto,
+    ItemStatusColors,
+    ItemStatusLabels,
+    type UpdateClassRegistrationDto,
 } from "@/types/classRegistration";
 import { formatDate } from "@/utils/date";
 import { message as toast, Tooltip } from "antd";
 import React from "react";
 import {
-  MdAdd,
-  MdClose,
-  MdDeleteOutline,
-  MdSave,
-  MdUndo,
+    MdAdd,
+    MdClose,
+    MdDeleteOutline,
+    MdSave,
+    MdUndo,
 } from "react-icons/md";
+import ReactQuill from "react-quill-new";
+import { useSearchParams } from "react-router-dom";
 import MessageStatusSelector from "./MessageStatusSelector";
 import RichTextEditor from "./RichTextEditor";
 
@@ -42,6 +44,8 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
   onClose,
   onRegistrationChanged,
 }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const noteEditorRef = React.useRef<ReactQuill>(null);
   const [detail, setDetail] = React.useState<ClassRegistration | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [updatingItemIds, setUpdatingItemIds] = React.useState<Set<number>>(
@@ -124,6 +128,25 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
     setItemForms(forms);
     setOriginalItemRejectReasons(original);
   }, [detail]);
+
+  // Focus on note editor when focus=note param is present
+  React.useEffect(() => {
+    const focusParam = searchParams.get("focus");
+    if (focusParam === "note" && noteEditorRef.current && form) {
+      // Remove focus param after focusing
+      const next = new URLSearchParams(searchParams);
+      next.delete("focus");
+      setSearchParams(next, { replace: true });
+
+      // Focus on the editor after a short delay to ensure it's rendered
+      setTimeout(() => {
+        const editor = noteEditorRef.current?.getEditor();
+        if (editor) {
+          editor.focus();
+        }
+      }, 100);
+    }
+  }, [searchParams, form, setSearchParams]);
 
   // Load cancel reasons
   React.useEffect(() => {
@@ -451,6 +474,7 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
               </div>
               <div className="flex-1">
                 <RichTextEditor
+                  ref={noteEditorRef}
                   value={form.note}
                   onChange={(html) => handleFieldChange("note", html)}
                 />

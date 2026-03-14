@@ -1,4 +1,4 @@
-import Card from "@/components/card";
+import CreatePageLayout from "@/components/layouts/CreatePageLayout";
 import Switch from "@/components/switch";
 import { cancelReasonsService } from "@/services/class-registration";
 import type { CreateCancelReasonDto } from "@/types/classRegistration";
@@ -40,23 +40,8 @@ const CancelReasonCreatePage: React.FC = () => {
   };
 
   return (
-    <div className="relative flex min-h-[84vh] w-full items-start justify-center pt-[25vh] pb-10">
-      {/* Background gradient */}
-      <div
-        className="absolute top-0 h-[45vh] w-full rounded-[20px]"
-        style={{
-          backgroundImage:
-            "linear-gradient(to bottom, var(--color-brand-400), var(--color-brand-600))",
-        }}
-      />
-
-      {/* Card */}
-      <Card extra="relative z-10 w-[850px] max-w-[calc(100vw-48px)] p-8">
-        <h2 className="text-navy-700 mb-6 text-2xl font-bold dark:text-white">
-          Tạo lý do hủy
-        </h2>
-
-        <form onSubmit={handleSubmit}>
+    <CreatePageLayout title="Tạo lý do hủy">
+      <form onSubmit={handleSubmit}>
           {/* Nội dung */}
           <div className="flex items-start gap-6">
             <div className="w-40 shrink-0">
@@ -113,8 +98,7 @@ const CancelReasonCreatePage: React.FC = () => {
             </button>
           </div>
         </form>
-      </Card>
-    </div>
+    </CreatePageLayout>
   );
 };
 

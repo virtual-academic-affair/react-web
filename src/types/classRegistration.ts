@@ -2,7 +2,19 @@ import type { ResourceQueryDto } from "./common";
 
 export type MessageStatus = "opened" | "replied" | "closed";
 export type ItemStatus = "pending" | "approved" | "rejected";
-export type RegistrationAction = "register" | "cancel";
+export type RegistrationAction = "register" | "cancel" | "requestOpen";
+
+export const RegistrationActionLabels: Record<RegistrationAction, string> = {
+  register: "Đăng ký thêm",
+  cancel: "Hủy môn",
+  requestOpen: "Mở môn",
+};
+
+export const RegistrationActionColors: Record<RegistrationAction, { bg: string; text: string; hex: string }> = {
+  register: { bg: "bg-indigo-100", text: "text-indigo-800", hex: "#6366f1" },
+  cancel: { bg: "bg-red-100", text: "text-red-800", hex: "#ef4444" },
+  requestOpen: { bg: "bg-blue-100", text: "text-blue-800", hex: "#3b82f6" },
+};
 
 export const MessageStatusLabels: Record<MessageStatus, string> = {
   opened: "Đang mở",
@@ -63,22 +75,27 @@ export interface ClassRegistration {
   updatedAt: string;
 }
 
-export interface ClassRegistrationStats {
+export interface ClassRegistrationStatsItem {
+  date: string;
   total: number;
-  opened?: number;
-  replied?: number;
-  closed?: number;
-
-  [key: string]: unknown;
+  detail?: {
+    [action: string]: {
+      total: number;
+      pending: number;
+      approved: number;
+      rejected: number;
+    };
+  };
 }
 
+export type ClassRegistrationStats = Record<string, ClassRegistrationStatsItem | number>;
+
 export interface PreviewReplyDto {
-  html: string;
-  note?: string;
+  content: string;
 }
 
 export interface ReplyDto {
-  html: string;
+  content: string;
   note?: string;
   closeAfterSend?: boolean;
 }

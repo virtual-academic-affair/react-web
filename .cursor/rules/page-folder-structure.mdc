@@ -86,8 +86,22 @@ src/pages/assignRole.tsx                 # Should be in auth/assign-role/
 src/pages/users/index.tsx                # If route is auth/accounts, should be in auth/accounts/
 ```
 
+## Shared Components
+
+- **Shared components** (used across multiple pages) should be placed in `src/components/` with appropriate subfolders:
+  - `src/components/filter/` - Shared filter components (e.g., `AdvancedFilterModal.tsx`)
+  - `src/components/layouts/` - Shared layout components (e.g., `CreatePageLayout.tsx`)
+  - `src/components/drawer/` - Shared drawer components (e.g., `Drawer.tsx`)
+  - `src/components/table/` - Shared table components (e.g., `TableLayout.tsx`)
+- **Page-specific components** should remain in the page's `components/` subfolder
+- **When to create a shared component:**
+  - Component is used in 2+ different pages/modules
+  - Component has identical or very similar structure across usages
+  - Component can be made generic with props/children
+
 ## Notes
 
 - This pattern improves code organization and makes it easier to find related pages
 - It scales well as the application grows
 - It matches the route hierarchy visually in the file system
+- Shared components reduce code duplication and ensure consistency

@@ -50,6 +50,11 @@ const routes: RoutesType[] = [
     icon: <MdSchool className="h-6 w-6" />,
     children: [
       {
+        name: "Thống kê",
+        layout: "/admin",
+        path: "class-registration/statistics",
+      },
+      {
         name: "DS đăng kí lớp",
         layout: "/admin",
         path: "class-registration/registrations",
@@ -58,12 +63,6 @@ const routes: RoutesType[] = [
         name: "Tạo đăng ký lớp",
         layout: "/admin",
         path: "class-registration/create",
-      },
-
-      {
-        name: "Thống kê",
-        layout: "/admin",
-        path: "class-registration/stats",
       },
       {
         name: "Lý do hủy",

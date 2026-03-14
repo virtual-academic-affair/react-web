@@ -7,7 +7,10 @@ interface RichTextEditorProps {
   onChange: (html: string) => void;
 }
 
-const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange }) => {
+const RichTextEditor = React.forwardRef<
+  ReactQuill,
+  RichTextEditorProps
+>(({ value, onChange }, ref) => {
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200 dark:border-white/10">
       <style>{`
@@ -64,9 +67,16 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange }) => {
     }
   `}</style>
 
-      <ReactQuill theme="snow" value={value} onChange={onChange} />
+      <ReactQuill
+        ref={ref}
+        theme="snow"
+        value={value}
+        onChange={onChange}
+      />
     </div>
   );
-};
+});
+
+RichTextEditor.displayName = "RichTextEditor";
 
 export default RichTextEditor;

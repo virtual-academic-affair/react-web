@@ -13,7 +13,7 @@ import CancelReasonsPage from "@/pages/class-registration/cancel-reasons";
 import CancelReasonCreatePage from "@/pages/class-registration/cancel-reasons/create";
 import ClassRegistrationCreatePage from "@/pages/class-registration/create";
 import ClassRegistrationsPage from "@/pages/class-registration/registrations";
-import ClassRegistrationStatsPage from "@/pages/class-registration/stats";
+import ClassRegistrationStatisticsPage from "@/pages/class-registration/statistics";
 import GmailConfigPage from "@/pages/emails/config";
 import MessagesPage from "@/pages/emails/message";
 import routes from "@/routes";
@@ -122,6 +122,10 @@ const AdminLayout: React.FC = () => {
             <Route path="auth/accounts" element={<UsersPage data={data} />} />
             <Route path="auth/assign-role" element={<AssignRolePage />} />
             <Route
+              path="class-registration/statistics"
+              element={<ClassRegistrationStatisticsPage />}
+            />
+            <Route
               path="class-registration/registrations"
               element={<ClassRegistrationsPage />}
             />
@@ -138,14 +142,10 @@ const AdminLayout: React.FC = () => {
               element={<CancelReasonCreatePage />}
             />
             <Route
-              path="class-registration/stats"
-              element={<ClassRegistrationStatsPage />}
-            />
-            <Route
               path="class-registration"
               element={
                 <Navigate
-                  to="/admin/class-registration/registrations"
+                  to="/admin/class-registration/statistics"
                   replace
                 />
               }

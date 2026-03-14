@@ -170,10 +170,16 @@ const actions: TableAction<Message>[] = React.useMemo(
   }, [filters, keyword, page, selectedId, setSearchParams]);
   ```
 - **Advanced Filter Modal pattern:**
-  - Use `grid grid-cols-1 gap-4 md:grid-cols-4` layout
+  - **Always use the shared `AdvancedFilterModal` component** from [src/components/filter/AdvancedFilterModal.tsx](mdc:src/components/filter/AdvancedFilterModal.tsx)
+  - The shared component provides: backdrop overlay, card container, grid layout, and button footer
+  - Page-specific filter modals should wrap the shared component and pass filter fields as `children`
+  - Filter fields should use `grid grid-cols-1 gap-4 md:grid-cols-4` layout
   - Label in first column, filter component in `col-span-3`
-  - Buttons at bottom: "Xóa" (clear) and "Tìm kiếm" (apply)
-  - Example from [src/pages/auth/accounts/components/AdvancedFilterModal.tsx](mdc:src/pages/auth/accounts/components/AdvancedFilterModal.tsx)
+  - Buttons at bottom: "Xóa" (clear) and "Tìm kiếm" (apply) are handled by the shared component
+  - Example implementations:
+    - [src/pages/auth/accounts/components/AdvancedFilterModal.tsx](mdc:src/pages/auth/accounts/components/AdvancedFilterModal.tsx)
+    - [src/pages/emails/message/components/AdvancedFilterModal.tsx](mdc:src/pages/emails/message/components/AdvancedFilterModal.tsx)
+    - [src/pages/class-registration/registrations/components/AdvancedFilterModal.tsx](mdc:src/pages/class-registration/registrations/components/AdvancedFilterModal.tsx)
 
 ### 4. Pagination
 - Pagination is automatically handled by TableLayout

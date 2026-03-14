@@ -1,4 +1,4 @@
-import Card from "@/components/card";
+import CreatePageLayout from "@/components/layouts/CreatePageLayout";
 import Switch from "@/components/switch";
 import { classRegistrationsService } from "@/services/class-registration";
 import type {
@@ -8,8 +8,8 @@ import type {
 import { message as toast } from "antd";
 import React from "react";
 import { MdAdd, MdDeleteOutline } from "react-icons/md";
-import ProcessSteps from "./components/ProcessSteps";
 import RichTextEditor from "../registrations/components/RichTextEditor";
+import ProcessSteps from "./components/ProcessSteps";
 
 interface DraftItem extends CreateClassRegistrationItemDto {
   key: string;
@@ -104,6 +104,7 @@ const ClassRegistrationCreatePage: React.FC = () => {
       studentName: studentName.trim(),
       academicYear: Number(academicYear),
       note: note || undefined,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       items: items.map(({ key, ...rest }) => rest),
     };
 
@@ -128,30 +129,11 @@ const ClassRegistrationCreatePage: React.FC = () => {
   };
 
   return (
-    <div className="relative flex min-h-[84vh] w-full items-start justify-center pt-[25vh] pb-10">
-      {/* Background gradient */}
-      <div
-        className="absolute top-0 h-[45vh] w-full rounded-[20px]"
-        style={{
-          backgroundImage:
-            "linear-gradient(to bottom, var(--color-brand-400), var(--color-brand-600))",
-        }}
-      />
-
-      {/* Card */}
-      <Card extra="relative z-10 w-[850px] max-w-[calc(100vw-48px)] p-8">
-        {/* Fixed header */}
-        <div>
-          <h2 className="text-navy-700 mb-6 text-2xl font-bold dark:text-white">
-            Tạo đăng ký lớp
-          </h2>
-
-          {/* Process Steps */}
-          <ProcessSteps currentStep={currentStep} />
-        </div>
-
-        {/* Form content */}
-        <form
+    <CreatePageLayout
+      title="Tạo đăng ký lớp"
+      processSteps={<ProcessSteps currentStep={currentStep} />}
+    >
+      <form
           onSubmit={(e) => {
             e.preventDefault();
             if (currentStep === 3) {
@@ -419,8 +401,7 @@ const ClassRegistrationCreatePage: React.FC = () => {
             )}
           </div>
         </form>
-      </Card>
-    </div>
+    </CreatePageLayout>
   );
 };
 
