@@ -1,12 +1,15 @@
 import Card from "@/components/card";
+import Switch from "@/components/switch";
 import { classRegistrationsService } from "@/services/class-registration";
 import type {
   CreateClassRegistrationDto,
   CreateClassRegistrationItemDto,
-  RegistrationAction,
 } from "@/types/classRegistration";
 import { message as toast } from "antd";
 import React from "react";
+import { MdAdd, MdDeleteOutline } from "react-icons/md";
+import ProcessSteps from "./components/ProcessSteps";
+import RichTextEditor from "../registrations/components/RichTextEditor";
 
 interface DraftItem extends CreateClassRegistrationItemDto {
   key: string;
@@ -19,36 +22,80 @@ const emptyItem = (): DraftItem => ({
   subjectCode: "",
   className: "",
   slotInfo: "",
-  isInCurriculum: true,
+  isInCurriculum: false,
 });
 
 const ClassRegistrationCreatePage: React.FC = () => {
+  const [currentStep, setCurrentStep] = React.useState(1);
   const [studentCode, setStudentCode] = React.useState("");
   const [studentName, setStudentName] = React.useState("");
   const [academicYear, setAcademicYear] = React.useState("2025");
   const [note, setNote] = React.useState("");
-  const [messageId, setMessageId] = React.useState("");
   const [items, setItems] = React.useState<DraftItem[]>([emptyItem()]);
   const [submitting, setSubmitting] = React.useState(false);
 
   const updateItem = (
     key: string,
     field: keyof DraftItem,
-    value: string | boolean | RegistrationAction,
+    value: string | boolean,
   ) => {
     setItems((prev) =>
-      prev.map((item) => (item.key === key ? { ...item, [field]: value } : item)),
+      prev.map((item) =>
+        item.key === key ? { ...item, [field]: value } : item,
+      ),
     );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!studentCode || !studentName || !academicYear) {
-      toast.error("Vui lòng nhập đầy đủ thông tin bắt buộc.");
-      return;
+  const validateStep1 = () => {
+    if (!studentCode.trim()) {
+      toast.error("Vui lòng nhập MSSV.");
+      return false;
     }
-    if (!items.length || items.some((i) => !i.subjectName.trim())) {
-      toast.error("Mỗi lớp con cần có tên môn học.");
+    if (!studentName.trim()) {
+      toast.error("Vui lòng nhập họ tên.");
+      return false;
+    }
+    if (!academicYear.trim()) {
+      toast.error("Vui lòng nhập năm học.");
+      return false;
+    }
+    return true;
+  };
+
+  const validateStep2 = () => {
+    if (!items.length) {
+      toast.error("Vui lòng thêm ít nhất một lớp con.");
+      return false;
+    }
+    if (items.some((i) => !i.subjectName.trim())) {
+      toast.error("Mỗi lớp cần có tên môn học.");
+      return false;
+    }
+    return true;
+  };
+
+  const handleNext = () => {
+    if (currentStep === 1) {
+      if (validateStep1()) {
+        setCurrentStep(2);
+      }
+    } else {
+      if (currentStep === 2) {
+        if (validateStep2()) {
+          setCurrentStep(3);
+        }
+      }
+    }
+  };
+
+  const handlePrev = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!validateStep1() || !validateStep2()) {
       return;
     }
 
@@ -57,7 +104,6 @@ const ClassRegistrationCreatePage: React.FC = () => {
       studentName: studentName.trim(),
       academicYear: Number(academicYear),
       note: note || undefined,
-      messageId: messageId ? Number(messageId) : undefined,
       items: items.map(({ key, ...rest }) => rest),
     };
 
@@ -65,14 +111,16 @@ const ClassRegistrationCreatePage: React.FC = () => {
     try {
       await classRegistrationsService.create(dto);
       toast.success("Tạo đăng ký lớp thành công.");
+      // Reset form
+      setCurrentStep(1);
       setStudentCode("");
       setStudentName("");
       setAcademicYear("2025");
       setNote("");
-      setMessageId("");
       setItems([emptyItem()]);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Tạo đăng ký lớp thất bại.";
+      const msg =
+        err instanceof Error ? err.message : "Tạo đăng ký lớp thất bại.";
       toast.error(msg);
     } finally {
       setSubmitting(false);
@@ -80,149 +128,299 @@ const ClassRegistrationCreatePage: React.FC = () => {
   };
 
   return (
-    <Card extra="p-6">
-      <h2 className="text-navy-700 text-xl font-bold dark:text-white">
-        Tạo đăng ký lớp
-      </h2>
-      <p className="mt-2 text-base text-gray-600 dark:text-gray-400">
-        Tạo mới hồ sơ đăng ký và các yêu cầu lớp con.
-      </p>
+    <div className="relative flex min-h-[84vh] w-full items-start justify-center pt-[25vh] pb-10">
+      {/* Background gradient */}
+      <div
+        className="absolute top-0 h-[45vh] w-full rounded-[20px]"
+        style={{
+          backgroundImage:
+            "linear-gradient(to bottom, var(--color-brand-400), var(--color-brand-600))",
+        }}
+      />
 
-      <form onSubmit={handleSubmit} className="mt-6 space-y-6">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <input
-            placeholder="Mã sinh viên"
-            value={studentCode}
-            onChange={(e) => setStudentCode(e.target.value)}
-            className="h-11 rounded-2xl border border-gray-200 bg-transparent px-4 text-sm outline-none dark:border-white/10 dark:text-white"
-          />
-          <input
-            placeholder="Họ và tên"
-            value={studentName}
-            onChange={(e) => setStudentName(e.target.value)}
-            className="h-11 rounded-2xl border border-gray-200 bg-transparent px-4 text-sm outline-none dark:border-white/10 dark:text-white"
-          />
-          <input
-            placeholder="Năm học"
-            value={academicYear}
-            onChange={(e) => setAcademicYear(e.target.value)}
-            className="h-11 rounded-2xl border border-gray-200 bg-transparent px-4 text-sm outline-none dark:border-white/10 dark:text-white"
-          />
-          <input
-            placeholder="Message ID (optional)"
-            value={messageId}
-            onChange={(e) => setMessageId(e.target.value)}
-            className="h-11 rounded-2xl border border-gray-200 bg-transparent px-4 text-sm outline-none dark:border-white/10 dark:text-white"
-          />
+      {/* Card */}
+      <Card extra="relative z-10 w-[850px] max-w-[calc(100vw-48px)] p-8">
+        {/* Fixed header */}
+        <div>
+          <h2 className="text-navy-700 mb-6 text-2xl font-bold dark:text-white">
+            Tạo đăng ký lớp
+          </h2>
+
+          {/* Process Steps */}
+          <ProcessSteps currentStep={currentStep} />
         </div>
 
-        <textarea
-          placeholder="Ghi chú"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          rows={3}
-          className="w-full rounded-2xl border border-gray-200 bg-transparent p-4 text-sm outline-none dark:border-white/10 dark:text-white"
-        />
-
-        <div>
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-navy-700 text-base font-medium dark:text-white">
-              Danh sách lớp con
-            </h3>
-            <button
-              type="button"
-              onClick={() => setItems((prev) => [...prev, emptyItem()])}
-              className="bg-brand-500 hover:bg-brand-600 rounded-lg px-3 py-1.5 text-sm font-medium text-white"
-            >
-              Thêm lớp con
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            {items.map((item, idx) => (
-              <div
-                key={item.key}
-                className="rounded-2xl border border-gray-200 p-4 dark:border-white/10"
-              >
-                <div className="mb-3 flex items-center justify-between">
-                  <p className="text-sm font-bold text-navy-700 dark:text-white">
-                    Lớp con #{idx + 1}
+        {/* Form content */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (currentStep === 3) {
+              handleSubmit();
+            } else {
+              handleNext();
+            }
+          }}
+        >
+          {/* Step 1: Thông tin SV */}
+          {currentStep === 1 && (
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-6">
+                <div className="w-40 shrink-0">
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    MSSV
                   </p>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setItems((prev) =>
-                        prev.length === 1 ? prev : prev.filter((x) => x.key !== item.key),
-                      )
-                    }
-                    className="rounded-lg px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                  >
-                    Xóa
-                  </button>
                 </div>
-
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  <select
-                    value={item.action}
-                    onChange={(e) =>
-                      updateItem(item.key, "action", e.target.value as RegistrationAction)
-                    }
-                    className="h-11 rounded-2xl border border-gray-200 bg-transparent px-4 text-sm outline-none dark:border-white/10 dark:text-white"
-                  >
-                    <option value="register">register</option>
-                    <option value="cancel">cancel</option>
-                  </select>
+                <div className="flex-1">
                   <input
-                    placeholder="Tên môn học"
-                    value={item.subjectName}
-                    onChange={(e) => updateItem(item.key, "subjectName", e.target.value)}
-                    className="h-11 rounded-2xl border border-gray-200 bg-transparent px-4 text-sm outline-none dark:border-white/10 dark:text-white"
+                    value={studentCode}
+                    onChange={(e) => setStudentCode(e.target.value)}
+                    placeholder="Nhập MSSV"
+                    className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
                   />
-                  <input
-                    placeholder="Mã môn"
-                    value={item.subjectCode}
-                    onChange={(e) => updateItem(item.key, "subjectCode", e.target.value)}
-                    className="h-11 rounded-2xl border border-gray-200 bg-transparent px-4 text-sm outline-none dark:border-white/10 dark:text-white"
-                  />
-                  <input
-                    placeholder="Tên lớp"
-                    value={item.className}
-                    onChange={(e) => updateItem(item.key, "className", e.target.value)}
-                    className="h-11 rounded-2xl border border-gray-200 bg-transparent px-4 text-sm outline-none dark:border-white/10 dark:text-white"
-                  />
-                  <input
-                    placeholder="Slot info"
-                    value={item.slotInfo}
-                    onChange={(e) => updateItem(item.key, "slotInfo", e.target.value)}
-                    className="h-11 rounded-2xl border border-gray-200 bg-transparent px-4 text-sm outline-none dark:border-white/10 dark:text-white"
-                  />
-                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                    <input
-                      type="checkbox"
-                      checked={Boolean(item.isInCurriculum)}
-                      onChange={(e) =>
-                        updateItem(item.key, "isInCurriculum", e.target.checked)
-                      }
-                    />
-                    Trong chương trình học
-                  </label>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
+              <div className="flex items-center gap-6">
+                <div className="w-40 shrink-0">
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    Họ tên
+                  </p>
+                </div>
+                <div className="flex-1">
+                  <input
+                    value={studentName}
+                    placeholder="Nhập họ tên"
+                    onChange={(e) => setStudentName(e.target.value)}
+                    className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="w-40 shrink-0">
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    Năm học
+                  </p>
+                </div>
+                <div className="flex-1">
+                  <input
+                    type="number"
+                    value={academicYear}
+                    onChange={(e) => setAcademicYear(e.target.value)}
+                    className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            disabled={submitting}
-            className="bg-brand-500 hover:bg-brand-600 rounded-2xl px-6 py-3 text-sm font-semibold text-white disabled:opacity-50"
-          >
-            {submitting ? "Đang tạo..." : "Tạo đăng ký lớp"}
-          </button>
-        </div>
-      </form>
-    </Card>
+          {/* Step 2: Thông tin đăng ký */}
+          {currentStep === 2 && (
+            <div className="mt-2">
+              <div className="flex flex-col gap-4">
+                {items.map((item, idx) => (
+                  <div
+                    key={item.key}
+                    className="dark:bg-navy-700/40 rounded-2xl bg-gray-50 p-4 dark:border-white/10"
+                  >
+                    {/* Header with remove button */}
+                    <div className="mb-3 flex items-center justify-between">
+                      <p className="text-navy-700 text-base font-medium dark:text-white">
+                        #{idx + 1}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setItems((prev) =>
+                            prev.length === 1
+                              ? prev
+                              : prev.filter((x) => x.key !== item.key),
+                          )
+                        }
+                        className="flex items-center gap-1 rounded-xl px-2 py-1 text-xs font-medium text-red-500 transition-colors hover:text-red-600"
+                      >
+                        <MdDeleteOutline className="h-4 w-4" />
+                        Xóa
+                      </button>
+                    </div>
+
+                    {/* Item details */}
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      {/* Lớp HP */}
+                      <div className="flex items-center gap-6">
+                        <div className="w-32 shrink-0">
+                          <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                            Lớp HP
+                          </p>
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={item.className}
+                            onChange={(e) =>
+                              updateItem(item.key, "className", e.target.value)
+                            }
+                            placeholder="Nhập lớp HP"
+                            className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Thông tin lớp */}
+                      <div className="flex items-center gap-6">
+                        <div className="w-32 shrink-0">
+                          <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                            Thông tin lớp
+                          </p>
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={item.slotInfo}
+                            onChange={(e) =>
+                              updateItem(item.key, "slotInfo", e.target.value)
+                            }
+                            placeholder="Nhập thông tin lớp"
+                            className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Tên MH */}
+                      <div className="flex items-center gap-6">
+                        <div className="w-32 shrink-0">
+                          <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                            Tên MH
+                          </p>
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={item.subjectName}
+                            onChange={(e) =>
+                              updateItem(
+                                item.key,
+                                "subjectName",
+                                e.target.value,
+                              )
+                            }
+                            placeholder="Nhập tên môn học"
+                            className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Mã MH */}
+                      <div className="flex items-center gap-6">
+                        <div className="w-32 shrink-0">
+                          <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                            Mã MH
+                          </p>
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={item.subjectCode}
+                            onChange={(e) =>
+                              updateItem(
+                                item.key,
+                                "subjectCode",
+                                e.target.value,
+                              )
+                            }
+                            placeholder="Nhập mã môn học"
+                            className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Trong CTDT */}
+                      <div className="flex items-center gap-6">
+                        <div className="w-32 shrink-0">
+                          <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                            Trong CTDT
+                          </p>
+                        </div>
+                        <div className="flex-1">
+                          <Switch
+                            checked={item.isInCurriculum ?? false}
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>,
+                            ) =>
+                              updateItem(
+                                item.key,
+                                "isInCurriculum",
+                                e.target.checked,
+                              )
+                            }
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Add new button */}
+                <button
+                  type="button"
+                  onClick={() => setItems((prev) => [...prev, emptyItem()])}
+                  className="flex items-center justify-center gap-1 rounded-xl bg-gray-500 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-gray-600"
+                  title="Thêm lớp mới"
+                >
+                  <MdAdd className="h-4 w-4" />
+                  Thêm mới
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Ghi chú */}
+          {currentStep === 3 && (
+            <div className="flex flex-col gap-3">
+              <div className="flex items-start gap-6">
+                <div className="w-40 shrink-0">
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    Ghi chú
+                  </p>
+                </div>
+                <div className="flex-1">
+                  <RichTextEditor value={note} onChange={setNote} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Navigation buttons */}
+          <div className="mt-8 flex justify-end gap-2">
+            {currentStep > 1 && (
+              <button
+                type="button"
+                onClick={handlePrev}
+                disabled={submitting}
+                className="rounded-xl px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-white/10"
+              >
+                Quay lại
+              </button>
+            )}
+            {currentStep < 3 ? (
+              <button
+                type="submit"
+                disabled={submitting}
+                className="bg-brand-500 hover:bg-brand-600 rounded-2xl px-6 py-3.5 text-sm font-semibold text-white transition-colors disabled:opacity-50"
+              >
+                Tiếp theo
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={submitting}
+                className="bg-brand-500 hover:bg-brand-600 rounded-2xl px-6 py-3.5 text-sm font-semibold text-white transition-colors disabled:opacity-50"
+              >
+                {submitting ? "Đang tạo..." : "Tạo đăng ký lớp"}
+              </button>
+            )}
+          </div>
+        </form>
+      </Card>
+    </div>
   );
 };
 

@@ -26,7 +26,12 @@ export const SidebarLinks = (props: { routes: RoutesType[] }): JSX.Element => {
 
   const isParentActive = (route: RoutesType) => {
     if (route.children?.length) {
-      return route.children.some((child) => isRouteActive(child));
+      return route.children.some((child) => {
+        if (child.children?.length) {
+          return child.children.some((grandchild) => isRouteActive(grandchild));
+        }
+        return isRouteActive(child);
+      });
     }
     return isRouteActive(route);
   };
@@ -42,6 +47,18 @@ export const SidebarLinks = (props: { routes: RoutesType[] }): JSX.Element => {
         if (!(key in next)) {
           next[key] = isParentActive(route);
         }
+        // Check children for level 3
+        route.children.forEach((child, childIndex) => {
+          if (child.children?.length) {
+            const childKey = `${child.path || child.name}-${index}-${childIndex}`;
+            if (!(childKey in next)) {
+              const isChildParentActive = child.children.some((grandchild) =>
+                isRouteActive(grandchild),
+              );
+              next[childKey] = isChildParentActive;
+            }
+          }
+        });
       });
       return next;
     });
@@ -104,6 +121,85 @@ export const SidebarLinks = (props: { routes: RoutesType[] }): JSX.Element => {
               >
                 {route.children.map((child, childIndex) => {
                   const childActive = isRouteActive(child);
+                  const hasChildren =
+                    child.children && child.children.length > 0;
+                  const childGroupKey = `${child.path || child.name}-${index}-${childIndex}`;
+                  const isChildOpen = openGroups[childGroupKey] ?? childActive;
+
+                  if (hasChildren) {
+                    const isChildParentActive = child.children!.some(
+                      (grandchild) => isRouteActive(grandchild),
+                    );
+                    return (
+                      <li key={`${index}-${childIndex}`} className="relative">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setOpenGroups((prev) => ({
+                              ...prev,
+                              [childGroupKey]: !isChildOpen,
+                            }))
+                          }
+                          className="my-[3px] flex w-full items-center px-1 py-0.5 pr-5 text-left"
+                        >
+                          <p
+                            className={`flex text-sm font-medium transition-colors ${
+                              isChildParentActive
+                                ? "text-navy-700 dark:text-white"
+                                : "text-gray-600 dark:text-gray-300"
+                            }`}
+                          >
+                            {child.name}
+                          </p>
+                          <span
+                            className={`ml-auto text-gray-500 transition-transform duration-200 ease-in-out dark:text-gray-300 ${
+                              isChildOpen ? "rotate-180" : "rotate-0"
+                            }`}
+                          >
+                            <MdKeyboardArrowDown className="h-5 w-5" />
+                          </span>
+                        </button>
+
+                        <ul
+                          className={`ml-1 flex flex-col overflow-hidden transition-all duration-200 ease-in-out ${
+                            isChildOpen
+                              ? "mt-1 max-h-80 gap-1 opacity-100"
+                              : "mt-0 max-h-0 gap-0 opacity-0"
+                          }`}
+                        >
+                          {child.children!.map(
+                            (grandchild, grandchildIndex) => {
+                              const grandchildActive =
+                                isRouteActive(grandchild);
+                              return (
+                                <li
+                                  key={`${index}-${childIndex}-${grandchildIndex}`}
+                                  className="relative"
+                                >
+                                  <Link
+                                    to={routeHref(grandchild)}
+                                    className={`mt-1 flex items-center gap-2 rounded-lg py-[2px] text-sm transition-colors ${
+                                      grandchildActive
+                                        ? "text-navy-700 dark:text-white"
+                                        : "text-gray-600 dark:text-gray-300"
+                                    }`}
+                                  >
+                                    <span
+                                      className={`bg-brand-500 dark:bg-brand-400 h-1.5 w-1.5 shrink-0 rounded-full`}
+                                    />
+                                    <span className="font-normal">
+                                      {grandchild.name}
+                                    </span>
+                                  </Link>
+                                </li>
+                              );
+                            },
+                          )}
+                        </ul>
+                      </li>
+                    );
+                  }
+
                   return (
                     <li key={`${index}-${childIndex}`} className="relative">
                       <Link

@@ -59,15 +59,28 @@ const routes: RoutesType[] = [
         layout: "/admin",
         path: "class-registration/create",
       },
-      {
-        name: "Lý do hủy",
-        layout: "/admin",
-        path: "class-registration/cancel-reasons",
-      },
+
       {
         name: "Thống kê",
         layout: "/admin",
         path: "class-registration/stats",
+      },
+      {
+        name: "Lý do hủy",
+        layout: "/admin",
+        path: "",
+        children: [
+          {
+            name: "DS lý do hủy",
+            layout: "/admin",
+            path: "class-registration/cancel-reasons/index",
+          },
+          {
+            name: "Tạo lý do hủy",
+            layout: "/admin",
+            path: "class-registration/cancel-reasons/create",
+          },
+        ],
       },
     ],
   },

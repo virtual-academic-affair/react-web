@@ -54,9 +54,9 @@ const MessageStatusSelector: React.FC<MessageStatusSelectorProps> = ({
           onChange(e.target.value ? (e.target.value as MessageStatus) : null)
         }
         disabled={disabled}
-        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+        className="absolute left-0 top-0 h-full w-full cursor-pointer opacity-0"
+        style={{ zIndex: 10 }}
       >
-        <option value="">—</option>
         {statuses
           .filter((s): s is MessageStatus => s !== null)
           .map((status) => (

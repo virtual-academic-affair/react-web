@@ -10,6 +10,7 @@ import Sidebar from "@/components/sidebar";
 import UsersPage from "@/pages/auth/accounts";
 import AssignRolePage from "@/pages/auth/assign-role";
 import CancelReasonsPage from "@/pages/class-registration/cancel-reasons";
+import CancelReasonCreatePage from "@/pages/class-registration/cancel-reasons/create";
 import ClassRegistrationCreatePage from "@/pages/class-registration/create";
 import ClassRegistrationsPage from "@/pages/class-registration/registrations";
 import ClassRegistrationStatsPage from "@/pages/class-registration/stats";
@@ -129,8 +130,12 @@ const AdminLayout: React.FC = () => {
               element={<ClassRegistrationCreatePage />}
             />
             <Route
-              path="class-registration/cancel-reasons"
+              path="class-registration/cancel-reasons/index"
               element={<CancelReasonsPage />}
+            />
+            <Route
+              path="class-registration/cancel-reasons/create"
+              element={<CancelReasonCreatePage />}
             />
             <Route
               path="class-registration/stats"
@@ -138,7 +143,12 @@ const AdminLayout: React.FC = () => {
             />
             <Route
               path="class-registration"
-              element={<Navigate to="/admin/class-registration/registrations" replace />}
+              element={
+                <Navigate
+                  to="/admin/class-registration/registrations"
+                  replace
+                />
+              }
             />
             <Route
               path="/"

@@ -3,28 +3,52 @@ import TableLayout, {
   type TableAction,
   type TableColumn,
 } from "@/components/table/TableLayout";
-import Tooltip from "@/components/tooltip/Tooltip.tsx";
 import { cancelReasonsService } from "@/services/class-registration";
 import type { CancelReason } from "@/types/classRegistration";
 import type { PaginatedResponse } from "@/types/common";
 import { formatDate } from "@/utils/date";
 import { message as toast } from "antd";
 import React from "react";
-import { MdAdd, MdDeleteOutline, MdEdit } from "react-icons/md";
+import { MdDeleteOutline, MdEdit } from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
+import AdvancedFilterModal, {
+  type CancelReasonFilters,
+} from "./components/AdvancedFilterModal";
 import CancelReasonDrawer from "./components/CancelReasonDrawer";
 
 const PAGE_SIZE = 10;
 
+const defaultFilters: CancelReasonFilters = {
+  enableIsActiveFilter: false,
+  isActive: true,
+};
+
 const CancelReasonsPage: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [result, setResult] =
     React.useState<PaginatedResponse<CancelReason> | null>(null);
   const [loading, setLoading] = React.useState(true);
-  const [page, setPage] = React.useState(1);
-  const [keyword, setKeyword] = React.useState("");
-  const [createOpen, setCreateOpen] = React.useState(false);
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [page, setPage] = React.useState(
+    Number(searchParams.get("page") ?? "1") > 0
+      ? Number(searchParams.get("page") ?? "1")
+      : 1,
+  );
+  const [keyword, setKeyword] = React.useState(
+    searchParams.get("keyword") ?? "",
+  );
   const [updatingIds, setUpdatingIds] = React.useState<Set<number>>(new Set());
+  const [filters, setFilters] = React.useState<CancelReasonFilters>(() => {
+    const enableFilter = searchParams.get("enableIsActiveFilter") === "true";
+    const isActive = searchParams.get("isActive") === "true";
+    return {
+      enableIsActiveFilter: enableFilter,
+      isActive: enableFilter ? isActive : true,
+    };
+  });
+  const [draftFilters, setDraftFilters] = React.useState<CancelReasonFilters>(
+    defaultFilters,
+  );
+  const [filterOpen, setFilterOpen] = React.useState(false);
 
   const idParam = searchParams.get("id");
   const selectedId = idParam ? Number(idParam) : null;
@@ -33,41 +57,62 @@ const CancelReasonsPage: React.FC = () => {
       ? (result.items.find((x) => x.id === selectedId) ?? null)
       : null;
 
-  const fetchList = React.useCallback(async (p: number, kw: string) => {
-    setLoading(true);
-    try {
-      const resp = await cancelReasonsService.getList({
-        page: p,
-        limit: PAGE_SIZE,
-        keyword: kw || undefined,
-        orderCol: "id",
-        orderDir: "DESC",
-      });
-      setResult(resp);
-    } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Không thể tải lý do hủy.";
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const fetchList = React.useCallback(
+    async (p: number, kw: string, f: CancelReasonFilters) => {
+      setLoading(true);
+      try {
+        const resp = await cancelReasonsService.getList({
+          page: p,
+          limit: PAGE_SIZE,
+          keyword: kw || undefined,
+          isActive: f.enableIsActiveFilter ? f.isActive : undefined,
+          orderCol: "id",
+          orderDir: "DESC",
+        });
+        setResult(resp);
+      } catch (err: unknown) {
+        const msg =
+          err instanceof Error ? err.message : "Không thể tải lý do hủy.";
+        toast.error(msg);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
 
   React.useEffect(() => {
-    fetchList(page, keyword);
-  }, [fetchList, page, keyword]);
+    fetchList(page, keyword, filters);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, filters]);
 
-  const handleOpenCreate = () => {
-    setCreateOpen(true);
-  };
-
-  const handleEdit = (item: CancelReason) => {
-    const next = new URLSearchParams(searchParams);
-    next.set("id", String(item.id));
+  React.useEffect(() => {
+    const next = new URLSearchParams();
+    if (keyword) {
+      next.set("keyword", keyword);
+    }
+    next.set("page", String(page));
+    next.set("limit", String(PAGE_SIZE));
+    if (filters.enableIsActiveFilter) {
+      next.set("enableIsActiveFilter", "true");
+      next.set("isActive", String(filters.isActive));
+    }
+    if (selectedId != null) {
+      next.set("id", String(selectedId));
+    }
     setSearchParams(next, { replace: true });
-  };
+  }, [filters, keyword, page, selectedId, setSearchParams]);
 
-  const handleDelete = async (item: CancelReason) => {
+  const handleEdit = React.useCallback(
+    (item: CancelReason) => {
+      const next = new URLSearchParams(searchParams);
+      next.set("id", String(item.id));
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+
+  const handleDelete = React.useCallback(async (item: CancelReason) => {
     if (!window.confirm(`Xóa lý do hủy #${item.id}?`)) {
       return;
     }
@@ -86,7 +131,7 @@ const CancelReasonsPage: React.FC = () => {
       const msg = err instanceof Error ? err.message : "Xóa thất bại.";
       toast.error(msg);
     }
-  };
+  }, []);
 
   const handleToggleActive = async (item: CancelReason, next: boolean) => {
     if (item.isActive === next) {
@@ -186,30 +231,26 @@ const CancelReasonsPage: React.FC = () => {
         pageSize={PAGE_SIZE}
         searchValue={keyword}
         onSearchChange={setKeyword}
-        onSearch={() => fetchList(1, keyword)}
+        onSearch={() => {
+          setPage(1);
+          fetchList(1, keyword, filters);
+        }}
         searchPlaceholder="Tìm theo nội dung..."
+        showFilter={true}
+        onFilterClick={() => {
+          setDraftFilters(filters);
+          setFilterOpen(true);
+        }}
         columns={columns}
         actions={actions}
         onPageChange={setPage}
-        rightSlot={
-          <Tooltip label="Thêm">
-            <button
-              type="button"
-              onClick={handleOpenCreate}
-              className="bg-brand-500 hover:bg-brand-600 flex h-10 w-10 items-center justify-center rounded-2xl text-lg font-bold text-white transition-colors dark:bg-brand-500 dark:hover:bg-brand-400"
-            >
-              <MdAdd className="h-5 w-5" />
-            </button>
-          </Tooltip>
-        }
       />
 
       <CancelReasonDrawer
         reasonId={selectedId}
         initialReason={selectedReason}
-        isOpen={createOpen || selectedId != null}
+        isOpen={selectedId != null}
         onClose={() => {
-          setCreateOpen(false);
           if (selectedId != null) {
             const next = new URLSearchParams(searchParams);
             next.delete("id");
@@ -231,6 +272,26 @@ const CancelReasonsPage: React.FC = () => {
               : prev,
           )
         }
+      />
+
+      <AdvancedFilterModal
+        open={filterOpen}
+        value={draftFilters}
+        onChange={setDraftFilters}
+        onApply={() => {
+          setFilters(draftFilters);
+          setPage(1);
+          setFilterOpen(false);
+          fetchList(1, keyword, draftFilters);
+        }}
+        onClear={() => {
+          setDraftFilters(defaultFilters);
+          setFilters(defaultFilters);
+          setPage(1);
+          setFilterOpen(false);
+          fetchList(1, keyword, defaultFilters);
+        }}
+        onRequestClose={() => setFilterOpen(false)}
       />
     </div>
   );

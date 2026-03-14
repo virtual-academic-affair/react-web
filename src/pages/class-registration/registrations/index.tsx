@@ -3,12 +3,12 @@ import TableLayout, {
   type TableColumn,
 } from "@/components/table/TableLayout";
 import { classRegistrationsService } from "@/services/class-registration";
-import type { ClassRegistration } from "@/types/classRegistration";
-import {
-  MessageStatusColors,
-  MessageStatusLabels,
+import type {
+  ClassRegistration,
+  MessageStatus,
 } from "@/types/classRegistration";
 import type { PaginatedResponse } from "@/types/common";
+import { formatDate } from "@/utils/date";
 import { message as toast } from "antd";
 import React from "react";
 import {
@@ -20,6 +20,7 @@ import { useSearchParams } from "react-router-dom";
 import AdvancedFilterModal, {
   type RegistrationFilters,
 } from "./components/AdvancedFilterModal";
+import MessageStatusSelector from "./components/MessageStatusSelector";
 import PreviewReplyModal from "./components/PreviewReplyModal";
 import RegistrationDetailDrawer from "./components/RegistrationDetailDrawer";
 
@@ -28,8 +29,7 @@ const PAGE_SIZE = 10;
 const defaultFilters: RegistrationFilters = {
   studentCode: "",
   academicYear: "",
-  smartOrder: "",
-  messageId: "",
+  smartOrder: false,
   messageStatuses: [],
 };
 
@@ -50,8 +50,7 @@ const ClassRegistrationsPage: React.FC = () => {
   const [filters, setFilters] = React.useState<RegistrationFilters>({
     studentCode: searchParams.get("studentCode") ?? "",
     academicYear: searchParams.get("academicYear") ?? "",
-    smartOrder: searchParams.get("smartOrder") ?? "",
-    messageId: searchParams.get("messageId") ?? "",
+    smartOrder: searchParams.get("smartOrder") === "true",
     messageStatuses: searchParams.get("messageStatuses")
       ? (searchParams
           .get("messageStatuses")!
@@ -65,6 +64,8 @@ const ClassRegistrationsPage: React.FC = () => {
     ? Number(searchParams.get("id"))
     : null;
   const [previewId, setPreviewId] = React.useState<number | null>(null);
+  const [updatingMessageStatusIds, setUpdatingMessageStatusIds] =
+    React.useState<Set<number>>(new Set());
 
   const fetchList = React.useCallback(
     async (p: number, kw: string, f: RegistrationFilters) => {
@@ -76,8 +77,7 @@ const ClassRegistrationsPage: React.FC = () => {
           keyword: kw || undefined,
           studentCode: f.studentCode || undefined,
           academicYear: f.academicYear || undefined,
-          smartOrder: f.smartOrder || undefined,
-          messageId: f.messageId || undefined,
+          smartOrder: f.smartOrder ? "true" : undefined,
           messageStatuses: f.messageStatuses.length
             ? f.messageStatuses
             : undefined,
@@ -117,10 +117,7 @@ const ClassRegistrationsPage: React.FC = () => {
       next.set("academicYear", filters.academicYear);
     }
     if (filters.smartOrder) {
-      next.set("smartOrder", filters.smartOrder);
-    }
-    if (filters.messageId) {
-      next.set("messageId", filters.messageId);
+      next.set("smartOrder", "true");
     }
     if (filters.messageStatuses.length) {
       next.set("messageStatuses", filters.messageStatuses.join(","));
@@ -157,24 +154,43 @@ const ClassRegistrationsPage: React.FC = () => {
     }
   };
 
+  const handleMessageStatusChange = React.useCallback(
+    async (row: ClassRegistration, newStatus: MessageStatus | null) => {
+      setUpdatingMessageStatusIds((prev) => new Set(prev).add(row.id));
+      try {
+        const updated = await classRegistrationsService.update(row.id, {
+          messageStatus: newStatus,
+        });
+        setResult((prev) =>
+          prev
+            ? {
+                ...prev,
+                items: prev.items.map((x) =>
+                  x.id === updated.id ? updated : x,
+                ),
+              }
+            : prev,
+        );
+        toast.success("Cập nhật trạng thái thành công.");
+      } catch (err: unknown) {
+        const msg =
+          err instanceof Error
+            ? err.message
+            : "Cập nhật trạng thái thất bại.";
+        toast.error(msg);
+      } finally {
+        setUpdatingMessageStatusIds((prev) => {
+          const next = new Set(prev);
+          next.delete(row.id);
+          return next;
+        });
+      }
+    },
+    [],
+  );
+
   const columns: TableColumn<ClassRegistration>[] = React.useMemo(
     () => [
-      {
-        key: "messageStatus",
-        header: "Trạng thái email",
-        render: (item) =>
-          item.messageStatus ? (
-            <span
-              className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${
-                MessageStatusColors[item.messageStatus].bg
-              } ${MessageStatusColors[item.messageStatus].text}`}
-            >
-              {MessageStatusLabels[item.messageStatus]}
-            </span>
-          ) : (
-            <span className="text-sm text-gray-500 dark:text-gray-400">—</span>
-          ),
-      },
       {
         key: "studentCode",
         header: "MSSV",
@@ -198,13 +214,7 @@ const ClassRegistrationsPage: React.FC = () => {
         header: "Ngày tạo",
         render: (item) => (
           <p className="text-navy-700 text-sm dark:text-white">
-            {new Intl.DateTimeFormat("vi-VN", {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            }).format(new Date(item.createdAt))}
+            {formatDate(item.createdAt)}
           </p>
         ),
       },
@@ -217,8 +227,23 @@ const ClassRegistrationsPage: React.FC = () => {
           </p>
         ),
       },
+      {
+        key: "messageStatus",
+        header: "Trạng thái xử lý",
+        render: (item) => (
+          <div className="relative inline-flex">
+            <MessageStatusSelector
+              value={item.messageStatus ?? null}
+              onChange={(newStatus) =>
+                handleMessageStatusChange(item, newStatus)
+              }
+              disabled={updatingMessageStatusIds.has(item.id)}
+            />
+          </div>
+        ),
+      },
     ],
-    [],
+    [updatingMessageStatusIds, handleMessageStatusChange],
   );
 
   const actions: TableAction<ClassRegistration>[] = React.useMemo(
@@ -263,7 +288,7 @@ const ClassRegistrationsPage: React.FC = () => {
         searchValue={keyword}
         onSearchChange={setKeyword}
         onSearch={handleSearch}
-        searchPlaceholder="Tìm kiếm student code / student name..."
+        searchPlaceholder="Tìm kiếm theo tên SV, MSSV..."
         showFilter={true}
         onFilterClick={() => {
           setDraftFilters(filters);

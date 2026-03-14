@@ -2,7 +2,6 @@ import Card from "@/components/card";
 import { classRegistrationsService } from "@/services/class-registration";
 import { message as toast } from "antd";
 import React from "react";
-import RichTextEditor from "./RichTextEditor";
 
 interface PreviewReplyModalProps {
   registrationId: number | null;
@@ -13,11 +12,9 @@ interface PreviewReplyModalProps {
 const PreviewReplyModal: React.FC<PreviewReplyModalProps> = ({
   registrationId,
   onClose,
-  onSent,
 }) => {
   const [loading, setLoading] = React.useState(false);
-  const [submitting, setSubmitting] = React.useState(false);
-  const [html, setHtml] = React.useState("<p></p>");
+  const [html, setHtml] = React.useState("");
   const [note, setNote] = React.useState("");
 
   React.useEffect(() => {
@@ -28,11 +25,12 @@ const PreviewReplyModal: React.FC<PreviewReplyModalProps> = ({
     classRegistrationsService
       .previewReply(registrationId)
       .then((resp) => {
-        setHtml(resp.html || "<p></p>");
+        setHtml(resp.html || "");
         setNote(resp.note || "");
       })
       .catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : "Không thể tải preview.";
+        const msg =
+          err instanceof Error ? err.message : "Không thể tải preview.";
         toast.error(msg);
       })
       .finally(() => setLoading(false));
@@ -41,25 +39,6 @@ const PreviewReplyModal: React.FC<PreviewReplyModalProps> = ({
   if (registrationId == null) {
     return null;
   }
-
-  const handleSubmit = async (closeAfterSend: boolean) => {
-    setSubmitting(true);
-    try {
-      await classRegistrationsService.reply(registrationId, {
-        html,
-        note: note || undefined,
-        closeAfterSend,
-      });
-      toast.success(closeAfterSend ? "Đã gửi và đóng." : "Đã gửi phản hồi.");
-      onSent(closeAfterSend);
-      onClose();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gửi phản hồi thất bại.";
-      toast.error(msg);
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   return (
     <>
@@ -83,34 +62,38 @@ const PreviewReplyModal: React.FC<PreviewReplyModalProps> = ({
             {loading ? (
               <div className="dark:bg-navy-700 h-40 animate-pulse rounded-2xl bg-gray-200" />
             ) : (
-              <RichTextEditor value={html} onChange={setHtml} />
+              <>
+                {html && (
+                  <div>
+                    <label className="text-navy-700 mb-2 ml-1 block text-sm font-bold dark:text-white">
+                      Nội dung email
+                    </label>
+                    <div
+                      className="dark:bg-navy-800 overflow-hidden rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/10"
+                      dangerouslySetInnerHTML={{ __html: html }}
+                    />
+                  </div>
+                )}
+
+                {note && (
+                  <div>
+                    <label className="text-navy-700 mb-2 ml-1 block text-sm font-bold dark:text-white">
+                      Ghi chú
+                    </label>
+                    <div
+                      className="dark:bg-navy-800 overflow-hidden rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/10"
+                      dangerouslySetInnerHTML={{ __html: note }}
+                    />
+                  </div>
+                )}
+
+                {!html && !note && !loading && (
+                  <div className="py-8 text-center text-gray-500 dark:text-gray-400">
+                    Không có nội dung để hiển thị
+                  </div>
+                )}
+              </>
             )}
-
-            <div>
-              <label className="mb-2 ml-1 block text-sm font-bold text-navy-700 dark:text-white">
-                Ghi chú
-              </label>
-              <RichTextEditor value={note} onChange={setNote} />
-            </div>
-          </div>
-
-          <div className="mt-5 flex justify-end gap-2">
-            <button
-              type="button"
-              disabled={submitting || loading}
-              onClick={() => handleSubmit(false)}
-              className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50 dark:border-white/10 dark:text-gray-200 dark:hover:bg-white/10"
-            >
-              Gửi
-            </button>
-            <button
-              type="button"
-              disabled={submitting || loading}
-              onClick={() => handleSubmit(true)}
-              className="bg-brand-500 hover:bg-brand-600 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
-            >
-              Gửi & đóng
-            </button>
           </div>
         </Card>
       </div>

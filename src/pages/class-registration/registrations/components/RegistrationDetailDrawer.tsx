@@ -9,26 +9,24 @@ import type {
   CancelReason,
   ClassRegistration,
   ClassRegistrationItem,
+  CreateClassRegistrationItemDto,
   ItemStatus,
   MessageStatus,
 } from "@/types/classRegistration";
 import {
   ItemStatusColors,
   ItemStatusLabels,
-  MessageStatusColors,
-  MessageStatusLabels,
   type UpdateClassRegistrationDto,
 } from "@/types/classRegistration";
 import { formatDate } from "@/utils/date";
-import { message as toast } from "antd";
+import { message as toast, Tooltip } from "antd";
 import React from "react";
 import {
-  MdCheckCircle,
+  MdAdd,
   MdClose,
   MdDeleteOutline,
   MdSave,
   MdUndo,
-  MdAdd,
 } from "react-icons/md";
 import MessageStatusSelector from "./MessageStatusSelector";
 import RichTextEditor from "./RichTextEditor";
@@ -67,6 +65,10 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
       }
     >
   >({});
+  const [originalItemRejectReasons, setOriginalItemRejectReasons] =
+    React.useState<Record<number, string[]>>({});
+  const [draftItem, setDraftItem] =
+    React.useState<CreateClassRegistrationItemDto | null>(null);
 
   React.useEffect(() => {
     if (registrationId == null) {
@@ -89,6 +91,8 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
     if (!detail) {
       setForm(null);
       setItemForms({});
+      setOriginalItemRejectReasons({});
+      setDraftItem(null);
       return;
     }
     setForm({
@@ -98,18 +102,27 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
       note: detail.note ?? "",
       messageStatus: detail.messageStatus ?? null,
     });
-    // Initialize item forms
+    // Initialize item forms and original values
     const forms: Record<
       number,
       { rejectReasons: string[]; isInCurriculum: boolean }
     > = {};
+    const original: Record<number, string[]> = {};
     (detail.items ?? []).forEach((item) => {
+      const reasons = item.rejectReasons ?? [];
+      // Ensure at least one empty input
+      const reasonsWithEmpty =
+        reasons.length === 0 || reasons[reasons.length - 1] !== ""
+          ? [...reasons, ""]
+          : reasons;
       forms[item.id] = {
-        rejectReasons: item.rejectReasons ?? [],
+        rejectReasons: reasonsWithEmpty,
         isInCurriculum: item.isInCurriculum ?? false,
       };
+      original[item.id] = [...reasons];
     });
     setItemForms(forms);
+    setOriginalItemRejectReasons(original);
   }, [detail]);
 
   // Load cancel reasons
@@ -161,7 +174,7 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
           i.id === item.id ? updated : i,
         ),
       });
-      toast.success("Cập nhật trạng thái lớp con thành công.");
+      toast.success("Cập nhật trạng thái lớp thành công.");
     } catch (err: unknown) {
       const msg =
         err instanceof Error ? err.message : "Cập nhật trạng thái thất bại.";
@@ -236,7 +249,9 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
   };
 
   const handleRemoveItem = async (item: ClassRegistrationItem) => {
-    if (!detail) return;
+    if (!detail) {
+      return;
+    }
     if (
       !window.confirm(
         `Xóa lớp "${item.subjectName}${item.className ? ` - ${item.className}` : ""}"?`,
@@ -253,8 +268,7 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
       onRegistrationChanged(updated);
       toast.success("Đã xóa lớp.");
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Xóa lớp thất bại.";
+      const msg = err instanceof Error ? err.message : "Xóa lớp thất bại.";
       toast.error(msg);
     } finally {
       setUpdatingItemIds((prev) => {
@@ -418,7 +432,7 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
             <div className="flex items-center gap-6">
               <div className="w-40 shrink-0">
                 <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                  Trạng thái email
+                  Trạng thái xử lý
                 </p>
               </div>
               <div className="flex-1">
@@ -469,27 +483,27 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
               Danh sách đăng ký
             </p>
             <div className="flex flex-col gap-4">
-                  {(detail.items ?? []).map((item) => {
-                    const updating = updatingItemIds.has(item.id);
+              {(detail.items ?? []).map((item) => {
+                const updating = updatingItemIds.has(item.id);
                 const itemForm = itemForms[item.id] ?? {
                   rejectReasons: item.rejectReasons ?? [],
                   isInCurriculum: item.isInCurriculum ?? false,
                 };
-                    return (
+                return (
                   <div
-                        key={item.id}
-                    className="dark:bg-navy-700/40 rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-white/10"
+                    key={item.id}
+                    className="dark:bg-navy-700/40 rounded-2xl bg-gray-50 p-4 dark:border-white/10"
                   >
                     {/* Header with remove button */}
                     <div className="mb-3 flex items-center justify-between">
                       <p className="text-navy-700 text-base font-medium dark:text-white">
-                        Lớp #{item.id}
+                        #{item.id}
                       </p>
                       <button
                         type="button"
                         disabled={updating}
                         onClick={() => handleRemoveItem(item)}
-                        className="text-red-500 hover:text-red-600 flex items-center gap-1 rounded-xl px-2 py-1 text-xs font-medium transition-colors disabled:opacity-50"
+                        className="flex items-center gap-1 rounded-xl px-2 py-1 text-xs font-medium text-red-500 transition-colors hover:text-red-600 disabled:opacity-50"
                       >
                         <MdDeleteOutline className="h-4 w-4" />
                         Xóa
@@ -497,7 +511,7 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                     </div>
 
                     {/* Item details */}
-                    <div className="flex flex-col gap-3">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                       {/* Lớp HP */}
                       <div className="flex items-center gap-6">
                         <div className="w-32 shrink-0">
@@ -511,7 +525,19 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                           </p>
                         </div>
                       </div>
-
+                      {/* Thông tin lớp */}
+                      <div className="flex items-center gap-6">
+                        <div className="w-32 shrink-0">
+                          <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                            Thông tin lớp
+                          </p>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-navy-700 text-sm dark:text-white">
+                            {item.slotInfo || "—"}
+                          </p>
+                        </div>
+                      </div>
                       {/* Tên MH */}
                       <div className="flex items-center gap-6">
                         <div className="w-32 shrink-0">
@@ -521,7 +547,7 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                         </div>
                         <div className="flex-1">
                           <p className="text-navy-700 text-sm dark:text-white">
-                          {item.subjectName}
+                            {item.subjectName}
                           </p>
                         </div>
                       </div>
@@ -540,20 +566,6 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                         </div>
                       </div>
 
-                      {/* Thông tin lớp */}
-                      <div className="flex items-center gap-6">
-                        <div className="w-32 shrink-0">
-                          <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                            Thông tin lớp
-                          </p>
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-navy-700 text-sm dark:text-white">
-                            {item.slotInfo || "—"}
-                          </p>
-                        </div>
-                      </div>
-
                       {/* Trong CTDT */}
                       <div className="flex items-center gap-6">
                         <div className="w-32 shrink-0">
@@ -566,7 +578,6 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                             checked={itemForm.isInCurriculum}
                             onChange={() => {}}
                             disabled={true}
-                            color="green"
                           />
                         </div>
                       </div>
@@ -586,7 +597,10 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                           </span>
                         </div>
                       </div>
+                    </div>
 
+                    {/* Status and Ghi chú */}
+                    <div className="mt-3 flex flex-col gap-3">
                       {/* Ghi chú (rejectReasons) */}
                       <div className="flex items-start gap-6">
                         <div className="w-32 shrink-0">
@@ -595,64 +609,206 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                           </p>
                         </div>
                         <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="text"
-                              value={itemForm.rejectReasons.join(", ")}
-                              onChange={(e) => {
-                                const reasons = e.target.value
-                                  .split(",")
-                                  .map((x) => x.trim())
-                                  .filter(Boolean);
-                                updateItemForm(item.id, "rejectReasons", reasons);
-                              }}
-                              onBlur={() => {
-                                // Auto save on blur
-                                updateItemField(item, "rejectReasons");
-                              }}
-                              placeholder="Nhập lý do từ chối (phân tách bằng dấu phẩy)"
-                              className="flex-1 rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
-                              disabled={updating}
-                            />
-                            {cancelReasons.length > 0 && (
-                              <div className="relative">
-                                <select
-                                  value=""
-                                  onChange={(e) => {
-                                    if (e.target.value) {
+                          <div className="flex flex-col gap-2">
+                            {/* List of input fields */}
+                            {itemForm.rejectReasons.map((reason, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center gap-2"
+                              >
+                                <div className="relative flex-1">
+                                  <input
+                                    type="text"
+                                    value={reason}
+                                    onChange={(e) => {
                                       const newReasons = [
                                         ...itemForm.rejectReasons,
-                                        e.target.value,
                                       ];
+                                      newReasons[index] = e.target.value;
+
+                                      // If the last input is filled, add a new empty one
+                                      const isLastInput =
+                                        index ===
+                                        itemForm.rejectReasons.length - 1;
+                                      if (
+                                        isLastInput &&
+                                        e.target.value.trim() !== ""
+                                      ) {
+                                        newReasons.push("");
+                                      }
+
                                       updateItemForm(
                                         item.id,
                                         "rejectReasons",
                                         newReasons,
                                       );
-                                      e.target.value = "";
-                                      // Chỉ thêm vào mảng local, không auto save
-                                    }
-                                  }}
-                                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                                  disabled={updating}
-                                >
-                                  <option value="">Chọn lý do hủy nhanh...</option>
-                                  {cancelReasons.map((reason) => (
-                                    <option key={reason.id} value={reason.content}>
-                                      {reason.content}
-                                    </option>
-                                  ))}
-                                </select>
+                                    }}
+                                    placeholder="Nhập lý do từ chối"
+                                    className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 pr-10 text-sm outline-none dark:border-white/10 dark:text-white"
+                                    disabled={updating}
+                                  />
+                                  {/* Quick select dropdown */}
+                                  {cancelReasons.length > 0 && (
+                                    <div className="absolute top-1/2 right-2 -translate-y-1/2">
+                                      <select
+                                        value=""
+                                        onChange={(e) => {
+                                          if (e.target.value) {
+                                            const newReasons = [
+                                              ...itemForm.rejectReasons,
+                                            ];
+                                            newReasons[index] = e.target.value;
+                                            // If this was the last empty input and now filled, add new empty
+                                            const isLastInput =
+                                              index ===
+                                              itemForm.rejectReasons.length - 1;
+                                            if (isLastInput) {
+                                              newReasons.push("");
+                                            }
+                                            updateItemForm(
+                                              item.id,
+                                              "rejectReasons",
+                                              newReasons,
+                                            );
+                                            e.target.value = "";
+                                          }
+                                        }}
+                                        className="h-6 w-6 cursor-pointer rounded border-0 bg-transparent opacity-0"
+                                        disabled={updating}
+                                      >
+                                        <option value="">Chọn...</option>
+                                        {cancelReasons.map((cancelReason) => (
+                                          <option
+                                            key={cancelReason.id}
+                                            value={cancelReason.content}
+                                          >
+                                            {cancelReason.content}
+                                          </option>
+                                        ))}
+                                      </select>
+                                      <button
+                                        type="button"
+                                        disabled={updating}
+                                        className="pointer-events-none absolute inset-0 flex items-center justify-center text-gray-400"
+                                        tabIndex={-1}
+                                      >
+                                        <MdAdd className="h-3.5 w-3.5" />
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
                                 <button
                                   type="button"
                                   disabled={updating}
-                                  className="flex h-10 w-10 items-center justify-center rounded-2xl border border-gray-200 bg-transparent text-gray-600 transition-colors hover:bg-gray-100 disabled:opacity-50 dark:border-white/10 dark:text-gray-300 dark:hover:bg-white/10"
-                                  title="Chọn lý do hủy nhanh"
+                                  onClick={() => {
+                                    const newReasons =
+                                      itemForm.rejectReasons.filter(
+                                        (_, i) => i !== index,
+                                      );
+                                    // Ensure at least one empty input remains
+                                    if (
+                                      newReasons.length === 0 ||
+                                      newReasons.every((r) => r.trim() !== "")
+                                    ) {
+                                      newReasons.push("");
+                                    }
+                                    updateItemForm(
+                                      item.id,
+                                      "rejectReasons",
+                                      newReasons,
+                                    );
+                                  }}
+                                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-gray-200 bg-transparent text-red-500 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-white/10 dark:hover:bg-red-500/10"
+                                  title="Xóa lý do này"
                                 >
-                                  <MdAdd className="h-5 w-5" />
+                                  <MdClose className="h-4 w-4" />
                                 </button>
                               </div>
-                            )}
+                            ))}
+
+                            {/* Action buttons */}
+                            <div className="flex items-center gap-2">
+                              {/* Check if content has changed */}
+                              {(() => {
+                                const currentReasons =
+                                  itemForm.rejectReasons.filter(
+                                    (r) => r.trim().length > 0,
+                                  );
+                                const originalReasons =
+                                  originalItemRejectReasons[item.id] ?? [];
+                                const currentSorted = [...currentReasons]
+                                  .sort()
+                                  .join("\n");
+                                const originalSorted = [...originalReasons]
+                                  .sort()
+                                  .join("\n");
+                                const hasChanged =
+                                  currentSorted !== originalSorted;
+
+                                if (!hasChanged) {
+                                  return null;
+                                }
+
+                                return (
+                                  <>
+                                    {/* Rollback button */}
+                                    <Tooltip title="Rollback">
+                                      <button
+                                        type="button"
+                                        disabled={updating}
+                                        onClick={() => {
+                                          // Rollback to original, ensure at least one empty input
+                                          const rolledBackReasons = [
+                                            ...originalReasons,
+                                          ];
+                                          if (
+                                            rolledBackReasons.length === 0 ||
+                                            rolledBackReasons[
+                                              rolledBackReasons.length - 1
+                                            ] !== ""
+                                          ) {
+                                            rolledBackReasons.push("");
+                                          }
+                                          updateItemForm(
+                                            item.id,
+                                            "rejectReasons",
+                                            rolledBackReasons,
+                                          );
+                                        }}
+                                        className="flex h-8 w-8 items-center justify-center rounded-xl text-amber-600 hover:bg-amber-50 disabled:opacity-50 dark:text-amber-400 dark:hover:bg-amber-500/10"
+                                      >
+                                        <MdUndo className="h-4 w-4" />
+                                      </button>
+                                    </Tooltip>
+                                    {/* Save button */}
+                                    <button
+                                      type="button"
+                                      disabled={updating}
+                                      onClick={() => {
+                                        updateItemForm(
+                                          item.id,
+                                          "rejectReasons",
+                                          currentReasons,
+                                        );
+                                        updateItemField(item, "rejectReasons");
+                                        // Update original after save
+                                        setOriginalItemRejectReasons(
+                                          (prev) => ({
+                                            ...prev,
+                                            [item.id]: [...currentReasons],
+                                          }),
+                                        );
+                                      }}
+                                      className="flex items-center gap-1 rounded-xl px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 disabled:opacity-50 dark:text-blue-400 dark:hover:bg-blue-500/10"
+                                      title="Lưu các lý do"
+                                    >
+                                      <MdSave className="h-4 w-4" />
+                                      Lưu
+                                    </button>
+                                  </>
+                                );
+                              })()}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -660,42 +816,304 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
 
                     {/* Actions */}
                     <div className="mt-4 flex justify-end gap-2 border-t border-gray-100 pt-3 dark:border-white/10">
-                            {item.status === "pending" ? (
-                              <>
-                                <button
-                                  type="button"
-                                  disabled={updating}
-                                  onClick={() => handleReject(item)}
-                            className="bg-red-500 hover:bg-red-600 flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-medium text-white transition-colors disabled:opacity-50"
-                                >
-                            <MdClose className="h-4 w-4" />
+                      {item.status === "pending" ? (
+                        <>
+                          <button
+                            type="button"
+                            disabled={updating}
+                            onClick={() => handleReject(item)}
+                            className="rounded-xl px-3 py-1.5 text-sm text-red-600 hover:bg-gray-100 disabled:opacity-50 dark:text-red-400 dark:hover:bg-white/10"
+                          >
                             Từ chối
-                                </button>
-                                <button
-                                  type="button"
-                                  disabled={updating}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={updating}
                             onClick={() => updateItemStatus(item, "approved")}
-                            className="bg-blue-500 hover:bg-blue-600 flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-medium text-white transition-colors disabled:opacity-50"
-                                >
-                            <MdCheckCircle className="h-4 w-4" />
+                            className="bg-brand-500 hover:bg-brand-600 flex items-center gap-1 rounded-xl px-4 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-50"
+                          >
+                            <MdSave className="h-4 w-4" />
                             Duyệt
-                                </button>
-                              </>
-                            ) : (
-                              <button
-                                type="button"
-                                disabled={updating}
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={updating}
                           onClick={() => updateItemStatus(item, "pending")}
-                          className="bg-amber-500 hover:bg-amber-600 flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-medium text-white transition-colors disabled:opacity-50"
+                          className="rounded-xl px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-white/10"
                         >
-                          <MdUndo className="h-4 w-4" />
                           Đưa về chờ
-                              </button>
-                            )}
-                          </div>
+                        </button>
+                      )}
+                    </div>
                   </div>
-                    );
-                  })}
+                );
+              })}
+
+              {/* Add new button */}
+              {!draftItem && (
+                <button
+                  type="button"
+                  disabled={loading || !detail}
+                  onClick={() => {
+                    setDraftItem({
+                      action: "register",
+                      subjectName: "",
+                      subjectCode: "",
+                      className: "",
+                      slotInfo: "",
+                      isInCurriculum: false,
+                    });
+                  }}
+                  className="flex items-center justify-center gap-1 rounded-xl bg-gray-500 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-gray-600 disabled:opacity-50"
+                  title="Thêm lớp mới"
+                >
+                  <MdAdd className="h-4 w-4" />
+                  Thêm mới
+                </button>
+              )}
+
+              {/* Draft item form */}
+              {draftItem && (
+                <div className="rounded-2xl border-2 border-dashed border-gray-300 bg-transparent p-4 dark:border-gray-600">
+                  <div className="mb-3 flex items-center justify-between">
+                    <p className="text-navy-700 text-base font-medium dark:text-white">
+                      Thêm mới
+                    </p>
+                    <button
+                      type="button"
+                      disabled={updatingItemIds.has(-1)}
+                      onClick={() => setDraftItem(null)}
+                      className="flex items-center gap-1 rounded-xl px-2 py-1 text-xs font-medium text-gray-500 transition-colors hover:text-gray-700 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-200"
+                      title="Hủy"
+                    >
+                      <MdClose className="h-4 w-4" />
+                      Hủy
+                    </button>
+                  </div>
+
+                  {/* Item details */}
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    {/* Lớp HP */}
+                    <div className="flex items-center gap-6">
+                      <div className="w-32 shrink-0">
+                        <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                          Lớp HP
+                        </p>
+                      </div>
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          value={draftItem.className ?? ""}
+                          onChange={(e) =>
+                            setDraftItem({
+                              ...draftItem,
+                              className: e.target.value,
+                            })
+                          }
+                          placeholder="Nhập lớp HP"
+                          className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+                          disabled={updatingItemIds.has(-1)}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Thông tin lớp */}
+                    <div className="flex items-center gap-6">
+                      <div className="w-32 shrink-0">
+                        <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                          Thông tin lớp
+                        </p>
+                      </div>
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          value={draftItem.slotInfo ?? ""}
+                          onChange={(e) =>
+                            setDraftItem({
+                              ...draftItem,
+                              slotInfo: e.target.value,
+                            })
+                          }
+                          placeholder="Nhập thông tin lớp"
+                          className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+                          disabled={updatingItemIds.has(-1)}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Tên MH */}
+                    <div className="flex items-center gap-6">
+                      <div className="w-32 shrink-0">
+                        <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                          Tên MH
+                        </p>
+                      </div>
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          value={draftItem.subjectName}
+                          onChange={(e) =>
+                            setDraftItem({
+                              ...draftItem,
+                              subjectName: e.target.value,
+                            })
+                          }
+                          placeholder="Nhập tên môn học"
+                          className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+                          disabled={updatingItemIds.has(-1)}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Mã MH */}
+                    <div className="flex items-center gap-6">
+                      <div className="w-32 shrink-0">
+                        <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                          Mã MH
+                        </p>
+                      </div>
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          value={draftItem.subjectCode ?? ""}
+                          onChange={(e) =>
+                            setDraftItem({
+                              ...draftItem,
+                              subjectCode: e.target.value,
+                            })
+                          }
+                          placeholder="Nhập mã môn học"
+                          className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+                          disabled={updatingItemIds.has(-1)}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Trong CTDT */}
+                    <div className="flex items-center gap-6">
+                      <div className="w-32 shrink-0">
+                        <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                          Trong CTDT
+                        </p>
+                      </div>
+                      <div className="flex-1">
+                        <Switch
+                          checked={draftItem.isInCurriculum ?? false}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            setDraftItem({
+                              ...draftItem,
+                              isInCurriculum: e.target.checked,
+                            })
+                          }
+                          disabled={updatingItemIds.has(-1)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="mt-4 flex justify-end gap-2 border-t border-gray-100 pt-3 dark:border-white/10">
+                    <button
+                      type="button"
+                      disabled={
+                        updatingItemIds.has(-1) || !draftItem.subjectName.trim()
+                      }
+                      onClick={async () => {
+                        if (!detail || !draftItem.subjectName.trim()) {
+                          return;
+                        }
+                        setUpdatingItemIds((prev) => new Set(prev).add(-1));
+                        try {
+                          const newItem =
+                            await classRegistrationItemsService.create(
+                              detail.id,
+                              draftItem,
+                            );
+                          const updated = {
+                            ...detail,
+                            items: [...(detail.items ?? []), newItem],
+                          };
+                          setDetail(updated);
+                          onRegistrationChanged(updated);
+                          // Reset form và giữ lại để thêm tiếp
+                          setDraftItem({
+                            action: "register",
+                            subjectName: "",
+                            subjectCode: "",
+                            className: "",
+                            slotInfo: "",
+                            isInCurriculum: false,
+                          });
+                          toast.success("Đã thêm lớp mới.");
+                        } catch (err: unknown) {
+                          const msg =
+                            err instanceof Error
+                              ? err.message
+                              : "Thêm lớp thất bại.";
+                          toast.error(msg);
+                        } finally {
+                          setUpdatingItemIds((prev) => {
+                            const next = new Set(prev);
+                            next.delete(-1);
+                            return next;
+                          });
+                        }
+                      }}
+                      className="flex items-center gap-1 rounded-xl px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-white/10"
+                      title="Lưu và thêm mới"
+                    >
+                      <MdSave className="h-4 w-4" />
+                      Lưu và thêm mới
+                    </button>
+                    <button
+                      type="button"
+                      disabled={
+                        updatingItemIds.has(-1) || !draftItem.subjectName.trim()
+                      }
+                      onClick={async () => {
+                        if (!detail || !draftItem.subjectName.trim()) {
+                          return;
+                        }
+                        setUpdatingItemIds((prev) => new Set(prev).add(-1));
+                        try {
+                          const newItem =
+                            await classRegistrationItemsService.create(
+                              detail.id,
+                              draftItem,
+                            );
+                          const updated = {
+                            ...detail,
+                            items: [...(detail.items ?? []), newItem],
+                          };
+                          setDetail(updated);
+                          onRegistrationChanged(updated);
+                          setDraftItem(null);
+                          toast.success("Đã thêm lớp mới.");
+                        } catch (err: unknown) {
+                          const msg =
+                            err instanceof Error
+                              ? err.message
+                              : "Thêm lớp thất bại.";
+                          toast.error(msg);
+                        } finally {
+                          setUpdatingItemIds((prev) => {
+                            const next = new Set(prev);
+                            next.delete(-1);
+                            return next;
+                          });
+                        }
+                      }}
+                      className="bg-brand-500 hover:bg-brand-600 flex items-center gap-1 rounded-xl px-4 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-50"
+                      title="Lưu"
+                    >
+                      <MdSave className="h-4 w-4" />
+                      Lưu
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

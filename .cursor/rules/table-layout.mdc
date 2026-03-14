@@ -120,6 +120,60 @@ const actions: TableAction<Message>[] = React.useMemo(
 - Search input supports Enter key automatically
 - Filter button is optional - only show if `showFilter={true}`
 - Handle search state in parent component
+- **ALWAYS sync search keyword and filters to URL params** for:
+  - Deep linking with search/filter state
+  - Browser back/forward navigation
+  - Sharing URLs with applied filters
+  - Preserving state on page refresh
+- **Pattern for URL param synchronization:**
+  ```typescript
+  import { useSearchParams } from "react-router-dom";
+  
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Initialize state from URL params
+  const [keyword, setKeyword] = React.useState(
+    searchParams.get("keyword") ?? "",
+  );
+  const [page, setPage] = React.useState(
+    Number(searchParams.get("page") ?? "1") > 0
+      ? Number(searchParams.get("page") ?? "1")
+      : 1,
+  );
+  const [filters, setFilters] = React.useState<FiltersType>(() => {
+    // Initialize filters from URL params
+    const enableFilter = searchParams.get("enableFilter") === "true";
+    return {
+      enableFilter,
+      // ... other filter fields
+    };
+  });
+  
+  // Sync state to URL params
+  React.useEffect(() => {
+    const next = new URLSearchParams();
+    if (keyword) {
+      next.set("keyword", keyword);
+    }
+    next.set("page", String(page));
+    next.set("limit", String(PAGE_SIZE));
+    // Add filter params if enabled
+    if (filters.enableFilter) {
+      next.set("enableFilter", "true");
+      next.set("filterValue", String(filters.filterValue));
+    }
+    // Keep detail drawer id if exists
+    if (selectedId != null) {
+      next.set("id", String(selectedId));
+    }
+    setSearchParams(next, { replace: true });
+  }, [filters, keyword, page, selectedId, setSearchParams]);
+  ```
+- **Advanced Filter Modal pattern:**
+  - Use `grid grid-cols-1 gap-4 md:grid-cols-4` layout
+  - Label in first column, filter component in `col-span-3`
+  - Buttons at bottom: "Xóa" (clear) and "Tìm kiếm" (apply)
+  - Example from [src/pages/auth/accounts/components/AdvancedFilterModal.tsx](mdc:src/pages/auth/accounts/components/AdvancedFilterModal.tsx)
 
 ### 4. Pagination
 - Pagination is automatically handled by TableLayout
@@ -135,6 +189,18 @@ const actions: TableAction<Message>[] = React.useMemo(
     - Drawer `isOpen` is derived from `selectedId = searchParams.get("id")`.
     - `onClose` of drawer clears the `id` param.
 - This pattern keeps the UI in sync with browser history and allows deep-linking directly into a specific row's detail.
+- **Important:** When syncing URL params, preserve both search/filter state AND detail drawer id:
+  ```typescript
+  React.useEffect(() => {
+    const next = new URLSearchParams();
+    // ... sync search, page, filters ...
+    // Keep detail drawer id if exists
+    if (selectedId != null) {
+      next.set("id", String(selectedId));
+    }
+    setSearchParams(next, { replace: true });
+  }, [filters, keyword, page, selectedId, setSearchParams]);
+  ```
 - Use the `Drawer` component from `src/components/drawer/Drawer.tsx` (as used by email and users pages) for consistency.
 
 ### 6. Drawer Layout & Styling (Detail / Edit)
