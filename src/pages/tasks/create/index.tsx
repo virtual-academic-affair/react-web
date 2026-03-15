@@ -6,7 +6,7 @@ import { TaskPriority, TaskStatus } from "@/types/task";
 import type { User } from "@/types/users";
 import { message as toast } from "antd";
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import TaskProcessSteps from "./components/TaskProcessSteps";
 import TaskStatusSelector from "../list/components/TaskStatusSelector";
 import TaskPrioritySelector from "../list/components/TaskPrioritySelector";
@@ -34,6 +34,17 @@ const TaskCreatePage: React.FC = () => {
     assigneeIds: [],
     assigners: "",
   });
+
+  const [searchParams] = useSearchParams();
+
+  React.useEffect(() => {
+    const dueParam = searchParams.get("due");
+    if (dueParam) {
+      // The dueParam is passed as YYYY-MM-DD. We add a default time like 23:59
+      // datatime-local input expects YYYY-MM-DDThh:mm format.
+      setForm((prev) => ({ ...prev, due: `${dueParam}T23:59` }));
+    }
+  }, [searchParams]);
 
   React.useEffect(() => {
     usersService

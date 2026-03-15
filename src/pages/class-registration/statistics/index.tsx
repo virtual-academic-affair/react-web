@@ -75,7 +75,7 @@ function getDateRange(range: TimeRangeType) {
 
 const ClassRegistrationStatisticsPage: React.FC = () => {
   const [timeRange, setTimeRange] =
-    React.useState<TimeRangeType>("last_1_month");
+    React.useState<TimeRangeType>("this_week");
   const [loading, setLoading] = React.useState(false);
   const [summaryData, setSummaryData] = React.useState<
     Record<string, ClassRegistrationStatsItem | number>
@@ -192,11 +192,14 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
       dataByLocalDate.set(localKey, total);
     });
 
+    let overallMax = 0;
     const current = new Date(start);
     while (current <= end) {
       categories.push(`${current.getDate()}/${current.getMonth() + 1}`);
       const localKey = `${current.getFullYear()}-${current.getMonth() + 1}-${current.getDate()}`;
-      totalSeries.push(dataByLocalDate.get(localKey) || 0);
+      const val = dataByLocalDate.get(localKey) || 0;
+      totalSeries.push(val);
+      overallMax = Math.max(overallMax, val);
       current.setDate(current.getDate() + 1);
     }
 
@@ -239,10 +242,17 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
         },
         yaxis: {
           show: false,
+          max: overallMax > 0 ? overallMax * 1.3 : 10,
         },
         grid: {
           show: false,
           strokeDashArray: 5,
+          padding: {
+            top: 50,
+            bottom: 0,
+            left: 10,
+            right: 10,
+          },
         },
         colors: ["#4318FF"],
       },
@@ -278,16 +288,24 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
     const rawDetails: Array<ClassRegistrationStatsItem["detail"] | undefined> =
       [];
 
+    let stackedMax = 0;
     const current = new Date(start);
     while (current <= end) {
       categories.push(`${current.getDate()}/${current.getMonth() + 1}`);
       const localKey = `${current.getFullYear()}-${current.getMonth() + 1}-${current.getDate()}`;
       const item = dataByLocalDate.get(localKey);
 
-      registerSeries.push(item?.detail?.register?.total || 0);
-      cancelSeries.push(item?.detail?.cancel?.total || 0);
-      openSeries.push(item?.detail?.requestOpen?.total || 0);
+      const r = item?.detail?.register?.total || 0;
+      const c = item?.detail?.cancel?.total || 0;
+      const o = item?.detail?.requestOpen?.total || 0;
+
+      registerSeries.push(r);
+      cancelSeries.push(c);
+      openSeries.push(o);
       rawDetails.push(item?.detail);
+      
+      const dayTotal = r + c + o;
+      stackedMax = Math.max(stackedMax, dayTotal);
 
       current.setDate(current.getDate() + 1);
     }
@@ -362,12 +380,35 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
         },
         yaxis: {
           show: false,
+          max: stackedMax > 0 ? stackedMax * 1.3 : 10,
         },
         grid: {
           show: false,
+          padding: {
+            top: 50,
+            bottom: 0,
+            left: 10,
+            right: 10,
+          },
         },
         legend: {
-          show: false, // We'll hide it or show it depending on preference, hiding makes it look cleaner like image
+          show: true,
+          position: "bottom",
+          horizontalAlign: "center",
+          fontSize: "14px",
+          fontWeight: 700,
+          labels: {
+            colors: "#A3AED0",
+          },
+          itemMargin: {
+            horizontal: 15,
+            vertical: 10,
+          },
+          markers: {
+            size: 6,
+            shape: "circle",
+            strokeWidth: 0,
+          },
         },
         colors: [
           RegistrationActionColors.register.hex,
@@ -437,47 +478,11 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
 
           {/* Detailed Stats Chart */}
           <div className="shadow-3xl shadow-shadow-500 dark:bg-navy-800 relative flex w-full flex-col rounded-4xl bg-white p-6 dark:shadow-none">
-            <div className="mb-auto flex flex-row justify-between">
+            <div className="flex flex-row items-start justify-between">
               <div className="flex flex-col">
                 <h2 className="text-navy-700 text-lg font-bold dark:text-white">
                   Chi tiết yêu cầu
                 </h2>
-                <div className="mt-2 flex flex-row items-center gap-2">
-                  <div className="flex items-center gap-1">
-                    <div
-                      className={`h-2 w-2 rounded-full`}
-                      style={{
-                        backgroundColor: RegistrationActionColors.register.hex,
-                      }}
-                    ></div>
-                    <span className="text-xs text-gray-600 dark:text-gray-300">
-                      {RegistrationActionLabels.register}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div
-                      className={`h-2 w-2 rounded-full`}
-                      style={{
-                        backgroundColor: RegistrationActionColors.cancel.hex,
-                      }}
-                    ></div>
-                    <span className="text-xs text-gray-600 dark:text-gray-300">
-                      {RegistrationActionLabels.cancel}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div
-                      className={`h-2 w-2 rounded-full`}
-                      style={{
-                        backgroundColor:
-                          RegistrationActionColors.requestOpen.hex,
-                      }}
-                    ></div>
-                    <span className="text-xs text-gray-600 dark:text-gray-300">
-                      {RegistrationActionLabels.requestOpen}
-                    </span>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -486,6 +491,7 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
                 barChartData.options.xaxis?.categories &&
                 barChartData.options.xaxis.categories.length > 0 ? (
                   <BarChart
+                    key={`bar-chart-${timeRange}`}
                     chartOptions={barChartData.options}
                     chartData={barChartData.series}
                   />
