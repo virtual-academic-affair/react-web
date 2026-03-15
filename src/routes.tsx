@@ -3,7 +3,7 @@
  * Used by the Sidebar to render navigation links.
  */
 
-import { MdPerson, MdSchool } from "react-icons/md";
+import { MdDashboard, MdPerson, MdSchool } from "react-icons/md";
 import { SiGmail } from "react-icons/si";
 
 const routes: RoutesType[] = [
@@ -80,6 +80,29 @@ const routes: RoutesType[] = [
             path: "class-registration/cancel-reasons/create",
           },
         ],
+      },
+    ],
+  },
+  {
+    name: "Công việc",
+    layout: "/admin",
+    path: "/tasks",
+    icon: <MdDashboard className="h-6 w-6" />,
+    children: [
+      {
+        name: "Thống kê",
+        layout: "/admin",
+        path: "tasks/statistics",
+      },
+      {
+        name: "DS công việc",
+        layout: "/admin",
+        path: "tasks/list",
+      },
+      {
+        name: "Tạo công việc",
+        layout: "/admin",
+        path: "tasks/create",
       },
     ],
   },

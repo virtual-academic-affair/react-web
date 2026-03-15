@@ -8,7 +8,7 @@ import type {
 import { message as toast } from "antd";
 import React from "react";
 import { MdAdd, MdDeleteOutline } from "react-icons/md";
-import RichTextEditor from "../registrations/components/RichTextEditor";
+import RichTextEditor from "@/components/fields/RichTextEditor";
 import ProcessSteps from "./components/ProcessSteps";
 
 interface DraftItem extends CreateClassRegistrationItemDto {

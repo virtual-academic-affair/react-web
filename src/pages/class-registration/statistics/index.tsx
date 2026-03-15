@@ -1,4 +1,3 @@
-import Widget from "@/components/widget/Widget";
 import { classRegistrationsService } from "@/services/class-registration";
 import {
   type ClassRegistrationStatsItem,
@@ -7,13 +6,15 @@ import {
 } from "@/types/classRegistration";
 import { message as toast } from "antd";
 import React from "react";
-import Chart from "react-apexcharts";
+import LineChart from "@/components/charts/LineChart";
+import BarChart from "@/components/charts/BarChart";
+import balanceImg from "@/assets/img/dashboards/balanceImg.png";
+import fakeGraph from "@/assets/img/dashboards/fakeGraph.png";
 import {
   MdAppRegistration,
-  MdInsertChartOutlined,
   MdOutlineCancel,
   MdOutlineOpenInBrowser,
-  MdBarChart,
+  MdInsights,
 } from "react-icons/md";
 
 type TimeRangeType =
@@ -76,7 +77,10 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
   const [timeRange, setTimeRange] =
     React.useState<TimeRangeType>("last_1_month");
   const [loading, setLoading] = React.useState(false);
-  const [data, setData] = React.useState<
+  const [summaryData, setSummaryData] = React.useState<
+    Record<string, ClassRegistrationStatsItem | number>
+  >({});
+  const [detailData, setDetailData] = React.useState<
     Record<string, ClassRegistrationStatsItem>
   >({});
 
@@ -84,12 +88,20 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
     setLoading(true);
     try {
       const { from, to } = getDateRange(range);
-      const res = await classRegistrationsService.getStats({
-        from: from.toISOString(),
-        to: to.toISOString(),
-        isDetail: true,
-      });
-      setData(res as Record<string, ClassRegistrationStatsItem>);
+      const [summaryRes, detailRes] = await Promise.all([
+        classRegistrationsService.getStats({
+          from: from.toISOString(),
+          to: to.toISOString(),
+          isDetail: false,
+        }),
+        classRegistrationsService.getStats({
+          from: from.toISOString(),
+          to: to.toISOString(),
+          isDetail: true,
+        }),
+      ]);
+      setSummaryData(summaryRes as Record<string, ClassRegistrationStatsItem>);
+      setDetailData(detailRes as Record<string, ClassRegistrationStatsItem>);
     } catch (err: unknown) {
       const msg =
         err instanceof Error ? err.message : "Có lỗi xảy ra khi lấy thống kê.";
@@ -109,7 +121,7 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
     let requestOpen = 0;
     let register = 0;
 
-    Object.values(data).forEach((item) => {
+    Object.values(detailData).forEach((item) => {
       total += item.total || 0;
       if (item.detail) {
         cancel += item.detail.cancel?.total || 0;
@@ -119,7 +131,46 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
     });
 
     return { total, cancel, requestOpen, register };
-  }, [data]);
+  }, [detailData]);
+
+  const peakDay = React.useMemo(() => {
+    let max = -1;
+    let peakDate = "";
+
+    Object.keys(detailData).forEach((key) => {
+      const total = detailData[key].total || 0;
+      if (total > max) {
+        max = total;
+        peakDate = key;
+      } else {
+        if (total === max && max !== -1) {
+          if (new Date(key) > new Date(peakDate)) {
+            peakDate = key;
+          }
+        }
+      }
+    });
+
+    if (!peakDate || max <= 0) {
+      return null;
+    }
+    const d = new Date(peakDate);
+    return {
+      date: d,
+      total: max,
+      formattedDate: d.toLocaleDateString("vi-VN", {
+        weekday: "long",
+        day: "2-digit",
+        month: "short",
+      }),
+    };
+  }, [detailData]);
+
+  const dateRangeLabel = React.useMemo(() => {
+    const { from, to } = getDateRange(timeRange);
+    const fmt = (d: Date) => `${d.getDate()}/${d.getMonth() + 1}`;
+    return `từ ${fmt(from)} đến ${fmt(to)}`;
+  }, [timeRange]);
 
   const areaChartData = React.useMemo(() => {
     const { from, to } = getDateRange(timeRange);
@@ -133,10 +184,12 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
     const totalSeries: number[] = [];
 
     const dataByLocalDate = new Map<string, number>();
-    Object.keys(data).forEach((key) => {
+    Object.keys(summaryData).forEach((key) => {
       const d = new Date(key);
       const localKey = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-      dataByLocalDate.set(localKey, data[key].total || 0);
+      const val = summaryData[key];
+      const total = typeof val === "number" ? val : val?.total || 0;
+      dataByLocalDate.set(localKey, total);
     });
 
     const current = new Date(start);
@@ -175,7 +228,7 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
           },
         },
         dataLabels: { enabled: false },
-        stroke: { curve: "smooth", width: 3 },
+        stroke: { curve: "smooth", width: 4 },
         xaxis: {
           categories,
           labels: {
@@ -191,15 +244,6 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
           show: false,
           strokeDashArray: 5,
         },
-        fill: {
-          type: "gradient",
-          gradient: {
-            shadeIntensity: 1,
-            opacityFrom: 0.7,
-            opacityTo: 0.9,
-            stops: [0, 90, 100],
-          },
-        },
         colors: ["#4318FF"],
       },
       series: [
@@ -209,7 +253,7 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
         },
       ],
     };
-  }, [data, timeRange]);
+  }, [summaryData, timeRange]);
 
   const barChartData = React.useMemo(() => {
     const { from, to } = getDateRange(timeRange);
@@ -225,10 +269,10 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
     const openSeries: number[] = [];
 
     const dataByLocalDate = new Map<string, ClassRegistrationStatsItem>();
-    Object.keys(data).forEach((key) => {
+    Object.keys(detailData).forEach((key) => {
       const d = new Date(key);
       const localKey = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-      dataByLocalDate.set(localKey, data[key]);
+      dataByLocalDate.set(localKey, detailData[key]);
     });
 
     const rawDetails: Array<ClassRegistrationStatsItem["detail"] | undefined> =
@@ -303,6 +347,8 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
         plotOptions: {
           bar: {
             borderRadius: 4,
+            borderRadiusApplication: "end",
+            borderRadiusWhenStacked: "last",
             columnWidth: "15px",
           },
         },
@@ -344,7 +390,7 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
         },
       ],
     };
-  }, [data, timeRange]);
+  }, [detailData, timeRange]);
 
   return (
     <div className="flex flex-col gap-5">
@@ -354,7 +400,7 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
         {/* Left Side: Charts (3/4 width) */}
         <div className="flex flex-col gap-5 lg:col-span-3">
           {/* Total Overview Chart */}
-          <div className="rounded-primary shadow-3xl shadow-shadow-500 dark:bg-navy-800 relative flex w-full flex-col bg-white p-6 dark:shadow-none">
+          <div className="shadow-3xl shadow-shadow-500 dark:bg-navy-800 relative flex w-full flex-col rounded-4xl bg-white p-6 dark:shadow-none">
             <div className="flex flex-row justify-between">
               <div className="flex flex-col">
                 <h2 className="text-navy-700 text-3xl font-bold dark:text-white">
@@ -372,12 +418,9 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
               {!loading ? (
                 areaChartData.options.xaxis?.categories &&
                 areaChartData.options.xaxis.categories.length > 0 ? (
-                  <Chart
-                    options={areaChartData.options as ApexCharts.ApexOptions}
-                    series={areaChartData.series}
-                    type="area"
-                    width="100%"
-                    height="100%"
+                  <LineChart
+                    chartOptions={areaChartData.options}
+                    chartData={areaChartData.series}
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center text-sm text-gray-500">
@@ -393,7 +436,7 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
           </div>
 
           {/* Detailed Stats Chart */}
-          <div className="rounded-primary shadow-3xl shadow-shadow-500 dark:bg-navy-800 relative flex w-full flex-col bg-white p-6 dark:shadow-none">
+          <div className="shadow-3xl shadow-shadow-500 dark:bg-navy-800 relative flex w-full flex-col rounded-4xl bg-white p-6 dark:shadow-none">
             <div className="mb-auto flex flex-row justify-between">
               <div className="flex flex-col">
                 <h2 className="text-navy-700 text-lg font-bold dark:text-white">
@@ -442,12 +485,9 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
               {!loading ? (
                 barChartData.options.xaxis?.categories &&
                 barChartData.options.xaxis.categories.length > 0 ? (
-                  <Chart
-                    options={barChartData.options as ApexCharts.ApexOptions}
-                    series={barChartData.series}
-                    type="bar"
-                    width="100%"
-                    height="100%"
+                  <BarChart
+                    chartOptions={barChartData.options}
+                    chartData={barChartData.series}
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center text-sm text-gray-500">
@@ -476,41 +516,150 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
             <option value="last_1_week">Tuần trước</option>
             <option value="this_week">Tuần này</option>
           </select>
-          <Widget
-            icon={<MdInsertChartOutlined className="text-brand-500 h-7 w-7" />}
-            title="Tổng yêu cầu"
-            subtitle={summary.total.toString()}
-          />
-          <Widget
-            icon={
-              <MdAppRegistration
-                className={`h-7 w-7`}
-                style={{ color: RegistrationActionColors.register.hex }}
-              />
-            }
-            title={RegistrationActionLabels.register}
-            subtitle={summary.register.toString()}
-          />
-          <Widget
-            icon={
-              <MdOutlineCancel
-                className={`h-7 w-7`}
-                style={{ color: RegistrationActionColors.cancel.hex }}
-              />
-            }
-            title={RegistrationActionLabels.cancel}
-            subtitle={summary.cancel.toString()}
-          />
-          <Widget
-            icon={
-              <MdOutlineOpenInBrowser
-                className={`h-7 w-7`}
-                style={{ color: RegistrationActionColors.requestOpen.hex }}
-              />
-            }
-            title={RegistrationActionLabels.requestOpen}
-            subtitle={summary.requestOpen.toString()}
-          />
+
+          <div className="shadow-3xl shadow-shadow-500 dark:bg-navy-800 flex flex-col rounded-3xl bg-white p-5 dark:shadow-none">
+            {/* Top part: Purple rounded container */}
+            <div
+              className="relative mb-6 flex flex-col justify-between rounded-3xl bg-[#11047A] bg-cover bg-no-repeat p-6 dark:bg-[#1b264b]"
+              style={{ backgroundImage: `url(${balanceImg})` }}
+            >
+              <div className="flex items-center justify-between">
+                <h4 className="text-base font-medium text-white">
+                  Tổng yêu cầu
+                </h4>
+              </div>
+              <div className="mt-4 flex flex-row items-center justify-between">
+                <h2 className="text-4xl font-bold text-white">
+                  {summary.total}
+                </h2>
+                <img
+                  src={fakeGraph}
+                  alt="graph"
+                  className="h-[20px] w-auto opacity-80"
+                />
+              </div>
+            </div>
+
+            {/* Bottom part: Recent list */}
+            <div className="flex flex-col">
+              <h4 className="text-navy-700 mb-4 text-lg font-bold dark:text-white">
+                Chi tiết
+              </h4>
+
+              {/* Item 1: Register */}
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="dark:bg-navy-700 flex h-12 w-12 items-center justify-center rounded-full bg-[#F4F7FE]">
+                    <MdAppRegistration
+                      className="h-6 w-6"
+                      style={{ color: RegistrationActionColors.register.hex }}
+                    />
+                  </div>
+                  <div>
+                    <h5 className="text-navy-700 text-base font-bold dark:text-white">
+                      {RegistrationActionLabels.register}
+                    </h5>
+                    <p className="text-sm font-medium text-gray-500">
+                      {summary.total > 0
+                        ? ((summary.register / summary.total) * 100).toFixed(1)
+                        : 0}
+                      %
+                    </p>
+                  </div>
+                </div>
+                <p className="text-navy-700 text-base font-bold dark:text-white">
+                  {summary.register}
+                </p>
+              </div>
+
+              {/* Item 2: Cancel */}
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="dark:bg-navy-700 flex h-12 w-12 items-center justify-center rounded-full bg-[#F4F7FE]">
+                    <MdOutlineCancel
+                      className="h-6 w-6"
+                      style={{ color: RegistrationActionColors.cancel.hex }}
+                    />
+                  </div>
+                  <div>
+                    <h5 className="text-navy-700 text-base font-bold dark:text-white">
+                      {RegistrationActionLabels.cancel}
+                    </h5>
+                    <p className="text-sm font-medium text-gray-500">
+                      {summary.total > 0
+                        ? ((summary.cancel / summary.total) * 100).toFixed(1)
+                        : 0}
+                      %
+                    </p>
+                  </div>
+                </div>
+                <p className="text-navy-700 text-base font-bold dark:text-white">
+                  {summary.cancel}
+                </p>
+              </div>
+
+              {/* Item 3: Request Open */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="dark:bg-navy-700 flex h-12 w-12 items-center justify-center rounded-full bg-[#F4F7FE]">
+                    <MdOutlineOpenInBrowser
+                      className="h-6 w-6"
+                      style={{
+                        color: RegistrationActionColors.requestOpen.hex,
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <h5 className="text-navy-700 text-base font-bold dark:text-white">
+                      {RegistrationActionLabels.requestOpen}
+                    </h5>
+                    <p className="text-sm font-medium text-gray-500">
+                      {summary.total > 0
+                        ? ((summary.requestOpen / summary.total) * 100).toFixed(
+                            1,
+                          )
+                        : 0}
+                      %
+                    </p>
+                  </div>
+                </div>
+                <p className="text-navy-700 text-base font-bold dark:text-white">
+                  {summary.requestOpen}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Peak Day Card */}
+          {peakDay && (
+            <div className="shadow-3xl shadow-shadow-500 dark:bg-navy-800 flex flex-col rounded-3xl bg-white p-5 dark:shadow-none">
+              <h4 className="text-navy-700 mb-3 text-lg font-bold dark:text-white">
+                {peakDay.formattedDate}
+              </h4>
+              <div className="bg-peak-day-gradient flex flex-col rounded-3xl p-6">
+                <div className="flex items-center justify-between">
+                  <MdInsights className="text-brand-500 h-10 w-10" />
+                  <div className="text-right">
+                    <p className="text-navy-700 text-sm font-bold dark:text-white">
+                      Cao nhất
+                    </p>
+                    <p className="text-xs font-medium text-gray-500">
+                      {dateRangeLabel}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex flex-col">
+                  <h2 className="text-navy-700 text-4xl font-bold dark:text-white">
+                    {peakDay.total}
+                  </h2>
+                  <p className="text-navy-700 mt-1 text-lg font-medium dark:text-white">
+                    số lượng yêu cầu
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

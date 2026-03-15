@@ -1,37 +1,38 @@
 import Drawer from "@/components/drawer/Drawer";
 import Switch from "@/components/switch";
 import {
-    cancelReasonsService,
-    classRegistrationItemsService,
-    classRegistrationsService,
+  cancelReasonsService,
+  classRegistrationItemsService,
+  classRegistrationsService,
 } from "@/services/class-registration";
 import type {
-    CancelReason,
-    ClassRegistration,
-    ClassRegistrationItem,
-    CreateClassRegistrationItemDto,
-    ItemStatus,
-    MessageStatus,
+  CancelReason,
+  ClassRegistration,
+  ClassRegistrationItem,
+  CreateClassRegistrationItemDto,
+  ItemStatus,
+  MessageStatus,
 } from "@/types/classRegistration";
 import {
-    ItemStatusColors,
-    ItemStatusLabels,
-    type UpdateClassRegistrationDto,
+  ItemStatusColors,
+  ItemStatusLabels,
+  type UpdateClassRegistrationDto,
 } from "@/types/classRegistration";
 import { formatDate } from "@/utils/date";
-import { message as toast, Tooltip } from "antd";
+import { message as toast } from "antd";
 import React from "react";
 import {
-    MdAdd,
-    MdClose,
-    MdDeleteOutline,
-    MdSave,
-    MdUndo,
+  MdAdd,
+  MdClose,
+  MdDeleteOutline,
+  MdSave,
+  MdUndo,
 } from "react-icons/md";
 import ReactQuill from "react-quill-new";
 import { useSearchParams } from "react-router-dom";
 import MessageStatusSelector from "./MessageStatusSelector";
-import RichTextEditor from "./RichTextEditor";
+import RichTextEditor from "@/components/fields/RichTextEditor";
+import Tooltip from "@/components/tooltip/Tooltip.tsx";
 
 interface RegistrationDetailDrawerProps {
   registrationId: number | null;
@@ -382,6 +383,19 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
     }
   };
 
+  const isDirty = React.useMemo(() => {
+    if (!detail || !form) {
+      return false;
+    }
+    return (
+      form.studentCode !== detail.studentCode ||
+      form.studentName !== detail.studentName ||
+      form.academicYear !== String(detail.academicYear) ||
+      form.note !== (detail.note ?? "") ||
+      form.messageStatus !== (detail.messageStatus ?? null)
+    );
+  }, [detail, form]);
+
   const isOpen = registrationId != null;
 
   return (
@@ -480,25 +494,27 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                 />
               </div>
             </div>
-            <div className="mt-2 flex justify-end gap-2">
-              <button
-                type="button"
-                disabled={savingInfo}
-                onClick={handleResetForm}
-                className="rounded-xl px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-white/10"
-              >
-                Hủy
-              </button>
-              <button
-                type="button"
-                disabled={savingInfo}
-                onClick={handleSaveInfo}
-                className="bg-brand-500 hover:bg-brand-600 flex items-center gap-1 rounded-xl px-4 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-50"
-              >
-                <MdSave className="h-4 w-4" />
-                {savingInfo ? "Đang lưu..." : "Lưu"}
-              </button>
-            </div>
+            {isDirty && (
+              <div className="mt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  disabled={savingInfo}
+                  onClick={handleResetForm}
+                  className="rounded-xl px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-white/10"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  disabled={savingInfo}
+                  onClick={handleSaveInfo}
+                  className="bg-brand-500 hover:bg-brand-600 flex items-center gap-1 rounded-xl px-4 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-50"
+                >
+                  <MdSave className="h-4 w-4" />
+                  {savingInfo ? "Đang lưu..." : "Lưu"}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Child items - kết quả đăng ký */}
@@ -776,7 +792,7 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                                 return (
                                   <>
                                     {/* Rollback button */}
-                                    <Tooltip title="Rollback">
+                                    <Tooltip label="Hủy">
                                       <button
                                         type="button"
                                         disabled={updating}

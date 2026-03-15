@@ -74,67 +74,87 @@ const CancelReasonDrawer: React.FC<CancelReasonDrawerProps> = ({
     }
   };
 
-  return (
-    <Drawer
-      isOpen={isOpen}
-      onClose={onClose}
-      title={isEdit ? "Chỉnh sửa lý do hủy" : "Thêm lý do hủy"}
-    >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-        {/* Nội dung */}
-        <div className="flex items-start gap-6">
-          <div className="w-40 shrink-0">
-            <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-              Nội dung
-            </p>
-          </div>
-          <div className="flex-1">
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={4}
-              className="w-full rounded-2xl border border-gray-200 bg-transparent p-3 outline-none dark:border-white/10 dark:text-white"
-              placeholder="Nhập nội dung lý do hủy..."
-            />
-          </div>
-        </div>
+        const isDirty = React.useMemo(() => {
+          if (!isEdit) {
+            return content.trim() !== "" || isActive !== true;
+          }
+          return (
+            content !== (initialReason?.content ?? "") ||
+            isActive !== (initialReason?.isActive ?? true)
+          );
+        }, [isEdit, content, isActive, initialReason]);
 
-        {/* Trạng thái hiển thị */}
-        <div className="flex items-center gap-6">
-          <div className="w-40 shrink-0">
-            <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-              Trạng thái hiển thị
-            </p>
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-3">
-              <Switch
-                checked={isActive}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setIsActive(e.target.checked)
-                }
-              />
-            </div>
-          </div>
-        </div>
+        return (
+          <Drawer
+            isOpen={isOpen}
+            onClose={onClose}
+            title={isEdit ? "Chỉnh sửa lý do hủy" : "Thêm lý do hủy"}
+          >
+            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+              {/* Nội dung */}
+              <div className="flex items-start gap-6">
+                <div className="w-40 shrink-0">
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    Nội dung
+                  </p>
+                </div>
+                <div className="flex-1">
+                  <textarea
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    rows={4}
+                    className="w-full rounded-2xl border border-gray-200 bg-transparent p-3 outline-none dark:border-white/10 dark:text-white"
+                    placeholder="Nhập nội dung lý do hủy..."
+                  />
+                </div>
+              </div>
 
-        <div className="mt-4 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-xl px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10"
-          >
-            Hủy
-          </button>
-          <button
-            type="submit"
-            disabled={saving}
-            className="bg-brand-500 hover:bg-brand-600 flex items-center gap-1 rounded-xl px-4 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-50"
-          >
-            <MdSave className="h-4 w-4" />
-            {saving ? "Đang lưu..." : "Lưu"}
-          </button>
-        </div>
+              {/* Trạng thái hiển thị */}
+              <div className="flex items-center gap-6">
+                <div className="w-40 shrink-0">
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    Trạng thái hiển thị
+                  </p>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      checked={isActive}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setIsActive(e.target.checked)
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {isDirty && (
+                <div className="mt-4 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isEdit && initialReason) {
+                        setContent(initialReason.content);
+                        setIsActive(initialReason.isActive);
+                      } else {
+                        setContent("");
+                        setIsActive(true);
+                      }
+                    }}
+                    className="rounded-xl px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="bg-brand-500 hover:bg-brand-600 flex items-center gap-1 rounded-xl px-4 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-50"
+                  >
+                    <MdSave className="h-4 w-4" />
+                    {saving ? "Đang lưu..." : "Lưu"}
+                  </button>
+                </div>
+              )}
 
         {/* Thông số kỹ thuật (chỉ edit) */}
         {initialReason && (

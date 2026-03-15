@@ -5,7 +5,7 @@ import { message as toast } from "antd";
 import React from "react";
 import { MdClose, MdEdit, MdSend } from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
-import RichTextEditor from "./RichTextEditor";
+import RichTextEditor from "@/components/fields/RichTextEditor";
 
 interface PreviewReplyModalProps {
   registrationId: number | null;

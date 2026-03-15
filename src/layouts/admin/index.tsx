@@ -16,6 +16,10 @@ import ClassRegistrationsPage from "@/pages/class-registration/registrations";
 import ClassRegistrationStatisticsPage from "@/pages/class-registration/statistics";
 import GmailConfigPage from "@/pages/emails/config";
 import MessagesPage from "@/pages/emails/message";
+import TaskCreatePage from "@/pages/tasks/create";
+import TasksPage from "@/pages/tasks/list";
+import TaskStatisticsPage from "@/pages/tasks/statistics";
+import TaskDetailPage from "@/pages/tasks/view";
 import routes from "@/routes";
 import { dynamicDataService } from "@/services/shared";
 import type { DynamicDataResponse } from "@/types/shared";
@@ -140,6 +144,26 @@ const AdminLayout: React.FC = () => {
             <Route
               path="class-registration/cancel-reasons/create"
               element={<CancelReasonCreatePage />}
+            />
+            <Route
+              path="tasks/statistics"
+              element={<TaskStatisticsPage />}
+            />
+            <Route
+              path="tasks/list"
+              element={<TasksPage />}
+            />
+            <Route
+              path="tasks/create"
+              element={<TaskCreatePage />}
+            />
+            <Route
+              path="tasks/view/:id"
+              element={<TaskDetailPage />}
+            />
+            <Route
+              path="tasks"
+              element={<Navigate to="/admin/tasks/statistics" replace />}
             />
             <Route
               path="class-registration"

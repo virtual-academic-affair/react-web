@@ -314,7 +314,7 @@
   --shadow-inset: inset 0px 18px 22px;
   --shadow-darkinset: 0px 4px 4px inset;
 
-  --radius-primary: 20px;
+  --radius-primary: 24px;
 }
 
 /* 4. Percentage-width utilities (w-1p … w-99p).
@@ -433,17 +433,24 @@ body,
 
 /* Global font */
 body {
-  font-family:
-    var(--font-momo),
-    var(--font-sans),
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    Roboto,
-    "Helvetica Neue",
-    Arial,
-    "Noto Sans",
-    sans-serif;
+  font-family: var(--font-momo),
+  var(--font-sans),
+  system-ui,
+  -apple-system,
+  "Segoe UI",
+  Roboto,
+  "Helvetica Neue",
+  Arial,
+  "Noto Sans",
+  sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+@utility bg-peak-day-gradient {
+  background: linear-gradient(rgb(244, 247, 254) 0%, rgba(244, 247, 254, 0) 86.56%);
+  @variant dark {
+    background: linear-gradient(rgb(27, 37, 75) 0%, rgba(27, 37, 75, 0) 86.56%);
+  }
+}
+
