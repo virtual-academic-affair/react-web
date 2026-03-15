@@ -218,10 +218,10 @@ const TasksPage: React.FC = () => {
             }
           : prev,
       );
-      toast.success("Cập nhật trạng thái thành công.");
+      toast.success("Cập nhật thành công.");
     } catch (err: unknown) {
       console.error(err);
-      toast.error("Cập nhật trạng thái thất bại.");
+      toast.error("Cập nhật thất bại.");
     }
   };
 
@@ -240,11 +240,11 @@ const TasksPage: React.FC = () => {
           : prev,
       );
       toast.success(
-        `Cập nhật mức ưu tiên "${TaskPriorityLabels[priority]}" thành công.`,
+        `Cập nhật thành công.`,
       );
     } catch (err: unknown) {
       console.error(err);
-      toast.error("Cập nhật mức ưu tiên thất bại.");
+      toast.error("Cập nhật thất bại.");
     }
   };
 

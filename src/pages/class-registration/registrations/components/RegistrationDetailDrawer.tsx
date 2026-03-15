@@ -198,10 +198,10 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
           i.id === item.id ? updated : i,
         ),
       });
-      toast.success("Cập nhật trạng thái lớp thành công.");
+      toast.success("Cập nhật thành công.");
     } catch (err: unknown) {
       const msg =
-        err instanceof Error ? err.message : "Cập nhật trạng thái thất bại.";
+        err instanceof Error ? err.message : "Cập nhật thất bại.";
       toast.error(msg);
     } finally {
       setUpdatingItemIds((prev) => {
@@ -249,10 +249,10 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
           i.id === item.id ? updated : i,
         ),
       });
-      toast.success("Cập nhật thông tin lớp thành công.");
+      toast.success("Cập nhật thành công.");
     } catch (err: unknown) {
       const msg =
-        err instanceof Error ? err.message : "Cập nhật thông tin thất bại.";
+        err instanceof Error ? err.message : "Cập nhật thất bại.";
       toast.error(msg);
     } finally {
       setUpdatingItemIds((prev) => {
@@ -373,10 +373,10 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
       const updated = await classRegistrationsService.update(detail.id, dto);
       setDetail(updated);
       onRegistrationChanged(updated);
-      toast.success("Cập nhật thông tin đăng ký lớp thành công.");
+      toast.success("Cập nhật thành công.");
     } catch (err: unknown) {
       const msg =
-        err instanceof Error ? err.message : "Cập nhật thông tin thất bại.";
+        err instanceof Error ? err.message : "Cập nhật thất bại.";
       toast.error(msg);
     } finally {
       setSavingInfo(false);

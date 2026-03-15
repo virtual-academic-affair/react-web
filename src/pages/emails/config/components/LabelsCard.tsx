@@ -99,7 +99,7 @@ const LabelsCard: React.FC<LabelsCardProps> = ({ systemLabelEnum }) => {
       await labelsService.updateLabels(dto);
       setMapping(draft);
       setEditing(false);
-      toast.success("Cập nhật nhãn thành công.");
+      toast.success("Cập nhật thành công.");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Lưu nhãn thất bại.";
       toast.error(msg);

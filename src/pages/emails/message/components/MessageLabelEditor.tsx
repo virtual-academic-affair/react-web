@@ -43,11 +43,11 @@ const MessageLabelEditor: React.FC<MessageLabelEditorProps> = ({
       await messagesService.updateMessageLabels(msgId, {
         systemLabels: draftLabels,
       });
-      toast.success("Cập nhật nhãn thành công.");
+      toast.success("Cập nhật thành công.");
       closeEdit();
       onLabelChanged?.(msgId, draftLabels);
     } catch {
-      toast.error("Không thể cập nhật nhãn.");
+      toast.error("Cập nhật thất bại.");
     } finally {
       setSaving(false);
     }

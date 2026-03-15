@@ -65,11 +65,11 @@ const EmailsTable: React.FC<EmailsTableProps> = ({
       await messagesService.updateMessageLabels(msgId, {
         systemLabels: draftLabels,
       });
-      message.success("Cập nhật nhãn thành công.");
+      message.success("Cập nhật thành công.");
       closeEdit();
       onLabelChanged?.();
     } catch {
-      message.error("Không thể cập nhật nhãn.");
+      message.error("Cập nhật thất bại.");
     } finally {
       setSaving(false);
     }

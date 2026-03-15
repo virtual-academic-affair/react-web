@@ -76,12 +76,9 @@ const AllowedDomainsCard: React.FC = () => {
       await allowedDomainsService.updateAllowedDomains(dto);
       setDomains(draft);
       setEditing(false);
-      message.success("Tên miền được phép đã được cập nhật.");
+      message.success("Cập nhật thành công.");
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error
-          ? err.message
-          : "Có lỗi xảy ra khi cập nhật tên miền được phép.";
+      const msg = err instanceof Error ? err.message : "Cập nhật thất bại.";
       message.error(msg);
     } finally {
       setSaving(false);

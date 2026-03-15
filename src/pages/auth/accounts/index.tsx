@@ -159,7 +159,7 @@ const UsersPage: React.FC<UsersPageProps> = () => {
       try {
         const dto: UpdateUserDto = { role: newRole };
         const updated = await usersService.updateUser(user.id, dto);
-        toast.success("Cập nhật vai trò thành công.");
+        toast.success("Cập nhật thành công.");
 
         // Optimistic local update
         setResult((prev) =>
@@ -174,7 +174,7 @@ const UsersPage: React.FC<UsersPageProps> = () => {
         );
       } catch (err: unknown) {
         const msg =
-          err instanceof Error ? err.message : "Cập nhật vai trò thất bại.";
+          err instanceof Error ? err.message : "Cập nhật thất bại.";
         toast.error(msg);
       } finally {
         setUpdatingUsers((prev) => {
@@ -214,7 +214,7 @@ const UsersPage: React.FC<UsersPageProps> = () => {
         );
       } catch (err: unknown) {
         const msg =
-          err instanceof Error ? err.message : "Cập nhật trạng thái thất bại.";
+          err instanceof Error ? err.message : "Cập nhật thất bại.";
         toast.error(msg);
       } finally {
         setUpdatingUsers((prev) => {

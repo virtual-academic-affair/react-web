@@ -171,12 +171,10 @@ const ClassRegistrationsPage: React.FC = () => {
               }
             : prev,
         );
-        toast.success("Cập nhật trạng thái thành công.");
+        toast.success("Cập nhật thành công.");
       } catch (err: unknown) {
         const msg =
-          err instanceof Error
-            ? err.message
-            : "Cập nhật trạng thái thất bại.";
+          err instanceof Error ? err.message : "Cập nhật thất bại.";
         toast.error(msg);
       } finally {
         setUpdatingMessageStatusIds((prev) => {

@@ -51,7 +51,7 @@ const CancelReasonDrawer: React.FC<CancelReasonDrawerProps> = ({
           content: content.trim(),
           isActive,
         });
-        toast.success("Cập nhật lý do hủy thành công.");
+        toast.success("Cập nhật thành công.");
         onSaved(updated, "edit");
       } else {
         const dto: CreateCancelReasonDto = {

@@ -51,11 +51,10 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
       const dto: UpdateUserDto = { role: newRole };
       const updated = await usersService.updateUser(detail.id, dto);
       setDetail(updated);
-      toast.success("Cập nhật vai trò thành công.");
+      toast.success("Cập nhật thành công.");
       onUserChanged(updated);
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Cập nhật vai trò thất bại.";
+      const msg = err instanceof Error ? err.message : "Cập nhật thất bại.";
       toast.error(msg);
     } finally {
       setSaving(false);
@@ -78,7 +77,7 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
       onUserChanged(updated);
     } catch (err: unknown) {
       const msg =
-        err instanceof Error ? err.message : "Cập nhật trạng thái thất bại.";
+        err instanceof Error ? err.message : "Cập nhật thất bại.";
       toast.error(msg);
     } finally {
       setSaving(false);

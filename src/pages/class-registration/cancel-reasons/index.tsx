@@ -45,9 +45,8 @@ const CancelReasonsPage: React.FC = () => {
       isActive: enableFilter ? isActive : true,
     };
   });
-  const [draftFilters, setDraftFilters] = React.useState<CancelReasonFilters>(
-    defaultFilters,
-  );
+  const [draftFilters, setDraftFilters] =
+    React.useState<CancelReasonFilters>(defaultFilters);
   const [filterOpen, setFilterOpen] = React.useState(false);
 
   const idParam = searchParams.get("id");
@@ -59,24 +58,24 @@ const CancelReasonsPage: React.FC = () => {
 
   const fetchList = React.useCallback(
     async (p: number, kw: string, f: CancelReasonFilters) => {
-    setLoading(true);
-    try {
-      const resp = await cancelReasonsService.getList({
-        page: p,
-        limit: PAGE_SIZE,
-        keyword: kw || undefined,
+      setLoading(true);
+      try {
+        const resp = await cancelReasonsService.getList({
+          page: p,
+          limit: PAGE_SIZE,
+          keyword: kw || undefined,
           isActive: f.enableIsActiveFilter ? f.isActive : undefined,
-        orderCol: "id",
-        orderDir: "DESC",
-      });
-      setResult(resp);
-    } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Không thể tải lý do hủy.";
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-    }
+          orderCol: "id",
+          orderDir: "DESC",
+        });
+        setResult(resp);
+      } catch (err: unknown) {
+        const msg =
+          err instanceof Error ? err.message : "Không thể tải lý do hủy.";
+        toast.error(msg);
+      } finally {
+        setLoading(false);
+      }
     },
     [],
   );
@@ -105,9 +104,9 @@ const CancelReasonsPage: React.FC = () => {
 
   const handleEdit = React.useCallback(
     (item: CancelReason) => {
-    const next = new URLSearchParams(searchParams);
-    next.set("id", String(item.id));
-    setSearchParams(next, { replace: true });
+      const next = new URLSearchParams(searchParams);
+      next.set("id", String(item.id));
+      setSearchParams(next, { replace: true });
     },
     [searchParams, setSearchParams],
   );
@@ -151,8 +150,7 @@ const CancelReasonsPage: React.FC = () => {
           : prev,
       );
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Cập nhật trạng thái thất bại.";
+      const msg = err instanceof Error ? err.message : "Cập nhật thất bại.";
       toast.error(msg);
     } finally {
       setUpdatingIds((prev) => {

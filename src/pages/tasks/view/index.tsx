@@ -91,10 +91,10 @@ const TaskDetailPage: React.FC = () => {
           : undefined,
         messageId: form.messageId ? Number(form.messageId) : undefined,
       });
-      toast.success("Cập nhật công việc thành công.");
+      toast.success("Cập nhật thành công.");
     } catch (err: unknown) {
       console.error(err);
-      toast.error("Cập nhật công việc thất bại.");
+      toast.error("Cập nhật thất bại.");
     } finally {
       setSaving(false);
     }
@@ -323,7 +323,7 @@ const TaskDetailPage: React.FC = () => {
               className="bg-brand-500 hover:bg-brand-600 flex items-center gap-2 rounded-xl px-8 py-3 text-sm font-bold text-white transition-all disabled:opacity-50"
             >
               <MdSave className="h-5 w-5" />
-              {saving ? "Đang lưu..." : "Cập nhật công việc"}
+              {saving ? "Đang lưu..." : "Cập nhật thành công"}
             </button>
           </div>
         </form>
