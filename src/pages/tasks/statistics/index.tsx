@@ -1,3 +1,4 @@
+import type { ApexOptions } from "apexcharts";
 import balanceImg from "@/assets/img/dashboards/balanceImg.png";
 import fakeGraph from "@/assets/img/dashboards/fakeGraph.png";
 import LineChart from "@/components/charts/LineChart";
@@ -338,7 +339,7 @@ const TaskStatisticsPage: React.FC = () => {
           TaskPriorityColors.medium.hex,
           TaskPriorityColors.low.hex,
         ],
-      },
+      } as ApexOptions,
       series: [
         {
           name: TaskPriorityLabels.urgent,
@@ -384,7 +385,7 @@ const TaskStatisticsPage: React.FC = () => {
                 chartData.options.xaxis.categories.length > 0 ? (
                   <LineChart
                     key={`line-chart-${timeRange}`}
-                    chartOptions={chartData.options}
+                    chartOptions={chartData.options as ApexOptions}
                     chartData={chartData.series}
                   />
                 ) : (

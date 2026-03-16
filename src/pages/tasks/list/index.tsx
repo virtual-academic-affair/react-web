@@ -8,7 +8,6 @@ import {
   type Task,
   TaskPriority,
   TaskStatus,
-  TaskPriorityLabels,
 } from "@/types/task";
 import type { User } from "@/types/users";
 import type { PaginatedResponse } from "@/types/common";

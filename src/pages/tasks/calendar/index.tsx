@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Calendar, Spin } from "antd";
+import React, { useEffect, useRef, useState } from "react";
+import { Calendar } from "antd";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
@@ -10,8 +10,22 @@ import type { Task } from "@/types/task";
 import { TaskStatus } from "@/types/task";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import TaskDetailDrawer from "../list/components/TaskDetailDrawer";
-import { MdChevronLeft, MdChevronRight, MdAdd, MdToday } from "react-icons/md";
-import { DndContext, useDraggable, useDroppable } from "@dnd-kit/core";
+import {
+  MdChevronLeft,
+  MdChevronRight,
+  MdAdd,
+  MdToday,
+  MdAccessTime,
+  MdArrowForward,
+} from "react-icons/md";
+import {
+  DndContext,
+  useDraggable,
+  useDroppable,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
 import { message as toast } from "antd";
 
 // Droppable wrapper for a calendar date cell
@@ -71,14 +85,14 @@ const DraggableTask = ({
         next.set("id", String(task.id));
         setSearchParams(next, { replace: true });
       }}
-      className={`relative z-10 flex cursor-move flex-col gap-1 rounded-xl px-2.5 py-2 text-xs font-medium wrap-break-word shadow-sm transition-opacity hover:opacity-80 ${
+      className={`relative z-10 flex cursor-pointer flex-col gap-1 rounded-xl px-3 py-2.5 text-xs font-bold wrap-break-word shadow-sm transition-all duration-200 hover:opacity-95 ${
         isDone
           ? "dark:bg-navy-800 bg-gray-100 text-gray-500 line-through opacity-60 dark:text-gray-400"
           : defaultTaskClasses
-      } ${isDragging ? "ring-brand-500 !z-50 opacity-50 shadow-xl ring-2" : ""}`}
+      } ${isDragging ? "ring-brand-500 !z-50 !cursor-grabbing opacity-50 shadow-xl ring-2" : ""}`}
       title={task.name}
     >
-      <div className="line-clamp-2 leading-tight font-bold">{task.name}</div>
+      <div className="line-clamp-1 leading-tight font-bold">{task.name}</div>
       {task.assignees && task.assignees.length > 0 && (
         <div
           className={`mt-1 flex flex-wrap gap-1 leading-none ${isDone ? "opacity-70" : ""}`}
@@ -121,12 +135,106 @@ const DraggableTask = ({
   );
 };
 
+const TimelineItem = ({
+  task,
+  isFirst,
+  searchParams,
+  setSearchParams,
+}: {
+  task: Task;
+  isFirst: boolean;
+  searchParams: any;
+  setSearchParams: any;
+}) => {
+  const dueDate = dayjs(task.due);
+  const dayName = dueDate.format("ddd");
+  const dayNum = dueDate.format("DD");
+  const startTime = dueDate.format("HH:mm");
+
+  return (
+    <div
+      onClick={() => {
+        const next = new URLSearchParams(searchParams);
+        next.set("id", String(task.id));
+        setSearchParams(next, { replace: true });
+      }}
+      className={`group flex w-full cursor-pointer items-center rounded-3xl p-4 transition-all duration-300 ${
+        isFirst
+          ? "bg-brand-900 text-white"
+          : "dark:bg-navy-800 text-navy-700 dark:border-navy-700 border border-gray-100 bg-white dark:text-white"
+      }`}
+    >
+      <div
+        className={`mr-4 flex h-[64px] min-w-[64px] flex-col items-center justify-center rounded-xl ${
+          isFirst ? "bg-brand-500" : "bg-lightPrimary dark:bg-navy-700"
+        }`}
+      >
+        <span
+          className={`text-[10px] font-bold tracking-wider uppercase ${
+            isFirst ? "text-white/80" : "text-gray-400 dark:text-gray-400"
+          }`}
+        >
+          {dayName}
+        </span>
+        <span className="text-2xl font-black">{dayNum}</span>
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col pr-2">
+        <h4
+          className={`truncate text-base leading-snug font-bold ${
+            isFirst ? "text-white" : "text-navy-700 dark:text-white"
+          }`}
+        >
+          {task.name}
+        </h4>
+        <div
+          className={`mt-1.5 flex items-center text-xs opacity-80 ${
+            isFirst ? "text-white" : "text-gray-500 dark:text-gray-400"
+          }`}
+        >
+          <MdAccessTime className="mr-1.5 h-3.5 w-3.5" />
+          {startTime}
+        </div>
+      </div>
+      <MdArrowForward
+        className={`h-5 w-5 transition-transform group-hover:translate-x-1 ${
+          isFirst ? "text-white" : "text-gray-300 dark:text-gray-600"
+        }`}
+      />
+    </div>
+  );
+};
+
 const TasksCalendarPage: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [timelineTasks, setTimelineTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
+  const [timelineLoading, setTimelineLoading] = useState(false);
   const [calendarDate, setCalendarDate] = useState<Dayjs>(dayjs());
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const calendarColRef = useRef<HTMLDivElement>(null);
+  const [calendarHeight, setCalendarHeight] = useState<number | undefined>(undefined);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    }),
+  );
+
+  // Sync timeline height to match calendar column height
+  useEffect(() => {
+    const el = calendarColRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => {
+      setCalendarHeight(el.offsetHeight);
+    });
+    observer.observe(el);
+    setCalendarHeight(el.offsetHeight);
+    return () => observer.disconnect();
+  }, []);
 
   // Load tasks for the current view
   const fetchTasks = async (currentDate: Dayjs) => {
@@ -148,8 +256,28 @@ const TasksCalendarPage: React.FC = () => {
     }
   };
 
+  const fetchTimelineTasks = async () => {
+    setTimelineLoading(true);
+    try {
+      const today = dayjs().startOf("day").toISOString();
+      const res = await tasksService.getList({
+        dueDateFrom: today,
+        statuses: [TaskStatus.Todo, TaskStatus.Doing],
+        limit: 10,
+        orderCol: "due",
+        orderDir: "ASC",
+      });
+      setTimelineTasks(res.items);
+    } catch (error) {
+      console.error("Failed to fetch timeline tasks:", error);
+    } finally {
+      setTimelineLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchTasks(calendarDate);
+    fetchTimelineTasks();
   }, [calendarDate]);
 
   const onPanelChange = (value: Dayjs, mode: string) => {
@@ -233,7 +361,7 @@ const TasksCalendarPage: React.FC = () => {
             <MdAdd className="h-4 w-4" />
           </div>
 
-          <ul className="m-0 mt-1 list-none space-y-2 p-0 px-1">
+          <ul className="m-0 mt-0.5 list-none space-y-1 p-0 px-0.5 py-0.5">
             {listData.map((item) => (
               <DraggableTask
                 key={item.id}
@@ -265,18 +393,17 @@ const TasksCalendarPage: React.FC = () => {
     : null;
 
   return (
-    <DndContext onDragEnd={handleDragEnd}>
-      <div className="relative flex w-full flex-col gap-5 font-sans">
-        <div className="shadow-500 dark:bg-navy-800 relative min-h-175 rounded-4xl bg-white p-6 dark:shadow-none">
+    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+      <div className="relative grid w-full grid-cols-1 items-start gap-5 font-sans lg:grid-cols-4">
+        {/* Calendar Column */}
+        <div ref={calendarColRef} className="shadow-500 dark:bg-navy-800 relative rounded-4xl bg-white p-6 lg:col-span-3 dark:shadow-none">
           {loading && (
-            <div className="dark:bg-navy-800/50 absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/50">
-              <Spin size="large" />
-            </div>
+            <div className="dark:bg-navy-800/50 absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/50"></div>
           )}
           <Calendar
             value={calendarDate}
             onPanelChange={onPanelChange}
-            onChange={(val) => setCalendarDate(val)}
+            onChange={(val) => setCalendarDate(val as Dayjs)}
             cellRender={cellRender}
             className="custom-calendar-wrapper dark:text-white"
             headerRender={({ value, onChange }) => {
@@ -342,6 +469,40 @@ const TasksCalendarPage: React.FC = () => {
           />
         </div>
 
+        {/* Timeline Column */}
+        <div className="lg:col-span-1">
+          <div
+            className="shadow-500 dark:bg-navy-800 flex w-full flex-col overflow-hidden rounded-4xl bg-white p-6 dark:shadow-none"
+            style={calendarHeight ? { height: calendarHeight } : undefined}
+          >
+            <div className="mb-6">
+              <h2 className="text-navy-700 text-2xl font-black tracking-tight dark:text-white">
+                Timeline
+              </h2>
+            </div>
+
+            <div className="custom-scrollbar flex-1 space-y-4 overflow-y-auto py-2">
+              {timelineLoading ? (
+                <div className="flex items-center justify-center py-10"></div>
+              ) : timelineTasks.length > 0 ? (
+                timelineTasks.map((t, idx) => (
+                  <TimelineItem
+                    key={t.id}
+                    task={t}
+                    isFirst={idx === 0}
+                    searchParams={searchParams}
+                    setSearchParams={setSearchParams}
+                  />
+                ))
+              ) : (
+                <div className="py-20 text-center text-sm text-gray-400">
+                  Không có công việc nào sắp tới
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
         <TaskDetailDrawer
           taskId={selectedId}
           onClose={() => {
@@ -368,7 +529,7 @@ const TasksCalendarPage: React.FC = () => {
         }
         
         .custom-calendar-wrapper .ant-picker-calendar-date {
-          height: 100px !important;
+          height: 125px !important;
           position: relative !important;
           overflow: hidden !important;
         }

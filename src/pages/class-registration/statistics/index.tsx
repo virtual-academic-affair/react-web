@@ -4,6 +4,7 @@ import {
   RegistrationActionLabels,
   RegistrationActionColors,
 } from "@/types/classRegistration";
+import type { ApexOptions } from "apexcharts";
 import { message as toast } from "antd";
 import React from "react";
 import LineChart from "@/components/charts/LineChart";
@@ -255,7 +256,7 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
           },
         },
         colors: ["#4318FF"],
-      },
+      } as ApexOptions,
       series: [
         {
           name: "Tổng yêu cầu",
@@ -415,7 +416,7 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
           RegistrationActionColors.cancel.hex,
           RegistrationActionColors.requestOpen.hex,
         ],
-      },
+      } as ApexOptions,
       series: [
         {
           name: RegistrationActionLabels.register,
@@ -460,7 +461,7 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
                 areaChartData.options.xaxis?.categories &&
                 areaChartData.options.xaxis.categories.length > 0 ? (
                   <LineChart
-                    chartOptions={areaChartData.options}
+                    chartOptions={areaChartData.options as ApexOptions}
                     chartData={areaChartData.series}
                   />
                 ) : (
@@ -492,7 +493,7 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
                 barChartData.options.xaxis.categories.length > 0 ? (
                   <BarChart
                     key={`bar-chart-${timeRange}`}
-                    chartOptions={barChartData.options}
+                    chartOptions={barChartData.options as ApexOptions}
                     chartData={barChartData.series}
                   />
                 ) : (
