@@ -1,21 +1,7 @@
 import banner from "@/assets/img/auth/banner.png";
 import Card from "@/components/card";
 import type { DynamicDataResponse } from "@/types/shared";
-
-export function formatDate(iso: string | undefined): string {
-  if (!iso) {
-    return "—";
-  }
-  return new Intl.DateTimeFormat("vi-VN", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    timeZoneName: "short",
-  }).format(new Date(iso));
-}
+import { formatDate } from "@/utils/date";
 
 interface ProfileCardProps {
   data: DynamicDataResponse | null;

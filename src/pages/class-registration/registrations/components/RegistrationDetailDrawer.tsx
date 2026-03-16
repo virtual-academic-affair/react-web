@@ -1175,6 +1175,18 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
               <div className="flex items-center gap-6">
                 <div className="w-40 shrink-0">
                   <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    Message ID
+                  </p>
+                </div>
+                <div className="flex-1">
+                  <p className="text-navy-700 text-base dark:text-white">
+                    {detail.messageId ?? "—"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="w-40 shrink-0">
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                     Ngày tạo
                   </p>
                 </div>
@@ -1196,20 +1208,6 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                   </p>
                 </div>
               </div>
-              {detail.messageId != null && (
-                <div className="flex items-center gap-6">
-                  <div className="w-40 shrink-0">
-                    <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                      Message ID
-                    </p>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-navy-700 text-base dark:text-white">
-                      {detail.messageId}
-                    </p>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>

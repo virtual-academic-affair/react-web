@@ -7,6 +7,7 @@ import { usersService } from "@/services/users";
 import type { PaginatedResponse } from "@/types/common.ts";
 import type { DynamicDataResponse } from "@/types/shared.ts";
 import type { Role, UpdateUserDto, User } from "@/types/users.ts";
+import { formatDate } from "@/utils/date";
 import { message as toast } from "antd";
 import React from "react";
 import { MdInfoOutline } from "react-icons/md";
@@ -227,15 +228,6 @@ const UsersPage: React.FC<UsersPageProps> = () => {
     [],
   );
 
-  const formatDate = (dateString: string) => {
-    return new Intl.DateTimeFormat("vi-VN", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(dateString));
-  };
 
   // Define table columns
   const columns: TableColumn<User>[] = React.useMemo(

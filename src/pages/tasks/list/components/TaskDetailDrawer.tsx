@@ -319,8 +319,20 @@ const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                   </p>
                 </div>
                 <div className="flex-1">
-                  <p className="text-navy-700 text-sm font-medium dark:text-white">
+                  <p className="text-navy-700 text-base dark:text-white">
                     {detail.id}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="w-40 shrink-0">
+                  <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    Message ID
+                  </p>
+                </div>
+                <div className="flex-1">
+                  <p className="text-navy-700 text-base dark:text-white">
+                    {detail.messageId ?? "—"}
                   </p>
                 </div>
               </div>
@@ -331,7 +343,7 @@ const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                   </p>
                 </div>
                 <div className="flex-1">
-                  <p className="text-navy-700 text-sm font-medium dark:text-white">
+                  <p className="text-navy-700 text-base dark:text-white">
                     {formatDate(detail.createdAt)}
                   </p>
                 </div>
@@ -343,7 +355,7 @@ const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                   </p>
                 </div>
                 <div className="flex-1">
-                  <p className="text-navy-700 text-sm font-medium dark:text-white">
+                  <p className="text-navy-700 text-base dark:text-white">
                     {formatDate(detail.updatedAt)}
                   </p>
                 </div>

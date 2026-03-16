@@ -10,6 +10,7 @@ import { useSearchParams } from "react-router-dom";
 import MessageStatusSelector from "@/components/selector/MessageStatusSelector";
 import InquiryTypeEditor from "@/components/selector/InquiryTypeEditor";
 import RichTextEditor from "@/components/fields/RichTextEditor";
+import { formatDate } from "@/utils/date";
 
 interface InquiryDetailDrawerProps {
   inquiryId: number | null;
@@ -263,6 +264,63 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
                 </button>
               </div>
             )}
+          </div>
+
+          {/* Technical info section */}
+          <div className="mt-4 border-t border-gray-100 pt-4 dark:border-white/10">
+            <p className="text-navy-700 mb-3 text-xs font-semibold tracking-wide uppercase dark:text-white">
+              Thông số kỹ thuật
+            </p>
+            <div className="flex flex-col gap-2 text-sm text-gray-600 dark:text-gray-400">
+              <div className="flex items-center gap-6">
+                <div className="w-40 shrink-0">
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    ID
+                  </p>
+                </div>
+                <div className="flex-1">
+                  <p className="text-navy-700 text-base dark:text-white">
+                    {detail.id}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="w-40 shrink-0">
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    Message ID
+                  </p>
+                </div>
+                <div className="flex-1">
+                  <p className="text-navy-700 text-base dark:text-white">
+                    {detail.messageId ?? "—"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="w-40 shrink-0">
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    Ngày tạo
+                  </p>
+                </div>
+                <div className="flex-1">
+                  <p className="text-navy-700 text-base dark:text-white">
+                    {formatDate(detail.createdAt)}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="w-40 shrink-0">
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    Cập nhật lần cuối
+                  </p>
+                </div>
+                <div className="flex-1">
+                  <p className="text-navy-700 text-base dark:text-white">
+                    {formatDate(detail.updatedAt)}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

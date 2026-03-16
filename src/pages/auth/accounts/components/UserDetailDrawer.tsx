@@ -2,6 +2,7 @@ import Drawer from "@/components/drawer/Drawer.tsx";
 import Switch from "@/components/switch";
 import { usersService } from "@/services/users";
 import type { Role, UpdateUserDto, User } from "@/types/users.ts";
+import { formatDate } from "@/utils/date";
 import { message as toast } from "antd";
 import { useEffect, useState } from "react";
 import { getUserAvatarUrl } from "../utils.ts";
@@ -84,15 +85,6 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Intl.DateTimeFormat("vi-VN", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(dateString));
-  };
 
   const isOpen = userId != null;
 
@@ -237,6 +229,30 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
                 <div className="flex-1">
                   <p className="text-navy-700 text-base dark:text-white">
                     {detail.googleId || "—"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="w-40 shrink-0">
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    Ngày tạo
+                  </p>
+                </div>
+                <div className="flex-1">
+                  <p className="text-navy-700 text-base dark:text-white">
+                    {formatDate(detail.createdAt)}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="w-40 shrink-0">
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    Cập nhật lần cuối
+                  </p>
+                </div>
+                <div className="flex-1">
+                  <p className="text-navy-700 text-base dark:text-white">
+                    {formatDate(detail.updatedAt)}
                   </p>
                 </div>
               </div>
