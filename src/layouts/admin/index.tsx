@@ -14,6 +14,9 @@ import CancelReasonCreatePage from "@/pages/class-registration/cancel-reasons/cr
 import ClassRegistrationCreatePage from "@/pages/class-registration/create";
 import ClassRegistrationsPage from "@/pages/class-registration/registrations";
 import ClassRegistrationStatisticsPage from "@/pages/class-registration/statistics";
+import InquiriesPage from "@/pages/inquiry/inquiries";
+import InquiryCreatePage from "@/pages/inquiry/create";
+import InquiryStatisticsPage from "@/pages/inquiry/statistics";
 import GmailConfigPage from "@/pages/emails/config";
 import MessagesPage from "@/pages/emails/message";
 import TasksCalendarPage from "@/pages/tasks/calendar";
@@ -145,6 +148,18 @@ const AdminLayout: React.FC = () => {
             <Route
               path="class-registration/cancel-reasons/create"
               element={<CancelReasonCreatePage />}
+            />
+            <Route
+              path="inquiry/inquiries"
+              element={<InquiriesPage />}
+            />
+            <Route
+              path="inquiry/create"
+              element={<InquiryCreatePage />}
+            />
+            <Route
+              path="inquiry/statistics"
+              element={<InquiryStatisticsPage />}
             />
             <Route
               path="tasks/statistics"

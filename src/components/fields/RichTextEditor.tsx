@@ -9,12 +9,13 @@ interface RichTextEditorProps {
   onChange: (html: string) => void;
   className?: string;
   error?: string;
+  placeholder?: string;
 }
 
 const RichTextEditor = React.forwardRef<
   ReactQuill,
   RichTextEditorProps
->(({ value, onChange, id, label, className = "", error }, ref) => {
+>(({ value, onChange, id, label, className = "", error, placeholder }, ref) => {
   return (
     <div className={`w-full ${className}`}>
       {label && (
@@ -100,6 +101,7 @@ const RichTextEditor = React.forwardRef<
           theme="snow"
           value={value}
           onChange={onChange}
+          placeholder={placeholder}
         />
       </div>
       {error && <p className="mt-1 ml-3 text-xs text-red-500">{error}</p>}

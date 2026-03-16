@@ -2,11 +2,9 @@ import TableLayout, {
   type TableAction,
   type TableColumn,
 } from "@/components/table/TableLayout";
-import { classRegistrationsService } from "@/services/class-registration";
-import type {
-  ClassRegistration,
-  MessageStatus,
-} from "@/types/classRegistration";
+import { inquiriesService } from "@/services/inquiry";
+import type { Inquiry, InquiryType } from "@/types/inquiry";
+import type { MessageStatus } from "@/types/messageStatus";
 import type { PaginatedResponse } from "@/types/common";
 import { formatDate } from "@/utils/date";
 import { message as toast } from "antd";
@@ -18,25 +16,24 @@ import {
 } from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
 import AdvancedFilterModal, {
-  type RegistrationFilters,
+  type InquiryFilters,
 } from "./components/AdvancedFilterModal";
 import MessageStatusSelector from "@/components/selector/MessageStatusSelector";
+import InquiryTypeEditor from "@/components/selector/InquiryTypeEditor";
 import PreviewReplyModal from "./components/PreviewReplyModal";
-import RegistrationDetailDrawer from "./components/RegistrationDetailDrawer";
+import InquiryDetailDrawer from "./components/InquiryDetailDrawer";
 
 const PAGE_SIZE = 10;
 
-const defaultFilters: RegistrationFilters = {
-  studentCode: "",
-  academicYear: "",
-  smartOrder: false,
+const defaultFilters: InquiryFilters = {
+  types: [],
   messageStatuses: [],
 };
 
-const ClassRegistrationsPage: React.FC = () => {
+const InquiriesPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [result, setResult] =
-    React.useState<PaginatedResponse<ClassRegistration> | null>(null);
+    React.useState<PaginatedResponse<Inquiry> | null>(null);
   const [loading, setLoading] = React.useState(true);
 
   const [keyword, setKeyword] = React.useState(
@@ -47,14 +44,14 @@ const ClassRegistrationsPage: React.FC = () => {
       ? Number(searchParams.get("page") ?? "1")
       : 1,
   );
-  const [filters, setFilters] = React.useState<RegistrationFilters>({
-    studentCode: searchParams.get("studentCode") ?? "",
-    academicYear: searchParams.get("academicYear") ?? "",
-    smartOrder: searchParams.get("smartOrder") === "true",
+  const [filters, setFilters] = React.useState<InquiryFilters>({
+    types: searchParams.get("types")
+      ? (searchParams.get("types")!.split(",") as InquiryFilters["types"])
+      : [],
     messageStatuses: searchParams.get("messageStatuses")
       ? (searchParams
           .get("messageStatuses")!
-          .split(",") as RegistrationFilters["messageStatuses"])
+          .split(",") as InquiryFilters["messageStatuses"])
       : [],
   });
   const [draftFilters, setDraftFilters] = React.useState(filters);
@@ -68,16 +65,14 @@ const ClassRegistrationsPage: React.FC = () => {
     React.useState<Set<number>>(new Set());
 
   const fetchList = React.useCallback(
-    async (p: number, kw: string, f: RegistrationFilters) => {
+    async (p: number, kw: string, f: InquiryFilters) => {
       setLoading(true);
       try {
-        const resp = await classRegistrationsService.getList({
+        const resp = await inquiriesService.getList({
           page: p,
           limit: PAGE_SIZE,
           keyword: kw || undefined,
-          studentCode: f.studentCode || undefined,
-          academicYear: f.academicYear || undefined,
-          smartOrder: f.smartOrder ? "true" : undefined,
+          types: f.types.length ? f.types : undefined,
           messageStatuses: f.messageStatuses.length
             ? f.messageStatuses
             : undefined,
@@ -89,7 +84,7 @@ const ClassRegistrationsPage: React.FC = () => {
         const msg =
           err instanceof Error
             ? err.message
-            : "Không thể tải danh sách đăng kí lớp.";
+            : "Không thể tải danh sách câu hỏi.";
         toast.error(msg);
       } finally {
         setLoading(false);
@@ -100,8 +95,7 @@ const ClassRegistrationsPage: React.FC = () => {
 
   React.useEffect(() => {
     fetchList(page, keyword, filters);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, filters]);
+  }, [page, filters, keyword, fetchList]);
 
   React.useEffect(() => {
     const next = new URLSearchParams();
@@ -110,14 +104,8 @@ const ClassRegistrationsPage: React.FC = () => {
     }
     next.set("page", String(page));
     next.set("limit", String(PAGE_SIZE));
-    if (filters.studentCode) {
-      next.set("studentCode", filters.studentCode);
-    }
-    if (filters.academicYear) {
-      next.set("academicYear", filters.academicYear);
-    }
-    if (filters.smartOrder) {
-      next.set("smartOrder", "true");
+    if (filters.types.length) {
+      next.set("types", filters.types.join(","));
     }
     if (filters.messageStatuses.length) {
       next.set("messageStatuses", filters.messageStatuses.join(","));
@@ -133,12 +121,12 @@ const ClassRegistrationsPage: React.FC = () => {
     fetchList(1, keyword, filters);
   };
 
-  const handleDelete = async (row: ClassRegistration) => {
-    if (!window.confirm(`Xóa đăng ký lớp #${row.id}?`)) {
+  const handleDelete = React.useCallback(async (row: Inquiry) => {
+    if (!window.confirm(`Xóa câu hỏi #${row.id}?`)) {
       return;
     }
     try {
-      await classRegistrationsService.remove(row.id);
+      await inquiriesService.remove(row.id);
       toast.success("Xóa thành công.");
       setResult((prev) =>
         prev
@@ -152,13 +140,13 @@ const ClassRegistrationsPage: React.FC = () => {
       const msg = err instanceof Error ? err.message : "Xóa thất bại.";
       toast.error(msg);
     }
-  };
+  }, []);
 
   const handleMessageStatusChange = React.useCallback(
-    async (row: ClassRegistration, newStatus: MessageStatus | null) => {
+    async (row: Inquiry, newStatus: MessageStatus | null) => {
       setUpdatingMessageStatusIds((prev) => new Set(prev).add(row.id));
       try {
-        const updated = await classRegistrationsService.update(row.id, {
+        const updated = await inquiriesService.update(row.id, {
           messageStatus: newStatus,
         });
         setResult((prev) =>
@@ -187,24 +175,60 @@ const ClassRegistrationsPage: React.FC = () => {
     [],
   );
 
-  const columns: TableColumn<ClassRegistration>[] = React.useMemo(
+  const handleTypesChange = React.useCallback(
+    async (row: Inquiry, nextTypes: InquiryType[]) => {
+      setUpdatingMessageStatusIds((prev) => new Set(prev).add(row.id));
+      try {
+        const updated = await inquiriesService.update(row.id, {
+          types: nextTypes,
+        });
+        setResult((prev) =>
+          prev
+            ? {
+                ...prev,
+                items: prev.items.map((x) =>
+                  x.id === updated.id ? updated : x,
+                ),
+              }
+            : prev,
+        );
+        toast.success("Cập nhật thành công.");
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Cập nhật thất bại.";
+        toast.error(msg);
+      } finally {
+        setUpdatingMessageStatusIds((prev) => {
+          const next = new Set(prev);
+          next.delete(row.id);
+          return next;
+        });
+      }
+    },
+    [],
+  );
+
+  const columns: TableColumn<Inquiry>[] = React.useMemo(
     () => [
       {
-        key: "studentCode",
-        header: "MSSV",
+        key: "types",
+        header: "Loại thắc mắc",
         render: (item) => (
-          <p className="text-navy-700 text-sm font-medium dark:text-white">
-            {item.studentCode}
-          </p>
+          <InquiryTypeEditor
+            value={item.types ?? []}
+            onChange={(next) => handleTypesChange(item, next)}
+            disabled={updatingMessageStatusIds.has(item.id)}
+          />
         ),
       },
       {
-        key: "studentName",
-        header: "Họ tên",
+        key: "question",
+        header: "Câu hỏi",
         render: (item) => (
-          <p className="text-navy-700 text-sm dark:text-white">
-            {item.studentName}
-          </p>
+          <div
+            className="text-navy-700 max-w-xs truncate text-sm dark:text-white"
+            title={item.question.replace(/<[^>]*>?/gm, "")}
+            dangerouslySetInnerHTML={{ __html: item.question }}
+          />
         ),
       },
       {
@@ -217,34 +241,23 @@ const ClassRegistrationsPage: React.FC = () => {
         ),
       },
       {
-        key: "itemsCount",
-        header: "SL yêu cầu",
-        render: (item) => (
-          <p className="text-navy-700 text-sm dark:text-white">
-            {item.itemsCount ?? item.items?.length ?? 0}
-          </p>
-        ),
-      },
-      {
         key: "messageStatus",
         header: "Trạng thái xử lý",
         render: (item) => (
-          <div className="relative inline-flex">
-            <MessageStatusSelector
-              value={item.messageStatus ?? null}
-              onChange={(newStatus) =>
-                handleMessageStatusChange(item, newStatus)
-              }
-              disabled={updatingMessageStatusIds.has(item.id)}
-            />
-          </div>
+          <MessageStatusSelector
+            value={item.messageStatus ?? null}
+            onChange={(newStatus) =>
+              handleMessageStatusChange(item, newStatus)
+            }
+            disabled={updatingMessageStatusIds.has(item.id)}
+          />
         ),
       },
     ],
-    [updatingMessageStatusIds, handleMessageStatusChange],
+    [updatingMessageStatusIds, handleMessageStatusChange, handleTypesChange],
   );
 
-  const actions: TableAction<ClassRegistration>[] = React.useMemo(
+  const actions: TableAction<Inquiry>[] = React.useMemo(
     () => [
       {
         key: "detail",
@@ -267,7 +280,7 @@ const ClassRegistrationsPage: React.FC = () => {
       {
         key: "previewReply",
         icon: <MdOutlineRateReview className="h-4 w-4" />,
-        label: "Preview reply",
+        label: "Xem trước phản hồi",
         onClick: (row) => setPreviewId(row.id),
         className:
           "flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500 text-white transition-colors hover:bg-blue-600",
@@ -286,7 +299,7 @@ const ClassRegistrationsPage: React.FC = () => {
         searchValue={keyword}
         onSearchChange={setKeyword}
         onSearch={handleSearch}
-        searchPlaceholder="Tìm kiếm theo tên SV, MSSV..."
+        searchPlaceholder="Tìm kiếm thắc mắc..."
         showFilter={true}
         onFilterClick={() => {
           setDraftFilters(filters);
@@ -297,14 +310,14 @@ const ClassRegistrationsPage: React.FC = () => {
         onPageChange={setPage}
       />
 
-      <RegistrationDetailDrawer
-        registrationId={selectedId}
+      <InquiryDetailDrawer
+        inquiryId={selectedId}
         onClose={() => {
           const next = new URLSearchParams(searchParams);
           next.delete("id");
           setSearchParams(next, { replace: true });
         }}
-        onRegistrationChanged={(updated) =>
+        onInquiryChanged={(updated) =>
           setResult((prev) =>
             prev
               ? {
@@ -319,9 +332,9 @@ const ClassRegistrationsPage: React.FC = () => {
       />
 
       <PreviewReplyModal
-        registrationId={previewId}
+        inquiryId={previewId}
         onClose={() => setPreviewId(null)}
-        onSent={(closeAfterSend) =>
+        onSent={(isClose) =>
           setResult((prev) =>
             prev
               ? {
@@ -330,7 +343,7 @@ const ClassRegistrationsPage: React.FC = () => {
                     x.id === previewId
                       ? {
                           ...x,
-                          messageStatus: closeAfterSend ? "closed" : "replied",
+                          messageStatus: isClose ? "closed" : "replied",
                         }
                       : x,
                   ),
@@ -363,4 +376,4 @@ const ClassRegistrationsPage: React.FC = () => {
   );
 };
 
-export default ClassRegistrationsPage;
+export default InquiriesPage;

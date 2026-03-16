@@ -1,8 +1,8 @@
-import type { MessageStatus } from "@/types/classRegistration";
+import type { MessageStatus } from "@/types/messageStatus";
 import {
-    MessageStatusColors,
-    MessageStatusLabels,
-} from "@/types/classRegistration";
+  MessageStatusColors,
+  MessageStatusLabels,
+} from "@/types/messageStatus";
 import React from "react";
 import { MdExpandMore } from "react-icons/md";
 

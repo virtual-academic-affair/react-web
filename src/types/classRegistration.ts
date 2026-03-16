@@ -1,6 +1,10 @@
 import type { ResourceQueryDto } from "./common";
 
-export type MessageStatus = "opened" | "replied" | "closed";
+import type { MessageStatus } from "./messageStatus";
+import { MessageStatusLabels, MessageStatusColors } from "./messageStatus";
+export type { MessageStatus };
+export { MessageStatusLabels, MessageStatusColors };
+
 export type ItemStatus = "pending" | "approved" | "rejected";
 export type RegistrationAction = "register" | "cancel" | "requestOpen";
 
@@ -14,21 +18,6 @@ export const RegistrationActionColors: Record<RegistrationAction, { bg: string; 
   register: { bg: "bg-indigo-100", text: "text-indigo-800", hex: "#6366f1" },
   cancel: { bg: "bg-red-100", text: "text-red-800", hex: "#ef4444" },
   requestOpen: { bg: "bg-blue-100", text: "text-blue-800", hex: "#3b82f6" },
-};
-
-export const MessageStatusLabels: Record<MessageStatus, string> = {
-  opened: "Đang mở",
-  replied: "Đã trả lời",
-  closed: "Đã đóng",
-};
-
-export const MessageStatusColors: Record<
-  MessageStatus,
-  { bg: string; text: string }
-> = {
-  opened: { bg: "bg-blue-100", text: "text-blue-800" },
-  replied: { bg: "bg-green-100", text: "text-green-800" },
-  closed: { bg: "bg-gray-100", text: "text-gray-800" },
 };
 
 export const ItemStatusLabels: Record<ItemStatus, string> = {

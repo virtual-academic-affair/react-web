@@ -30,7 +30,7 @@ import {
 } from "react-icons/md";
 import ReactQuill from "react-quill-new";
 import { useSearchParams } from "react-router-dom";
-import MessageStatusSelector from "./MessageStatusSelector";
+import MessageStatusSelector from "@/components/selector/MessageStatusSelector";
 import RichTextEditor from "@/components/fields/RichTextEditor";
 import Tooltip from "@/components/tooltip/Tooltip.tsx";
 
@@ -200,8 +200,7 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
       });
       toast.success("Cập nhật thành công.");
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Cập nhật thất bại.";
+      const msg = err instanceof Error ? err.message : "Cập nhật thất bại.";
       toast.error(msg);
     } finally {
       setUpdatingItemIds((prev) => {
@@ -251,8 +250,7 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
       });
       toast.success("Cập nhật thành công.");
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Cập nhật thất bại.";
+      const msg = err instanceof Error ? err.message : "Cập nhật thất bại.";
       toast.error(msg);
     } finally {
       setUpdatingItemIds((prev) => {
@@ -375,8 +373,7 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
       onRegistrationChanged(updated);
       toast.success("Cập nhật thành công.");
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Cập nhật thất bại.";
+      const msg = err instanceof Error ? err.message : "Cập nhật thất bại.";
       toast.error(msg);
     } finally {
       setSavingInfo(false);
@@ -1190,7 +1187,7 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
               <div className="flex items-center gap-6">
                 <div className="w-40 shrink-0">
                   <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                    Cập nhật gần nhất
+                    Cập nhật lần cuối
                   </p>
                 </div>
                 <div className="flex-1">

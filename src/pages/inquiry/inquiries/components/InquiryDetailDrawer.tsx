@@ -1,0 +1,273 @@
+import Drawer from "@/components/drawer/Drawer";
+import { inquiriesService } from "@/services/inquiry";
+import type { Inquiry, InquiryType, UpdateInquiryDto } from "@/types/inquiry";
+import type { MessageStatus } from "@/types/messageStatus";
+import { message as toast } from "antd";
+import React from "react";
+import { MdSave } from "react-icons/md";
+import type ReactQuill from "react-quill-new";
+import { useSearchParams } from "react-router-dom";
+import MessageStatusSelector from "@/components/selector/MessageStatusSelector";
+import InquiryTypeEditor from "@/components/selector/InquiryTypeEditor";
+import RichTextEditor from "@/components/fields/RichTextEditor";
+
+interface InquiryDetailDrawerProps {
+  inquiryId: number | null;
+  onClose: () => void;
+  onInquiryChanged: (next: Inquiry) => void;
+}
+
+const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
+  inquiryId,
+  onClose,
+  onInquiryChanged,
+}) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const answerEditorRef = React.useRef<ReactQuill>(null);
+  const questionEditorRef = React.useRef<ReactQuill>(null);
+  const [detail, setDetail] = React.useState<Inquiry | null>(null);
+  const [loading, setLoading] = React.useState(false);
+  const [savingInfo, setSavingInfo] = React.useState(false);
+  const [form, setForm] = React.useState<{
+    types: InquiryType[];
+    question: string;
+    answer: string;
+    messageStatus: MessageStatus | null;
+  } | null>(null);
+
+  React.useEffect(() => {
+    if (inquiryId == null) {
+      setDetail(null);
+      return;
+    }
+    setLoading(true);
+    inquiriesService
+      .getById(inquiryId)
+      .then(setDetail)
+      .catch((err: unknown) => {
+        const msg =
+          err instanceof Error ? err.message : "Không thể tải chi tiết.";
+        toast.error(msg);
+      })
+      .finally(() => setLoading(false));
+  }, [inquiryId]);
+
+  React.useEffect(() => {
+    if (!detail) {
+      setForm(null);
+      return;
+    }
+    setForm({
+      types: detail.types ?? [],
+      question: detail.question ?? "",
+      answer: detail.answer ?? "",
+      messageStatus: detail.messageStatus ?? null,
+    });
+  }, [detail]);
+
+  // Focus on editor when focus param is present
+  React.useEffect(() => {
+    const focusParam = searchParams.get("focus");
+    if (focusParam === "answer" && answerEditorRef.current && form) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("focus");
+      setSearchParams(next, { replace: true });
+
+      setTimeout(() => {
+        const editor = answerEditorRef.current?.getEditor();
+        if (editor) {
+          editor.focus();
+        }
+      }, 100);
+    } else if (focusParam === "question" && questionEditorRef.current && form) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("focus");
+      setSearchParams(next, { replace: true });
+
+      setTimeout(() => {
+        const editor = questionEditorRef.current?.getEditor();
+        if (editor) {
+          editor.focus();
+        }
+      }, 100);
+    }
+  }, [searchParams, form, setSearchParams]);
+
+  const handleFieldChange = (
+    field: "question" | "answer",
+    value: string,
+  ) => {
+    setForm((prev) => (prev ? { ...prev, [field]: value } : prev));
+  };
+
+  const handleTypesChange = (types: InquiryType[]) => {
+    setForm((prev) => (prev ? { ...prev, types } : prev));
+  };
+
+  const handleMessageStatusChange = (status: MessageStatus | null) => {
+    setForm((prev) => (prev ? { ...prev, messageStatus: status } : prev));
+  };
+
+  const handleResetForm = () => {
+    if (!detail) {
+      return;
+    }
+    setForm({
+      types: detail.types ?? [],
+      question: detail.question ?? "",
+      answer: detail.answer ?? "",
+      messageStatus: detail.messageStatus ?? null,
+    });
+  };
+
+  const handleSaveInfo = async () => {
+    if (!detail || !form) {
+      return;
+    }
+
+    const dto: UpdateInquiryDto = {
+      types: form.types,
+      question: form.question.trim(),
+      answer: form.answer.trim(),
+      messageStatus: form.messageStatus,
+    };
+
+    setSavingInfo(true);
+    try {
+      const updated = await inquiriesService.update(detail.id, dto);
+      setDetail(updated);
+      onInquiryChanged(updated);
+      toast.success("Cập nhật thành công.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Cập nhật thất bại.";
+      toast.error(msg);
+    } finally {
+      setSavingInfo(false);
+    }
+  };
+
+  const isDirty = React.useMemo(() => {
+    if (!detail || !form) {
+      return false;
+    }
+    return (
+      JSON.stringify([...form.types].sort()) !== JSON.stringify([...(detail.types ?? [])].sort()) ||
+      form.question !== (detail.question ?? "") ||
+      form.answer !== (detail.answer ?? "") ||
+      form.messageStatus !== (detail.messageStatus ?? null)
+    );
+  }, [detail, form]);
+
+  const isOpen = inquiryId != null;
+
+  return (
+    <Drawer isOpen={isOpen} onClose={onClose} title="Chi tiết thắc mắc">
+      {loading || !form ? (
+        <div className="flex flex-col gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="dark:bg-navy-700 h-5 animate-pulse rounded bg-gray-200"
+            />
+          ))}
+        </div>
+      ) : !detail ? (
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Không có dữ liệu.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3">
+            {/* Types */}
+            <div className="flex items-start gap-6">
+              <div className="w-40 shrink-0">
+                <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                  Loại thắc mắc
+                </p>
+              </div>
+              <div className="flex-1">
+                <InquiryTypeEditor
+                  value={form.types}
+                  onChange={handleTypesChange}
+                  disabled={savingInfo}
+                />
+              </div>
+            </div>
+
+            {/* Trạng thái xử lý */}
+            <div className="flex items-center gap-6">
+              <div className="w-40 shrink-0">
+                <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                  Trạng thái xử lý
+                </p>
+              </div>
+              <div className="flex-1">
+                <MessageStatusSelector
+                  value={form.messageStatus}
+                  onChange={handleMessageStatusChange}
+                  disabled={savingInfo}
+                />
+              </div>
+            </div>
+
+            {/* Câu hỏi */}
+            <div className="flex items-start gap-6">
+              <div className="w-40 shrink-0">
+                <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                  Nội dung thắc mắc
+                </p>
+              </div>
+              <div className="flex-1">
+                <RichTextEditor
+                  ref={questionEditorRef}
+                  value={form.question}
+                  onChange={(html) => handleFieldChange("question", html)}
+                />
+              </div>
+            </div>
+
+            {/* Câu trả lời */}
+            <div className="flex items-start gap-6">
+              <div className="w-40 shrink-0">
+                <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                  Câu trả lời
+                </p>
+              </div>
+              <div className="flex-1">
+                <RichTextEditor
+                  ref={answerEditorRef}
+                  value={form.answer}
+                  onChange={(html) => handleFieldChange("answer", html)}
+                />
+              </div>
+            </div>
+
+            {isDirty && (
+              <div className="mt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  disabled={savingInfo}
+                  onClick={handleResetForm}
+                  className="rounded-xl px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-white/10"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  disabled={savingInfo}
+                  onClick={handleSaveInfo}
+                  className="bg-brand-500 hover:bg-brand-600 flex items-center gap-1 rounded-xl px-4 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-50"
+                >
+                  <MdSave className="h-4 w-4" />
+                  {savingInfo ? "Đang lưu..." : "Lưu"}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </Drawer>
+  );
+};
+
+export default InquiryDetailDrawer;

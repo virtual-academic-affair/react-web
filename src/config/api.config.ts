@@ -76,7 +76,13 @@ export const API_ENDPOINTS = {
 
   // Inquiry
   inquiry: {
-    base: "/inquiry",
+    inquiries: {
+      base: "/inquiry/inquiries",
+      byId: (id: number) => `/inquiry/inquiries/${id}`,
+      stats: "/inquiry/inquiries/stats",
+      previewReply: (id: number) => `/inquiry/inquiries/${id}/reply`,
+      reply: (id: number) => `/inquiry/inquiries/${id}/reply`,
+    },
   },
 
   // Task

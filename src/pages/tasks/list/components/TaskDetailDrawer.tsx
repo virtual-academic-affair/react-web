@@ -116,8 +116,6 @@ const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
     }
   };
 
-
-
   const isDirty = React.useMemo(() => {
     if (!detail || !form) {
       return false;
@@ -341,7 +339,7 @@ const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
               <div className="flex items-center gap-6">
                 <div className="w-40 shrink-0">
                   <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                    Cập nhật gần nhất
+                    Cập nhật lần cuối
                   </p>
                 </div>
                 <div className="flex-1">
