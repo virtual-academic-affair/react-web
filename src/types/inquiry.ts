@@ -30,10 +30,23 @@ export interface Inquiry {
   updatedAt: string;
 }
 
+export interface InquiryStatEntry {
+  total: number;
+  types: Record<InquiryType, number>;
+}
+
 export interface InquiryStats {
-  [date: string]: {
+  [date: string]: InquiryStatEntry;
+}
+
+/** Normalized shape used internally by the stats page (keyed by YYYY-MM-DD local date) */
+export interface NormalizedInquiryStats {
+  [localDate: string]: {
     total: number;
-  } & Record<InquiryType, number> | number;
+    graduation: number;
+    training: number;
+    procedure: number;
+  };
 }
 
 export interface GetInquiriesParams extends ResourceQueryDto {

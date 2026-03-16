@@ -242,14 +242,14 @@ const TaskStatisticsPage: React.FC = () => {
             content += `<div style="font-weight: 800; font-size: 14px; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;">Ngày ${dateStr}</div>`;
 
             prioritiesKeys.forEach((pKey, idx) => {
-              const val = series[idx][dataPointIndex];
+              const val = series[idx]?.[dataPointIndex] ?? 0;
               const stats = detail?.[pKey];
               const label =
                 TaskPriorityLabels[pKey as keyof typeof TaskPriorityLabels];
               const color =
                 TaskPriorityColors[pKey as keyof typeof TaskPriorityColors].hex;
 
-              if (val > 0 || stats) {
+              if (val > 0) {
                 content += `
                   <div style="margin-bottom: 10px;">
                     <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
