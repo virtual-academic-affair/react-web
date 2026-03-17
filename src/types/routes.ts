@@ -9,4 +9,5 @@ export interface RoutesType {
   path: string;
   icon?: JSX.Element | string;
   secondary?: boolean;
+  children?: RoutesType[];
 }

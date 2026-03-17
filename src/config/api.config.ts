@@ -30,7 +30,22 @@ export const API_ENDPOINTS = {
 
   // Class Registration
   classRegistration: {
-    base: "/class-registration",
+    registrations: {
+      base: "/classRegistration/classRegistrations",
+      byId: (id: number) => `/classRegistration/classRegistrations/${id}`,
+      stats: "/classRegistration/classRegistrations/stats",
+      previewReply: (id: number) =>
+        `/classRegistration/classRegistrations/${id}/reply`,
+      reply: (id: number) => `/classRegistration/classRegistrations/${id}/reply`,
+      items: (parentId: number) =>
+        `/classRegistration/classRegistrations/${parentId}/items`,
+      itemById: (parentId: number, id: number) =>
+        `/classRegistration/classRegistrations/${parentId}/items/${id}`,
+    },
+    cancelReasons: {
+      base: "/classRegistration/cancelReasons",
+      byId: (id: number) => `/classRegistration/cancelReasons/${id}`,
+    },
   },
 
   // Email
@@ -61,6 +76,21 @@ export const API_ENDPOINTS = {
 
   // Inquiry
   inquiry: {
-    base: "/inquiry",
+    inquiries: {
+      base: "/inquiry/inquiries",
+      byId: (id: number) => `/inquiry/inquiries/${id}`,
+      stats: "/inquiry/inquiries/stats",
+      previewReply: (id: number) => `/inquiry/inquiries/${id}/reply`,
+      reply: (id: number) => `/inquiry/inquiries/${id}/reply`,
+    },
+  },
+
+  // Task
+  task: {
+    tasks: {
+      base: "/task/tasks",
+      byId: (id: number) => `/task/tasks/${id}`,
+      stats: "/task/tasks/stats",
+    },
   },
 } as const;
