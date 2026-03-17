@@ -18,6 +18,9 @@ export * from "./shared";
 // Users services
 export * from "./users";
 
+// Class registration services
+export * from "./class-registration";
+
 // Re-export common types
 export type {
   ApiErrorResponse,

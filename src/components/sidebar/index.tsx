@@ -1,79 +1,113 @@
-import { HiX } from "react-icons/hi";
-import { SidebarLinks as Links } from "./components/Links";
-
+import Card from "@/components/card";
+import Dropdown from "@/components/dropdown";
+import React from "react";
+import { IoMdNotificationsOutline } from "react-icons/io";
+import { RiMoonFill, RiSunFill } from "react-icons/ri";
 import routes from "routes";
+import { SidebarLinks as Links } from "./components/Links";
 
 const Sidebar = (props: {
   open: boolean;
   onClose: React.MouseEventHandler<HTMLSpanElement>;
+  avatarUrl?: string;
+  userName?: string;
 }) => {
-  const { open, onClose } = props;
+  const { open, avatarUrl, userName } = props;
+  const [darkmode, setDarkmode] = React.useState(
+    document.body.classList.contains("dark"),
+  );
   return (
     <div
-      className={`sm:none linear dark:bg-navy-800! fixed z-50! flex min-h-full w-78.25 flex-col bg-white pb-10 shadow-2xl shadow-white/5 transition-all duration-175 md:z-50! lg:z-50! xl:z-0! dark:text-white ${
-        open ? "translate-x-0" : "-translate-x-96"
+      className={`sm:none fixed top-5 bottom-5 left-5 z-50! flex w-78.25 flex-col gap-4 transition-all duration-175 md:z-50! lg:z-50! xl:z-0! ${
+        open ? "translate-x-0" : "-translate-x-[120%]"
       }`}
     >
-      <span
-        className="absolute top-4 right-4 block cursor-pointer xl:hidden"
-        onClick={onClose}
-      >
-        <HiX />
-      </span>
-
-      <div className="mx-8 mt-10 flex items-center gap-3">
-        {/* Icon badge */}
-        <div className="from-brand-400 to-brand-600 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br shadow-md">
-          <svg
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M12 3L2 8.5L12 14L22 8.5L12 3Z"
-              fill="white"
-              opacity="0.9"
-            />
-            <path
-              d="M2 15.5L12 21L22 15.5"
-              stroke="white"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              opacity="0.7"
-            />
-            <path
-              d="M2 12L12 17.5L22 12"
-              stroke="white"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+      {/* Menu block */}
+      <Card extra="flex-1 overflow-hidden rounded-[30px] pb-4">
+        <div className="h-full overflow-y-auto pt-6">
+          <ul className="mt-5 px-4">
+            <Links routes={routes} />
+          </ul>
         </div>
+      </Card>
 
-        {/* Wordmark */}
-        <div className="flex flex-col leading-tight">
-          <span className="text-navy-800 text-base font-extrabold tracking-widest uppercase dark:text-white">
-            Virtual
-          </span>
-          <span className="text-brand-500 text-sm font-semibold tracking-wider uppercase">
-            Academic Assistant
-          </span>
+      {/* Bottom nav block */}
+      <Card extra="rounded-[30px] px-4 py-3">
+        <div className="flex items-center justify-between">
+          {/* Avatar + name */}
+          <Dropdown
+            button={
+              <div className="flex items-center gap-3">
+                {avatarUrl ? (
+                  <img
+                    className="h-10 w-10 rounded-full object-cover"
+                    src={avatarUrl}
+                    alt={userName ?? "profile"}
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="bg-brand-500 flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white">
+                    {userName?.charAt(0)?.toUpperCase() ?? "?"}
+                  </div>
+                )}
+                <span className="text-navy-700 text-sm font-medium dark:text-white">
+                  {userName ?? "Tài khoản"}
+                </span>
+              </div>
+            }
+            children={
+              <div className="shadow-shadow-500 dark:bg-navy-700! rounded-primary flex h-fit w-56 flex-col justify-start bg-white bg-cover bg-no-repeat pb-4 shadow-xl dark:text-white dark:shadow-none">
+                <div className="mt-3 ml-4">
+                  <p className="text-navy-700 text-sm font-bold dark:text-white">
+                    👋 Chào, {userName ?? "bạn"}
+                  </p>
+                </div>
+                <div className="mt-3 h-px w-full bg-gray-200 dark:bg-white/20" />
+                <div className="mt-3 ml-4 flex flex-col">
+                  <button className="text-left text-sm text-gray-800 dark:text-white hover:dark:text-white">
+                    Cài đặt
+                  </button>
+                  <button className="mt-3 text-left text-sm text-gray-800 dark:text-white hover:dark:text-white">
+                    Cài đặt Newsletter
+                  </button>
+                  <button className="mt-3 text-left text-sm font-medium text-red-500 hover:text-red-500">
+                    Đăng xuất
+                  </button>
+                </div>
+              </div>
+            }
+            classNames={"py-2 top-8 -left-[10px] w-max"}
+          />
+
+          {/* Dark mode + notification */}
+          <div className="flex items-center gap-3">
+            <button
+              className="dark:bg-navy-700 flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-600 dark:text-white"
+              onClick={() => {
+                if (darkmode) {
+                  document.body.classList.remove("dark");
+                  localStorage.setItem("theme", "light");
+                  setDarkmode(false);
+                } else {
+                  document.body.classList.add("dark");
+                  localStorage.setItem("theme", "dark");
+                  setDarkmode(true);
+                }
+              }}
+            >
+              {darkmode ? (
+                <RiSunFill className="h-4 w-4" />
+              ) : (
+                <RiMoonFill className="h-4 w-4" />
+              )}
+            </button>
+
+            <button className="dark:bg-navy-700 flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-600 dark:text-white">
+              <IoMdNotificationsOutline className="h-4 w-4" />
+            </button>
+          </div>
         </div>
-      </div>
-      <div className="mt-14.5 mb-7 h-px bg-gray-300 dark:bg-white/30" />
-      {/* Nav item */}
-
-      <ul className="mb-auto pt-1">
-        <Links routes={routes} />
-      </ul>
-
-      {/* Nav item end */}
-
-      {/* Nav item end */}
+      </Card>
     </div>
   );
 };

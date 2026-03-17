@@ -20,7 +20,7 @@ export type Role = (typeof Role)[keyof typeof Role];
  */
 export const RoleLabels: Record<Role, string> = {
   [Role.Student]: "Sinh viên",
-  [Role.Admin]: "Quản trị viên",
+  [Role.Admin]: "Giáo vụ",
   [Role.Lecture]: "Giảng viên",
 };
 
