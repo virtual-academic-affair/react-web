@@ -15,7 +15,10 @@ export const authService = {
    * Returns the Google OAuth consent URL to redirect the user to.
    */
   async getGoogleAuthUrl(): Promise<string> {
-    const { data } = await http.get<string>(API_ENDPOINTS.auth.googleUrl);
+    const redirectUrl = `${window.location.origin}/auth/callback`;
+    const { data } = await http.get<string>(
+      `${API_ENDPOINTS.auth.googleUrl}?redirectUrl=${encodeURIComponent(redirectUrl)}`,
+    );
     return data;
   },
 
@@ -24,9 +27,10 @@ export const authService = {
    * Exchanges the authorization code from Google for JWT tokens.
    */
   async authenticateWithGoogle(code: string): Promise<AuthTokens> {
+    const redirectUrl = `${window.location.origin}/auth/callback`;
     const { data } = await http.post<AuthTokens>(
       API_ENDPOINTS.auth.googleCallback,
-      { code },
+      { code, redirectUrl  },
     );
     return data;
   },

@@ -66,7 +66,7 @@ export default function AuthLayout() {
                                         Virtual
                                     </h2>
                                     <h2 className="mt-2 text-center text-3xl font-extrabold tracking-wide text-white xl:text-4xl">
-                                        Academic Assistant
+                                        Academic Affair
                                     </h2>
 
                                     {/* Info card */}

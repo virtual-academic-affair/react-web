@@ -42,7 +42,7 @@ export default function LoginPage() {
                 <button
                     onClick={handleGoogleSignIn}
                     disabled={loading}
-                    className="mb-6 flex h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-lightPrimary transition duration-200 hover:cursor-pointer hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-navy-800 dark:hover:opacity-90"
+                    className="mb-6 flex h-[50px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-lightPrimary text-gray-900 transition-all duration-200 hover:brightness-[0.96] dark:bg-navy-800 dark:text-white dark:hover:brightness-[1.25]! active:scale-[0.98] focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
                 >
                     {loading ? (
                         <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-brand-500" />
