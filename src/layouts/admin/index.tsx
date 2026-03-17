@@ -19,7 +19,6 @@ import InquiryCreatePage from "@/pages/inquiry/create";
 import InquiryStatisticsPage from "@/pages/inquiry/statistics";
 import GmailConfigPage from "@/pages/emails/config";
 import MessagesPage from "@/pages/emails/message";
-import TasksCalendarPage from "@/pages/tasks/calendar";
 import TaskCreatePage from "@/pages/tasks/create";
 import TasksPage from "@/pages/tasks/list";
 import TaskStatisticsPage from "@/pages/tasks/statistics";
@@ -164,10 +163,6 @@ const AdminLayout: React.FC = () => {
             <Route
               path="tasks/statistics"
               element={<TaskStatisticsPage />}
-            />
-            <Route
-              path="tasks/calendar"
-              element={<TasksCalendarPage />}
             />
             <Route
               path="tasks/list"

@@ -45,6 +45,9 @@ interface TableLayoutProps<T> {
   // Optional right-side slot in search bar (e.g. create button)
   rightSlot?: React.ReactNode;
 
+  // Hide the built-in search + filter bar (when parent owns search UI)
+  hideSearchBar?: boolean;
+
   // Table
   columns: TableColumn<T>[];
   emptyMessage?: string;
@@ -72,6 +75,7 @@ function TableLayout<T extends { id: number | string }>({
   showFilter = false,
   onFilterClick,
   rightSlot,
+  hideSearchBar = false,
   columns,
   emptyMessage = "Không tìm thấy dữ liệu.",
   actions = [],
@@ -84,34 +88,36 @@ function TableLayout<T extends { id: number | string }>({
   return (
     <div className="flex flex-col gap-4 pb-10">
       {/* Search + filter bar */}
-      <div className="flex items-center gap-3">
-        <div className="dark:bg-navy-800 flex flex-1 items-center gap-2 rounded-2xl bg-white px-3 py-2">
-          <MdSearch className="h-5 w-5 shrink-0 text-gray-400 dark:text-gray-500" />
-          <input
-            name="keyword"
-            type="text"
-            value={searchValue}
-            onChange={(e) => onSearchChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                onSearch();
-              }
-            }}
-            placeholder={searchPlaceholder}
-            className="w-full bg-transparent py-1 text-sm text-gray-700 outline-none placeholder:text-gray-500 dark:bg-transparent dark:text-white dark:placeholder:text-gray-400"
-          />
+      {!hideSearchBar && (
+        <div className="flex items-center gap-3">
+          <div className="dark:bg-navy-800 flex flex-1 items-center gap-2 rounded-2xl bg-white px-3 py-2">
+            <MdSearch className="h-5 w-5 shrink-0 text-gray-400 dark:text-gray-500" />
+            <input
+              name="keyword"
+              type="text"
+              value={searchValue}
+              onChange={(e) => onSearchChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  onSearch();
+                }
+              }}
+              placeholder={searchPlaceholder}
+              className="w-full bg-transparent py-1 text-sm text-gray-700 outline-none placeholder:text-gray-500 dark:bg-transparent dark:text-white dark:placeholder:text-gray-400"
+            />
+          </div>
+          {showFilter && onFilterClick && (
+            <button
+              type="button"
+              onClick={onFilterClick}
+              className="bg-brand-500 hover:bg-brand-600 dark:bg-brand-500 dark:hover:bg-brand-400 flex h-10 w-10 items-center justify-center rounded-2xl text-white transition-colors dark:text-white"
+            >
+              <MdFilterList className="h-5 w-5" />
+            </button>
+          )}
+          {rightSlot}
         </div>
-        {showFilter && onFilterClick && (
-          <button
-            type="button"
-            onClick={onFilterClick}
-            className="bg-brand-500 hover:bg-brand-600 dark:bg-brand-500 dark:hover:bg-brand-400 flex h-10 w-10 items-center justify-center rounded-2xl text-white transition-colors dark:text-white"
-          >
-            <MdFilterList className="h-5 w-5" />
-          </button>
-        )}
-        {rightSlot}
-      </div>
+      )}
 
       {/* Table Card */}
       <Card extra="p-6">

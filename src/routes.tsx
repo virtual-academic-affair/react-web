@@ -95,11 +95,6 @@ const routes: RoutesType[] = [
         path: "tasks/statistics",
       },
       {
-        name: "Lịch",
-        layout: "/admin",
-        path: "tasks/calendar",
-      },
-      {
         name: "DS công việc",
         layout: "/admin",
         path: "tasks/list",

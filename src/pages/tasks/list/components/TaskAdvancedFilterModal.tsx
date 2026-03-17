@@ -10,6 +10,8 @@ import {
 import React from "react";
 import { usersService } from "@/services/users/users.service";
 import type { User } from "@/types/users";
+import { MdPerson } from "react-icons/md";
+import AssigneeManager from "../../components/AssigneeManager";
 
 export interface TaskFilters {
   statuses: TaskStatus[];
@@ -28,11 +30,11 @@ interface TaskAdvancedFilterModalProps {
   onApply: () => void;
   onClear: () => void;
   onRequestClose: () => void;
+  currentUserId?: number | null;
 }
 
 const STATUS_OPTIONS: TaskStatus[] = ["todo", "doing", "done", "cancelled"];
 const PRIORITY_OPTIONS: TaskPriority[] = ["low", "medium", "high", "urgent"];
-const MESSAGE_STATUS_OPTIONS = ["opened", "replied", "closed", "resolved"];
 
 const TaskAdvancedFilterModal: React.FC<TaskAdvancedFilterModalProps> = ({
   open,
@@ -41,6 +43,7 @@ const TaskAdvancedFilterModal: React.FC<TaskAdvancedFilterModalProps> = ({
   onApply,
   onClear,
   onRequestClose,
+  currentUserId,
 }) => {
   const [admins, setAdmins] = React.useState<User[]>([]);
 
@@ -66,18 +69,18 @@ const TaskAdvancedFilterModal: React.FC<TaskAdvancedFilterModalProps> = ({
     onChange({ ...value, priorities: next });
   };
 
-  const toggleAssignee = (id: number) => {
-    const next = value.assigneeIds.includes(id)
-      ? value.assigneeIds.filter((x) => x !== id)
-      : [...value.assigneeIds, id];
-    onChange({ ...value, assigneeIds: next });
-  };
 
-  const toggleMessageStatus = (status: string) => {
-    const next = value.messageStatuses.includes(status)
-      ? value.messageStatuses.filter((s) => s !== status)
-      : [...value.messageStatuses, status];
-    onChange({ ...value, messageStatuses: next });
+  const isOnlyMe =
+    currentUserId != null &&
+    value.assigneeIds.length === 1 &&
+    value.assigneeIds[0] === currentUserId;
+
+  const handleToggleOnlyMe = () => {
+    if (isOnlyMe) {
+      onChange({ ...value, assigneeIds: [] });
+    } else if (currentUserId != null) {
+      onChange({ ...value, assigneeIds: [currentUserId] });
+    }
   };
 
   return (
@@ -163,24 +166,39 @@ const TaskAdvancedFilterModal: React.FC<TaskAdvancedFilterModalProps> = ({
         <p className="text-navy-700 font-medium dark:text-white">Người thực hiện</p>
       </div>
       <div className="col-span-3">
-        <div className="max-h-32 flex flex-wrap gap-2 overflow-y-auto pr-2">
-          {admins.map((u) => {
-            const active = value.assigneeIds.includes(u.id);
-            return (
-              <button
-                key={u.id}
-                type="button"
-                onClick={() => toggleAssignee(u.id)}
-                className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-all ${
-                  active
-                    ? "bg-brand-500 text-white border-transparent"
-                    : "border-gray-200 text-gray-700 hover:bg-gray-100 dark:border-white/10 dark:text-gray-200 dark:hover:bg-white/10"
+        {/* "Hiển thị chỉ tôi" row toggle */}
+        {currentUserId != null && (
+          <button
+            type="button"
+            onClick={handleToggleOnlyMe}
+            className="mb-3 flex w-full items-center justify-between rounded-2xl border border-gray-100 px-3 py-2.5 transition-colors hover:bg-gray-50 dark:border-white/10 dark:hover:bg-navy-700"
+          >
+            <span className="text-navy-700 flex items-center gap-2 text-sm font-medium dark:text-white">
+              <MdPerson className="h-4 w-4 text-gray-400" />
+              Hiển thị chỉ tôi
+            </span>
+            {/* Switch */}
+            <span
+              className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+                isOnlyMe ? "bg-brand-500" : "bg-gray-200 dark:bg-navy-600"
+              }`}
+            >
+              <span
+                className={`absolute h-4 w-4 rounded-full bg-white shadow transition-all ${
+                  isOnlyMe ? "left-4.5" : "left-0.5"
                 }`}
-              >
-                {u.name || u.email}
-              </button>
-            );
-          })}
+              />
+            </span>
+          </button>
+        )}
+
+        <div className={`transition-opacity ${isOnlyMe ? "pointer-events-none opacity-40" : ""}`}>
+          <AssigneeManager
+            selectedIds={value.assigneeIds}
+            allUsers={admins}
+            disabled={isOnlyMe}
+            onChange={(nextIds) => onChange({ ...value, assigneeIds: nextIds })}
+          />
         </div>
       </div>
 
@@ -197,30 +215,7 @@ const TaskAdvancedFilterModal: React.FC<TaskAdvancedFilterModalProps> = ({
         />
       </div>
 
-      <div>
-        <p className="text-navy-700 font-medium dark:text-white">Trạng thái tin nhắn</p>
-      </div>
-      <div className="col-span-3">
-        <div className="flex flex-wrap gap-2">
-          {MESSAGE_STATUS_OPTIONS.map((s) => {
-            const active = value.messageStatuses.includes(s);
-            return (
-              <button
-                key={s}
-                type="button"
-                onClick={() => toggleMessageStatus(s)}
-                className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${
-                  active
-                    ? "bg-indigo-500 text-white border-transparent"
-                    : "border-gray-200 text-gray-700 hover:bg-gray-100 dark:border-white/10 dark:text-gray-200 dark:hover:bg-white/10"
-                }`}
-              >
-                {s}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+
     </AdvancedFilterModalBase>
   );
 };

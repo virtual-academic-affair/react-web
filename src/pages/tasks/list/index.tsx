@@ -1,7 +1,3 @@
-import TableLayout, {
-  type TableAction,
-  type TableColumn,
-} from "@/components/table/TableLayout";
 import { tasksService } from "@/services/tasks.service";
 import { usersService } from "@/services/users";
 import {
@@ -11,18 +7,33 @@ import {
 } from "@/types/task";
 import type { User } from "@/types/users";
 import type { PaginatedResponse } from "@/types/common";
-import { formatDate } from "@/utils/date";
 import { message as toast } from "antd";
 import React from "react";
-import { MdDeleteOutline, MdInfoOutline } from "react-icons/md";
+import { MdOutlineTableChart, MdOutlineCalendarMonth, MdOutlineDashboard, MdSearch, MdFilterList } from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
 import TaskAdvancedFilterModal, {
   type TaskFilters,
 } from "./components/TaskAdvancedFilterModal";
 import TaskDetailDrawer from "./components/TaskDetailDrawer";
-import TaskStatusSelector from "./components/TaskStatusSelector";
-import TaskPrioritySelector from "./components/TaskPrioritySelector";
-import AssigneeManager from "../components/AssigneeManager";
+import TaskTableView from "./components/TaskTableView";
+import TaskBoard from "./components/TaskBoard";
+import TaskCalendarView from "./components/TaskCalendarView";
+
+type ViewMode = "table" | "calendar" | "board";
+
+/** Decode JWT payload (no signature verification — client-side only) */
+function decodeJwtPayload(token: string): Record<string, unknown> {
+  try {
+    const base64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    return JSON.parse(atob(base64));
+  } catch {
+    return {};
+  }
+}
+
+const JWT_PAYLOAD = decodeJwtPayload(import.meta.env.VITE_TEMP_TOKEN ?? "");
+const CURRENT_USER_ID: number | null =
+  typeof JWT_PAYLOAD.sub === "number" ? JWT_PAYLOAD.sub : null;
 
 const PAGE_SIZE = 10;
 
@@ -51,6 +62,10 @@ const TasksPage: React.FC = () => {
     Number(searchParams.get("page") ?? "1") > 0
       ? Number(searchParams.get("page") ?? "1")
       : 1,
+  );
+
+  const [view, setView] = React.useState<ViewMode>(
+    (searchParams.get("view") as ViewMode) || "table"
   );
 
   const [filters, setFilters] = React.useState<TaskFilters>({
@@ -97,12 +112,12 @@ const TasksPage: React.FC = () => {
   }, []);
 
   const fetchList = React.useCallback(
-    async (p: number, kw: string, f: TaskFilters) => {
+    async (p: number, kw: string, f: TaskFilters, v: ViewMode) => {
       setLoading(true);
       try {
         const resp = await tasksService.getList({
-          page: p,
-          limit: PAGE_SIZE,
+          page: v === "table" ? p : undefined,
+          limit: v === "table" ? PAGE_SIZE : 100, // Load more for board/calendar
           keyword: kw || undefined,
           statuses: f.statuses.length ? f.statuses : undefined,
           priorities: f.priorities.length ? f.priorities : undefined,
@@ -132,8 +147,8 @@ const TasksPage: React.FC = () => {
   );
 
   React.useEffect(() => {
-    fetchList(page, keyword, filters);
-  }, [page, filters, fetchList, keyword]);
+    fetchList(page, keyword, filters, view);
+  }, [page, filters, fetchList, keyword, view]);
 
   React.useEffect(() => {
     fetchAdmins();
@@ -145,6 +160,7 @@ const TasksPage: React.FC = () => {
       next.set("keyword", keyword);
     }
     next.set("page", String(page));
+    next.set("view", view);
 
     if (filters.statuses.length) {
       next.set("statuses", filters.statuses.join(","));
@@ -173,11 +189,11 @@ const TasksPage: React.FC = () => {
 
     setSearchParams(next, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [keyword, page, filters, setSearchParams]);
+  }, [keyword, page, filters, view, setSearchParams]);
 
   const handleSearch = () => {
     setPage(1);
-    fetchList(1, keyword, filters);
+    fetchList(1, keyword, filters, view);
   };
 
   const handleDelete = React.useCallback(async (row: Task) => {
@@ -201,8 +217,7 @@ const TasksPage: React.FC = () => {
       );
     } catch (err: unknown) {
       console.error(err);
-      const msg = err instanceof Error ? err.message : "Xóa thất bại.";
-      toast.error(msg);
+      toast.error("Xóa thất bại.");
     }
   }, []);
 
@@ -221,6 +236,7 @@ const TasksPage: React.FC = () => {
     } catch (err: unknown) {
       console.error(err);
       toast.error("Cập nhật thất bại.");
+      throw err;
     }
   };
 
@@ -238,9 +254,7 @@ const TasksPage: React.FC = () => {
             }
           : prev,
       );
-      toast.success(
-        `Cập nhật thành công.`,
-      );
+      toast.success(`Cập nhật thành công.`);
     } catch (err: unknown) {
       console.error(err);
       toast.error("Cập nhật thất bại.");
@@ -249,9 +263,7 @@ const TasksPage: React.FC = () => {
 
   const handleAddAssignee = async (task: Task, userId: number) => {
     const currentIds = task.assignees.map((a) => a.assigneeId);
-    if (currentIds.includes(userId)) {
-      return;
-    }
+    if (currentIds.includes(userId)) return;
     try {
       const updated = await tasksService.update(task.id, {
         assigneeIds: [...currentIds, userId],
@@ -294,113 +306,88 @@ const TasksPage: React.FC = () => {
     }
   };
 
-  const columns: TableColumn<Task>[] = React.useMemo(
-    () => [
-      {
-        key: "name",
-        header: "Tên công việc",
-        render: (item) => (
-          <div className="flex flex-col">
-            <p className="text-navy-700 text-sm font-bold dark:text-white">
-              {item.name}
-            </p>
-            {item.assigners && item.assigners.length > 0 && (
-              <p className="text-xs text-gray-500">
-                Từ: {item.assigners.join(", ")}
-              </p>
-            )}
-          </div>
-        ),
-      },
-      {
-        key: "priority",
-        header: "Độ ưu tiên",
-        render: (item) => (
-          <TaskPrioritySelector
-            value={item.priority}
-            onChange={(p) => handleUpdateTaskPriority(item, p)}
-          />
-        ),
-      },
-      {
-        key: "status",
-        header: "Trạng thái",
-        render: (item) => (
-          <TaskStatusSelector
-            value={item.status}
-            onChange={(s) => handleUpdateTaskStatus(item, s)}
-          />
-        ),
-      },
-      {
-        key: "assignees",
-        header: "Người thực hiện",
-        render: (item) => (
-          <AssigneeManager
-            selectedIds={item.assignees.map((a) => a.assigneeId)}
-            allUsers={admins}
-            onAdd={(userId) => handleAddAssignee(item, userId)}
-            onRemove={(userId) => handleRemoveAssignee(item, userId)}
-          />
-        ),
-      },
-      {
-        key: "due",
-        header: "Hạn chót",
-        render: (item) => (
-          <p className="text-navy-700 text-sm dark:text-white">
-            {item.due ? formatDate(item.due) : "-"}
-          </p>
-        ),
-      },
-    ],
-    [admins],
-  );
-
-  const actions: TableAction<Task>[] = React.useMemo(
-    () => [
-      {
-        key: "detail",
-        icon: <MdInfoOutline className="h-4 w-4" />,
-        label: "Chi tiết",
-        onClick: (row) => {
-          const next = new URLSearchParams(searchParams);
-          next.set("id", String(row.id));
-          setSearchParams(next, { replace: true });
-        },
-      },
-      {
-        key: "delete",
-        icon: <MdDeleteOutline className="h-4 w-4" />,
-        label: "Xóa",
-        onClick: handleDelete,
-        className:
-          "flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600",
-      },
-    ],
-    [searchParams, setSearchParams, handleDelete],
-  );
+  const handleTaskClick = (task: Task) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("id", String(task.id));
+    setSearchParams(next, { replace: true });
+  };
 
   return (
-    <>
-      <TableLayout
-        result={result}
-        loading={loading}
-        page={page}
-        pageSize={PAGE_SIZE}
-        searchValue={keyword}
-        onSearchChange={setKeyword}
-        onSearch={handleSearch}
-        searchPlaceholder="Tìm kiếm công việc..."
-        showFilter={true}
-        onFilterClick={() => {
-          setDraftFilters(filters);
-          setFilterOpen(true);
-        }}
-        columns={columns}
-        actions={actions}
-        onPageChange={setPage}
-      />
+    <div className="flex h-full w-full flex-col gap-4">
+      {/* Search + Filter bar — shared across all views */}
+      <div className="flex items-center gap-3">
+        <div className="dark:bg-navy-800 flex flex-1 items-center gap-2 rounded-2xl bg-white px-3 py-2">
+          <MdSearch className="h-5 w-5 shrink-0 text-gray-400 dark:text-gray-500" />
+          <input
+            type="text"
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
+            placeholder="Tìm kiếm công việc..."
+            className="w-full bg-transparent py-1 text-sm text-gray-700 outline-none placeholder:text-gray-500 dark:bg-transparent dark:text-white dark:placeholder:text-gray-400"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => { setDraftFilters(filters); setFilterOpen(true); }}
+          className="bg-brand-500 hover:bg-brand-600 flex h-10 w-10 items-center justify-center rounded-2xl text-white transition-colors"
+          title="Lọc nâng cao"
+        >
+          <MdFilterList className="h-5 w-5" />
+        </button>
+
+        {/* Native dropdown selector disguised as an icon button */}
+        <div className="relative h-10 w-10 shrink-0">
+          <div className="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 flex h-full w-full items-center justify-center rounded-2xl text-white shadow-sm transition-colors">
+            {view === "table" && <MdOutlineTableChart className="h-5 w-5" />}
+            {view === "calendar" && <MdOutlineCalendarMonth className="h-5 w-5" />}
+            {view === "board" && <MdOutlineDashboard className="h-5 w-5" />}
+          </div>
+          <select
+            value={view}
+            onChange={(e) => setView(e.target.value as ViewMode)}
+            className="absolute inset-0 w-full h-full cursor-pointer opacity-0"
+            title="Chọn kiểu hiển thị"
+          >
+            <option value="table">Dạng bảng</option>
+            <option value="calendar">Dạng lịch</option>
+            <option value="board">Dạng board</option>
+          </select>
+        </div>
+      </div>
+
+      {view === "table" && (
+        <TaskTableView
+          result={result}
+          loading={loading}
+          page={page}
+          pageSize={PAGE_SIZE}
+          keyword={keyword}
+          onKeywordChange={setKeyword}
+          onSearch={handleSearch}
+          onPageChange={setPage}
+          onUpdateStatus={handleUpdateTaskStatus}
+          onUpdatePriority={handleUpdateTaskPriority}
+          onAddAssignee={handleAddAssignee}
+          onRemoveAssignee={handleRemoveAssignee}
+          onDetailClick={handleTaskClick}
+          onDeleteClick={handleDelete}
+          admins={admins}
+        />
+      )}
+
+      {view === "calendar" && (
+        <TaskCalendarView onTaskClick={handleTaskClick} />
+      )}
+
+      {view === "board" && (
+        <TaskBoard
+          tasks={result?.items || []}
+          loading={loading}
+          onTaskClick={handleTaskClick}
+          onStatusChange={handleUpdateTaskStatus}
+        />
+      )}
 
       <TaskDetailDrawer
         taskId={selectedId}
@@ -441,23 +428,25 @@ const TasksPage: React.FC = () => {
         open={filterOpen}
         value={draftFilters}
         onChange={setDraftFilters}
+        currentUserId={CURRENT_USER_ID}
         onApply={() => {
           setFilters(draftFilters);
           setPage(1);
           setFilterOpen(false);
-          fetchList(1, keyword, draftFilters);
+          fetchList(1, keyword, draftFilters, view);
         }}
         onClear={() => {
           setDraftFilters(defaultFilters);
           setFilters(defaultFilters);
           setPage(1);
           setFilterOpen(false);
-          fetchList(1, keyword, defaultFilters);
+          fetchList(1, keyword, defaultFilters, view);
         }}
         onRequestClose={() => setFilterOpen(false)}
       />
-    </>
+    </div>
   );
 };
 
 export default TasksPage;
+
