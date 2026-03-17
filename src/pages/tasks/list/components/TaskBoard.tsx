@@ -1,20 +1,26 @@
-import React from "react";
 import {
+  type Task,
+  TaskPriority,
+  TaskStatus,
+  TaskStatusColors,
+  TaskStatusLabels,
+} from "@/types/task";
+import {
+  defaultDropAnimationSideEffects,
   DndContext,
+  type DragEndEvent,
+  DragOverlay,
+  type DragStartEvent,
   PointerSensor,
+  useDraggable,
+  useDroppable,
   useSensor,
   useSensors,
-  DragOverlay,
-  defaultDropAnimationSideEffects,
-  type DragStartEvent,
-  type DragEndEvent,
-  useDroppable,
-  useDraggable,
 } from "@dnd-kit/core";
-import { type Task, TaskStatus, TaskStatusLabels, TaskStatusColors, TaskPriority } from "@/types/task";
-import { MdAccessTime, MdMoreVert } from "react-icons/md";
-import dayjs from "dayjs";
 import { Spin } from "antd";
+import dayjs from "dayjs";
+import React from "react";
+import { MdAccessTime } from "react-icons/md";
 import TaskPrioritySelector from "./TaskPrioritySelector";
 
 interface TaskBoardProps {
@@ -32,14 +38,14 @@ const COLUMNS: TaskStatus[] = [
   TaskStatus.Cancelled,
 ];
 
-const BoardColumn = ({ 
-  status, 
-  tasks, 
+const BoardColumn = ({
+  status,
+  tasks,
   onTaskClick,
-  onPriorityChange
-}: { 
-  status: TaskStatus; 
-  tasks: Task[]; 
+  onPriorityChange,
+}: {
+  status: TaskStatus;
+  tasks: Task[];
   onTaskClick: (task: Task) => void;
   onPriorityChange: (task: Task, newPriority: TaskPriority) => void;
 }) => {
@@ -50,20 +56,19 @@ const BoardColumn = ({
   const color = TaskStatusColors[status];
 
   return (
-    <div className="flex h-full min-w-70 flex-1 flex-col rounded-2xl bg-gray-50/50 p-4 dark:bg-navy-800/50">
+    <div className="dark:bg-navy-800/50 flex h-full min-w-70 flex-1 flex-col rounded-2xl bg-gray-50/50 p-4">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className={`h-2.5 w-2.5 rounded-full ${color.bg.replace('bg-', 'bg-').replace('-100', '-500')}`} />
+          <div
+            className={`h-2.5 w-2.5 rounded-full ${color.bg.replace("bg-", "bg-").replace("-100", "-500")}`}
+          />
           <h3 className="text-navy-700 text-sm font-bold dark:text-white">
             {TaskStatusLabels[status]}
           </h3>
-          <span className="bg-lightPrimary text-navy-700 rounded-lg px-2 py-0.5 text-xs font-bold dark:bg-navy-700 dark:text-white">
+          <span className="bg-lightPrimary text-navy-700 dark:bg-navy-700 rounded-lg px-2 py-0.5 text-xs font-bold dark:text-white">
             {tasks.length}
           </span>
         </div>
-        <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-          <MdMoreVert className="h-5 w-5" />
-        </button>
       </div>
 
       <div
@@ -71,10 +76,10 @@ const BoardColumn = ({
         className="custom-scrollbar flex flex-1 flex-col gap-3 overflow-y-auto"
       >
         {tasks.map((task) => (
-          <BoardTaskCard 
-            key={task.id} 
-            task={task} 
-            onClick={() => onTaskClick(task)} 
+          <BoardTaskCard
+            key={task.id}
+            task={task}
+            onClick={() => onTaskClick(task)}
             onPriorityChange={onPriorityChange}
           />
         ))}
@@ -83,13 +88,13 @@ const BoardColumn = ({
   );
 };
 
-const BoardTaskCard = ({ 
-  task, 
+const BoardTaskCard = ({
+  task,
   onClick,
   onPriorityChange,
-  isOverlay = false 
-}: { 
-  task: Task; 
+  isOverlay = false,
+}: {
+  task: Task;
   onClick?: () => void;
   onPriorityChange?: (task: Task, newPriority: TaskPriority) => void;
   isOverlay?: boolean;
@@ -111,11 +116,10 @@ const BoardTaskCard = ({
       <div
         ref={setNodeRef}
         style={style}
-        className="h-30 w-full rounded-2xl border-2 border-dashed border-gray-200 bg-transparent dark:border-navy-700"
+        className="dark:border-navy-700 h-30 w-full rounded-2xl border-2 border-dashed border-gray-200 bg-transparent"
       />
     );
   }
-
 
   return (
     <div
@@ -124,15 +128,18 @@ const BoardTaskCard = ({
       {...listeners}
       {...attributes}
       onClick={onClick}
-      className={`group shadow-500 flex cursor-grab flex-col gap-3 rounded-2xl bg-white p-4 transition-all active:cursor-grabbing dark:bg-navy-700 dark:shadow-none ${
-        isOverlay ? "rotate-2 scale-105 shadow-xl" : "hover:border-brand-500 border border-transparent"
+      className={`group shadow-500 dark:bg-navy-700 flex cursor-grab flex-col gap-3 rounded-2xl bg-white p-4 transition-all active:cursor-grabbing dark:shadow-none ${
+        isOverlay
+          ? "scale-105 rotate-2 shadow-xl"
+          : "hover:border-brand-500 border border-transparent"
       }`}
     >
       <div className="flex items-center justify-between">
         <TaskPrioritySelector
           value={task.priority}
           onChange={(p) => onPriorityChange?.(task, p)}
-          className="scale-90 origin-left"
+          className="origin-left scale-90"
+          readonly={true}
         />
       </div>
 
@@ -144,7 +151,7 @@ const BoardTaskCard = ({
         <div className="flex items-center gap-1.5 text-gray-400">
           <MdAccessTime className="h-3.5 w-3.5" />
           <span className="text-[10px] font-medium">
-            {task.due ? dayjs(task.due).format("DD/MM") : "No due"}
+            {task.due ? dayjs(task.due).format("DD/MM") : "—"}
           </span>
         </div>
 
@@ -152,11 +159,14 @@ const BoardTaskCard = ({
           {task.assignees?.slice(0, 3).map((a) => (
             <div
               key={a.assigneeId}
-              className="h-6 w-6 rounded-full border-2 border-white bg-gray-200 dark:border-navy-700"
+              className="dark:border-navy-700 h-6 w-6 rounded-full border-2 border-white bg-gray-200"
               title={a.assignee?.name}
             >
               {a.assignee?.picture ? (
-                <img src={a.assignee.picture} className="h-full w-full rounded-full object-cover" />
+                <img
+                  src={a.assignee.picture}
+                  className="h-full w-full rounded-full object-cover"
+                />
               ) : (
                 <div className="bg-brand-500 flex h-full w-full items-center justify-center rounded-full text-[8px] font-bold text-white">
                   {a.assignee?.name?.[0].toUpperCase() || "?"}
@@ -165,7 +175,7 @@ const BoardTaskCard = ({
             </div>
           ))}
           {task.assignees && task.assignees.length > 3 && (
-            <div className="bg-lightPrimary flex h-6 w-6 items-center justify-center rounded-full border-2 border-white text-[8px] font-bold text-gray-600 dark:border-navy-700 dark:bg-navy-800 dark:text-white">
+            <div className="bg-lightPrimary dark:border-navy-700 dark:bg-navy-800 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white text-[8px] font-bold text-gray-600 dark:text-white">
               +{task.assignees.length - 3}
             </div>
           )}
@@ -175,12 +185,12 @@ const BoardTaskCard = ({
   );
 };
 
-const TaskBoard: React.FC<TaskBoardProps> = ({ 
-  tasks, 
-  loading, 
+const TaskBoard: React.FC<TaskBoardProps> = ({
+  tasks,
+  loading,
   onTaskClick,
   onStatusChange,
-  onPriorityChange
+  onPriorityChange,
 }) => {
   const [activeTask, setActiveTask] = React.useState<Task | null>(null);
   const [localTasks, setLocalTasks] = React.useState<Task[]>(tasks);
@@ -194,7 +204,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
       activationConstraint: {
         distance: 8,
       },
-    })
+    }),
   );
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -207,18 +217,22 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
     const { active, over } = event;
     setActiveTask(null);
 
-    if (!over) return;
+    if (!over) {
+      return;
+    }
 
     const taskId = parseInt(active.id.toString().replace("task-", ""), 10);
     const newStatus = over.id as TaskStatus;
 
     const task = localTasks.find((t) => t.id === taskId);
-    if (!task || task.status === newStatus) return;
+    if (!task || task.status === newStatus) {
+      return;
+    }
 
     // Optimistic update
     const previousTasks = [...localTasks];
     setLocalTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
+      prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t)),
     );
 
     try {
@@ -242,7 +256,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex h-[calc(100vh-280px)] w-full gap-5 overflow-x-auto pb-4">
+      <div className="flex h-[90vh] w-full gap-5 overflow-x-auto pb-4">
         {COLUMNS.map((status) => (
           <BoardColumn
             key={status}
@@ -254,15 +268,17 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
         ))}
       </div>
 
-      <DragOverlay dropAnimation={{
-        sideEffects: defaultDropAnimationSideEffects({
-          styles: {
-            active: {
-              opacity: "0.5",
+      <DragOverlay
+        dropAnimation={{
+          sideEffects: defaultDropAnimationSideEffects({
+            styles: {
+              active: {
+                opacity: "0.5",
+              },
             },
-          },
-        }),
-      }}>
+          }),
+        }}
+      >
         {activeTask ? (
           <div className="w-72">
             <BoardTaskCard task={activeTask} isOverlay />
@@ -274,4 +290,3 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
 };
 
 export default TaskBoard;
-

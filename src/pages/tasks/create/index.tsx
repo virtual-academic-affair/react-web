@@ -11,12 +11,18 @@ import TaskProcessSteps from "./components/TaskProcessSteps";
 import TaskStatusSelector from "../list/components/TaskStatusSelector";
 import TaskPrioritySelector from "../list/components/TaskPrioritySelector";
 import AssigneeManager from "../components/AssigneeManager";
+import { messagesService } from "@/services/email/messages.service";
+import type { Message } from "@/types/email";
+import RelatedMessageView from "../../emails/message/components/RelatedMessageView";
 
 const TaskCreatePage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [currentStep, setCurrentStep] = React.useState(1);
   const [loading, setLoading] = React.useState(false);
   const [users, setUsers] = React.useState<User[]>([]);
+  const [message, setMessage] = React.useState<Message | null>(null);
+  const [messageLoading, setMessageLoading] = React.useState(false);
   const [form, setForm] = React.useState<{
     name: string;
     description: string;
@@ -25,24 +31,41 @@ const TaskCreatePage: React.FC = () => {
     due: string;
     assigneeIds: number[];
     assigners: string;
+    messageId?: number;
   }>({
-    name: "",
+    name: searchParams.get("name") ?? "",
     description: "",
     priority: TaskPriority.Medium,
     status: TaskStatus.Todo,
     due: "",
     assigneeIds: [],
     assigners: "",
+    messageId: searchParams.get("messageId")
+      ? Number(searchParams.get("messageId"))
+      : undefined,
   });
-
-  const [searchParams] = useSearchParams();
 
   React.useEffect(() => {
     const dueParam = searchParams.get("due");
     if (dueParam) {
-      // The dueParam is passed as YYYY-MM-DD. We add a default time like 23:59
-      // datatime-local input expects YYYY-MM-DDThh:mm format.
       setForm((prev) => ({ ...prev, due: `${dueParam}T23:59` }));
+    }
+
+    const mId = searchParams.get("messageId");
+    if (mId) {
+      setMessageLoading(true);
+      messagesService
+        .getMessageById(Number(mId))
+        .then((m) => {
+          setMessage(m);
+          setForm((prev) => ({
+            ...prev,
+            messageId: m.id,
+            name: prev.name || m.subject || "",
+          }));
+        })
+        .catch(() => toast.error("Không thể tải thông tin tin nhắn."))
+        .finally(() => setMessageLoading(false));
     }
   }, [searchParams]);
 
@@ -96,6 +119,7 @@ const TaskCreatePage: React.FC = () => {
         assigners: form.assigners
           ? form.assigners.split(",").map((s) => s.trim())
           : undefined,
+        messageId: form.messageId,
       });
       toast.success("Tạo công việc thành công.");
       navigate("/admin/tasks/list");
@@ -113,6 +137,11 @@ const TaskCreatePage: React.FC = () => {
       title="Tạo công việc mới"
       processSteps={<TaskProcessSteps currentStep={currentStep} />}
     >
+      <RelatedMessageView
+        message={message}
+        loading={messageLoading}
+        onReselect={() => navigate("/admin/emails/message")}
+      />
       <form
         onSubmit={(e) => {
           e.preventDefault();

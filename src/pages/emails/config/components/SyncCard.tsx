@@ -1,9 +1,11 @@
 import Card from "@/components/card";
-import { messagesService } from "@/services/email";
+import Switch from "@/components/switch";
+import Tooltip from "@/components/tooltip/Tooltip";
+import { emailSettingsService, messagesService } from "@/services/email";
 import type { DynamicDataResponse } from "@/types/shared";
 import { message } from "antd";
 import React from "react";
-import { MdAutorenew } from "react-icons/md";
+import { MdAutorenew, MdInfoOutline } from "react-icons/md";
 
 interface SyncCardProps {
   data: DynamicDataResponse | null;
@@ -33,6 +35,34 @@ const SyncCard: React.FC<SyncCardProps> = ({
   onRefresh,
 }) => {
   const [syncing, setSyncing] = React.useState(false);
+  const [canSaveContent, setCanSaveContent] = React.useState(false);
+  const [updatingContent, setUpdatingContent] = React.useState(false);
+
+  React.useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const val = await emailSettingsService.getCanSaveContent();
+        setCanSaveContent(val);
+      } catch (err) {
+        console.error("Failed to fetch email settings", err);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  const handleToggleContent = async (checked: boolean) => {
+    setUpdatingContent(true);
+    try {
+      await emailSettingsService.updateCanSaveContent(checked);
+      setCanSaveContent(checked);
+      message.success("Cập nhật thành công.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Cập nhật thất bại.";
+      message.error(msg);
+    } finally {
+      setUpdatingContent(false);
+    }
+  };
 
   const handleSync = async () => {
     setSyncing(true);
@@ -96,6 +126,25 @@ const SyncCard: React.FC<SyncCardProps> = ({
                 ? "Đang tải..."
                 : formatLastPullAt(data?.settings?.["email.lastPullAt"])}
             </span>
+          </div>
+
+          <div className="mt-3 flex items-center gap-3">
+            <div className="flex items-center gap-1">
+              <span className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
+                Đồng bộ nội dung
+                <Tooltip label="Cho phép hệ thống lưu nội dung chi tiết email, giúp truy cập xem nhanh trên portal mà không cần mở Gmail, đảm bảo bảo mật bằng thuật toán mã hóa AES-256-CBC.">
+                  <MdInfoOutline className="h-4 w-4 cursor-help text-gray-400 transition-colors hover:text-gray-600" />
+                </Tooltip>
+                :
+              </span>
+            </div>
+            <Switch
+              checked={canSaveContent}
+              disabled={updatingContent}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                handleToggleContent(e.target.checked)
+              }
+            />
           </div>
 
           <button

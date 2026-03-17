@@ -102,11 +102,12 @@ const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
         priority: updated.priority,
         status: updated.status,
         due: updated.due ? updated.due.slice(0, 16) : "",
-        assigneeIds: updated.assignees.map((a) => a.assigneeId),
+        assigneeIds: updated.assignees ? updated.assignees.map((a) => a.assigneeId) : form.assigneeIds,
         assigners: updated.assigners ? updated.assigners.join(", ") : "",
       });
-      setDetail(updated);
-      onTaskChanged(updated);
+      const fullUpdated = { ...detail, ...updated };
+      setDetail(fullUpdated);
+      onTaskChanged(fullUpdated);
       toast.success("Cập nhật thành công.");
     } catch (err: unknown) {
       console.error(err);

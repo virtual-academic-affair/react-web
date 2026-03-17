@@ -15,7 +15,7 @@ import { useSearchParams } from "react-router-dom";
 import AdvancedFilterModal from "./components/AdvancedFilterModal.tsx";
 import RoleSelector from "./components/RoleSelector.tsx";
 import UserDetailDrawer from "./components/UserDetailDrawer.tsx";
-import { getUserAvatarUrl } from "./utils.ts";
+
 
 const PAGE_SIZE = 10;
 
@@ -238,11 +238,19 @@ const UsersPage: React.FC<UsersPageProps> = () => {
         width: "300px",
         render: (user) => (
           <div className="flex items-center gap-3">
-            <img
-              src={getUserAvatarUrl(user)}
-              alt={user.name || user.email}
-              className="h-12 w-12 rounded-[14px] object-cover"
-            />
+            <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full">
+              {user.picture ? (
+                <img
+                  src={user.picture}
+                  alt={user.name || user.email}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="bg-brand-500 flex h-full w-full items-center justify-center text-sm font-bold text-white">
+                  {(user.name || user.email)[0].toUpperCase()}
+                </div>
+              )}
+            </div>
             <div className="flex flex-col">
               <p className="text-navy-700 text-sm font-medium dark:text-white">
                 {user.name || user.email}
