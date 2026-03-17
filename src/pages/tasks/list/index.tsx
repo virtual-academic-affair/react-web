@@ -386,6 +386,7 @@ const TasksPage: React.FC = () => {
           loading={loading}
           onTaskClick={handleTaskClick}
           onStatusChange={handleUpdateTaskStatus}
+          onPriorityChange={handleUpdateTaskPriority}
         />
       )}
 

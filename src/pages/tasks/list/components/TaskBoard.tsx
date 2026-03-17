@@ -11,16 +11,18 @@ import {
   useDroppable,
   useDraggable,
 } from "@dnd-kit/core";
-import { type Task, TaskStatus, TaskStatusLabels, TaskStatusColors, TaskPriorityLabels, TaskPriorityColors } from "@/types/task";
+import { type Task, TaskStatus, TaskStatusLabels, TaskStatusColors, TaskPriority } from "@/types/task";
 import { MdAccessTime, MdMoreVert } from "react-icons/md";
 import dayjs from "dayjs";
 import { Spin } from "antd";
+import TaskPrioritySelector from "./TaskPrioritySelector";
 
 interface TaskBoardProps {
   tasks: Task[];
   loading: boolean;
   onTaskClick: (task: Task) => void;
   onStatusChange: (task: Task, newStatus: TaskStatus) => Promise<void>;
+  onPriorityChange: (task: Task, newPriority: TaskPriority) => Promise<void>;
 }
 
 const COLUMNS: TaskStatus[] = [
@@ -33,11 +35,13 @@ const COLUMNS: TaskStatus[] = [
 const BoardColumn = ({ 
   status, 
   tasks, 
-  onTaskClick 
+  onTaskClick,
+  onPriorityChange
 }: { 
   status: TaskStatus; 
   tasks: Task[]; 
   onTaskClick: (task: Task) => void;
+  onPriorityChange: (task: Task, newPriority: TaskPriority) => void;
 }) => {
   const { setNodeRef } = useDroppable({
     id: status,
@@ -67,7 +71,12 @@ const BoardColumn = ({
         className="custom-scrollbar flex flex-1 flex-col gap-3 overflow-y-auto"
       >
         {tasks.map((task) => (
-          <BoardTaskCard key={task.id} task={task} onClick={() => onTaskClick(task)} />
+          <BoardTaskCard 
+            key={task.id} 
+            task={task} 
+            onClick={() => onTaskClick(task)} 
+            onPriorityChange={onPriorityChange}
+          />
         ))}
       </div>
     </div>
@@ -77,10 +86,12 @@ const BoardColumn = ({
 const BoardTaskCard = ({ 
   task, 
   onClick,
+  onPriorityChange,
   isOverlay = false 
 }: { 
   task: Task; 
   onClick?: () => void;
+  onPriorityChange?: (task: Task, newPriority: TaskPriority) => void;
   isOverlay?: boolean;
 }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
@@ -105,7 +116,6 @@ const BoardTaskCard = ({
     );
   }
 
-  const priorityCfg = TaskPriorityColors[task.priority];
 
   return (
     <div
@@ -119,9 +129,11 @@ const BoardTaskCard = ({
       }`}
     >
       <div className="flex items-center justify-between">
-        <span className={`text-[10px] font-bold uppercase tracking-wider ${priorityCfg.text}`}>
-          {TaskPriorityLabels[task.priority]}
-        </span>
+        <TaskPrioritySelector
+          value={task.priority}
+          onChange={(p) => onPriorityChange?.(task, p)}
+          className="scale-90 origin-left"
+        />
       </div>
 
       <h4 className="text-navy-700 line-clamp-2 text-sm font-bold dark:text-white">
@@ -167,7 +179,8 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
   tasks, 
   loading, 
   onTaskClick,
-  onStatusChange 
+  onStatusChange,
+  onPriorityChange
 }) => {
   const [activeTask, setActiveTask] = React.useState<Task | null>(null);
   const [localTasks, setLocalTasks] = React.useState<Task[]>(tasks);
@@ -236,6 +249,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
             status={status}
             tasks={localTasks.filter((t) => t.status === status)}
             onTaskClick={onTaskClick}
+            onPriorityChange={onPriorityChange}
           />
         ))}
       </div>
@@ -250,7 +264,9 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
         }),
       }}>
         {activeTask ? (
-          <BoardTaskCard task={activeTask} isOverlay />
+          <div className="w-72">
+            <BoardTaskCard task={activeTask} isOverlay />
+          </div>
         ) : null}
       </DragOverlay>
     </DndContext>

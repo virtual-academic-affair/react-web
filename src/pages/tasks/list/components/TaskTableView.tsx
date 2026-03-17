@@ -55,7 +55,7 @@ const TaskTableView: React.FC<TaskTableViewProps> = ({
               {item.name}
             </p>
             {item.assigners && item.assigners.length > 0 && (
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500"> 
                 Từ: {item.assigners.join(", ")}
               </p>
             )}

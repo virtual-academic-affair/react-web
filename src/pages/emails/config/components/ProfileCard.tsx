@@ -1,7 +1,7 @@
 import banner from "@/assets/img/auth/banner.png";
 import Card from "@/components/card";
 import type { DynamicDataResponse } from "@/types/shared";
-import { formatDate } from "@/utils/date";
+
 
 interface ProfileCardProps {
   data: DynamicDataResponse | null;
