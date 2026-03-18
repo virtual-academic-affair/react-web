@@ -1,7 +1,6 @@
 import Card from "@/components/card";
 import Dropdown from "@/components/dropdown";
 import React from "react";
-import { IoMdNotificationsOutline } from "react-icons/io";
 import { RiMoonFill, RiSunFill } from "react-icons/ri";
 import routes from "routes";
 import { SidebarLinks as Links } from "./components/Links";
@@ -76,7 +75,8 @@ const Sidebar = (props: {
                 </div>
               </div>
             }
-            classNames={"py-2 top-8 -left-[10px] w-max"}
+            classNames={"py-2 bottom-full mb-2 -left-[10px] w-max"}
+            animation="origin-bottom-left transition-all duration-300 ease-in-out"
           />
 
           {/* Dark mode + notification */}
@@ -100,10 +100,6 @@ const Sidebar = (props: {
               ) : (
                 <RiMoonFill className="h-4 w-4" />
               )}
-            </button>
-
-            <button className="dark:bg-navy-700 flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-600 dark:text-white">
-              <IoMdNotificationsOutline className="h-4 w-4" />
             </button>
           </div>
         </div>
