@@ -6,6 +6,7 @@
 import { API_ENDPOINTS } from "@/config/api.config";
 import http from "@/services/http";
 import type { AuthTokens } from "@/services/http";
+import type { UserInfo } from "@/utils/auth.util";
 
 export type { AuthTokens };
 
@@ -41,6 +42,15 @@ export const authService = {
    */
   async logout(): Promise<void> {
     await http.post(API_ENDPOINTS.auth.logout);
+  },
+
+  /**
+   * GET /authentication/auth/me
+   * Returns the currently logged-in user's profile info.
+   */
+  async getMe(): Promise<UserInfo> {
+    const { data } = await http.get<UserInfo>(API_ENDPOINTS.auth.me);
+    return data;
   },
 
 };

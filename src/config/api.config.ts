@@ -15,6 +15,7 @@ export const API_ENDPOINTS = {
     googleCallback: "/authentication/google", 
     refresh: "/authentication/auth/refresh",
     logout: "/authentication/auth/logout",
+    me: "/authentication/auth/me",
   },
 
   // Authentication - Users
