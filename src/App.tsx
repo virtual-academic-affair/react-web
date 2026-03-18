@@ -11,6 +11,14 @@ import dayjs from "dayjs";
 import "dayjs/locale/vi";
 import { useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { ConfigProvider, theme } from "antd";
+import { useEffect, useState } from "react";
+import viVN from "antd/locale/vi_VN";
+import dayjs from "dayjs";
+import "dayjs/locale/vi";
+
+// Globally set dayjs locale to Vietnamese
+dayjs.locale("vi");
 
 // Globally set dayjs locale to Vietnamese
 dayjs.locale("vi");
