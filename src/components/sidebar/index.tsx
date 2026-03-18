@@ -1,7 +1,6 @@
 import Card from "@/components/card";
 import Dropdown from "@/components/dropdown";
 import React from "react";
-import { IoMdNotificationsOutline } from "react-icons/io";
 import { RiMoonFill, RiSunFill } from "react-icons/ri";
 import routes from "routes";
 import { SidebarLinks as Links } from "./components/Links";
@@ -102,8 +101,6 @@ const Sidebar = (props: {
                 <RiMoonFill className="h-4 w-4" />
               )}
             </button>
-
-            
           </div>
         </div>
       </Card>
