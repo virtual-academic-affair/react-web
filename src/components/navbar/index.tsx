@@ -6,7 +6,7 @@ import { BsArrowBarUp } from "react-icons/bs";
 import { FiAlignJustify, FiSearch } from "react-icons/fi";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { RiMoonFill, RiSunFill } from "react-icons/ri";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const Navbar = (props: {
   onOpenSidenav: () => void;
@@ -15,7 +15,7 @@ const Navbar = (props: {
   avatarUrl?: string;
   userName?: string;
 }) => {
-  const { onOpenSidenav, brandText, avatarUrl, userName } = props;
+  const { onOpenSidenav, avatarUrl, userName } = props;
   const [darkmode, setDarkmode] = React.useState(
     document.body.classList.contains("dark"),
   );
@@ -32,36 +32,11 @@ const Navbar = (props: {
     }
   };
 
+  return <div></div>;
+  
   return (
     <nav className="sticky top-4 z-40 flex flex-row flex-wrap items-center justify-between rounded-xl bg-white/10 py-2 pr-2 pl-0 backdrop-blur-xl dark:bg-[#0b14374d]">
-      <div>
-        <div className="h-6 w-[224px] pt-1">
-          <a
-            className="text-navy-700 text-sm font-normal hover:underline dark:text-white dark:hover:text-white"
-            href=" "
-          >
-            Pages
-            <span className="text-navy-700 hover:text-navy-700 mx-1 text-sm dark:text-white">
-              {" "}
-              /{" "}
-            </span>
-          </a>
-          <Link
-            className="text-navy-700 text-sm font-normal capitalize hover:underline dark:text-white dark:hover:text-white"
-            to="#"
-          >
-            {brandText}
-          </Link>
-        </div>
-        <p className="text-navy-700 shrink text-[33px] capitalize dark:text-white">
-          <Link
-            to="#"
-            className="hover:text-navy-700 font-bold capitalize dark:hover:text-white"
-          >
-            {brandText}
-          </Link>
-        </p>
-      </div>
+      <div></div>
 
       <div className="shadow-shadow-500 dark:bg-navy-800! relative mt-[3px] flex h-[61px] w-[355px] grow items-center justify-around gap-2 rounded-full bg-white px-2 py-2 shadow-xl md:w-[365px] md:grow-0 md:gap-1 xl:w-[365px] xl:gap-2 dark:shadow-none">
         <div className="bg-lightPrimary text-navy-700 dark:bg-navy-900 flex h-full items-center rounded-full xl:w-[225px] dark:text-white">
