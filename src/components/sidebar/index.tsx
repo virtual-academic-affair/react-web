@@ -1,20 +1,36 @@
 import Card from "@/components/card";
 import Dropdown from "@/components/dropdown";
+import { authService } from "@/services/auth";
+import { useAuthStore } from "@/stores/auth.store";
+import type { UserInfo } from "@/utils/auth.util";
 import React from "react";
 import { RiMoonFill, RiSunFill } from "react-icons/ri";
+import { useNavigate } from "react-router-dom";
 import routes from "routes";
 import { SidebarLinks as Links } from "./components/Links";
 
 const Sidebar = (props: {
   open: boolean;
   onClose: React.MouseEventHandler<HTMLSpanElement>;
-  avatarUrl?: string;
-  userName?: string;
 }) => {
-  const { open, avatarUrl, userName } = props;
+  const { open } = props;
+  const navigate = useNavigate();
+  const clearAuth = useAuthStore((s) => s.clearAuth);
+  const [userInfo, setUserInfo] = React.useState<UserInfo>({});
+
+  React.useEffect(() => {
+    authService.getMe().then(setUserInfo).catch(() => {});
+  }, []);
+
+  const { name: userName, picture: avatarUrl } = userInfo;
   const [darkmode, setDarkmode] = React.useState(
     document.body.classList.contains("dark"),
   );
+
+  const handleLogout = () => {
+    clearAuth();
+    navigate("/auth/login", { replace: true });
+  };
   return (
     <div
       className={`sm:none fixed top-5 bottom-5 left-5 z-50! flex w-78.25 flex-col gap-4 transition-all duration-175 md:z-50! lg:z-50! xl:z-0! ${
@@ -63,13 +79,8 @@ const Sidebar = (props: {
                 </div>
                 <div className="mt-3 h-px w-full bg-gray-200 dark:bg-white/20" />
                 <div className="mt-3 ml-4 flex flex-col">
-                  <button className="text-left text-sm text-gray-800 dark:text-white hover:dark:text-white">
-                    Cài đặt
-                  </button>
-                  <button className="mt-3 text-left text-sm text-gray-800 dark:text-white hover:dark:text-white">
-                    Cài đặt Newsletter
-                  </button>
-                  <button className="mt-3 text-left text-sm font-medium text-red-500 hover:text-red-500">
+                  
+                  <button onClick={handleLogout} className="mt-3 cursor-pointer text-left text-sm font-medium text-red-500 hover:text-red-500">
                     Đăng xuất
                   </button>
                 </div>

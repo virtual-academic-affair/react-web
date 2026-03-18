@@ -6,16 +6,40 @@
 
 import { useAuthStore } from "@/stores/auth.store";
 import { getRolePath } from "@/utils/auth.util";
+import React from "react";
+import { RiMoonFill, RiSunFill } from "react-icons/ri";
 import { Navigate, Outlet } from "react-router-dom";
 
 export default function AuthLayout() {
     const accessToken = useAuthStore((s) => s.accessToken);
     const userRole = useAuthStore((s) => s.userRole);
+    const [darkmode, setDarkmode] = React.useState(
+        document.body.classList.contains("dark"),
+    );
 
     if (accessToken) return <Navigate to={getRolePath(userRole)} replace />;
 
+    const toggleDark = () => {
+        if (darkmode) {
+            document.body.classList.remove("dark");
+            localStorage.setItem("theme", "light");
+            setDarkmode(false);
+        } else {
+            document.body.classList.add("dark");
+            localStorage.setItem("theme", "dark");
+            setDarkmode(true);
+        }
+    };
+
     return (
         <div className="relative float-right h-full min-h-screen w-full !bg-white dark:!bg-navy-900">
+            <button
+                onClick={toggleDark}
+                className="fixed top-4 right-4 z-50 flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-600 shadow-md transition-colors hover:bg-gray-200 dark:bg-navy-700 dark:text-white dark:hover:bg-navy-600"
+            >
+                {darkmode ? <RiSunFill className="h-4 w-4" /> : <RiMoonFill className="h-4 w-4" />}
+            </button>
+
             <main className="mx-auto min-h-screen">
                 <div className="relative flex">
                     <div className="mx-auto lg:pt-0 flex min-h-full w-full flex-col justify-center md:max-w-[75%] lg:max-w-[1013px] lg:px-8 xl:min-h-[100vh] xl:max-w-[1383px] xl:px-0 xl:pl-[70px]">
