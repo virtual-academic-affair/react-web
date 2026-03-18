@@ -79,12 +79,7 @@ const Sidebar = (props: {
                 </div>
                 <div className="mt-3 h-px w-full bg-gray-200 dark:bg-white/20" />
                 <div className="mt-3 ml-4 flex flex-col">
-                  <button className="text-left text-sm text-gray-800 dark:text-white hover:dark:text-white">
-                    Cài đặt
-                  </button>
-                  <button className="mt-3 text-left text-sm text-gray-800 dark:text-white hover:dark:text-white">
-                    Cài đặt Newsletter
-                  </button>
+                  
                   <button onClick={handleLogout} className="mt-3 cursor-pointer text-left text-sm font-medium text-red-500 hover:text-red-500">
                     Đăng xuất
                   </button>
