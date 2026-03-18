@@ -1,6 +1,5 @@
 import banner from "@/assets/img/auth/banner.png";
 import Card from "@/components/card";
-import { grantsService } from "@/services/email";
 import type { DynamicDataResponse } from "@/types/shared";
 import { useEffect, useRef, useState } from "react";
 
@@ -15,7 +14,6 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ data, loading }) => {
   const labels = data?.settings?.["email.labels"];
 
   const [showDropdown, setShowDropdown] = useState(false);
-  const [granting, setGranting] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -33,16 +31,6 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ data, loading }) => {
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showDropdown]);
-
-  const handleGrant = async () => {
-    setGranting(true);
-    try {
-      const url = await grantsService.getGmailAuthUrl();
-      window.location.href = url;
-    } catch {
-      setGranting(false);
-    }
-  };
 
   if (loading) {
     return (
