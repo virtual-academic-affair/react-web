@@ -9,7 +9,7 @@ export default function Footer() {
           <a
             target="blank"
             href="mailto:hello@simmmple.com"
-            className="text-sm text-gray-600 hover:text-gray-600 md:text-base lg:text-white lg:hover:text-white"
+            className="text-base hover:text-gray-600"
           >
             Support
           </a>
