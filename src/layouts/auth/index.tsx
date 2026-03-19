@@ -4,6 +4,7 @@
  * decorative panel on the right.
  */
 
+import auth from "@/assets/img/auth/auth.png";
 import { useAuthStore } from "@/stores/auth.store";
 import { getRolePath } from "@/utils/auth.util";
 import React from "react";
@@ -51,7 +52,7 @@ export default function AuthLayout() {
 
                             {/* Right side decorative panel */}
                             <div className="absolute right-0 hidden h-full min-h-screen lg:block lg:w-[49vw] 2xl:w-[44vw]">
-                                <div className="absolute flex h-full w-full flex-col items-center justify-center bg-[#4318FF] lg:rounded-bl-[120px] xl:rounded-bl-[200px]">
+                                <div className="absolute flex h-full w-full flex-col items-center justify-center bg-cover bg-center lg:rounded-bl-[120px] xl:rounded-bl-[200px]" style={{ backgroundImage: `url(${auth})` }}>
                                     {/* Logo icon */}
                                     <div className="flex h-32 w-32 items-center justify-center rounded-full bg-white shadow-2xl xl:h-40 xl:w-40">
                                         <svg
@@ -87,11 +88,9 @@ export default function AuthLayout() {
 
                                     {/* Brand text */}
                                     <h2 className="mt-6 text-center text-3xl font-extrabold tracking-wide text-white xl:text-4xl">
-                                        Virtual
+                                        Giáo Vụ Số
                                     </h2>
-                                    <h2 className="mt-2 text-center text-3xl font-extrabold tracking-wide text-white xl:text-4xl">
-                                        Academic Affair
-                                    </h2>
+                                    
 
                                     {/* Info card */}
                                     <div className="mt-10 rounded-2xl border border-white/30 bg-white/10 px-8 py-4 text-center backdrop-blur-sm xl:mt-14">

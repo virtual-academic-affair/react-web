@@ -18,7 +18,7 @@ export default function LoginPage() {
             const url = await authService.getGoogleAuthUrl();
             window.location.href = url;
         } catch {
-            setError("Unable to connect to authentication server. Please try again.");
+            setError("Không thể kết nối với máy chủ xác thực. Vui lòng thử lại.");
             setLoading(false);
         }
     };
@@ -27,10 +27,10 @@ export default function LoginPage() {
         <div className="mt-48 mb-16 flex h-full w-full items-center justify-center px-2 md:mx-0 md:px-0 lg:mb-10 lg:items-center lg:justify-start">
             <div className="mt-[10vh] w-full max-w-full flex-col items-center md:pl-4 lg:pl-0 xl:max-w-[420px]">
                 <h4 className="mb-2.5 text-4xl font-bold text-navy-700 dark:text-white">
-                    Sign In
+                    Đăng Nhập
                 </h4>
                 <p className="mb-9 ml-1 text-base text-gray-600">
-                    Sign in with your Google account to continue.
+                    Đăng nhập bằng tài khoản Google của bạn để tiếp tục.
                 </p>
 
                 {error && (
@@ -52,7 +52,7 @@ export default function LoginPage() {
                                 <FcGoogle />
                             </div>
                             <h5 className="text-sm font-medium text-navy-700 dark:text-white">
-                                Sign In with Google
+                                Đăng nhập bằng Google
                             </h5>
                         </>
                     )}
