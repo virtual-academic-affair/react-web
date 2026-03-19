@@ -14,6 +14,7 @@ export interface RegistrationFilters {
   academicYear: string;
   smartOrder: boolean;
   messageStatuses: MessageStatus[];
+  messageId: string;
 }
 
 interface AdvancedFilterModalProps {

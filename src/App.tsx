@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import viVN from "antd/locale/vi_VN";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
+import "driver.js/dist/driver.css";
 
 // Globally set dayjs locale to Vietnamese
 dayjs.locale("vi");

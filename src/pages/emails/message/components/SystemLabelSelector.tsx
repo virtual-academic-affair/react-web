@@ -25,7 +25,7 @@ const SystemLabelSelector: React.FC<SystemLabelSelectorProps> = ({
   };
 
   return (
-    <div className={className ?? "z-[100000] flex flex-wrap gap-2"}>
+    <div className={className ?? "z-100000 flex flex-wrap gap-2"}>
       {(Object.keys(systemLabelEnum ?? {}) as SystemLabel[]).map((sl) => {
         const active = value.includes(sl);
         return (
@@ -38,7 +38,7 @@ const SystemLabelSelector: React.FC<SystemLabelSelectorProps> = ({
                 ? labelPillStyle(getLabelColor(sl, systemLabelEnum))
                 : undefined
             }
-            className={`px-2 py-0.5 text-xs font-medium transition-colors ${
+            className={`px-2 py-0.5 text-xs font-medium transition-colors system-label-tag-${sl} ${
               active
                 ? "rounded-full"
                 : "rounded-full text-gray-600 outline outline-gray-200 hover:bg-gray-50 dark:text-gray-300 dark:outline-white/10 dark:hover:bg-white/10"

@@ -30,6 +30,10 @@ export interface Message {
   sentAt: Date;
   labelIds: string[];
   systemLabels: SystemLabel[];
+  content?: string;
+  tasksCount?: number;
+  hasInquiry?: number;
+  hasClassRegistration?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -55,6 +59,7 @@ export interface UpdateMessageLabelDto {
  */
 export interface UpdateMessageSystemLabelsDto {
   systemLabels: SystemLabel[];
+  deleteTasks?: boolean;
 }
 
 /**

@@ -26,6 +26,7 @@
     "antd": "^6.3.0",
     "apexcharts": "^3.35.5",
     "axios": "^1.13.5",
+    "driver.js": "^1.4.0",
     "js-cookie": "^3.0.5",
     "react": "^19.2.0",
     "react-apexcharts": "1.4.0",

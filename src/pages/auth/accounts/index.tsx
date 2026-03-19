@@ -12,12 +12,19 @@ import { message as toast } from "antd";
 import React from "react";
 import { MdInfoOutline } from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
-import AdvancedFilterModal from "./components/AdvancedFilterModal.tsx";
+import AdvancedFilterModal, {
+  type AccountFilters,
+} from "./components/AdvancedFilterModal.tsx";
 import RoleSelector from "./components/RoleSelector.tsx";
 import UserDetailDrawer from "./components/UserDetailDrawer.tsx";
 
-
 const PAGE_SIZE = 10;
+
+const defaultFilters: AccountFilters = {
+  roles: [],
+  enableIsActiveFilter: false,
+  isActive: true,
+};
 
 interface UsersPageProps {
   data: DynamicDataResponse | null;
@@ -31,10 +38,6 @@ const UsersPage: React.FC<UsersPageProps> = () => {
     Number(searchParams.get("page") ?? "1") > 0
       ? Number(searchParams.get("page") ?? "1")
       : 1;
-  const rolesParam = searchParams.get("roles");
-  const initialRoles = rolesParam
-    ? (rolesParam.split(",").filter(Boolean) as Role[])
-    : [];
 
   const [result, setResult] = React.useState<PaginatedResponse<User> | null>(
     null,
@@ -42,9 +45,22 @@ const UsersPage: React.FC<UsersPageProps> = () => {
   const [loading, setLoading] = React.useState(true);
   const [keyword, setKeyword] = React.useState(initialKeyword);
   const [page, setPage] = React.useState(initialPage);
-  const [rolesFilter, setRolesFilter] = React.useState<Role[]>(initialRoles);
+  const [filters, setFilters] = React.useState<AccountFilters>(() => {
+    const rolesParam = searchParams.get("roles");
+    const roles = rolesParam
+      ? (rolesParam.split(",").filter(Boolean) as Role[])
+      : [];
+    const enableFilter = searchParams.get("enableIsActiveFilter") === "true";
+    const isActive = searchParams.get("isActive") !== "false"; // default true
+    return {
+      roles,
+      enableIsActiveFilter: enableFilter,
+      isActive,
+    };
+  });
+  const [draftFilters, setDraftFilters] =
+    React.useState<AccountFilters>(defaultFilters);
   const [filterOpen, setFilterOpen] = React.useState(false);
-  const [draftRoles, setDraftRoles] = React.useState<Role[]>([]);
   const [updatingUsers, setUpdatingUsers] = React.useState<Set<number>>(
     new Set(),
   );
@@ -53,14 +69,15 @@ const UsersPage: React.FC<UsersPageProps> = () => {
   const selectedId = idParam ? Number(idParam) : null;
 
   const fetchUsers = React.useCallback(
-    async (p: number, kw: string, roles: Role[]) => {
+    async (p: number, kw: string, f: AccountFilters) => {
       setLoading(true);
       try {
         const resp = await usersService.getUsers({
           page: p,
           limit: PAGE_SIZE,
           keyword: kw || undefined,
-          roles: roles.length > 0 ? roles : undefined,
+          roles: f.roles.length > 0 ? f.roles : undefined,
+          isActive: f.enableIsActiveFilter ? f.isActive : undefined,
         });
         setResult(resp);
       } catch (err: unknown) {
@@ -77,9 +94,9 @@ const UsersPage: React.FC<UsersPageProps> = () => {
   );
 
   React.useEffect(() => {
-    fetchUsers(page, keyword, rolesFilter);
+    fetchUsers(page, keyword, filters);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, rolesFilter]);
+  }, [page, filters]);
 
   // Keep URL params in sync
   React.useEffect(() => {
@@ -89,30 +106,34 @@ const UsersPage: React.FC<UsersPageProps> = () => {
     }
     next.set("page", String(page));
     next.set("limit", String(PAGE_SIZE));
-    if (rolesFilter.length) {
-      next.set("roles", rolesFilter.join(","));
+    if (filters.roles.length) {
+      next.set("roles", filters.roles.join(","));
+    }
+    if (filters.enableIsActiveFilter) {
+      next.set("enableIsActiveFilter", "true");
+      next.set("isActive", String(filters.isActive));
     }
     if (idParam) {
       next.set("id", idParam);
     }
     setSearchParams(next, { replace: true });
-  }, [keyword, page, rolesFilter, idParam, setSearchParams]);
+  }, [keyword, page, filters, idParam, setSearchParams]);
 
   const handleSearch = () => {
     setPage(1);
-    fetchUsers(1, keyword, rolesFilter);
+    fetchUsers(1, keyword, filters);
   };
 
   const handleOpenFilter = () => {
-    setDraftRoles(rolesFilter);
+    setDraftFilters(filters);
     setFilterOpen(true);
   };
 
   const handleApplyFilter = () => {
-    setRolesFilter(draftRoles);
+    setFilters(draftFilters);
     setPage(1);
     setFilterOpen(false);
-    fetchUsers(1, keyword, draftRoles);
+    fetchUsers(1, keyword, draftFilters);
   };
 
   const handleCloseFilter = () => {
@@ -120,12 +141,13 @@ const UsersPage: React.FC<UsersPageProps> = () => {
   };
 
   const handleClearFilter = () => {
-    setDraftRoles([]);
-    setRolesFilter([]);
+    setDraftFilters(defaultFilters);
+    setFilters(defaultFilters);
     setPage(1);
-    fetchUsers(1, keyword, []);
+    fetchUsers(1, keyword, defaultFilters);
     setFilterOpen(false);
   };
+
 
   const handlePageChange = (p: number) => {
     setPage(p);
@@ -350,8 +372,9 @@ const UsersPage: React.FC<UsersPageProps> = () => {
 
       <AdvancedFilterModal
         open={filterOpen}
-        value={draftRoles}
-        onChange={setDraftRoles}
+        value={draftFilters}
+        onChange={setDraftFilters}
+
         onClear={handleClearFilter}
         onApply={handleApplyFilter}
         onRequestClose={handleCloseFilter}

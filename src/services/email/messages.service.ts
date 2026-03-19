@@ -61,6 +61,18 @@ class MessagesService {
   ): Promise<void> {
     await http.put(API_ENDPOINTS.email.messages.byIdLabels(id), data);
   }
+
+  /**
+   * Delete a specific email message
+   * @param id - Message ID
+   * @param deleteTasks - Whether to delete associated tasks
+   * @requires ADMIN role
+   */
+  async deleteMessage(id: number, deleteTasks: boolean): Promise<void> {
+    await http.delete(API_ENDPOINTS.email.messages.byId(id), {
+      params: { deleteTasks },
+    });
+  }
 }
 
 // Export singleton instance
