@@ -66,6 +66,9 @@ export const API_ENDPOINTS = {
     grants: {
       base: "/email/grants",
     },
+    canSaveContent: {
+      base: "/email/canSaveContent",
+    },
   },
 
   // Shared

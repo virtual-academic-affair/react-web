@@ -5,16 +5,46 @@ import { message as toast } from "antd";
 import React from "react";
 import RichTextEditor from "@/components/fields/RichTextEditor";
 import InquiryTypeSelector from "@/components/selector/InquiryTypeSelector";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import ProcessSteps from "./components/ProcessSteps";
+import { messagesService } from "@/services/email/messages.service";
+import type { Message } from "@/types/email";
+import RelatedMessageView from "../../emails/message/components/RelatedMessageView";
 
 const InquiryCreatePage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [currentStep, setCurrentStep] = React.useState(1);
   const [types, setTypes] = React.useState<InquiryType[]>([]);
   const [question, setQuestion] = React.useState("");
   const [answer, setAnswer] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
+  const [message, setMessage] = React.useState<Message | null>(null);
+  const [messageLoading, setMessageLoading] = React.useState(false);
+  const [messageId, setMessageId] = React.useState<number | undefined>(
+    searchParams.get("messageId")
+      ? Number(searchParams.get("messageId"))
+      : undefined,
+  );
+
+  React.useEffect(() => {
+    const mId = searchParams.get("messageId");
+    if (mId) {
+      setMessageLoading(true);
+      messagesService
+        .getMessageById(Number(mId))
+        .then((m) => {
+          setMessage(m);
+          setMessageId(m.id);
+          // If question is empty, pre-fill with subject
+          if (!question) {
+            setQuestion(m.subject || "");
+          }
+        })
+        .catch(() => toast.error("Không thể tải thông tin tin nhắn."))
+        .finally(() => setMessageLoading(false));
+    }
+  }, [searchParams, question]);
 
   const validateStep1 = () => {
     if (!types.length) {
@@ -53,6 +83,7 @@ const InquiryCreatePage: React.FC = () => {
       types,
       question: question.trim(),
       answer: answer.trim() || undefined,
+      messageId,
     };
 
     setSubmitting(true);
@@ -73,6 +104,11 @@ const InquiryCreatePage: React.FC = () => {
       title="Tạo thắc mắc mới"
       processSteps={<ProcessSteps currentStep={currentStep} />}
     >
+      <RelatedMessageView
+        message={message}
+        loading={messageLoading}
+        onReselect={() => navigate("/admin/emails/message")}
+      />
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-4">
           {currentStep === 1 && (

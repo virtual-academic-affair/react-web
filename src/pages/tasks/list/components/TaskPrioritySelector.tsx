@@ -8,8 +8,9 @@ import { MdExpandMore } from "react-icons/md";
 
 interface TaskPrioritySelectorProps {
   value: TaskPriority;
-  onChange: (priority: TaskPriority) => void;
+  onChange?: (priority: TaskPriority) => void;
   disabled?: boolean;
+  readonly?: boolean;
   className?: string;
 }
 
@@ -17,6 +18,7 @@ const TaskPrioritySelector: React.FC<TaskPrioritySelectorProps> = ({
   value,
   onChange,
   disabled = false,
+  readonly = false,
   className,
 }) => {
   const priorities: TaskPriority[] = ["low", "medium", "high", "urgent"];
@@ -33,11 +35,11 @@ const TaskPrioritySelector: React.FC<TaskPrioritySelectorProps> = ({
         }`}
       >
         <span>{TaskPriorityLabels[value]}</span>
-        <MdExpandMore className="h-4 w-4 text-inherit" />
+        {!readonly && <MdExpandMore className="h-4 w-4 text-inherit" />}
       </span>
 
       {/* Invisible native select for interaction */}
-      {!disabled && (
+      {!disabled && !readonly && onChange && (
         <select
           value={value}
           onChange={(e) => onChange(e.target.value as TaskPriority)}

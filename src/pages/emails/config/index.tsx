@@ -21,10 +21,12 @@ const GmailConfigPage: React.FC<GmailConfigPageProps> = ({
   return (
     <div className="flex flex-col gap-6 pb-10">
       <ProfileCard data={data} loading={dataLoading} />
+      
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <SyncCard data={data} dataLoading={dataLoading} onRefresh={onRefresh} />
         <AllowedDomainsCard />
       </div>
+
       <LabelsCard systemLabelEnum={systemLabelEnum} />
     </div>
   );

@@ -1,23 +1,25 @@
 import { tasksService } from "@/services/tasks.service";
 import { usersService } from "@/services/users";
-import {
-  type Task,
-  TaskPriority,
-  TaskStatus,
-} from "@/types/task";
-import type { User } from "@/types/users";
 import type { PaginatedResponse } from "@/types/common";
+import { type Task, TaskPriority, TaskStatus } from "@/types/task";
+import type { User } from "@/types/users";
 import { message as toast } from "antd";
 import React from "react";
-import { MdOutlineTableChart, MdOutlineCalendarMonth, MdOutlineDashboard, MdSearch, MdFilterList } from "react-icons/md";
+import {
+  MdFilterList,
+  MdOutlineCalendarMonth,
+  MdOutlineDashboard,
+  MdOutlineTableChart,
+  MdSearch,
+} from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
 import TaskAdvancedFilterModal, {
   type TaskFilters,
 } from "./components/TaskAdvancedFilterModal";
-import TaskDetailDrawer from "./components/TaskDetailDrawer";
-import TaskTableView from "./components/TaskTableView";
 import TaskBoard from "./components/TaskBoard";
 import TaskCalendarView from "./components/TaskCalendarView";
+import TaskDetailDrawer from "./components/TaskDetailDrawer";
+import TaskTableView from "./components/TaskTableView";
 
 type ViewMode = "table" | "calendar" | "board";
 
@@ -65,7 +67,7 @@ const TasksPage: React.FC = () => {
   );
 
   const [view, setView] = React.useState<ViewMode>(
-    (searchParams.get("view") as ViewMode) || "table"
+    (searchParams.get("view") as ViewMode) || "table",
   );
 
   const [filters, setFilters] = React.useState<TaskFilters>({
@@ -228,7 +230,9 @@ const TasksPage: React.FC = () => {
         prev
           ? {
               ...prev,
-              items: prev.items.map((t) => (t.id === updated.id ? updated : t)),
+              items: prev.items.map((t) =>
+                t.id === updated.id ? { ...t, ...updated } : t,
+              ),
             }
           : prev,
       );
@@ -250,7 +254,9 @@ const TasksPage: React.FC = () => {
         prev
           ? {
               ...prev,
-              items: prev.items.map((t) => (t.id === updated.id ? updated : t)),
+              items: prev.items.map((t) =>
+                t.id === updated.id ? { ...t, ...updated } : t,
+              ),
             }
           : prev,
       );
@@ -272,7 +278,9 @@ const TasksPage: React.FC = () => {
         prev
           ? {
               ...prev,
-              items: prev.items.map((t) => (t.id === updated.id ? updated : t)),
+              items: prev.items.map((t) =>
+                t.id === updated.id ? { ...t, ...updated } : t,
+              ),
             }
           : prev,
       );
@@ -295,7 +303,9 @@ const TasksPage: React.FC = () => {
         prev
           ? {
               ...prev,
-              items: prev.items.map((t) => (t.id === updated.id ? updated : t)),
+              items: prev.items.map((t) =>
+                t.id === updated.id ? { ...t, ...updated } : t,
+              ),
             }
           : prev,
       );
@@ -322,14 +332,19 @@ const TasksPage: React.FC = () => {
             type="text"
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSearch();
+            }}
             placeholder="Tìm kiếm công việc..."
             className="w-full bg-transparent py-1 text-sm text-gray-700 outline-none placeholder:text-gray-500 dark:bg-transparent dark:text-white dark:placeholder:text-gray-400"
           />
         </div>
         <button
           type="button"
-          onClick={() => { setDraftFilters(filters); setFilterOpen(true); }}
+          onClick={() => {
+            setDraftFilters(filters);
+            setFilterOpen(true);
+          }}
           className="bg-brand-500 hover:bg-brand-600 flex h-10 w-10 items-center justify-center rounded-2xl text-white transition-colors"
           title="Lọc nâng cao"
         >
@@ -338,15 +353,17 @@ const TasksPage: React.FC = () => {
 
         {/* Native dropdown selector disguised as an icon button */}
         <div className="relative h-10 w-10 shrink-0">
-          <div className="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 flex h-full w-full items-center justify-center rounded-2xl text-white shadow-sm transition-colors">
+          <div className="bg-brand-500 hover:bg-brand-600 flex h-10 w-10 items-center justify-center rounded-2xl text-white transition-colors">
             {view === "table" && <MdOutlineTableChart className="h-5 w-5" />}
-            {view === "calendar" && <MdOutlineCalendarMonth className="h-5 w-5" />}
+            {view === "calendar" && (
+              <MdOutlineCalendarMonth className="h-5 w-5" />
+            )}
             {view === "board" && <MdOutlineDashboard className="h-5 w-5" />}
           </div>
           <select
             value={view}
             onChange={(e) => setView(e.target.value as ViewMode)}
-            className="absolute inset-0 w-full h-full cursor-pointer opacity-0"
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
             title="Chọn kiểu hiển thị"
           >
             <option value="table">Dạng bảng</option>
@@ -450,4 +467,3 @@ const TasksPage: React.FC = () => {
 };
 
 export default TasksPage;
-

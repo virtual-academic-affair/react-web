@@ -10,6 +10,10 @@ import React from "react";
 import { MdAdd, MdDeleteOutline } from "react-icons/md";
 import RichTextEditor from "@/components/fields/RichTextEditor";
 import ProcessSteps from "./components/ProcessSteps";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { messagesService } from "@/services/email/messages.service";
+import type { Message } from "@/types/email";
+import RelatedMessageView from "../../emails/message/components/RelatedMessageView";
 
 interface DraftItem extends CreateClassRegistrationItemDto {
   key: string;
@@ -26,13 +30,40 @@ const emptyItem = (): DraftItem => ({
 });
 
 const ClassRegistrationCreatePage: React.FC = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [currentStep, setCurrentStep] = React.useState(1);
   const [studentCode, setStudentCode] = React.useState("");
   const [studentName, setStudentName] = React.useState("");
-  const [academicYear, setAcademicYear] = React.useState("2025");
+  const [academicYear, setAcademicYear] = React.useState("2026");
   const [note, setNote] = React.useState("");
   const [items, setItems] = React.useState<DraftItem[]>([emptyItem()]);
   const [submitting, setSubmitting] = React.useState(false);
+  const [message, setMessage] = React.useState<Message | null>(null);
+  const [messageLoading, setMessageLoading] = React.useState(false);
+  const [messageId, setMessageId] = React.useState<number | undefined>(
+    searchParams.get("messageId")
+      ? Number(searchParams.get("messageId"))
+      : undefined,
+  );
+
+  React.useEffect(() => {
+    const mId = searchParams.get("messageId");
+    if (mId) {
+      setMessageLoading(true);
+      messagesService
+        .getMessageById(Number(mId))
+        .then((m) => {
+          setMessage(m);
+          setMessageId(m.id);
+          if (!note) {
+            setNote(m.subject || "");
+          }
+        })
+        .catch(() => toast.error("Không thể tải thông tin tin nhắn."))
+        .finally(() => setMessageLoading(false));
+    }
+  }, [searchParams, note]);
 
   const updateItem = (
     key: string,
@@ -106,6 +137,7 @@ const ClassRegistrationCreatePage: React.FC = () => {
       note: note || undefined,
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       items: items.map(({ key, ...rest }) => rest),
+      messageId,
     };
 
     setSubmitting(true);
@@ -133,6 +165,11 @@ const ClassRegistrationCreatePage: React.FC = () => {
       title="Tạo đăng ký lớp"
       processSteps={<ProcessSteps currentStep={currentStep} />}
     >
+      <RelatedMessageView
+        message={message}
+        loading={messageLoading}
+        onReselect={() => navigate("/admin/emails/message")}
+      />
       <form
           onSubmit={(e) => {
             e.preventDefault();

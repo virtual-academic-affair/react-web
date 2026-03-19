@@ -7,13 +7,13 @@ import type { PaginatedResponse } from "@/types/common";
 import type { Message, SystemLabel } from "@/types/email";
 import type { DynamicDataResponse, SystemLabelEnumData } from "@/types/shared";
 import React from "react";
-import { MdInfoOutline } from "react-icons/md";
+import { MdInfoOutline, MdPostAdd } from "react-icons/md";
 import { SiGmail } from "react-icons/si";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import Tooltip from "../../../components/tooltip/Tooltip.tsx";
 import AdvancedFilterModal from "./components/AdvancedFilterModal";
 import EmailDetailDrawer from "./components/EmailDetailDrawer";
 import MessageLabelEditor from "./components/MessageLabelEditor";
-import Tooltip from "../../../components/tooltip/Tooltip.tsx";
 import { formatDate } from "./labelUtils";
 
 const PAGE_SIZE = 10;
@@ -23,6 +23,7 @@ interface MessagesPageProps {
 }
 
 const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const initialKeyword = searchParams.get("keyword") ?? "";
@@ -169,6 +170,25 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
     setSearchParams(next, { replace: true });
   };
 
+  const handleCreateBusiness = React.useCallback(
+    (msg: Message, type: "task" | "inquiry" | "registration") => {
+      const params = new URLSearchParams();
+      params.set("messageId", String(msg.id));
+      if (msg.subject) {
+        params.set("name", msg.subject);
+      }
+
+      if (type === "task") {
+        navigate(`/admin/tasks/create?${params.toString()}`);
+      } else if (type === "inquiry") {
+        navigate(`/admin/inquiry/create?${params.toString()}`);
+      } else if (type === "registration") {
+        navigate(`/admin/class-registration/create?${params.toString()}`);
+      }
+    },
+    [navigate],
+  );
+
   // Define table columns
   const columns: TableColumn<Message>[] = React.useMemo(
     () => [
@@ -244,8 +264,48 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
         className:
           "flex h-10 w-10 items-center justify-center rounded-2xl bg-pink-500 text-white transition-colors hover:bg-pink-600 dark:bg-pink-500 dark:text-white dark:hover:bg-pink-400",
       },
+      {
+        key: "create-business",
+        icon: (
+          <div className="flex h-10 w-10 items-center justify-center">
+            <MdPostAdd className="h-5 w-5" />
+          </div>
+        ),
+        label: "Tạo nghiệp vụ",
+        onClick: () => {
+          // The Dropdown trigger logic is usually handled by wrapping the button,
+          // but since TableLayout wraps the icon in a button, we can't easily wrap the button here.
+          // However, we can use a trick: the icon itself can be a Dropdown.
+        },
+        className: "p-0", // Remove padding to let Dropdown fill the space if needed
+        render: (msg: Message) => (
+          <div className="relative h-10 w-10 shrink-0">
+            <div className="flex h-full w-full items-center justify-center rounded-2xl bg-green-500 text-white transition-colors hover:bg-green-600 dark:bg-green-500 dark:text-white dark:hover:bg-green-400">
+              <MdPostAdd className="h-5 w-5" />
+            </div>
+            <select
+              defaultValue=""
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val) {
+                  handleCreateBusiness(msg, val as any);
+                  // Reset select to default so the same option can be picked again if needed,
+                  // though navigation usually happens immediately.
+                  e.target.value = "";
+                }
+              }}
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              title="Tạo nghiệp vụ"
+            >
+              <option value="task">Tạo công việc</option>
+              <option value="inquiry">Tạo thắc mắc</option>
+              <option value="registration">Đăng ký môn học</option>
+            </select>
+          </div>
+        ),
+      },
     ],
-    [handleOpenDetail, superEmail?.email],
+    [handleOpenDetail, superEmail?.email, handleCreateBusiness],
   );
 
   return (
