@@ -44,24 +44,31 @@ export const SidebarLinks = (props: { routes: RoutesType[] }): JSX.Element => {
           return;
         }
         const key = `${route.path || route.name}-${index}`;
-        if (!(key in next)) {
-          next[key] = isParentActive(route);
+        const active = isParentActive(route);
+        if (active) {
+          next[key] = true;
+        } else if (!(key in next)) {
+          next[key] = false;
         }
+
         // Check children for level 3
         route.children.forEach((child, childIndex) => {
           if (child.children?.length) {
             const childKey = `${child.path || child.name}-${index}-${childIndex}`;
-            if (!(childKey in next)) {
-              const isChildParentActive = child.children.some((grandchild) =>
-                isRouteActive(grandchild),
-              );
-              next[childKey] = isChildParentActive;
+            const childActive = child.children.some((grandchild) =>
+              isRouteActive(grandchild),
+            );
+            if (childActive) {
+              next[childKey] = true;
+            } else if (!(childKey in next)) {
+              next[childKey] = false;
             }
           }
         });
       });
       return next;
     });
+
   }, [location.pathname, routes]);
 
   const createLinks = (routes: RoutesType[]) => {
@@ -80,10 +87,11 @@ export const SidebarLinks = (props: { routes: RoutesType[] }): JSX.Element => {
             <li key={index} className="mb-4">
               <button
                 type="button"
-                onClick={() =>
-                  setOpenGroups((prev) => ({ ...prev, [groupKey]: !isOpen }))
-                }
-                className="my-[3px] flex w-full items-center px-4 py-0.5 text-left"
+                onClick={() => {
+                  if (parentActive && isOpen) return;
+                  setOpenGroups((prev) => ({ ...prev, [groupKey]: !isOpen }));
+                }}
+                className="my-0.75 flex w-full items-center px-4 py-0.5 text-left"
               >
                 <span
                   className={`inline-flex shrink-0 [&>svg]:h-5 [&>svg]:w-5 ${
@@ -113,7 +121,7 @@ export const SidebarLinks = (props: { routes: RoutesType[] }): JSX.Element => {
               </button>
 
               <ul
-                className={`mt-[6px] ml-12 flex flex-col overflow-hidden transition-all duration-200 ease-in-out ${
+                className={`mt-1.5 ml-12 flex flex-col overflow-hidden transition-all duration-200 ease-in-out ${
                   isOpen
                     ? "mt-1 max-h-80 gap-1 opacity-100"
                     : "mt-0 max-h-0 gap-0 opacity-0"
@@ -134,13 +142,14 @@ export const SidebarLinks = (props: { routes: RoutesType[] }): JSX.Element => {
                       <li key={`${index}-${childIndex}`} className="relative">
                         <button
                           type="button"
-                          onClick={() =>
+                          onClick={() => {
+                            if (isChildParentActive && isChildOpen) return;
                             setOpenGroups((prev) => ({
                               ...prev,
                               [childGroupKey]: !isChildOpen,
-                            }))
-                          }
-                          className="my-[3px] flex w-full items-center px-1 py-0.5 pr-5 text-left"
+                            }));
+                          }}
+                          className="my-0.75 flex w-full items-center px-1 py-0.5 pr-5 text-left"
                         >
                           <p
                             className={`flex text-sm font-medium transition-colors ${
@@ -178,7 +187,7 @@ export const SidebarLinks = (props: { routes: RoutesType[] }): JSX.Element => {
                                 >
                                   <Link
                                     to={routeHref(grandchild)}
-                                    className={`mt-1 flex items-center gap-2 rounded-lg py-[2px] text-sm transition-colors ${
+                                    className={`mt-1 flex items-center gap-2 rounded-lg py-0.5 text-sm transition-colors ${
                                       grandchildActive
                                         ? "text-navy-700 dark:text-white"
                                         : "text-gray-600 dark:text-gray-300"
@@ -204,7 +213,7 @@ export const SidebarLinks = (props: { routes: RoutesType[] }): JSX.Element => {
                     <li key={`${index}-${childIndex}`} className="relative">
                       <Link
                         to={routeHref(child)}
-                        className={`mt-1 ml-1 block rounded-lg py-[2px] text-sm font-medium transition-colors ${
+                        className={`mt-1 ml-1 block rounded-lg py-0.5 text-sm font-medium transition-colors ${
                           childActive
                             ? "text-navy-700 dark:text-white"
                             : "text-gray-600 dark:text-gray-300"
@@ -224,7 +233,8 @@ export const SidebarLinks = (props: { routes: RoutesType[] }): JSX.Element => {
         return (
           <Link key={index} to={routeHref(route)}>
             <div className="relative mb-3 flex hover:cursor-pointer">
-              <li className="my-[3px] flex cursor-pointer items-center px-8">
+              <li className="my-0.75 flex cursor-pointer items-center px-8">
+
                 <span
                   className={`inline-flex shrink-0 [&>svg]:h-6 [&>svg]:w-6 ${
                     active

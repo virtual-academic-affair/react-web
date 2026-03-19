@@ -1,10 +1,8 @@
-import { grantsService } from "@/services/email";
 import banner from "@/assets/img/auth/banner.png";
 import Card from "@/components/card";
+import { grantsService } from "@/services/email";
 import type { DynamicDataResponse } from "@/types/shared";
 import { useEffect, useRef, useState } from "react";
-import { MdEmail } from "react-icons/md";
-
 
 interface ProfileCardProps {
   data: DynamicDataResponse | null;
@@ -85,16 +83,16 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ data, loading }) => {
     <div>
       {/* Banner */}
       <div
-        className="relative mt-1 flex h-52 w-full justify-center rounded-[40px] bg-cover bg-center"
+        className="relative mt-1 flex h-82 w-full justify-center rounded-[40px] bg-cover bg-center"
         style={{
           backgroundImage: `url(${banner})`,
         }}
       >
         {/* Avatar with dropdown */}
-        <div className="absolute -bottom-12" ref={dropdownRef}>
+        <div className="absolute -bottom-20" ref={dropdownRef}>
           <button
             onClick={() => setShowDropdown((prev) => !prev)}
-            className="flex h-[87px] w-[87px] items-center justify-center rounded-full border-4 border-white bg-pink-400 transition-shadow hover:shadow-lg hover:ring-2 hover:ring-[#422afb] focus:outline-none dark:border-navy-700!"
+            className="border-lightPrimary! dark:border-navy-900! flex h-40 w-40 cursor-pointer items-center justify-center rounded-full border-8 bg-pink-400 transition-all"
           >
             {profile.picture ? (
               <img
@@ -104,33 +102,26 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ data, loading }) => {
                 referrerPolicy="no-referrer"
               />
             ) : (
-              <span className="text-3xl font-bold text-white">
+              <span className="text-5xl font-bold text-white">
                 {profile.name?.charAt(0) ?? "?"}
               </span>
             )}
           </button>
 
           {showDropdown && (
-            <div className="absolute top-full left-1/2 z-50 mt-2 -translate-x-1/2 rounded-xl border border-gray-200 bg-white p-2 shadow-xl dark:border-navy-600 dark:bg-navy-800">
-              <button
-                onClick={handleGrant}
-                disabled={granting}
-                className="flex w-max items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-navy-700 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 dark:text-white dark:hover:bg-navy-700"
-              >
-                {granting ? (
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-brand-500" />
-                ) : (
-                  <MdEmail className="text-brand-500 text-lg" />
-                )}
-                Grant Email Access
-              </button>
-            </div>
+            <button
+              onClick={handleGrant}
+              disabled={granting}
+              className="text-navy-700 dark:hover:bg-navy-700 dark:border-navy-600 dark:bg-navy-800 absolute top-full left-1/2 z-50 mt-2 flex w-max -translate-x-1/2 cursor-pointer items-center gap-2 rounded-4xl bg-white px-4 py-2.5 text-sm font-medium shadow-xl transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 dark:text-white"
+            >
+              Đổi tài khoản
+            </button>
           )}
         </div>
       </div>
 
       {/* Name & Role */}
-      <div className="mt-16 flex flex-col items-center">
+      <div className="mt-24 flex flex-col items-center">
         <h4 className="text-navy-700 text-5xl font-bold dark:text-white">
           {profile.name}
         </h4>
@@ -143,32 +134,32 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ data, loading }) => {
       <div className="mt-10 mb-3 flex w-full justify-center">
         <Card extra="w-full max-w-[640px] px-8 py-5">
           <div className="flex items-stretch justify-center gap-8 px-4 md:gap-12 lg:gap-16">
-        <div className="flex flex-col items-center justify-center">
-          <p className="text-navy-700 text-2xl font-bold dark:text-white">
-            {labelCount}
-          </p>
-          <p className="text-sm font-normal text-gray-600 dark:text-gray-400">
-            Email nhận
-          </p>
-        </div>
+            <div className="flex flex-col items-center justify-center">
+              <p className="text-navy-700 text-2xl font-bold dark:text-white">
+                {labelCount}
+              </p>
+              <p className="text-sm font-normal text-gray-600 dark:text-gray-400">
+                Email nhận
+              </p>
+            </div>
             <div className="h-10 w-px self-center bg-gray-200 dark:bg-white/20" />
-        <div className="flex flex-col items-center justify-center">
-          <p className="text-navy-700 text-2xl font-bold dark:text-white">
-            18K
-          </p>
-          <p className="text-sm font-normal text-gray-600 dark:text-gray-400">
-            Email xử lý tự động
-          </p>
-        </div>
+            <div className="flex flex-col items-center justify-center">
+              <p className="text-navy-700 text-2xl font-bold dark:text-white">
+                18K
+              </p>
+              <p className="text-sm font-normal text-gray-600 dark:text-gray-400">
+                Email xử lý tự động
+              </p>
+            </div>
             <div className="h-10 w-px self-center bg-gray-200 dark:bg-white/20" />
-        <div className="flex flex-col items-center justify-center">
-          <p className="text-navy-700 text-2xl font-bold dark:text-white">
-            {lastPullAt ? "1" : "0"}
-          </p>
-          <p className="text-sm font-normal text-gray-600 dark:text-gray-400">
-            Lần đồng bộ
-          </p>
-        </div>
+            <div className="flex flex-col items-center justify-center">
+              <p className="text-navy-700 text-2xl font-bold dark:text-white">
+                {lastPullAt ? "1" : "0"}
+              </p>
+              <p className="text-sm font-normal text-gray-600 dark:text-gray-400">
+                Lần đồng bộ
+              </p>
+            </div>
           </div>
         </Card>
       </div>
