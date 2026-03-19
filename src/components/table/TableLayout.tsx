@@ -131,7 +131,7 @@ function TableLayout<T extends { id: number | string }>({
                   {columns.map((col) => (
                     <th
                       key={col.key}
-                      className={`px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500 ${
+                      className={`px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500 table-column-header-${col.key} ${
                         col.width ? col.width : ""
                       } ${col.maxWidth ? `max-w-[${col.maxWidth}]` : ""}`}
                       style={

@@ -21,8 +21,10 @@ const Checkbox = (props: {
   return (
     <input
       type="checkbox"
-      className={`defaultCheckbox relative flex h-5 min-h-5 w-5 min-w-5 appearance-none items-center justify-center rounded-md border border-gray-300 text-white/0 transition duration-200 outline-none checked:border-none checked:text-white hover:cursor-pointer dark:border-white/10 ${
+      className={`defaultCheckbox relative flex h-5 min-h-5 w-5 min-w-5 appearance-none items-center justify-center rounded-md border border-gray-300 transition duration-200 outline-none checked:border-none checked:bg-center checked:bg-no-repeat checked:bg-size-[14px_14px] checked:bg-[url("data:image/svg+xml,%3csvg%20viewBox='0%200%2016%2016'%20fill='white'%20xmlns='http://www.w3.org/2000/svg'%3e%3cpath%20d='M12.207%204.793a1%201%200%20010%201.414l-5%205a1%201%200%2001-1.414%200l-2-2a1%201%200%20011.414-1.414L6.5%209.086l4.293-4.293a1%201%200%20011.414%200z'/%3e%3c/svg%3e")] hover:cursor-pointer dark:border-white/10 ${
         color === "red"
+
+
           ? "checked:border-none checked:bg-red-500 dark:checked:bg-red-400"
           : color === "blue"
             ? "checked:border-none checked:bg-blue-500 dark:checked:bg-blue-400"

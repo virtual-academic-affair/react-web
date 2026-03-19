@@ -53,7 +53,9 @@ export interface User {
  */
 export interface GetUsersParams extends ResourceQueryDto {
   roles?: Role[];
+  isActive?: boolean;
 }
+
 
 /**
  * DTO for assigning role to user

@@ -6,14 +6,16 @@ import { messagesService } from "@/services/email";
 import type { PaginatedResponse } from "@/types/common";
 import type { Message, SystemLabel } from "@/types/email";
 import type { DynamicDataResponse, SystemLabelEnumData } from "@/types/shared";
+import { message as toast } from "antd";
 import React from "react";
-import { MdInfoOutline, MdPostAdd } from "react-icons/md";
+import { MdInfoOutline, MdPostAdd, MdDeleteOutline } from "react-icons/md";
 import { SiGmail } from "react-icons/si";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Tooltip from "../../../components/tooltip/Tooltip.tsx";
 import AdvancedFilterModal from "./components/AdvancedFilterModal";
 import EmailDetailDrawer from "./components/EmailDetailDrawer";
 import MessageLabelEditor from "./components/MessageLabelEditor";
+import MessageDeleteModal from "./components/MessageDeleteModal";
 import { formatDate } from "./labelUtils";
 
 const PAGE_SIZE = 10;
@@ -49,6 +51,11 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
     SystemLabel[]
   >([]);
 
+  // Delete state
+  const [deleteModalOpen, setDeleteModalOpen] = React.useState(false);
+  const [deletingMessage, setDeletingMessage] = React.useState<Message | null>(null);
+  const [deleteLoading, setDeleteLoading] = React.useState(false);
+
   const systemLabelEnum: SystemLabelEnumData | null | undefined =
     data?.enums?.["shared.systemLabel"];
   const superEmail = data?.settings?.["email.superEmail"];
@@ -56,6 +63,22 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
   // Use "id" as the URL param for the selected message instead of "messageId"
   const idParam = searchParams.get("id");
   const selectedId = idParam ? Number(idParam) : null;
+
+  const handleConfirmDelete = async (deleteTasks: boolean) => {
+    if (!deletingMessage) return;
+    setDeleteLoading(true);
+    try {
+      await messagesService.deleteMessage(deletingMessage.id, deleteTasks);
+      toast.success("Xóa email thành công");
+      setDeleteModalOpen(false);
+      setDeletingMessage(null);
+      fetchEmails(page, keyword, systemLabelsFilter);
+    } catch {
+      toast.error("Không thể xóa email");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
   const fetchEmails = React.useCallback(
     async (p: number, kw: string, labels: SystemLabel[]) => {
@@ -84,6 +107,26 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, systemLabelsFilter]);
 
+  React.useEffect(() => {
+    const tourType = searchParams.get("startTour") as "inquiry" | "class-registration" | null;
+    
+    if (tourType && result?.items.length) {
+      // Start tour immediately once data is ready
+      setTimeout(() => {
+        import("@/utils/tours").then(({ startMessageSelectionTour }) => {
+          startMessageSelectionTour(tourType);
+          
+          // Clean up the param so it doesn't re-trigger
+          setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            next.delete("startTour");
+            return next;
+          }, { replace: true });
+        });
+      }, 0);
+    }
+  }, [searchParams, result, setSearchParams]);
+
   // Keep URL params in sync with current query state
   React.useEffect(() => {
     const next = new URLSearchParams();
@@ -98,8 +141,12 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
     if (idParam) {
       next.set("id", idParam);
     }
+    const tourParam = searchParams.get("startTour");
+    if (tourParam) {
+      next.set("startTour", tourParam);
+    }
     setSearchParams(next, { replace: true });
-  }, [keyword, page, systemLabelsFilter, idParam, setSearchParams]);
+  }, [keyword, page, systemLabelsFilter, idParam, searchParams, setSearchParams]);
 
   const handleSearch = () => {
     setPage(1);
@@ -199,7 +246,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
         maxWidth: "450px",
         render: (msg) => (
           <Tooltip label={msg.subject || "(Không có tiêu đề)"}>
-            <p className="text-navy-700 w-full max-w-[400px] truncate text-base font-medium dark:text-white">
+            <p className="text-navy-700 w-full max-w-100 truncate text-base font-medium dark:text-white">
               {msg.subject || "(Không có tiêu đề)"}
             </p>
           </Tooltip>
@@ -212,7 +259,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
         maxWidth: "250px",
         render: (msg) => (
           <Tooltip label={msg.senderName}>
-            <p className="text-navy-700 w-full max-w-[250px] truncate text-sm dark:text-white">
+            <p className="text-navy-700 w-full max-w-62.5 truncate text-sm dark:text-white">
               {msg.senderName}
             </p>
           </Tooltip>
@@ -265,44 +312,29 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
           "flex h-10 w-10 items-center justify-center rounded-2xl bg-pink-500 text-white transition-colors hover:bg-pink-600 dark:bg-pink-500 dark:text-white dark:hover:bg-pink-400",
       },
       {
-        key: "create-business",
+        key: "create-task",
         icon: (
           <div className="flex h-10 w-10 items-center justify-center">
             <MdPostAdd className="h-5 w-5" />
           </div>
         ),
-        label: "Tạo nghiệp vụ",
-        onClick: () => {
-          // The Dropdown trigger logic is usually handled by wrapping the button,
-          // but since TableLayout wraps the icon in a button, we can't easily wrap the button here.
-          // However, we can use a trick: the icon itself can be a Dropdown.
+        label: "Tạo công việc",
+        onClick: (msg) => {
+          handleCreateBusiness(msg, "task");
         },
-        className: "p-0", // Remove padding to let Dropdown fill the space if needed
-        render: (msg: Message) => (
-          <div className="relative h-10 w-10 shrink-0">
-            <div className="flex h-full w-full items-center justify-center rounded-2xl bg-green-500 text-white transition-colors hover:bg-green-600 dark:bg-green-500 dark:text-white dark:hover:bg-green-400">
-              <MdPostAdd className="h-5 w-5" />
-            </div>
-            <select
-              defaultValue=""
-              onChange={(e) => {
-                const val = e.target.value;
-                if (val) {
-                  handleCreateBusiness(msg, val as any);
-                  // Reset select to default so the same option can be picked again if needed,
-                  // though navigation usually happens immediately.
-                  e.target.value = "";
-                }
-              }}
-              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-              title="Tạo nghiệp vụ"
-            >
-              <option value="task">Tạo công việc</option>
-              <option value="inquiry">Tạo thắc mắc</option>
-              <option value="registration">Đăng ký môn học</option>
-            </select>
-          </div>
-        ),
+        className:
+          "flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500 text-white transition-colors hover:bg-green-600 dark:bg-green-500 dark:text-white dark:hover:bg-green-400",
+      },
+      {
+        key: "delete",
+        icon: <MdDeleteOutline className="h-4 w-4" />,
+        label: "Xóa",
+        onClick: (msg) => {
+          setDeletingMessage(msg);
+          setDeleteModalOpen(true);
+        },
+        className:
+          "flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600 dark:bg-red-500 dark:text-white dark:hover:bg-red-400",
       },
     ],
     [handleOpenDetail, superEmail?.email, handleCreateBusiness],
@@ -332,6 +364,16 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
             onLabelChanged={handleLabelChanged}
           />
         }
+      />
+
+      <MessageDeleteModal
+        open={deleteModalOpen}
+        onCancel={() => {
+          setDeleteModalOpen(false);
+          setDeletingMessage(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        loading={deleteLoading}
       />
 
       <AdvancedFilterModal

@@ -1,15 +1,18 @@
+import RichTextEditor from "@/components/fields/RichTextEditor";
 import CreatePageLayout from "@/components/layouts/CreatePageLayout";
+import InquiryTypeSelector from "@/components/selector/InquiryTypeSelector";
+import { messagesService } from "@/services/email/messages.service";
 import { inquiriesService } from "@/services/inquiry";
+import type { Message } from "@/types/email";
 import type { CreateInquiryDto, InquiryType } from "@/types/inquiry";
 import { message as toast } from "antd";
 import React from "react";
-import RichTextEditor from "@/components/fields/RichTextEditor";
-import InquiryTypeSelector from "@/components/selector/InquiryTypeSelector";
+import { MdExpandMore } from "react-icons/md";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import ProcessSteps from "./components/ProcessSteps";
-import { messagesService } from "@/services/email/messages.service";
-import type { Message } from "@/types/email";
+
+import MessageContentSidePanel from "../../emails/message/components/MessageContentSidePanel";
 import RelatedMessageView from "../../emails/message/components/RelatedMessageView";
+import ProcessSteps from "./components/ProcessSteps";
 
 const InquiryCreatePage: React.FC = () => {
   const navigate = useNavigate();
@@ -21,32 +24,44 @@ const InquiryCreatePage: React.FC = () => {
   const [submitting, setSubmitting] = React.useState(false);
   const [message, setMessage] = React.useState<Message | null>(null);
   const [messageLoading, setMessageLoading] = React.useState(false);
-  const [messageId, setMessageId] = React.useState<number | undefined>(
-    searchParams.get("messageId")
-      ? Number(searchParams.get("messageId"))
-      : undefined,
-  );
+
+  const messageId = searchParams.get("messageId")
+    ? Number(searchParams.get("messageId"))
+    : undefined;
 
   React.useEffect(() => {
-    const mId = searchParams.get("messageId");
-    if (mId) {
+    if (messageId) {
       setMessageLoading(true);
       messagesService
-        .getMessageById(Number(mId))
+        .getMessageById(messageId)
         .then((m) => {
           setMessage(m);
-          setMessageId(m.id);
           // If question is empty, pre-fill with subject
           if (!question) {
             setQuestion(m.subject || "");
           }
+
+          // Check for existing inquiry
+          inquiriesService
+            .getList({ messageId: m.id, limit: 1 })
+            .then((resp) => {
+              if (resp.items.length > 0) {
+                const existing = resp.items[0];
+                toast.info("Tin nhắn này đã có thông tin thắc mắc.");
+                navigate(`/admin/inquiry/inquiries/${existing.id}`);
+              }
+            });
         })
         .catch(() => toast.error("Không thể tải thông tin tin nhắn."))
         .finally(() => setMessageLoading(false));
     }
-  }, [searchParams, question]);
+  }, [messageId, navigate, question]);
 
   const validateStep1 = () => {
+    if (!messageId) {
+      toast.error("Vui lòng đính kèm email.");
+      return false;
+    }
     if (!types.length) {
       toast.error("Vui lòng chọn ít nhất một loại thắc mắc.");
       return false;
@@ -70,9 +85,11 @@ const InquiryCreatePage: React.FC = () => {
     setCurrentStep(1);
   };
 
-  const handleCreateInquiry = async (e?: React.MouseEvent | React.FormEvent) => {
+  const handleCreateInquiry = async (
+    e?: React.MouseEvent | React.FormEvent,
+  ) => {
     e?.preventDefault();
-    
+
     // Final validation
     if (!validateStep1()) {
       setCurrentStep(1);
@@ -83,7 +100,7 @@ const InquiryCreatePage: React.FC = () => {
       types,
       question: question.trim(),
       answer: answer.trim() || undefined,
-      messageId,
+      messageId: messageId!,
     };
 
     setSubmitting(true);
@@ -99,44 +116,120 @@ const InquiryCreatePage: React.FC = () => {
     }
   };
 
+  if (!messageId && !messageLoading) {
+    return (
+      <CreatePageLayout title="Vui lòng chọn tin nhắn trước">
+        <div className="flex flex-col items-center justify-center py-10 text-center">
+          <p className="mb-10 max-w-2xl text-lg text-gray-600 dark:text-gray-400">
+            Hồ sơ cần được tạo từ một tin nhắn email cụ thể
+          </p>
+
+          <div className="mb-12 flex flex-col items-start gap-6 text-left">
+            <div className="flex items-center gap-4">
+              <div className="bg-brand-500 flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-bold text-white">
+                1
+              </div>
+              <p className="text-navy-700 text-base dark:text-white">
+                Mở <strong>DS tin nhắn</strong>
+              </p>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="bg-brand-500 flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-bold text-white">
+                2
+              </div>
+              <div className="text-navy-700 flex items-center gap-2 text-base dark:text-white">
+                <span>Tại tin nhắn muốn xử lý, gắn nhãn bằng nút</span>
+                <span className="dark:bg-navy-800 inline-flex aspect-square h-6 items-center rounded-lg border border-gray-200 bg-white pr-1.5 pl-1 text-gray-500 shadow-sm dark:border-white/10 dark:text-gray-300">
+                  <MdExpandMore className="h-4 w-4" />
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="bg-brand-500 flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-bold text-white">
+                3
+              </div>
+              <div className="text-navy-700 flex items-center gap-2 text-base dark:text-white">
+                <span>Chọn nhãn</span>
+                <span
+                  style={{ backgroundColor: "#17c1e820", color: "#17c1e8" }}
+                  className="rounded-full px-2.5 py-0.5 text-xs font-bold shadow-sm"
+                >
+                  Thắc mắc
+                </span>
+                <span>để bắt đầu tạo hồ sơ.</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-center gap-4">
+            <button
+              onClick={() =>
+                navigate(
+                  "/admin/email/messages?page=1&limit=10&startTour=inquiry",
+                )
+              }
+              className="dark:bg-navy-800 dark:hover:bg-navy-700 rounded-2xl bg-white px-8 py-4 text-sm font-bold text-gray-700 transition-all hover:bg-gray-50 active:scale-95 dark:border-white/10 dark:text-white"
+            >
+              Hướng dẫn
+            </button>
+            <button
+              onClick={() => navigate("/admin/email/messages?page=1&limit=10")}
+              className="bg-brand-500 hover:bg-brand-600 shadow-brand-500/20 rounded-2xl px-8 py-4 text-sm font-bold text-white shadow-lg transition-all active:scale-95"
+            >
+              DS tin nhắn
+            </button>
+          </div>
+        </div>
+      </CreatePageLayout>
+    );
+  }
+
+  const sideContent = message?.content ? (
+    <MessageContentSidePanel content={message.content} />
+  ) : undefined;
+
   return (
     <CreatePageLayout
       title="Tạo thắc mắc mới"
       processSteps={<ProcessSteps currentStep={currentStep} />}
+      sideContent={sideContent}
     >
       <RelatedMessageView
         message={message}
         loading={messageLoading}
-        onReselect={() => navigate("/admin/emails/message")}
+        onReselect={() => navigate("/admin/email/message")}
       />
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-4">
-          {currentStep === 1 && (
-            <div className="flex flex-col gap-4 animate-fadeIn">
-              {/* Types */}
-              <div className="flex items-start gap-6">
-                <div className="w-40 shrink-0">
-                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+
+      {messageLoading ? (
+        <div className="flex h-64 items-center justify-center">
+          <p className="animate-pulse text-gray-500 italic">
+            Đang tải thông tin tin nhắn...
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-4">
+            {currentStep === 1 && (
+              <div className="animate-fadeIn flex flex-col gap-6">
+                {/* Types */}
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                     Loại thắc mắc
                   </p>
-                </div>
-                <div className="flex-1">
                   <InquiryTypeSelector
                     value={types}
                     onChange={setTypes}
                     disabled={submitting}
                   />
                 </div>
-              </div>
 
-              {/* Question */}
-              <div className="flex items-start gap-6">
-                <div className="w-40 shrink-0">
-                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                {/* Question */}
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                     Nội dung thắc mắc
                   </p>
-                </div>
-                <div className="flex-1">
                   <RichTextEditor
                     value={question}
                     onChange={setQuestion}
@@ -144,19 +237,15 @@ const InquiryCreatePage: React.FC = () => {
                   />
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {currentStep === 2 && (
-            <div className="flex flex-col gap-4 animate-fadeIn">
-              {/* Answer */}
-              <div className="flex items-start gap-6">
-                <div className="w-40 shrink-0">
-                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                    Câu trả lời
+            {currentStep === 2 && (
+              <div className="animate-fadeIn flex flex-col gap-4">
+                {/* Answer */}
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    Câu trả lời / Giải đáp
                   </p>
-                </div>
-                <div className="flex-1">
                   <RichTextEditor
                     value={answer}
                     onChange={setAnswer}
@@ -164,56 +253,51 @@ const InquiryCreatePage: React.FC = () => {
                   />
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
 
-        {/* Buttons - Absolutely separated to prevent any event leaks */}
-        <div className="mt-4 flex justify-end gap-2">
-          {currentStep === 1 ? (
-            <>
-              <button
-                key="btn-cancel"
-                type="button"
-                onClick={() => navigate(-1)}
-                disabled={submitting}
-                className="rounded-xl px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-white/10"
-              >
-                Hủy
-              </button>
-              <button
-                key="btn-next"
-                type="button"
-                onClick={handleNextStep}
-                className="bg-brand-500 hover:bg-brand-600 rounded-2xl px-8 py-3.5 text-sm font-bold text-white transition-colors"
-              >
-                Tiếp theo
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                key="btn-prev"
-                type="button"
-                onClick={handlePrevStep}
-                disabled={submitting}
-                className="rounded-xl px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-white/10"
-              >
-                Quay lại
-              </button>
-              <button
-                key="btn-submit"
-                type="button"
-                onClick={handleCreateInquiry}
-                disabled={submitting}
-                className="bg-brand-500 hover:bg-brand-600 rounded-2xl px-8 py-3.5 text-sm font-bold text-white transition-colors disabled:opacity-50"
-              >
-                {submitting ? "Đang tạo..." : "Hoàn tất & Tạo"}
-              </button>
-            </>
-          )}
+          <div className="mt-4 flex justify-end gap-3">
+            {currentStep === 1 ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => navigate(-1)}
+                  disabled={submitting}
+                  className="rounded-2xl px-6 py-3.5 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-white/10"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  className="bg-brand-500 hover:bg-brand-600 shadow-brand-500/20 rounded-2xl px-8 py-3.5 text-sm font-bold text-white shadow-lg transition-all active:scale-[0.98]"
+                >
+                  Tiếp tục
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={handlePrevStep}
+                  disabled={submitting}
+                  className="rounded-2xl px-6 py-3.5 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-white/10"
+                >
+                  Quay lại
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateInquiry}
+                  disabled={submitting}
+                  className="rounded-2xl bg-green-500 px-8 py-3.5 text-sm font-bold text-white shadow-lg shadow-green-500/20 transition-all hover:bg-green-600 active:scale-[0.98] disabled:opacity-50"
+                >
+                  {submitting ? "Đang xử lý..." : "Hoàn tất & Tạo thắc mắc"}
+                </button>
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </CreatePageLayout>
   );
 };

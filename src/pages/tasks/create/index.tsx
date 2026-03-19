@@ -1,19 +1,20 @@
-import CreatePageLayout from "@/components/layouts/CreatePageLayout";
 import RichTextEditor from "@/components/fields/RichTextEditor";
+import CreatePageLayout from "@/components/layouts/CreatePageLayout";
+import { messagesService } from "@/services/email/messages.service";
 import { tasksService } from "@/services/tasks.service";
 import { usersService } from "@/services/users/users.service";
+import type { Message } from "@/types/email";
 import { TaskPriority, TaskStatus } from "@/types/task";
 import type { User } from "@/types/users";
 import { message as toast } from "antd";
 import React from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import TaskProcessSteps from "./components/TaskProcessSteps";
-import TaskStatusSelector from "../list/components/TaskStatusSelector";
-import TaskPrioritySelector from "../list/components/TaskPrioritySelector";
-import AssigneeManager from "../components/AssigneeManager";
-import { messagesService } from "@/services/email/messages.service";
-import type { Message } from "@/types/email";
+import MessageContentSidePanel from "../../emails/message/components/MessageContentSidePanel";
 import RelatedMessageView from "../../emails/message/components/RelatedMessageView";
+import AssigneeManager from "../components/AssigneeManager";
+import TaskPrioritySelector from "../list/components/TaskPrioritySelector";
+import TaskStatusSelector from "../list/components/TaskStatusSelector";
+import TaskProcessSteps from "./components/TaskProcessSteps";
 
 const TaskCreatePage: React.FC = () => {
   const navigate = useNavigate();
@@ -132,16 +133,22 @@ const TaskCreatePage: React.FC = () => {
     }
   };
 
+  const sideContent = message?.content ? (
+    <MessageContentSidePanel content={message.content} />
+  ) : undefined;
+
   return (
     <CreatePageLayout
       title="Tạo công việc mới"
       processSteps={<TaskProcessSteps currentStep={currentStep} />}
+      sideContent={sideContent}
     >
       <RelatedMessageView
         message={message}
         loading={messageLoading}
-        onReselect={() => navigate("/admin/emails/message")}
+        onReselect={() => navigate("/admin/email/message")}
       />
+
       <form
         onSubmit={(e) => {
           e.preventDefault();

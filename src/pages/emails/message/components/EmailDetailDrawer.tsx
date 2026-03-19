@@ -24,11 +24,9 @@ const EmailDetailDrawer: React.FC<EmailDetailDrawerProps> = ({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (messageId == null) {
-      setDetail(null);
-      return;
-    }
+    if (messageId == null) return;
     setLoading(true);
+    setDetail(null);
     messagesService
       .getMessageById(messageId)
       .then(setDetail)
@@ -146,6 +144,23 @@ const EmailDetailDrawer: React.FC<EmailDetailDrawerProps> = ({
               />
             </div>
           </div>
+
+          {/* Message content */}
+          {detail.content && (
+            <div className="flex flex-col gap-2">
+              <div className="w-100 shrink-0 border-b border-gray-100 pb-1 dark:border-white/10 text-gray-400">
+                <p className="text-xs font-semibold tracking-wide uppercase dark:text-gray-500">
+                  Nội dung tin nhắn
+                </p>
+              </div>
+              <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/50 p-4 dark:border-white/10 dark:bg-navy-800 overflow-x-auto select-auto">
+                <div
+                  dangerouslySetInnerHTML={{ __html: detail.content }}
+                  className="prose dark:prose-invert max-w-none text-sm"
+                />
+              </div>
+            </div>
+          )}
 
           {/* Technical info section */}
           <div className="mt-4 border-t border-gray-100 pt-4 dark:border-white/10">

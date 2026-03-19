@@ -8,6 +8,7 @@ import MessageStatusTagSelector from "@/components/selector/MessageStatusTagSele
 export interface InquiryFilters {
   types: InquiryType[];
   messageStatuses: MessageStatus[];
+  messageId: string;
 }
 
 interface AdvancedFilterModalProps {

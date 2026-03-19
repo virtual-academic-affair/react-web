@@ -470,3 +470,44 @@ body {
   margin-right: 0px !important;
   overflow: hidden !important;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   CUSTOM MODAL STYLING (matching Drawer)
+   ───────────────────────────────────────────────────────────────────────── */
+
+.modal-rounded-30 .ant-modal-content {
+  border-radius: 30px !important;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1) !important;
+}
+
+.dark .modal-rounded-30 .ant-modal-content {
+  background-color: var(--color-navy-800) !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3) !important;
+}
+
+.modal-rounded-30 .ant-modal-header {
+  margin-bottom: 0 !important;
+  padding: 24px 32px 16px 32px !important;
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+.dark .modal-rounded-30 .ant-modal-header {
+  background-color: transparent !important;
+  border-bottom: 1px solid var(--color-white-10, rgba(255, 255, 255, 0.1));
+}
+
+.modal-rounded-30 .ant-modal-body {
+  padding: 0 !important;
+}
+
+.modal-rounded-30 .ant-modal-footer {
+  margin-top: 0 !important;
+  padding: 16px 32px 24px 32px !important;
+  border-top: 1px solid var(--color-gray-100);
+}
+
+.dark .modal-rounded-30 .ant-modal-footer {
+  border-top: 1px solid var(--color-white-10, rgba(255, 255, 255, 0.1));
+}
+

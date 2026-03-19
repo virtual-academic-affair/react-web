@@ -28,6 +28,7 @@ const PAGE_SIZE = 10;
 const defaultFilters: InquiryFilters = {
   types: [],
   messageStatuses: [],
+  messageId: "",
 };
 
 const InquiriesPage: React.FC = () => {
@@ -53,6 +54,7 @@ const InquiriesPage: React.FC = () => {
           .get("messageStatuses")!
           .split(",") as InquiryFilters["messageStatuses"])
       : [],
+    messageId: searchParams.get("messageId") ?? "",
   });
   const [draftFilters, setDraftFilters] = React.useState(filters);
   const [filterOpen, setFilterOpen] = React.useState(false);
@@ -76,6 +78,7 @@ const InquiriesPage: React.FC = () => {
           messageStatuses: f.messageStatuses.length
             ? f.messageStatuses
             : undefined,
+          messageId: f.messageId ? Number(f.messageId) : undefined,
           orderCol: "createdAt",
           orderDir: "DESC",
         });
@@ -109,6 +112,9 @@ const InquiriesPage: React.FC = () => {
     }
     if (filters.messageStatuses.length) {
       next.set("messageStatuses", filters.messageStatuses.join(","));
+    }
+    if (filters.messageId) {
+      next.set("messageId", filters.messageId);
     }
     if (selectedId != null) {
       next.set("id", String(selectedId));

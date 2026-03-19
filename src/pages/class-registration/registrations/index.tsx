@@ -31,6 +31,7 @@ const defaultFilters: RegistrationFilters = {
   academicYear: "",
   smartOrder: false,
   messageStatuses: [],
+  messageId: "",
 };
 
 const ClassRegistrationsPage: React.FC = () => {
@@ -56,6 +57,7 @@ const ClassRegistrationsPage: React.FC = () => {
           .get("messageStatuses")!
           .split(",") as RegistrationFilters["messageStatuses"])
       : [],
+    messageId: searchParams.get("messageId") ?? "",
   });
   const [draftFilters, setDraftFilters] = React.useState(filters);
   const [filterOpen, setFilterOpen] = React.useState(false);
@@ -81,6 +83,7 @@ const ClassRegistrationsPage: React.FC = () => {
           messageStatuses: f.messageStatuses.length
             ? f.messageStatuses
             : undefined,
+          messageId: f.messageId ? Number(f.messageId) : undefined,
           orderCol: "createdAt",
           orderDir: "DESC",
         });
@@ -121,6 +124,9 @@ const ClassRegistrationsPage: React.FC = () => {
     }
     if (filters.messageStatuses.length) {
       next.set("messageStatuses", filters.messageStatuses.join(","));
+    }
+    if (filters.messageId) {
+      next.set("messageId", filters.messageId);
     }
     if (selectedId != null) {
       next.set("id", String(selectedId));
