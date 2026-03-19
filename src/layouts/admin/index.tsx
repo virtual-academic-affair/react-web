@@ -90,12 +90,7 @@ const AdminLayout: React.FC = () => {
 
   return (
     <div className="bg-lightPrimary dark:bg-navy-900! flex min-h-screen w-full">
-      <Sidebar
-        open={open}
-        onClose={() => setOpen(false)}
-        avatarUrl={profile?.picture || undefined}
-        userName={profile?.name || undefined}
-      />
+      <Sidebar open={open} onClose={() => setOpen(false)} />
 
       {/* Main content */}
       <div className="relative flex min-h-screen w-full flex-col xl:ml-[343px]">

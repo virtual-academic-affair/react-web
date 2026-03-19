@@ -1,9 +1,12 @@
 import Dropdown from "@/components/dropdown";
+import { authService } from "@/services/auth";
+import { useAuthStore } from "@/stores/auth.store";
 import React from "react";
 import { BsArrowBarUp } from "react-icons/bs";
 import { FiAlignJustify, FiSearch } from "react-icons/fi";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { RiMoonFill, RiSunFill } from "react-icons/ri";
+import { useNavigate } from "react-router-dom";
 
 const Navbar = (props: {
   onOpenSidenav: () => void;
@@ -16,6 +19,18 @@ const Navbar = (props: {
   const [darkmode, setDarkmode] = React.useState(
     document.body.classList.contains("dark"),
   );
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch (e) {
+      console.error("Logout error", e);
+    } finally {
+      useAuthStore.getState().clearAuth();
+      navigate("/auth/login");
+    }
+  };
 
   return <div></div>;
   
@@ -151,12 +166,12 @@ const Navbar = (props: {
                 >
                   Cài đặt Newsletter
                 </a>
-                <a
-                  href=" "
-                  className="mt-3 text-sm font-medium text-red-500 hover:text-red-500"
+                <button
+                  onClick={handleLogout}
+                  className="mt-3 text-left text-sm font-medium text-red-500 hover:text-red-500 cursor-pointer"
                 >
                   Đăng xuất
-                </a>
+                </button>
               </div>
             </div>
           }
