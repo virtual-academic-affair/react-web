@@ -19,10 +19,13 @@ const Sidebar = (props: {
   const [userInfo, setUserInfo] = React.useState<UserInfo>({});
 
   React.useEffect(() => {
-    authService.getMe().then(setUserInfo).catch(() => {});
+    authService
+      .getMe()
+      .then(setUserInfo)
+      .catch(() => {});
   }, []);
 
-  const { name: userName, picture: avatarUrl } = userInfo;
+  const { name: userName, picture: avatarUrl, email: userEmail } = userInfo;
   const [darkmode, setDarkmode] = React.useState(
     document.body.classList.contains("dark"),
   );
@@ -73,14 +76,17 @@ const Sidebar = (props: {
             children={
               <div className="shadow-shadow-500 dark:bg-navy-700! rounded-primary flex h-fit w-56 flex-col justify-start bg-white bg-cover bg-no-repeat pb-4 shadow-xl dark:text-white dark:shadow-none">
                 <div className="mt-3 ml-4">
-                  <p className="text-navy-700 text-sm font-bold dark:text-white">
-                    👋 Chào, {userName ?? "bạn"}
+                  <p className="text-navy-700 font-bold dark:text-white">
+                    {userName ?? "—"}
+                    <div className="mt-1 text-sm font-normal">{userEmail}</div>
                   </p>
                 </div>
                 <div className="mt-3 h-px w-full bg-gray-200 dark:bg-white/20" />
                 <div className="mt-3 ml-4 flex flex-col">
-                  
-                  <button onClick={handleLogout} className="mt-3 cursor-pointer text-left text-sm font-medium text-red-500 hover:text-red-500">
+                  <button
+                    onClick={handleLogout}
+                    className="mt-3 cursor-pointer text-left text-sm font-medium text-red-500 hover:text-red-500"
+                  >
                     Đăng xuất
                   </button>
                 </div>
