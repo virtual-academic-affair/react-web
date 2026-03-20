@@ -23,6 +23,8 @@ import AdvancedFilterModal, {
 import MessageStatusSelector from "@/components/selector/MessageStatusSelector";
 import PreviewReplyModal from "./components/PreviewReplyModal";
 import RegistrationDetailDrawer from "./components/RegistrationDetailDrawer";
+import { parseSearchString, stringifySearchQuery } from "@/utils/search";
+
 
 const PAGE_SIZE = 10;
 
@@ -59,6 +61,16 @@ const ClassRegistrationsPage: React.FC = () => {
       : [],
     messageId: searchParams.get("messageId") ?? "",
   });
+
+  const [searchValue, setSearchValue] = React.useState(() =>
+    stringifySearchQuery(
+      searchParams.get("keyword") ?? "",
+      filters as unknown as Record<string, unknown>,
+    ),
+  );
+
+
+
   const [draftFilters, setDraftFilters] = React.useState(filters);
   const [filterOpen, setFilterOpen] = React.useState(false);
 
@@ -104,7 +116,14 @@ const ClassRegistrationsPage: React.FC = () => {
   React.useEffect(() => {
     fetchList(page, keyword, filters);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, filters]);
+  }, [page, filters, keyword]);
+
+  React.useEffect(() => {
+    setSearchValue(
+      stringifySearchQuery(keyword, filters as unknown as Record<string, unknown>),
+    );
+  }, [keyword, filters]);
+
 
   React.useEffect(() => {
     const next = new URLSearchParams();
@@ -135,11 +154,24 @@ const ClassRegistrationsPage: React.FC = () => {
   }, [filters, keyword, page, selectedId, setSearchParams]);
 
   const handleSearch = () => {
+    const parsed = parseSearchString(searchValue);
+    setKeyword(parsed.keyword);
+
+    const nextFilters: RegistrationFilters = {
+      studentCode: parsed.params.studentCode ?? "",
+      academicYear: parsed.params.academicYear ?? "",
+      smartOrder: parsed.params.smartOrder === "true",
+      messageStatuses: parsed.params.messageStatuses
+        ? (parsed.params.messageStatuses.split(",") as MessageStatus[])
+        : [],
+      messageId: parsed.params.messageId ?? "",
+    };
+    setFilters(nextFilters);
     setPage(1);
-    fetchList(1, keyword, filters);
   };
 
-  const handleDelete = async (row: ClassRegistration) => {
+
+  const handleDelete = React.useCallback(async (row: ClassRegistration) => {
     if (!window.confirm(`Xóa đăng ký lớp #${row.id}?`)) {
       return;
     }
@@ -158,7 +190,8 @@ const ClassRegistrationsPage: React.FC = () => {
       const msg = err instanceof Error ? err.message : "Xóa thất bại.";
       toast.error(msg);
     }
-  };
+  }, []);
+
 
   const handleMessageStatusChange = React.useCallback(
     async (row: ClassRegistration, newStatus: MessageStatus | null) => {
@@ -289,9 +322,10 @@ const ClassRegistrationsPage: React.FC = () => {
         loading={loading}
         page={page}
         pageSize={PAGE_SIZE}
-        searchValue={keyword}
-        onSearchChange={setKeyword}
+        searchValue={searchValue}
+        onSearchChange={setSearchValue}
         onSearch={handleSearch}
+
         searchPlaceholder="Tìm kiếm theo tên SV, MSSV..."
         showFilter={true}
         onFilterClick={() => {

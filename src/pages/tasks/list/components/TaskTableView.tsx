@@ -14,7 +14,7 @@ interface TaskTableViewProps {
   loading: boolean;
   page: number;
   pageSize: number;
-  keyword: string;
+  searchValue: string;
   onKeywordChange: (val: string) => void;
   onSearch: () => void;
   onPageChange: (p: number) => void;
@@ -32,7 +32,7 @@ const TaskTableView: React.FC<TaskTableViewProps> = ({
   loading,
   page,
   pageSize,
-  keyword,
+  searchValue,
   onKeywordChange,
   onSearch,
   onPageChange,
@@ -44,6 +44,7 @@ const TaskTableView: React.FC<TaskTableViewProps> = ({
   onDeleteClick,
   admins,
 }) => {
+
   const columns: TableColumn<Task>[] = React.useMemo(
     () => [
       {
@@ -133,7 +134,7 @@ const TaskTableView: React.FC<TaskTableViewProps> = ({
       loading={loading}
       page={page}
       pageSize={pageSize}
-      searchValue={keyword}
+      searchValue={searchValue}
       onSearchChange={onKeywordChange}
       onSearch={onSearch}
       searchPlaceholder="Tìm kiếm công việc..."

@@ -17,6 +17,8 @@ import AdvancedFilterModal, {
 } from "./components/AdvancedFilterModal.tsx";
 import RoleSelector from "./components/RoleSelector.tsx";
 import UserDetailDrawer from "./components/UserDetailDrawer.tsx";
+import { parseSearchString, stringifySearchQuery } from "@/utils/search";
+
 
 const PAGE_SIZE = 10;
 
@@ -58,8 +60,21 @@ const UsersPage: React.FC<UsersPageProps> = () => {
       isActive,
     };
   });
+  const [searchValue, setSearchValue] = React.useState(() => {
+    const params = { ...filters };
+    if (!filters.enableIsActiveFilter) {
+      delete (params as Record<string, unknown>).isActive;
+      delete (params as Record<string, unknown>).enableIsActiveFilter;
+    }
+    return stringifySearchQuery(
+      searchParams.get("keyword") ?? "",
+      params as unknown as Record<string, unknown>,
+    );
+  });
+
   const [draftFilters, setDraftFilters] =
     React.useState<AccountFilters>(defaultFilters);
+
   const [filterOpen, setFilterOpen] = React.useState(false);
   const [updatingUsers, setUpdatingUsers] = React.useState<Set<number>>(
     new Set(),
@@ -98,6 +113,25 @@ const UsersPage: React.FC<UsersPageProps> = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, filters]);
 
+  // Update searchValue when keyword or filters change
+  React.useEffect(() => {
+    const paramsToSerialize = { ...filters };
+    if (!filters.enableIsActiveFilter) {
+      delete (paramsToSerialize as Record<string, unknown>).isActive;
+      delete (paramsToSerialize as Record<string, unknown>).enableIsActiveFilter;
+    }
+
+
+    setSearchValue(
+      stringifySearchQuery(keyword, paramsToSerialize as unknown as Record<string, unknown>, [
+        "page",
+        "limit",
+      ]),
+    );
+
+  }, [keyword, filters]);
+
+
   // Keep URL params in sync
   React.useEffect(() => {
     const next = new URLSearchParams();
@@ -120,9 +154,21 @@ const UsersPage: React.FC<UsersPageProps> = () => {
   }, [keyword, page, filters, idParam, setSearchParams]);
 
   const handleSearch = () => {
+    const parsed = parseSearchString(searchValue);
+    setKeyword(parsed.keyword);
+
+    const nextFilters: AccountFilters = {
+      roles: parsed.params.roles
+        ? (parsed.params.roles.split(",") as Role[])
+        : [],
+      // For isActive, we handle it specially
+      isActive: parsed.params.isActive !== "false",
+      enableIsActiveFilter: parsed.params.isActive !== undefined,
+    };
+    setFilters(nextFilters);
     setPage(1);
-    fetchUsers(1, keyword, filters);
   };
+
 
   const handleOpenFilter = () => {
     setDraftFilters(filters);
@@ -154,8 +200,9 @@ const UsersPage: React.FC<UsersPageProps> = () => {
   };
 
   const handleKeywordChange = (value: string) => {
-    setKeyword(value);
+    setSearchValue(value);
   };
+
 
   const handleOpenDetail = React.useCallback(
     (user: User) => {
@@ -341,9 +388,10 @@ const UsersPage: React.FC<UsersPageProps> = () => {
         loading={loading}
         page={page}
         pageSize={PAGE_SIZE}
-        searchValue={keyword}
+        searchValue={searchValue}
         onSearchChange={handleKeywordChange}
         onSearch={handleSearch}
+
         searchPlaceholder="Tìm kiếm theo tên, email..."
         showFilter={true}
         onFilterClick={handleOpenFilter}

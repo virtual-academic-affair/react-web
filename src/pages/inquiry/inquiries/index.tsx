@@ -22,6 +22,8 @@ import MessageStatusSelector from "@/components/selector/MessageStatusSelector";
 import InquiryTypeEditor from "@/components/selector/InquiryTypeEditor";
 import PreviewReplyModal from "./components/PreviewReplyModal";
 import InquiryDetailDrawer from "./components/InquiryDetailDrawer";
+import { parseSearchString, stringifySearchQuery } from "@/utils/search";
+
 
 const PAGE_SIZE = 10;
 
@@ -56,6 +58,15 @@ const InquiriesPage: React.FC = () => {
       : [],
     messageId: searchParams.get("messageId") ?? "",
   });
+
+  const [searchValue, setSearchValue] = React.useState(() =>
+    stringifySearchQuery(
+      searchParams.get("keyword") ?? "",
+      filters as unknown as Record<string, unknown>,
+    ),
+  );
+
+
   const [draftFilters, setDraftFilters] = React.useState(filters);
   const [filterOpen, setFilterOpen] = React.useState(false);
 
@@ -101,6 +112,14 @@ const InquiriesPage: React.FC = () => {
   }, [page, filters, keyword, fetchList]);
 
   React.useEffect(() => {
+    setSearchValue(
+      stringifySearchQuery(keyword, filters as unknown as Record<string, unknown>),
+    );
+  }, [keyword, filters]);
+
+
+
+  React.useEffect(() => {
     const next = new URLSearchParams();
     if (keyword) {
       next.set("keyword", keyword);
@@ -123,9 +142,22 @@ const InquiriesPage: React.FC = () => {
   }, [filters, keyword, page, selectedId, setSearchParams]);
 
   const handleSearch = () => {
+    const parsed = parseSearchString(searchValue);
+    setKeyword(parsed.keyword);
+
+    const nextFilters: InquiryFilters = {
+      types: parsed.params.types
+        ? (parsed.params.types.split(",") as InquiryType[])
+        : [],
+      messageStatuses: parsed.params.messageStatuses
+        ? (parsed.params.messageStatuses.split(",") as MessageStatus[])
+        : [],
+      messageId: parsed.params.messageId ?? "",
+    };
+    setFilters(nextFilters);
     setPage(1);
-    fetchList(1, keyword, filters);
   };
+
 
   const handleDelete = React.useCallback(async (row: Inquiry) => {
     if (!window.confirm(`Xóa câu hỏi #${row.id}?`)) {
@@ -302,9 +334,10 @@ const InquiriesPage: React.FC = () => {
         loading={loading}
         page={page}
         pageSize={PAGE_SIZE}
-        searchValue={keyword}
-        onSearchChange={setKeyword}
+        searchValue={searchValue}
+        onSearchChange={setSearchValue}
         onSearch={handleSearch}
+
         searchPlaceholder="Tìm kiếm thắc mắc..."
         showFilter={true}
         onFilterClick={() => {

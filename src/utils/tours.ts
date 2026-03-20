@@ -50,7 +50,7 @@ export const startMessageSelectionTour = (
       element: `.message-system-label-tag-${targetLabelClass}`,
       popover: {
         title: "Bấm để bắt đầu",
-        description: `Tìm nhãn "${labelVi}" trên dòng tin nhắn và bấm trực tiếp vào đó để bắt đầu tạo hồ sơ.`,
+        description: `Ở hàng tin nhắn cần tạo hồ sơ, bấm trực tiếp vào nhãn "${labelVi}" để bắt đầu xử lý.`,
         side: "top",
         align: "center",
       },
@@ -66,12 +66,12 @@ export const startMessageSelectionTour = (
         title: "Chưa có nhãn nghiệp vụ",
         description: `Chưa có tin nhắn nào mang nhãn "${labelVi}". Cần gắn nhãn trước khi xử lý hồ sơ.`,
         side: "left",
-        align: "center"
+        align: "center",
       },
       onHighlighted: () => {
         // Recreate marker every time this step is shown (handles back navigation too)
         createColumnMarker();
-      }
+      },
     });
 
     steps.push({

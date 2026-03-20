@@ -20,6 +20,8 @@ import TaskBoard from "./components/TaskBoard";
 import TaskCalendarView from "./components/TaskCalendarView";
 import TaskDetailDrawer from "./components/TaskDetailDrawer";
 import TaskTableView from "./components/TaskTableView";
+import { parseSearchString, stringifySearchQuery } from "@/utils/search";
+
 
 type ViewMode = "table" | "calendar" | "board";
 
@@ -94,6 +96,16 @@ const TasksPage: React.FC = () => {
       searchParams.get("messageStatuses")?.split(",").filter(Boolean) ?? [],
   });
 
+  const [searchValue, setSearchValue] = React.useState(() =>
+    stringifySearchQuery(
+      searchParams.get("keyword") ?? "",
+      filters as unknown as Record<string, unknown>,
+      ["page", "limit", "view"],
+    ),
+  );
+
+
+
   const [filterOpen, setFilterOpen] = React.useState(false);
   const [draftFilters, setDraftFilters] = React.useState(filters);
 
@@ -153,6 +165,17 @@ const TasksPage: React.FC = () => {
   }, [page, filters, fetchList, keyword, view]);
 
   React.useEffect(() => {
+    setSearchValue(
+      stringifySearchQuery(keyword, filters as unknown as Record<string, unknown>, [
+        "page",
+        "limit",
+        "view",
+      ]),
+    );
+  }, [keyword, filters, view]);
+
+
+  React.useEffect(() => {
     fetchAdmins();
   }, [fetchAdmins]);
 
@@ -194,9 +217,30 @@ const TasksPage: React.FC = () => {
   }, [keyword, page, filters, view, setSearchParams]);
 
   const handleSearch = () => {
+    const parsed = parseSearchString(searchValue);
+    setKeyword(parsed.keyword);
+
+    const nextFilters: TaskFilters = {
+      statuses: parsed.params.statuses
+        ? (parsed.params.statuses.split(",") as TaskStatus[])
+        : [],
+      priorities: parsed.params.priorities
+        ? (parsed.params.priorities.split(",") as TaskPriority[])
+        : [],
+      dueDateFrom: parsed.params.dueDateFrom ?? "",
+      dueDateTo: parsed.params.dueDateTo ?? "",
+      assigneeIds: parsed.params.assigneeIds
+        ? parsed.params.assigneeIds.split(",").map(Number)
+        : [],
+      messageId: parsed.params.messageId ?? "",
+      messageStatuses: parsed.params.messageStatuses
+        ? parsed.params.messageStatuses.split(",")
+        : [],
+    };
+    setFilters(nextFilters);
     setPage(1);
-    fetchList(1, keyword, filters, view);
   };
+
 
   const handleDelete = React.useCallback(async (row: Task) => {
     if (!window.confirm(`Xóa công việc "${row.name}"?`)) {
@@ -330,8 +374,8 @@ const TasksPage: React.FC = () => {
           <MdSearch className="h-5 w-5 shrink-0 text-gray-400 dark:text-gray-500" />
           <input
             type="text"
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") handleSearch();
             }}
@@ -339,6 +383,7 @@ const TasksPage: React.FC = () => {
             className="w-full bg-transparent py-1 text-sm text-gray-700 outline-none placeholder:text-gray-500 dark:bg-transparent dark:text-white dark:placeholder:text-gray-400"
           />
         </div>
+
         <button
           type="button"
           onClick={() => {
@@ -379,8 +424,9 @@ const TasksPage: React.FC = () => {
           loading={loading}
           page={page}
           pageSize={PAGE_SIZE}
-          keyword={keyword}
-          onKeywordChange={setKeyword}
+          searchValue={searchValue}
+          onKeywordChange={setSearchValue}
+
           onSearch={handleSearch}
           onPageChange={setPage}
           onUpdateStatus={handleUpdateTaskStatus}
