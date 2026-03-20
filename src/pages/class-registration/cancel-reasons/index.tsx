@@ -15,6 +15,8 @@ import AdvancedFilterModal, {
   type CancelReasonFilters,
 } from "./components/AdvancedFilterModal";
 import CancelReasonDrawer from "./components/CancelReasonDrawer";
+import { parseSearchString, stringifySearchQuery } from "@/utils/search";
+
 
 const PAGE_SIZE = 10;
 
@@ -45,6 +47,23 @@ const CancelReasonsPage: React.FC = () => {
       isActive: enableFilter ? isActive : true,
     };
   });
+
+
+  const [searchValue, setSearchValue] = React.useState(() => {
+    const params = { ...filters };
+    if (!filters.enableIsActiveFilter) {
+      delete (params as Record<string, unknown>).isActive;
+      delete (params as Record<string, unknown>).enableIsActiveFilter;
+    }
+    return stringifySearchQuery(
+      searchParams.get("keyword") ?? "",
+      params as unknown as Record<string, unknown>,
+      ["page", "limit"],
+    );
+  });
+
+
+
   const [draftFilters, setDraftFilters] =
     React.useState<CancelReasonFilters>(defaultFilters);
   const [filterOpen, setFilterOpen] = React.useState(false);
@@ -83,7 +102,26 @@ const CancelReasonsPage: React.FC = () => {
   React.useEffect(() => {
     fetchList(page, keyword, filters);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, filters]);
+  }, [page, filters, keyword]);
+
+  React.useEffect(() => {
+    const paramsToSerialize = { ...filters };
+    if (!filters.enableIsActiveFilter) {
+      delete (paramsToSerialize as Record<string, unknown>).isActive;
+      delete (paramsToSerialize as Record<string, unknown>).enableIsActiveFilter;
+    }
+
+
+    setSearchValue(
+      stringifySearchQuery(
+        keyword,
+        paramsToSerialize as unknown as Record<string, unknown>,
+        ["page", "limit"],
+      ),
+    );
+
+  }, [keyword, filters]);
+
 
   React.useEffect(() => {
     const next = new URLSearchParams();
@@ -101,6 +139,19 @@ const CancelReasonsPage: React.FC = () => {
     }
     setSearchParams(next, { replace: true });
   }, [filters, keyword, page, selectedId, setSearchParams]);
+
+  const handleSearch = () => {
+    const parsed = parseSearchString(searchValue);
+    setKeyword(parsed.keyword);
+
+    const nextFilters: CancelReasonFilters = {
+      isActive: parsed.params.isActive === "true",
+      enableIsActiveFilter: parsed.params.isActive !== undefined,
+    };
+    setFilters(nextFilters);
+    setPage(1);
+  };
+
 
   const handleEdit = React.useCallback(
     (item: CancelReason) => {
@@ -227,12 +278,10 @@ const CancelReasonsPage: React.FC = () => {
         loading={loading}
         page={page}
         pageSize={PAGE_SIZE}
-        searchValue={keyword}
-        onSearchChange={setKeyword}
-        onSearch={() => {
-          setPage(1);
-          fetchList(1, keyword, filters);
-        }}
+        searchValue={searchValue}
+        onSearchChange={setSearchValue}
+        onSearch={handleSearch}
+
         searchPlaceholder="Tìm theo nội dung..."
         showFilter={true}
         onFilterClick={() => {

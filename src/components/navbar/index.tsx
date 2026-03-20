@@ -33,7 +33,7 @@ const Navbar = (props: {
   };
 
   return <div></div>;
-  
+
   return (
     <nav className="sticky top-4 z-40 flex flex-row flex-wrap items-center justify-between rounded-xl bg-white/10 py-2 pr-2 pl-0 backdrop-blur-xl dark:bg-[#0b14374d]">
       <div></div>
@@ -147,7 +147,7 @@ const Navbar = (props: {
               <div className="mt-3 ml-4">
                 <div className="flex items-center gap-2">
                   <p className="text-navy-700 text-sm font-bold dark:text-white">
-                    👋 Chào, {userName ?? "there"}
+                    {userName ?? "there"}
                   </p>{" "}
                 </div>
               </div>
@@ -168,7 +168,7 @@ const Navbar = (props: {
                 </a>
                 <button
                   onClick={handleLogout}
-                  className="mt-3 text-left text-sm font-medium text-red-500 hover:text-red-500 cursor-pointer"
+                  className="mt-3 cursor-pointer text-left text-sm font-medium text-red-500 hover:text-red-500"
                 >
                   Đăng xuất
                 </button>

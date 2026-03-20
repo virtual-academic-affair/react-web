@@ -17,6 +17,8 @@ import EmailDetailDrawer from "./components/EmailDetailDrawer";
 import MessageLabelEditor from "./components/MessageLabelEditor";
 import MessageDeleteModal from "./components/MessageDeleteModal";
 import { formatDate } from "./labelUtils";
+import { parseSearchString, stringifySearchQuery } from "@/utils/search";
+
 
 const PAGE_SIZE = 10;
 
@@ -50,6 +52,12 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
   const [draftSystemLabels, setDraftSystemLabels] = React.useState<
     SystemLabel[]
   >([]);
+
+
+  const [searchValue, setSearchValue] = React.useState(() =>
+    stringifySearchQuery(initialKeyword, { systemLabels: initialSystemLabels }),
+  );
+
 
   // Delete state
   const [deleteModalOpen, setDeleteModalOpen] = React.useState(false);
@@ -105,7 +113,16 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
   React.useEffect(() => {
     fetchEmails(page, keyword, systemLabelsFilter);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, systemLabelsFilter]);
+  }, [page, systemLabelsFilter, keyword]);
+
+  React.useEffect(() => {
+    setSearchValue(
+      stringifySearchQuery(keyword, {
+        systemLabels: systemLabelsFilter,
+      } as unknown as Record<string, unknown>),
+    );
+  }, [keyword, systemLabelsFilter]);
+
 
   React.useEffect(() => {
     const tourType = searchParams.get("startTour") as "inquiry" | "class-registration" | null;
@@ -149,9 +166,16 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
   }, [keyword, page, systemLabelsFilter, idParam, searchParams, setSearchParams]);
 
   const handleSearch = () => {
+    const parsed = parseSearchString(searchValue);
+    setKeyword(parsed.keyword);
+
+    const nextLabels = parsed.params.systemLabels
+      ? (parsed.params.systemLabels.split(",") as SystemLabel[])
+      : [];
+    setSystemLabelsFilter(nextLabels);
     setPage(1);
-    fetchEmails(1, keyword, systemLabelsFilter);
   };
+
 
   const handlePageChange = (p: number) => {
     setPage(p);
@@ -175,8 +199,9 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
   );
 
   const handleKeywordChange = (value: string) => {
-    setKeyword(value);
+    setSearchValue(value);
   };
+
 
   const handleOpenFilter = () => {
     setDraftSystemLabels(systemLabelsFilter);
@@ -347,9 +372,10 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
         loading={loading}
         page={page}
         pageSize={PAGE_SIZE}
-        searchValue={keyword}
+        searchValue={searchValue}
         onSearchChange={handleKeywordChange}
         onSearch={handleSearch}
+
         searchPlaceholder="Tìm kiếm theo tiêu đề, người gửi..."
         showFilter={true}
         onFilterClick={handleOpenFilter}
