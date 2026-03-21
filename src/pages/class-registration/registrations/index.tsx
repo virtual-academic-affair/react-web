@@ -24,6 +24,7 @@ import AdvancedFilterModal, {
 import MessageStatusSelector from "@/components/selector/MessageStatusSelector";
 import PreviewReplyModal from "./components/PreviewReplyModal";
 import RegistrationDetailDrawer from "./components/RegistrationDetailDrawer";
+import ConfirmModal from "@/components/modal/ConfirmModal";
 import { parseSearchString, stringifySearchQuery } from "@/utils/search";
 
 
@@ -77,6 +78,8 @@ const ClassRegistrationsPage: React.FC = () => {
     ? Number(searchParams.get("id"))
     : null;
   const [previewId, setPreviewId] = React.useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = React.useState<ClassRegistration | null>(null);
+  const [deleting, setDeleting] = React.useState(false);
   const [updatingMessageStatusIds, setUpdatingMessageStatusIds] =
     React.useState<Set<number>>(new Set());
 
@@ -154,20 +157,25 @@ const ClassRegistrationsPage: React.FC = () => {
   };
 
 
-  const handleDelete = React.useCallback(async (row: ClassRegistration) => {
-    if (!window.confirm(`Xóa đăng ký lớp #${row.id}?`)) {
-      return;
-    }
+  const handleDelete = React.useCallback((row: ClassRegistration) => {
+    setDeleteTarget(row);
+  }, []);
+
+  const executeDelete = React.useCallback(async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await classRegistrationsService.remove(row.id);
+      await classRegistrationsService.remove(deleteTarget.id);
       toast.success("Xóa thành công.");
-      // Invalidate to refetch
       queryClient.invalidateQueries({ queryKey: ["class-registrations"] });
+      setDeleteTarget(null);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Xóa thất bại.";
       toast.error(msg);
+    } finally {
+      setDeleting(false);
     }
-  }, []);
+  }, [deleteTarget, queryClient]);
 
 
   const handleMessageStatusChange = React.useCallback(
@@ -380,6 +388,15 @@ const ClassRegistrationsPage: React.FC = () => {
           setFilterOpen(false);
         }}
         onRequestClose={() => setFilterOpen(false)}
+      />
+
+      <ConfirmModal
+        open={!!deleteTarget}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={executeDelete}
+        title="Xóa đăng ký lớp"
+        subTitle={`Bạn có chắc chắn muốn xóa đăng ký lớp của sinh viên "${deleteTarget?.studentName}" không? Hành động này không thể hoàn tác.`}
+        loading={deleting}
       />
     </>
   );

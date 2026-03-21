@@ -1,17 +1,13 @@
-import { tasksService } from "@/services/tasks.service";
+import ConfirmModal from "@/components/modal/ConfirmModal";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
+import { tasksService } from "@/services/tasks.service";
 import type { PaginatedResponse } from "@/types/common";
 import { type Task, TaskPriority, TaskStatus } from "@/types/task";
+import { parseSearchString, stringifySearchQuery } from "@/utils/search";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React from "react";
-import {
-  MdFilterList,
-  MdOutlineCalendarMonth,
-  MdOutlineDashboard,
-  MdOutlineTableChart,
-  MdSearch,
-} from "react-icons/md";
+import { MdFilterList, MdSearch } from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
 import TaskAdvancedFilterModal, {
   type TaskFilters,
@@ -20,8 +16,6 @@ import TaskBoard from "./components/TaskBoard";
 import TaskCalendarView from "./components/TaskCalendarView";
 import TaskDetailDrawer from "./components/TaskDetailDrawer";
 import TaskTableView from "./components/TaskTableView";
-import { parseSearchString, stringifySearchQuery } from "@/utils/search";
-
 
 type ViewMode = "table" | "calendar" | "board";
 
@@ -102,30 +96,35 @@ const TasksPage: React.FC = () => {
     ),
   );
 
-
-
   const [filterOpen, setFilterOpen] = React.useState(false);
   const [draftFilters, setDraftFilters] = React.useState(filters);
+  const [taskToDelete, setTaskToDelete] = React.useState<Task | null>(null);
+  const [deleting, setDeleting] = React.useState(false);
 
   const selectedId = searchParams.get("id")
     ? Number(searchParams.get("id"))
     : null;
 
   // ── Build query params for the tasks list
-  const tasksQueryParams = React.useMemo(() => ({
-    page: view === "table" ? page : undefined,
-    limit: view === "table" ? PAGE_SIZE : 100,
-    keyword: keyword || undefined,
-    statuses: filters.statuses.length ? filters.statuses : undefined,
-    priorities: filters.priorities.length ? filters.priorities : undefined,
-    dueDateFrom: filters.dueDateFrom || undefined,
-    dueDateTo: filters.dueDateTo || undefined,
-    assigneeIds: filters.assigneeIds.length ? filters.assigneeIds : undefined,
-    messageId: filters.messageId ? Number(filters.messageId) : undefined,
-    messageStatuses: filters.messageStatuses.length ? filters.messageStatuses : undefined,
-    orderCol: "createdAt" as const,
-    orderDir: "DESC" as const,
-  }), [page, view, keyword, filters]);
+  const tasksQueryParams = React.useMemo(
+    () => ({
+      page: view === "table" ? page : undefined,
+      limit: view === "table" ? PAGE_SIZE : 100,
+      keyword: keyword || undefined,
+      statuses: filters.statuses.length ? filters.statuses : undefined,
+      priorities: filters.priorities.length ? filters.priorities : undefined,
+      dueDateFrom: filters.dueDateFrom || undefined,
+      dueDateTo: filters.dueDateTo || undefined,
+      assigneeIds: filters.assigneeIds.length ? filters.assigneeIds : undefined,
+      messageId: filters.messageId ? Number(filters.messageId) : undefined,
+      messageStatuses: filters.messageStatuses.length
+        ? filters.messageStatuses
+        : undefined,
+      orderCol: "createdAt" as const,
+      orderDir: "DESC" as const,
+    }),
+    [page, view, keyword, filters],
+  );
 
   const { data: result, isFetching } = useQuery({
     queryKey: ["tasks", tasksQueryParams],
@@ -145,11 +144,11 @@ const TasksPage: React.FC = () => {
 
   React.useEffect(() => {
     setSearchValue(
-      stringifySearchQuery(keyword, filters as unknown as Record<string, unknown>, [
-        "page",
-        "limit",
-        "view",
-      ]),
+      stringifySearchQuery(
+        keyword,
+        filters as unknown as Record<string, unknown>,
+        ["page", "limit", "view"],
+      ),
     );
   }, [keyword, filters, view]);
 
@@ -215,38 +214,48 @@ const TasksPage: React.FC = () => {
     setPage(1);
   };
 
-
-  const updateCache = (updater: (prev: PaginatedResponse<Task>) => PaginatedResponse<Task>) => {
-    queryClient.setQueryData<PaginatedResponse<Task>>(["tasks", tasksQueryParams], (prev) =>
-      prev ? updater(prev) : prev,
+  const updateCache = (
+    updater: (prev: PaginatedResponse<Task>) => PaginatedResponse<Task>,
+  ) => {
+    queryClient.setQueryData<PaginatedResponse<Task>>(
+      ["tasks", tasksQueryParams],
+      (prev) => (prev ? updater(prev) : prev),
     );
   };
 
-  const handleDelete = React.useCallback(async (row: Task) => {
-    if (!window.confirm(`Xóa công việc "${row.name}"?`)) {
-      return;
-    }
+  const handleDelete = React.useCallback((row: Task) => {
+    setTaskToDelete(row);
+  }, []);
+
+  const executeDelete = React.useCallback(async () => {
+    if (!taskToDelete) return;
+    setDeleting(true);
     try {
-      await tasksService.remove(row.id);
+      await tasksService.remove(taskToDelete.id);
       toast.success("Xóa thành công.");
       updateCache((prev) => ({
         ...prev,
-        items: prev.items.filter((i) => i.id !== row.id),
+        items: prev.items.filter((i) => i.id !== taskToDelete.id),
         pagination: { ...prev.pagination, total: prev.pagination.total - 1 },
       }));
+      setTaskToDelete(null);
     } catch (err: unknown) {
       console.error(err);
       toast.error("Xóa thất bại.");
+    } finally {
+      setDeleting(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queryClient, tasksQueryParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [taskToDelete, queryClient, tasksQueryParams]);
 
   const handleUpdateTaskStatus = async (task: Task, status: TaskStatus) => {
     try {
       const updated = await tasksService.update(task.id, { status });
       updateCache((prev) => ({
         ...prev,
-        items: prev.items.map((t) => (t.id === updated.id ? { ...t, ...updated } : t)),
+        items: prev.items.map((t) =>
+          t.id === updated.id ? { ...t, ...updated } : t,
+        ),
       }));
       toast.success("Cập nhật thành công.");
     } catch (err: unknown) {
@@ -256,12 +265,17 @@ const TasksPage: React.FC = () => {
     }
   };
 
-  const handleUpdateTaskPriority = async (task: Task, priority: TaskPriority) => {
+  const handleUpdateTaskPriority = async (
+    task: Task,
+    priority: TaskPriority,
+  ) => {
     try {
       const updated = await tasksService.update(task.id, { priority });
       updateCache((prev) => ({
         ...prev,
-        items: prev.items.map((t) => (t.id === updated.id ? { ...t, ...updated } : t)),
+        items: prev.items.map((t) =>
+          t.id === updated.id ? { ...t, ...updated } : t,
+        ),
       }));
       toast.success(`Cập nhật thành công.`);
     } catch (err: unknown) {
@@ -274,28 +288,33 @@ const TasksPage: React.FC = () => {
     const currentIds = task.assignees.map((a) => a.assigneeId);
     if (currentIds.includes(userId)) return;
     try {
-      const updated = await tasksService.update(task.id, { assigneeIds: [...currentIds, userId] });
-      
-      const userToAdd = admins.find((a) => a.id === userId);
-      const newAssignee = userToAdd ? {
-        taskId: task.id,
-        assigneeId: userId,
-        assignerId: CURRENT_USER_ID || 0,
-        assignedAt: new Date().toISOString(),
-        assignee: userToAdd,
-      } as any : null; // using any to bypass type issues temporarily if needed, though TaskAssignee is exported
+      const updated = await tasksService.update(task.id, {
+        assigneeIds: [...currentIds, userId],
+      });
 
-      const finalTask = { 
-        ...task, 
-        ...updated, 
-        assignees: newAssignee ? [...task.assignees, newAssignee] : task.assignees 
+      const userToAdd = admins.find((a) => a.id === userId);
+      const newAssignee = userToAdd
+        ? ({
+            taskId: task.id,
+            assigneeId: userId,
+            assignerId: CURRENT_USER_ID || 0,
+            assignedAt: new Date().toISOString(),
+            assignee: userToAdd,
+          } as any)
+        : null; // using any to bypass type issues temporarily if needed, though TaskAssignee is exported
+
+      const finalTask = {
+        ...task,
+        ...updated,
+        assignees: newAssignee
+          ? [...task.assignees, newAssignee]
+          : task.assignees,
       };
 
       updateCache((prev) => ({
         ...prev,
         items: prev.items.map((t) => (t.id === updated.id ? finalTask : t)),
       }));
-      
       toast.success("Đã phân công thêm người.");
     } catch (err: unknown) {
       console.error(err);
@@ -304,10 +323,14 @@ const TasksPage: React.FC = () => {
   };
 
   const handleRemoveAssignee = async (task: Task, userId: number) => {
-    const nextIds = task.assignees.map((a) => a.assigneeId).filter((id) => id !== userId);
+    const nextIds = task.assignees
+      .map((a) => a.assigneeId)
+      .filter((id) => id !== userId);
     try {
-      const updated = await tasksService.update(task.id, { assigneeIds: nextIds });
-      
+      const updated = await tasksService.update(task.id, {
+        assigneeIds: nextIds,
+      });
+
       const finalTask = {
         ...task,
         ...updated,
@@ -318,7 +341,6 @@ const TasksPage: React.FC = () => {
         ...prev,
         items: prev.items.map((t) => (t.id === updated.id ? finalTask : t)),
       }));
-      
       toast.success("Đã gỡ người thực hiện.");
     } catch (err: unknown) {
       console.error(err);
@@ -362,25 +384,27 @@ const TasksPage: React.FC = () => {
           <MdFilterList className="h-5 w-5" />
         </button>
 
-        {/* Native dropdown selector disguised as an icon button */}
-        <div className="relative h-10 w-10 shrink-0">
-          <div className="bg-brand-500 hover:bg-brand-600 flex h-10 w-10 items-center justify-center rounded-2xl text-white transition-colors">
-            {view === "table" && <MdOutlineTableChart className="h-5 w-5" />}
-            {view === "calendar" && (
-              <MdOutlineCalendarMonth className="h-5 w-5" />
-            )}
-            {view === "board" && <MdOutlineDashboard className="h-5 w-5" />}
-          </div>
-          <select
-            value={view}
-            onChange={(e) => setView(e.target.value as ViewMode)}
-            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-            title="Chọn kiểu hiển thị"
-          >
-            <option value="table">Dạng bảng</option>
-            <option value="calendar">Dạng lịch</option>
-            <option value="board">Dạng board</option>
-          </select>
+        <div className="dark:bg-navy-900 flex shrink-0 rounded-full bg-gray-100 p-1">
+          {(
+            [
+              { id: "table", label: "BẢNG" },
+              { id: "calendar", label: "LỊCH" },
+              { id: "board", label: "KANBAN" },
+            ] as const
+          ).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setView(item.id)}
+              className={`flex items-center justify-center rounded-full px-5 py-2 text-xs font-bold tracking-wider transition-all duration-200 ${
+                view === item.id
+                  ? "text-brand-500 dark:bg-navy-700 bg-white shadow-md dark:text-white"
+                  : "hover:text-navy-700 text-gray-500 dark:text-gray-400 dark:hover:text-white"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -392,7 +416,6 @@ const TasksPage: React.FC = () => {
           pageSize={PAGE_SIZE}
           searchValue={searchValue}
           onKeywordChange={setSearchValue}
-
           onSearch={handleSearch}
           onPageChange={setPage}
           onUpdateStatus={handleUpdateTaskStatus}
@@ -436,7 +459,10 @@ const TasksPage: React.FC = () => {
           updateCache((prev) => ({
             ...prev,
             items: prev.items.filter((x) => x.id !== id),
-            pagination: { ...prev.pagination, total: prev.pagination.total - 1 },
+            pagination: {
+              ...prev.pagination,
+              total: prev.pagination.total - 1,
+            },
           }));
         }}
       />
@@ -460,6 +486,15 @@ const TasksPage: React.FC = () => {
           refetchTasks();
         }}
         onRequestClose={() => setFilterOpen(false)}
+      />
+
+      <ConfirmModal
+        open={!!taskToDelete}
+        onCancel={() => setTaskToDelete(null)}
+        onConfirm={executeDelete}
+        title="Xóa công việc"
+        subTitle={`Bạn có chắc chắn muốn xóa công việc "${taskToDelete?.name}" không? Hành động này không thể hoàn tác.`}
+        loading={deleting}
       />
     </div>
   );

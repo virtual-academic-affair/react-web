@@ -23,6 +23,7 @@ import MessageStatusSelector from "@/components/selector/MessageStatusSelector";
 import InquiryTypeEditor from "@/components/selector/InquiryTypeEditor";
 import PreviewReplyModal from "./components/PreviewReplyModal";
 import InquiryDetailDrawer from "./components/InquiryDetailDrawer";
+import ConfirmModal from "@/components/modal/ConfirmModal";
 import { parseSearchString, stringifySearchQuery } from "@/utils/search";
 
 
@@ -73,6 +74,8 @@ const InquiriesPage: React.FC = () => {
     ? Number(searchParams.get("id"))
     : null;
   const [previewId, setPreviewId] = React.useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = React.useState<Inquiry | null>(null);
+  const [deleting, setDeleting] = React.useState(false);
   const [updatingMessageStatusIds, setUpdatingMessageStatusIds] =
     React.useState<Set<number>>(new Set());
 
@@ -152,23 +155,29 @@ const InquiriesPage: React.FC = () => {
   };
 
 
-  const handleDelete = React.useCallback(async (row: Inquiry) => {
-    if (!window.confirm(`Xóa câu hỏi #${row.id}?`)) {
-      return;
-    }
+  const handleDelete = React.useCallback((row: Inquiry) => {
+    setDeleteTarget(row);
+  }, []);
+
+  const executeDelete = React.useCallback(async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await inquiriesService.remove(row.id);
+      await inquiriesService.remove(deleteTarget.id);
       toast.success("Xóa thành công.");
       updateCache((prev) => ({
         ...prev,
-        items: prev.items.filter((i) => i.id !== row.id),
+        items: prev.items.filter((i) => i.id !== deleteTarget.id),
       }));
+      setDeleteTarget(null);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Xóa thất bại.";
       toast.error(msg);
+    } finally {
+      setDeleting(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queryClient, inquiryQueryParams]);
+  }, [deleteTarget, queryClient, inquiryQueryParams]);
 
   const handleMessageStatusChange = React.useCallback(
     async (row: Inquiry, newStatus: MessageStatus | null) => {
@@ -370,6 +379,15 @@ const InquiriesPage: React.FC = () => {
           refetchInquiries();
         }}
         onRequestClose={() => setFilterOpen(false)}
+      />
+
+      <ConfirmModal
+        open={!!deleteTarget}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={executeDelete}
+        title="Xóa thắc mắc"
+        subTitle={`Bạn có chắc chắn muốn xóa thắc mắc này không? Hành động này không thể hoàn tác.`}
+        loading={deleting}
       />
     </>
   );
