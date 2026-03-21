@@ -17,7 +17,10 @@ class GrantsService {
    * @returns Google OAuth URL
    */
   async getGmailAuthUrl(): Promise<string> {
-    const res = await http.get<string>(API_ENDPOINTS.email.grants.base);
+    const url = `${window.location.origin}/auth/callback`;
+    const res = await http.get<string>(API_ENDPOINTS.email.grants.base, {
+      params: { redirectUrl: url },
+    });
     return res.data;
   }
 
