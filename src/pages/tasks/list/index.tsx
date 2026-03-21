@@ -275,10 +275,27 @@ const TasksPage: React.FC = () => {
     if (currentIds.includes(userId)) return;
     try {
       const updated = await tasksService.update(task.id, { assigneeIds: [...currentIds, userId] });
+      
+      const userToAdd = admins.find((a) => a.id === userId);
+      const newAssignee = userToAdd ? {
+        taskId: task.id,
+        assigneeId: userId,
+        assignerId: CURRENT_USER_ID || 0,
+        assignedAt: new Date().toISOString(),
+        assignee: userToAdd,
+      } as any : null; // using any to bypass type issues temporarily if needed, though TaskAssignee is exported
+
+      const finalTask = { 
+        ...task, 
+        ...updated, 
+        assignees: newAssignee ? [...task.assignees, newAssignee] : task.assignees 
+      };
+
       updateCache((prev) => ({
         ...prev,
-        items: prev.items.map((t) => (t.id === updated.id ? { ...t, ...updated } : t)),
+        items: prev.items.map((t) => (t.id === updated.id ? finalTask : t)),
       }));
+      
       toast.success("Đã phân công thêm người.");
     } catch (err: unknown) {
       console.error(err);
@@ -290,10 +307,18 @@ const TasksPage: React.FC = () => {
     const nextIds = task.assignees.map((a) => a.assigneeId).filter((id) => id !== userId);
     try {
       const updated = await tasksService.update(task.id, { assigneeIds: nextIds });
+      
+      const finalTask = {
+        ...task,
+        ...updated,
+        assignees: task.assignees.filter((a) => a.assigneeId !== userId),
+      };
+
       updateCache((prev) => ({
         ...prev,
-        items: prev.items.map((t) => (t.id === updated.id ? { ...t, ...updated } : t)),
+        items: prev.items.map((t) => (t.id === updated.id ? finalTask : t)),
       }));
+      
       toast.success("Đã gỡ người thực hiện.");
     } catch (err: unknown) {
       console.error(err);
