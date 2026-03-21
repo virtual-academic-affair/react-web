@@ -1,10 +1,10 @@
 import React from "react";
 import type { ApexOptions } from "apexcharts";
-import { message as toast } from "antd";
 import { inquiriesService } from "@/services/inquiry";
-import type { InquiryStats, InquiryType } from "@/types/inquiry";
+import type { InquiryType } from "@/types/inquiry";
 import { InquiryTypeLabels, InquiryTypeColors } from "@/types/inquiry";
 import { type TimeRangeType, getDateRange } from "./utils/dateRange";
+import { useQuery } from "@tanstack/react-query";
 
 const INQUIRY_TYPES = ["graduation", "training", "procedure"] as const;
 
@@ -40,30 +40,18 @@ interface UseInquiryStatisticsReturn {
 export function useInquiryStatistics(): UseInquiryStatisticsReturn {
   const [timeRange, setTimeRange] =
     React.useState<TimeRangeType>("this_week");
-  const [loading, setLoading] = React.useState(false);
-  const [data, setData] = React.useState<InquiryStats>({});
 
-  const fetchStats = React.useCallback(async (range: TimeRangeType) => {
-    setLoading(true);
-    try {
-      const { from, to } = getDateRange(range);
-      const res = await inquiriesService.getStats({
+  const { data = {}, isLoading: loading } = useQuery({
+    queryKey: ["inquiry-stats", timeRange],
+    queryFn: () => {
+      const { from, to } = getDateRange(timeRange);
+      return inquiriesService.getStats({
         from: from.toISOString(),
         to: to.toISOString(),
       });
-      setData(res);
-    } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Có lỗi xảy ra khi lấy thống kê.";
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  React.useEffect(() => {
-    fetchStats(timeRange);
-  }, [timeRange, fetchStats]);
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
   /**
    * Build a local-date-keyed map from raw API data.
