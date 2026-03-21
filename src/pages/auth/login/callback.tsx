@@ -1,10 +1,5 @@
-/**
- * Google OAuth Callback Page
- * Receives the authorization code from Google, exchanges it for JWT tokens,
- * stores the access token in memory (Zustand), and redirects to the dashboard.
- */
-
 import { authService } from "@/services/auth";
+import { grantsService } from "@/services/email/grants.service";
 import { useAuthStore } from "@/stores/auth.store";
 import { getRolePath } from "@/utils/auth.util";
 import { useEffect, useRef, useState } from "react";
@@ -27,18 +22,32 @@ export default function GoogleCallbackPage() {
             return;
         }
 
-        const authenticate = async () => {
-            try {
-                const { accessToken } = await authService.authenticateWithGoogle(code);
-                useAuthStore.getState().setAccessToken(accessToken);
-                const role = useAuthStore.getState().userRole;
-                navigate(getRolePath(role), { replace: true });
-            } catch {
-                setError("Authentication failed. Please try again.");
-            }
-        };
+        const accessToken = useAuthStore.getState().accessToken;
 
-        authenticate();
+        if (accessToken) {
+            const grantAccess = async () => {
+                try {
+                    const redirectUrl = `${window.location.origin}/auth/callback`;
+                    await grantsService.grantGmailAccess({ code, redirectUrl });
+                    navigate("/admin/email/config", { replace: true });
+                } catch {
+                    setError("Failed to grant Gmail access. Please try again.");
+                }
+            };
+            grantAccess();
+        } else {
+            const authenticate = async () => {
+                try {
+                    const { accessToken } = await authService.authenticateWithGoogle(code);
+                    useAuthStore.getState().setAccessToken(accessToken);
+                    const role = useAuthStore.getState().userRole;
+                    navigate(getRolePath(role), { replace: true });
+                } catch {
+                    setError("Authentication failed. Please try again.");
+                }
+            };
+            authenticate();
+        }
     }, [searchParams, navigate]);
 
     if (error) {
@@ -51,7 +60,7 @@ export default function GoogleCallbackPage() {
                     href="/auth/login"
                     className="text-sm font-medium text-brand-500 hover:text-brand-600 dark:text-white"
                 >
-                    ← Back to Sign In
+                    ← Quay lại trang Đăng nhập
                 </a>
             </div>
         );
@@ -61,7 +70,7 @@ export default function GoogleCallbackPage() {
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white dark:bg-navy-900">
             <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-brand-500" />
             <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                Signing you in…
+                Đang đăng nhập...
             </p>
         </div>
     );

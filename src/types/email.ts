@@ -102,4 +102,5 @@ export interface UpdateAllowedDomainsDto {
  */
 export interface CodeDto {
   code: string;
+  redirectUrl?: string;
 }
