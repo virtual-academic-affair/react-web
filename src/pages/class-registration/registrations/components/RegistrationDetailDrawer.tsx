@@ -6,7 +6,6 @@ import {
   classRegistrationsService,
 } from "@/services/class-registration";
 import type {
-  CancelReason,
   ClassRegistration,
   ClassRegistrationItem,
   CreateClassRegistrationItemDto,
@@ -21,6 +20,7 @@ import {
 import { formatDate } from "@/utils/date";
 import { message as toast } from "antd";
 import React from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   MdAdd,
   MdClose,
@@ -45,10 +45,24 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
   onClose,
   onRegistrationChanged,
 }) => {
+  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const noteEditorRef = React.useRef<ReactQuill>(null);
-  const [detail, setDetail] = React.useState<ClassRegistration | null>(null);
-  const [loading, setLoading] = React.useState(false);
+  
+  const { data: detail = null, isLoading: loadingDetail } = useQuery({
+    queryKey: ["class-registration", registrationId],
+    queryFn: () => classRegistrationsService.getById(registrationId!),
+    enabled: registrationId != null,
+    staleTime: 30 * 1000,
+  });
+
+  const { data: cancelReasonsData } = useQuery({
+    queryKey: ["cancel-reasons"],
+    queryFn: () => cancelReasonsService.getList({ isActive: true, limit: 100 }),
+    staleTime: 5 * 60 * 1000,
+  });
+  const cancelReasons = cancelReasonsData?.items || [];
+
   const [updatingItemIds, setUpdatingItemIds] = React.useState<Set<number>>(
     new Set(),
   );
@@ -60,7 +74,6 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
     note: string;
     messageStatus: MessageStatus | null;
   } | null>(null);
-  const [cancelReasons, setCancelReasons] = React.useState<CancelReason[]>([]);
   const [itemForms, setItemForms] = React.useState<
     Record<
       number,
@@ -74,23 +87,6 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
     React.useState<Record<number, string[]>>({});
   const [draftItem, setDraftItem] =
     React.useState<CreateClassRegistrationItemDto | null>(null);
-
-  React.useEffect(() => {
-    if (registrationId == null) {
-      setDetail(null);
-      return;
-    }
-    setLoading(true);
-    classRegistrationsService
-      .getById(registrationId)
-      .then(setDetail)
-      .catch((err: unknown) => {
-        const msg =
-          err instanceof Error ? err.message : "Không thể tải chi tiết.";
-        toast.error(msg);
-      })
-      .finally(() => setLoading(false));
-  }, [registrationId]);
 
   React.useEffect(() => {
     if (!detail) {
@@ -149,16 +145,6 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
     }
   }, [searchParams, form, setSearchParams]);
 
-  // Load cancel reasons
-  React.useEffect(() => {
-    cancelReasonsService
-      .getList({ isActive: true, limit: 100 })
-      .then((resp) => setCancelReasons(resp.items))
-      .catch(() => {
-        // Silent fail
-      });
-  }, []);
-
   const updateItemStatus = async (
     item: ClassRegistrationItem,
     status: ItemStatus,
@@ -181,15 +167,17 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
         },
       );
 
-      setDetail((prev) =>
-        prev
-          ? {
-              ...prev,
-              items: (prev.items ?? []).map((i) =>
-                i.id === item.id ? updated : i,
-              ),
-            }
-          : prev,
+      queryClient.setQueryData(
+        ["class-registration", registrationId],
+        (prev: ClassRegistration | undefined) =>
+          prev
+            ? {
+                ...prev,
+                items: (prev.items ?? []).map((i) =>
+                  i.id === item.id ? updated : i,
+                ),
+              }
+            : prev
       );
 
       onRegistrationChanged({
@@ -231,15 +219,17 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
         dto,
       );
 
-      setDetail((prev) =>
-        prev
-          ? {
-              ...prev,
-              items: (prev.items ?? []).map((i) =>
-                i.id === item.id ? updated : i,
-              ),
-            }
-          : prev,
+      queryClient.setQueryData(
+        ["class-registration", registrationId],
+        (prev: ClassRegistration | undefined) =>
+          prev
+            ? {
+                ...prev,
+                items: (prev.items ?? []).map((i) =>
+                  i.id === item.id ? updated : i,
+                ),
+              }
+            : prev
       );
 
       onRegistrationChanged({
@@ -286,7 +276,8 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
       await classRegistrationItemsService.remove(detail.id, item.id);
       const updatedItems = (detail.items ?? []).filter((i) => i.id !== item.id);
       const updated = { ...detail, items: updatedItems };
-      setDetail(updated);
+      
+      queryClient.setQueryData(["class-registration", registrationId], updated);
       onRegistrationChanged(updated);
       toast.success("Đã xóa lớp.");
     } catch (err: unknown) {
@@ -369,7 +360,7 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
     setSavingInfo(true);
     try {
       const updated = await classRegistrationsService.update(detail.id, dto);
-      setDetail(updated);
+      queryClient.setQueryData(["class-registration", registrationId], updated);
       onRegistrationChanged(updated);
       toast.success("Cập nhật thành công.");
     } catch (err: unknown) {
@@ -397,7 +388,7 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
 
   return (
     <Drawer isOpen={isOpen} onClose={onClose} title="Chi tiết đăng kí lớp">
-      {loading || !form ? (
+      {loadingDetail || !form ? (
         <div className="flex flex-col gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <div
@@ -892,7 +883,7 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
               {!draftItem && (
                 <button
                   type="button"
-                  disabled={loading || !detail}
+                  disabled={loadingDetail || !detail}
                   onClick={() => {
                     setDraftItem({
                       action: "register",
@@ -1072,7 +1063,7 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                             ...detail,
                             items: [...(detail.items ?? []), newItem],
                           };
-                          setDetail(updated);
+                          queryClient.setQueryData(["class-registration", registrationId], updated);
                           onRegistrationChanged(updated);
                           // Reset form và giữ lại để thêm tiếp
                           setDraftItem({
@@ -1124,7 +1115,7 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                             ...detail,
                             items: [...(detail.items ?? []), newItem],
                           };
-                          setDetail(updated);
+                          queryClient.setQueryData(["class-registration", registrationId], updated);
                           onRegistrationChanged(updated);
                           setDraftItem(null);
                           toast.success("Đã thêm lớp mới.");

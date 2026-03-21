@@ -8,8 +8,7 @@ import {
   TaskStatusColors,
 } from "@/types/task";
 import React from "react";
-import { usersService } from "@/services/users/users.service";
-import type { User } from "@/types/users";
+import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { MdPerson } from "react-icons/md";
 import AssigneeManager from "../../components/AssigneeManager";
 
@@ -45,15 +44,7 @@ const TaskAdvancedFilterModal: React.FC<TaskAdvancedFilterModalProps> = ({
   onRequestClose,
   currentUserId,
 }) => {
-  const [admins, setAdmins] = React.useState<User[]>([]);
-
-  React.useEffect(() => {
-    if (open) {
-      usersService.getUsers({ roles: ["admin"], limit: 100 }).then((resp) => {
-        setAdmins(resp.items);
-      });
-    }
-  }, [open]);
+  const { admins } = useAdminUsers();
 
   const toggleStatus = (status: TaskStatus) => {
     const next = value.statuses.includes(status)

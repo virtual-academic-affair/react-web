@@ -1,14 +1,13 @@
 import React from "react";
 import type { ApexOptions } from "apexcharts";
-import { message as toast } from "antd";
 import { tasksService } from "@/services/tasks.service";
 import {
-  type TaskStats,
   type TaskStatsItem,
   TaskPriorityColors,
   TaskPriorityLabels,
 } from "@/types/task";
 import { type TimeRangeType, getDateRange } from "./utils/dateRange";
+import { useQuery } from "@tanstack/react-query";
 
 interface Summary {
   total: number;
@@ -41,30 +40,18 @@ interface UseTaskStatisticsReturn {
 export function useTaskStatistics(): UseTaskStatisticsReturn {
   const [timeRange, setTimeRange] =
     React.useState<TimeRangeType>("this_week");
-  const [loading, setLoading] = React.useState(false);
-  const [data, setData] = React.useState<TaskStats>({});
 
-  const fetchStats = React.useCallback(async (range: TimeRangeType) => {
-    setLoading(true);
-    try {
-      const { from, to } = getDateRange(range);
-      const res = await tasksService.getStats({
+  const { data = {}, isLoading: loading } = useQuery({
+    queryKey: ["task-stats", timeRange],
+    queryFn: () => {
+      const { from, to } = getDateRange(timeRange);
+      return tasksService.getStats({
         from: from.toISOString(),
         to: to.toISOString(),
       });
-      setData(res);
-    } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Có lỗi xảy ra khi lấy thống kê.";
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  React.useEffect(() => {
-    fetchStats(timeRange);
-  }, [timeRange, fetchStats]);
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
   const summary = React.useMemo((): Summary => {
     let total = 0;

@@ -1,11 +1,11 @@
 import Drawer from "@/components/drawer/Drawer";
 import RichTextEditor from "@/components/fields/RichTextEditor";
+import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { tasksService } from "@/services/tasks.service";
-import { usersService } from "@/services/users";
 import { TaskPriority, TaskStatus } from "@/types/task";
 import type { Task } from "@/types/task";
-import type { User } from "@/types/users";
 import { formatDate } from "@/utils/date";
+import { useQuery } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React from "react";
 import { MdSave } from "react-icons/md";
@@ -25,10 +25,9 @@ const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
   onClose,
   onTaskChanged,
 }) => {
-  const [loading, setLoading] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [detail, setDetail] = React.useState<Task | null>(null);
-  const [users, setUsers] = React.useState<User[]>([]);
+  const { admins: users } = useAdminUsers();
   const [form, setForm] = React.useState<{
     name: string;
     description: string;
@@ -39,6 +38,15 @@ const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
     assigners: string;
   } | null>(null);
 
+  const { isLoading: loading } = useQuery({
+    queryKey: ["task", taskId],
+    queryFn: () => tasksService.getById(taskId!),
+    enabled: taskId != null,
+    staleTime: 30 * 1000, // 30 seconds
+    throwOnError: false,
+  });
+
+  // When taskId changes, reset or load from cache
   React.useEffect(() => {
     if (taskId == null) {
       setForm(null);
@@ -47,14 +55,8 @@ const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
     }
 
     const fetchData = async () => {
-      setLoading(true);
       try {
-        const [task, usersResp] = await Promise.all([
-          tasksService.getById(taskId),
-          usersService.getUsers({ roles: ["admin"], limit: 100 }),
-        ]);
-
-        setUsers(usersResp.items);
+        const task = await tasksService.getById(taskId);
         setDetail(task);
         setForm({
           name: task.name,
@@ -69,11 +71,8 @@ const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
         console.error(err);
         toast.error("Không thể tải thông tin công việc.");
         onClose();
-      } finally {
-        setLoading(false);
       }
     };
-
     fetchData();
   }, [taskId, onClose]);
 

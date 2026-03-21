@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Calendar } from "antd";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
@@ -205,15 +206,45 @@ const TimelineItem = ({
 };
 
 const TasksCalendarPage: React.FC = () => {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [timelineTasks, setTimelineTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [timelineLoading, setTimelineLoading] = useState(false);
+  const queryClient = useQueryClient();
   const [calendarDate, setCalendarDate] = useState<Dayjs>(dayjs());
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const calendarColRef = useRef<HTMLDivElement>(null);
   const [calendarHeight, setCalendarHeight] = useState<number | undefined>(undefined);
+
+  const startOfMonth = calendarDate.startOf("month").format("YYYY-MM-DD");
+  const endOfMonth = calendarDate.endOf("month").format("YYYY-MM-DD");
+
+  const { data: tasksResult, isLoading: loading } = useQuery({
+    queryKey: ["tasks", "calendar", { startOfMonth, endOfMonth }],
+    queryFn: () =>
+      tasksService.getList({
+        dueDateFrom: startOfMonth,
+        dueDateTo: endOfMonth,
+        limit: 500,
+      }),
+    staleTime: 30 * 1000,
+  });
+
+  const tasks = tasksResult?.items || [];
+
+  const { data: timelineTasksResult, isLoading: timelineLoading } = useQuery({
+    queryKey: ["tasks", "timeline"],
+    queryFn: () => {
+      const today = dayjs().startOf("day").toISOString();
+      return tasksService.getList({
+        dueDateFrom: today,
+        statuses: [TaskStatus.Todo, TaskStatus.Doing],
+        limit: 10,
+        orderCol: "due",
+        orderDir: "ASC",
+      });
+    },
+    staleTime: 30 * 1000,
+  });
+
+  const timelineTasks = timelineTasksResult?.items || [];
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -235,50 +266,6 @@ const TasksCalendarPage: React.FC = () => {
     setCalendarHeight(el.offsetHeight);
     return () => observer.disconnect();
   }, []);
-
-  // Load tasks for the current view
-  const fetchTasks = async (currentDate: Dayjs) => {
-    setLoading(true);
-    try {
-      const startOfMonth = currentDate.startOf("month").format("YYYY-MM-DD");
-      const endOfMonth = currentDate.endOf("month").format("YYYY-MM-DD");
-
-      const res = await tasksService.getList({
-        dueDateFrom: startOfMonth,
-        dueDateTo: endOfMonth,
-        limit: 500, // a reasonable large number to show on calendar
-      });
-      setTasks(res.items);
-    } catch (error) {
-      console.error("Failed to fetch tasks for calendar:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchTimelineTasks = async () => {
-    setTimelineLoading(true);
-    try {
-      const today = dayjs().startOf("day").toISOString();
-      const res = await tasksService.getList({
-        dueDateFrom: today,
-        statuses: [TaskStatus.Todo, TaskStatus.Doing],
-        limit: 10,
-        orderCol: "due",
-        orderDir: "ASC",
-      });
-      setTimelineTasks(res.items);
-    } catch (error) {
-      console.error("Failed to fetch timeline tasks:", error);
-    } finally {
-      setTimelineLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchTasks(calendarDate);
-    fetchTimelineTasks();
-  }, [calendarDate]);
 
   const onPanelChange = (value: Dayjs, mode: string) => {
     if (mode === "month") {
@@ -326,19 +313,33 @@ const TasksCalendarPage: React.FC = () => {
 
     // Optistic UI Update
     const previousTasks = [...tasks];
-    setTasks(
-      tasks.map((t) =>
-        t.id === taskId ? { ...t, due: newDateObj.toISOString() } : t,
-      ),
-    );
+    const queryKey = ["tasks", "calendar", { startOfMonth, endOfMonth }];
+
+    queryClient.setQueryData(queryKey, (old: any) => {
+      if (!old) return old;
+      return {
+        ...old,
+        items: old.items.map((t: Task) =>
+          t.id === taskId ? { ...t, due: newDateObj.toISOString() } : t,
+        ),
+      };
+    });
 
     try {
       await tasksService.update(taskId, { due: newDateObj.toISOString() });
       toast.success("Cập nhật thành công.");
+      // Invalidate timeline so it sorts/refetches correctly too
+      queryClient.invalidateQueries({ queryKey: ["tasks", "timeline"] });
     } catch (err: unknown) {
       console.error(err);
       toast.error("Cập nhật thất bại.");
-      setTasks(previousTasks); // revert
+      queryClient.setQueryData(queryKey, (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          items: previousTasks,
+        };
+      });
     }
   };
 
@@ -510,13 +511,27 @@ const TasksCalendarPage: React.FC = () => {
             next.delete("id");
             setSearchParams(next, { replace: true });
           }}
-          onTaskChanged={(updated) =>
-            setTasks((prev) =>
-              prev.map((x) => (x.id === updated.id ? updated : x)),
-            )
-          }
+          onTaskChanged={(updated) => {
+            const queryKey = ["tasks", "calendar", { startOfMonth, endOfMonth }];
+            queryClient.setQueryData(queryKey, (old: any) => {
+              if (!old) return old;
+              return {
+                ...old,
+                items: old.items.map((x: Task) => (x.id === updated.id ? updated : x)),
+              };
+            });
+            queryClient.invalidateQueries({ queryKey: ["tasks", "timeline"] });
+          }}
           onTaskDeleted={(id) => {
-            setTasks((prev) => prev.filter((x) => x.id !== id));
+            const queryKey = ["tasks", "calendar", { startOfMonth, endOfMonth }];
+            queryClient.setQueryData(queryKey, (old: any) => {
+              if (!old) return old;
+              return {
+                ...old,
+                items: old.items.filter((x: Task) => x.id !== id),
+              };
+            });
+            queryClient.invalidateQueries({ queryKey: ["tasks", "timeline"] });
           }}
         />
 

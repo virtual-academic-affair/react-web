@@ -7,6 +7,7 @@ import type { Inquiry, InquiryType } from "@/types/inquiry";
 import type { MessageStatus } from "@/types/messageStatus";
 import type { PaginatedResponse } from "@/types/common";
 import { formatDate } from "@/utils/date";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React from "react";
 import {
@@ -34,10 +35,8 @@ const defaultFilters: InquiryFilters = {
 };
 
 const InquiriesPage: React.FC = () => {
+  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [result, setResult] =
-    React.useState<PaginatedResponse<Inquiry> | null>(null);
-  const [loading, setLoading] = React.useState(true);
 
   const [keyword, setKeyword] = React.useState(
     searchParams.get("keyword") ?? "",
@@ -77,39 +76,33 @@ const InquiriesPage: React.FC = () => {
   const [updatingMessageStatusIds, setUpdatingMessageStatusIds] =
     React.useState<Set<number>>(new Set());
 
-  const fetchList = React.useCallback(
-    async (p: number, kw: string, f: InquiryFilters) => {
-      setLoading(true);
-      try {
-        const resp = await inquiriesService.getList({
-          page: p,
-          limit: PAGE_SIZE,
-          keyword: kw || undefined,
-          types: f.types.length ? f.types : undefined,
-          messageStatuses: f.messageStatuses.length
-            ? f.messageStatuses
-            : undefined,
-          messageId: f.messageId ? Number(f.messageId) : undefined,
-          orderCol: "createdAt",
-          orderDir: "DESC",
-        });
-        setResult(resp);
-      } catch (err: unknown) {
-        const msg =
-          err instanceof Error
-            ? err.message
-            : "Không thể tải danh sách câu hỏi.";
-        toast.error(msg);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [],
-  );
+  // ── Build query params
+  const inquiryQueryParams = React.useMemo(() => ({
+    page,
+    limit: PAGE_SIZE,
+    keyword: keyword || undefined,
+    types: filters.types.length ? filters.types : undefined,
+    messageStatuses: filters.messageStatuses.length ? filters.messageStatuses : undefined,
+    messageId: filters.messageId ? Number(filters.messageId) : undefined,
+    orderCol: "createdAt" as const,
+    orderDir: "DESC" as const,
+  }), [page, keyword, filters]);
 
-  React.useEffect(() => {
-    fetchList(page, keyword, filters);
-  }, [page, filters, keyword, fetchList]);
+  const { data: result, isFetching: loading } = useQuery({
+    queryKey: ["inquiries", inquiryQueryParams],
+    queryFn: () => inquiriesService.getList(inquiryQueryParams),
+    staleTime: 30 * 1000,
+    placeholderData: (prev) => prev,
+  });
+
+  const updateCache = (updater: (prev: PaginatedResponse<Inquiry>) => PaginatedResponse<Inquiry>) => {
+    queryClient.setQueryData<PaginatedResponse<Inquiry>>(["inquiries", inquiryQueryParams], (prev) =>
+      prev ? updater(prev) : prev,
+    );
+  };
+
+  const refetchInquiries = () =>
+    queryClient.invalidateQueries({ queryKey: ["inquiries"] });
 
   React.useEffect(() => {
     setSearchValue(
@@ -166,70 +159,26 @@ const InquiriesPage: React.FC = () => {
     try {
       await inquiriesService.remove(row.id);
       toast.success("Xóa thành công.");
-      setResult((prev) =>
-        prev
-          ? {
-              ...prev,
-              items: prev.items.filter((i) => i.id !== row.id),
-            }
-          : prev,
-      );
+      updateCache((prev) => ({
+        ...prev,
+        items: prev.items.filter((i) => i.id !== row.id),
+      }));
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Xóa thất bại.";
       toast.error(msg);
     }
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryClient, inquiryQueryParams]);
 
   const handleMessageStatusChange = React.useCallback(
     async (row: Inquiry, newStatus: MessageStatus | null) => {
       setUpdatingMessageStatusIds((prev) => new Set(prev).add(row.id));
       try {
-        const updated = await inquiriesService.update(row.id, {
-          messageStatus: newStatus,
-        });
-        setResult((prev) =>
-          prev
-            ? {
-                ...prev,
-                items: prev.items.map((x) =>
-                  x.id === updated.id ? updated : x,
-                ),
-              }
-            : prev,
-        );
-        toast.success("Cập nhật thành công.");
-      } catch (err: unknown) {
-        const msg =
-          err instanceof Error ? err.message : "Cập nhật thất bại.";
-        toast.error(msg);
-      } finally {
-        setUpdatingMessageStatusIds((prev) => {
-          const next = new Set(prev);
-          next.delete(row.id);
-          return next;
-        });
-      }
-    },
-    [],
-  );
-
-  const handleTypesChange = React.useCallback(
-    async (row: Inquiry, nextTypes: InquiryType[]) => {
-      setUpdatingMessageStatusIds((prev) => new Set(prev).add(row.id));
-      try {
-        const updated = await inquiriesService.update(row.id, {
-          types: nextTypes,
-        });
-        setResult((prev) =>
-          prev
-            ? {
-                ...prev,
-                items: prev.items.map((x) =>
-                  x.id === updated.id ? updated : x,
-                ),
-              }
-            : prev,
-        );
+        const updated = await inquiriesService.update(row.id, { messageStatus: newStatus });
+        updateCache((prev) => ({
+          ...prev,
+          items: prev.items.map((x) => (x.id === updated.id ? updated : x)),
+        }));
         toast.success("Cập nhật thành công.");
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "Cập nhật thất bại.";
@@ -242,8 +191,32 @@ const InquiriesPage: React.FC = () => {
         });
       }
     },
-    [],
-  );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [queryClient, inquiryQueryParams]);
+
+  const handleTypesChange = React.useCallback(
+    async (row: Inquiry, nextTypes: InquiryType[]) => {
+      setUpdatingMessageStatusIds((prev) => new Set(prev).add(row.id));
+      try {
+        const updated = await inquiriesService.update(row.id, { types: nextTypes });
+        updateCache((prev) => ({
+          ...prev,
+          items: prev.items.map((x) => (x.id === updated.id ? updated : x)),
+        }));
+        toast.success("Cập nhật thành công.");
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Cập nhật thất bại.";
+        toast.error(msg);
+      } finally {
+        setUpdatingMessageStatusIds((prev) => {
+          const next = new Set(prev);
+          next.delete(row.id);
+          return next;
+        });
+      }
+    },
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [queryClient, inquiryQueryParams]);
 
   const columns: TableColumn<Inquiry>[] = React.useMemo(
     () => [
@@ -330,7 +303,7 @@ const InquiriesPage: React.FC = () => {
   return (
     <>
       <TableLayout
-        result={result}
+        result={result ?? null}
         loading={loading}
         page={page}
         pageSize={PAGE_SIZE}
@@ -357,16 +330,10 @@ const InquiriesPage: React.FC = () => {
           setSearchParams(next, { replace: true });
         }}
         onInquiryChanged={(updated) =>
-          setResult((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  items: prev.items.map((x) =>
-                    x.id === updated.id ? updated : x,
-                  ),
-                }
-              : prev,
-          )
+          updateCache((prev) => ({
+            ...prev,
+            items: prev.items.map((x) => (x.id === updated.id ? updated : x)),
+          }))
         }
       />
 
@@ -374,21 +341,14 @@ const InquiriesPage: React.FC = () => {
         inquiryId={previewId}
         onClose={() => setPreviewId(null)}
         onSent={(isClose) =>
-          setResult((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  items: prev.items.map((x) =>
-                    x.id === previewId
-                      ? {
-                          ...x,
-                          messageStatus: isClose ? "closed" : "replied",
-                        }
-                      : x,
-                  ),
-                }
-              : prev,
-          )
+          updateCache((prev) => ({
+            ...prev,
+            items: prev.items.map((x) =>
+              x.id === previewId
+                ? { ...x, messageStatus: isClose ? "closed" : "replied" }
+                : x,
+            ),
+          }))
         }
       />
 
@@ -400,14 +360,14 @@ const InquiriesPage: React.FC = () => {
           setFilters(draftFilters);
           setPage(1);
           setFilterOpen(false);
-          fetchList(1, keyword, draftFilters);
+          refetchInquiries();
         }}
         onClear={() => {
           setDraftFilters(defaultFilters);
           setFilters(defaultFilters);
           setPage(1);
           setFilterOpen(false);
-          fetchList(1, keyword, defaultFilters);
+          refetchInquiries();
         }}
         onRequestClose={() => setFilterOpen(false)}
       />

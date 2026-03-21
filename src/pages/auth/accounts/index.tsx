@@ -10,6 +10,7 @@ import type { Role, UpdateUserDto, User } from "@/types/users.ts";
 import { formatDate } from "@/utils/date";
 import { message as toast } from "antd";
 import React from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { MdInfoOutline } from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
 import AdvancedFilterModal, {
@@ -33,6 +34,7 @@ interface UsersPageProps {
 }
 
 const UsersPage: React.FC<UsersPageProps> = () => {
+  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const initialKeyword = searchParams.get("keyword") ?? "";
@@ -41,10 +43,6 @@ const UsersPage: React.FC<UsersPageProps> = () => {
       ? Number(searchParams.get("page") ?? "1")
       : 1;
 
-  const [result, setResult] = React.useState<PaginatedResponse<User> | null>(
-    null,
-  );
-  const [loading, setLoading] = React.useState(true);
   const [keyword, setKeyword] = React.useState(initialKeyword);
   const [page, setPage] = React.useState(initialPage);
   const [filters, setFilters] = React.useState<AccountFilters>(() => {
@@ -83,35 +81,18 @@ const UsersPage: React.FC<UsersPageProps> = () => {
   const idParam = searchParams.get("id");
   const selectedId = idParam ? Number(idParam) : null;
 
-  const fetchUsers = React.useCallback(
-    async (p: number, kw: string, f: AccountFilters) => {
-      setLoading(true);
-      try {
-        const resp = await usersService.getUsers({
-          page: p,
-          limit: PAGE_SIZE,
-          keyword: kw || undefined,
-          roles: f.roles.length > 0 ? f.roles : undefined,
-          isActive: f.enableIsActiveFilter ? f.isActive : undefined,
-        });
-        setResult(resp);
-      } catch (err: unknown) {
-        const msg =
-          err instanceof Error
-            ? err.message
-            : "Không thể tải danh sách tài khoản.";
-        toast.error(msg);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [],
-  );
-
-  React.useEffect(() => {
-    fetchUsers(page, keyword, filters);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, filters]);
+  const { data: result = null, isLoading: loading } = useQuery({
+    queryKey: ["users", { page, keyword, ...filters }],
+    queryFn: () =>
+      usersService.getUsers({
+        page,
+        limit: PAGE_SIZE,
+        keyword: keyword || undefined,
+        roles: filters.roles.length > 0 ? filters.roles : undefined,
+        isActive: filters.enableIsActiveFilter ? filters.isActive : undefined,
+      }),
+    staleTime: 30 * 1000,
+  });
 
   // Update searchValue when keyword or filters change
   React.useEffect(() => {
@@ -179,7 +160,6 @@ const UsersPage: React.FC<UsersPageProps> = () => {
     setFilters(draftFilters);
     setPage(1);
     setFilterOpen(false);
-    fetchUsers(1, keyword, draftFilters);
   };
 
   const handleCloseFilter = () => {
@@ -190,7 +170,6 @@ const UsersPage: React.FC<UsersPageProps> = () => {
     setDraftFilters(defaultFilters);
     setFilters(defaultFilters);
     setPage(1);
-    fetchUsers(1, keyword, defaultFilters);
     setFilterOpen(false);
   };
 
@@ -232,15 +211,17 @@ const UsersPage: React.FC<UsersPageProps> = () => {
         toast.success("Cập nhật thành công.");
 
         // Optimistic local update
-        setResult((prev) =>
-          prev
-            ? {
-                ...prev,
-                items: prev.items.map((u) =>
-                  u.id === user.id ? { ...u, role: updated.role } : u,
-                ),
-              }
-            : prev,
+        queryClient.setQueryData(
+          ["users", { page, keyword, ...filters }],
+          (prev: PaginatedResponse<User> | undefined) =>
+            prev
+              ? {
+                  ...prev,
+                  items: prev.items.map((u) =>
+                    u.id === user.id ? { ...u, role: updated.role } : u,
+                  ),
+                }
+              : prev,
         );
       } catch (err: unknown) {
         const msg =
@@ -272,15 +253,17 @@ const UsersPage: React.FC<UsersPageProps> = () => {
         );
 
         // Optimistic local update
-        setResult((prev) =>
-          prev
-            ? {
-                ...prev,
-                items: prev.items.map((u) =>
-                  u.id === user.id ? { ...u, isActive: updated.isActive } : u,
-                ),
-              }
-            : prev,
+        queryClient.setQueryData(
+          ["users", { page, keyword, ...filters }],
+          (prev: PaginatedResponse<User> | undefined) =>
+            prev
+              ? {
+                  ...prev,
+                  items: prev.items.map((u) =>
+                    u.id === user.id ? { ...u, isActive: updated.isActive } : u,
+                  ),
+                }
+              : prev,
         );
       } catch (err: unknown) {
         const msg =
@@ -403,15 +386,17 @@ const UsersPage: React.FC<UsersPageProps> = () => {
             userId={selectedId}
             onClose={handleCloseDetail}
             onUserChanged={(updated) =>
-              setResult((prev) =>
-                prev
-                  ? {
-                      ...prev,
-                      items: prev.items.map((u) =>
-                        u.id === updated.id ? updated : u,
-                      ),
-                    }
-                  : prev,
+              queryClient.setQueryData(
+                ["users", { page, keyword, ...filters }],
+                (prev: PaginatedResponse<User> | undefined) =>
+                  prev
+                    ? {
+                        ...prev,
+                        items: prev.items.map((u) =>
+                          u.id === updated.id ? updated : u,
+                        ),
+                      }
+                    : prev,
               )
             }
           />

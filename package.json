@@ -22,6 +22,8 @@
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
     "@tailwindcss/vite": "^4.2.1",
+    "@tanstack/react-query": "^5.91.3",
+    "@tanstack/react-query-devtools": "^5.91.3",
     "@tanstack/react-table": "^8.7.9",
     "antd": "^6.3.0",
     "apexcharts": "^3.35.5",

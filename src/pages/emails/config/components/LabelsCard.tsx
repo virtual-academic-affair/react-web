@@ -6,13 +6,13 @@ import {
 } from "@/pages/emails/message/labelUtils";
 import { labelsService } from "@/services/email";
 import type {
-  GmailLabel,
   LabelMappingDto,
   UpdateLabelsDto,
 } from "@/types/email.ts";
 import type { SystemLabelEnumData } from "@/types/shared";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   MdAutoAwesome,
   MdEdit,
@@ -26,13 +26,25 @@ interface LabelsCardProps {
 }
 
 const LabelsCard: React.FC<LabelsCardProps> = ({ systemLabelEnum }) => {
-  const [mapping, setMapping] = useState<LabelMappingDto | null>(null);
-  const [gmailLabels, setGmailLabels] = useState<GmailLabel[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<LabelMappingDto | null>(null);
   const [saving, setSaving] = useState(false);
   const [autoCreating, setAutoCreating] = useState(false);
+
+  const { data: mapping = null, isLoading: loadingMapping, refetch: refetchLabels } = useQuery({
+    queryKey: ["email-labels"],
+    queryFn: () => labelsService.getLabels(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: gmailLabels = [], isLoading: loadingGmail } = useQuery({
+    queryKey: ["email-gmail-labels"],
+    queryFn: () => labelsService.getGmailLabels(),
+    staleTime: 60 * 1000,
+  });
+
+  const loading = loadingMapping || loadingGmail;
 
   const mappingKeys = useMemo(() => {
     // Preferred order: the order defined by systemLabelEnum from backend
@@ -60,29 +72,8 @@ const LabelsCard: React.FC<LabelsCardProps> = ({ systemLabelEnum }) => {
     ] as (keyof LabelMappingDto)[];
   }, [mapping, systemLabelEnum]);
 
-  const fetchAll = async () => {
-    setLoading(true);
-    try {
-      const [m, g] = await Promise.all([
-        labelsService.getLabels(),
-        labelsService.getGmailLabels(),
-      ]);
-      setMapping(m);
-      setGmailLabels(g);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Tải nhãn thất bại.";
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchAll();
-  }, []);
-
   const handleEdit = () => {
-    fetchAll();
+    refetchLabels();
     setDraft(mapping ? { ...mapping } : null);
     setEditing(true);
   };
@@ -90,14 +81,12 @@ const LabelsCard: React.FC<LabelsCardProps> = ({ systemLabelEnum }) => {
   const handleCancel = () => setEditing(false);
 
   const handleSave = async () => {
-    if (!draft) {
-      return;
-    }
+    if (!draft) return;
     setSaving(true);
     try {
       const dto: UpdateLabelsDto = { ...draft };
       await labelsService.updateLabels(dto);
-      setMapping(draft);
+      queryClient.setQueryData(["email-labels"], draft);
       setEditing(false);
       toast.success("Cập nhật thành công.");
     } catch (err: unknown) {
@@ -112,11 +101,10 @@ const LabelsCard: React.FC<LabelsCardProps> = ({ systemLabelEnum }) => {
     setAutoCreating(true);
     try {
       const result = await labelsService.autoCreateLabels();
-      setMapping(result);
+      queryClient.setQueryData(["email-labels"], result);
       toast.success("Tự động tạo nhãn thành công.");
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Tự động tạo nhãn thất bại.";
+      const msg = err instanceof Error ? err.message : "Tự động tạo nhãn thất bại.";
       toast.error(msg);
     } finally {
       setAutoCreating(false);

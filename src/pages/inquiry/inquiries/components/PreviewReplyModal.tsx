@@ -1,6 +1,7 @@
 import Card from "@/components/card";
 import { inquiriesService } from "@/services/inquiry";
 import type { InquiryReplyDto } from "@/types/inquiry";
+import { useQuery } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React from "react";
 import { MdClose, MdEdit, MdSend } from "react-icons/md";
@@ -19,33 +20,26 @@ const PreviewReplyModal: React.FC<PreviewReplyModalProps> = ({
   onSent,
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [loading, setLoading] = React.useState(false);
   const [sending, setSending] = React.useState(false);
-  const [content, setContent] = React.useState("");
   const [customContent, setCustomContent] = React.useState("");
   const [showEditor, setShowEditor] = React.useState(false);
   const contentRef = React.useRef<HTMLDivElement>(null);
 
+  // Fetch the AI-generated preview — staleTime: 0 so it always refetches per inquiry
+  const { data: previewData, isLoading: loading } = useQuery({
+    queryKey: ["inquiry-preview", inquiryId],
+    queryFn: () => inquiriesService.previewReply(inquiryId!),
+    enabled: inquiryId != null,
+    staleTime: 0,
+  });
+  const content = previewData?.content ?? "";
+
+  // Reset custom content when modal closes
   React.useEffect(() => {
     if (inquiryId == null) {
-      // Reset state when modal is closed
-      setContent("");
       setCustomContent("");
       setShowEditor(false);
-      return;
     }
-    setLoading(true);
-    inquiriesService
-      .previewReply(inquiryId)
-      .then((resp) => {
-        setContent(resp.content || "");
-      })
-      .catch((err: unknown) => {
-        const msg =
-          err instanceof Error ? err.message : "Không thể tải preview.";
-        toast.error(msg);
-      })
-      .finally(() => setLoading(false));
   }, [inquiryId]);
 
   // Handle all clicks in content to open in new tab

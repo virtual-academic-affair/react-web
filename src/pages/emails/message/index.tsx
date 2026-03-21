@@ -6,6 +6,7 @@ import { messagesService } from "@/services/email";
 import type { PaginatedResponse } from "@/types/common";
 import type { Message, SystemLabel } from "@/types/email";
 import type { DynamicDataResponse, SystemLabelEnumData } from "@/types/shared";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React from "react";
 import { MdInfoOutline, MdPostAdd, MdDeleteOutline } from "react-icons/md";
@@ -28,6 +29,7 @@ interface MessagesPageProps {
 
 const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const initialKeyword = searchParams.get("keyword") ?? "";
@@ -40,10 +42,6 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
     ? (labelsParam.split(",").filter(Boolean) as SystemLabel[])
     : [];
 
-  const [result, setResult] = React.useState<PaginatedResponse<Message> | null>(
-    null,
-  );
-  const [loading, setLoading] = React.useState(true);
   const [keyword, setKeyword] = React.useState(initialKeyword);
   const [page, setPage] = React.useState(initialPage);
   const [systemLabelsFilter, setSystemLabelsFilter] =
@@ -53,10 +51,24 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
     SystemLabel[]
   >([]);
 
-
   const [searchValue, setSearchValue] = React.useState(() =>
     stringifySearchQuery(initialKeyword, { systemLabels: initialSystemLabels }),
   );
+
+  // Fetch paginated messages
+  const { data: result = null, isLoading: loading } = useQuery({
+    queryKey: ["messages", { page, keyword, systemLabels: systemLabelsFilter }],
+    queryFn: () =>
+      messagesService.getMessages({
+        page,
+        limit: PAGE_SIZE,
+        keyword: keyword || undefined,
+        systemLabels: systemLabelsFilter.length ? systemLabelsFilter : undefined,
+        orderCol: "sentAt",
+        orderDir: "DESC",
+      }),
+    staleTime: 30 * 1000,
+  });
 
 
   // Delete state
@@ -80,40 +92,14 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
       toast.success("Xóa email thành công");
       setDeleteModalOpen(false);
       setDeletingMessage(null);
-      fetchEmails(page, keyword, systemLabelsFilter);
+      // Invalidate to refetch
+      queryClient.invalidateQueries({ queryKey: ["messages"] });
     } catch {
       toast.error("Không thể xóa email");
     } finally {
       setDeleteLoading(false);
     }
   };
-
-  const fetchEmails = React.useCallback(
-    async (p: number, kw: string, labels: SystemLabel[]) => {
-      setLoading(true);
-      try {
-        const resp = await messagesService.getMessages({
-          page: p,
-          limit: PAGE_SIZE,
-          keyword: kw || undefined,
-          systemLabels: labels.length ? labels : undefined,
-          orderCol: "sentAt",
-          orderDir: "DESC",
-        });
-        setResult(resp);
-      } catch {
-        // keep previous data on error
-      } finally {
-        setLoading(false);
-      }
-    },
-    [],
-  );
-
-  React.useEffect(() => {
-    fetchEmails(page, keyword, systemLabelsFilter);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, systemLabelsFilter, keyword]);
 
   React.useEffect(() => {
     setSearchValue(
@@ -184,18 +170,20 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
   const handleLabelChanged = React.useCallback(
     (id: number, labels: SystemLabel[]) => {
       // Optimistic local update for systemLabels on a message
-      setResult((prev) =>
-        prev
-          ? {
-              ...prev,
-              items: prev.items.map((m) =>
-                m.id === id ? { ...m, systemLabels: labels } : m,
-              ),
-            }
-          : prev,
+      queryClient.setQueryData(
+        ["messages", { page, keyword, systemLabels: systemLabelsFilter }],
+        (old: PaginatedResponse<Message> | undefined) => {
+          if (!old) return old;
+          return {
+            ...old,
+            items: old.items.map((m) =>
+              m.id === id ? { ...m, systemLabels: labels } : m,
+            ),
+          };
+        }
       );
     },
-    [],
+    [queryClient, page, keyword, systemLabelsFilter],
   );
 
   const handleKeywordChange = (value: string) => {
@@ -212,7 +200,6 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
     setSystemLabelsFilter(draftSystemLabels);
     setPage(1);
     setFilterOpen(false);
-    fetchEmails(1, keyword, draftSystemLabels);
   };
 
   const handleCloseFilter = () => {
@@ -223,7 +210,6 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
     setDraftSystemLabels([]);
     setSystemLabelsFilter([]);
     setPage(1);
-    fetchEmails(1, keyword, []);
     setFilterOpen(false);
   };
 

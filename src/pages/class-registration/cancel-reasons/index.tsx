@@ -9,6 +9,7 @@ import type { PaginatedResponse } from "@/types/common";
 import { formatDate } from "@/utils/date";
 import { message as toast } from "antd";
 import React from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { MdDeleteOutline, MdEdit } from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
 import AdvancedFilterModal, {
@@ -26,10 +27,8 @@ const defaultFilters: CancelReasonFilters = {
 };
 
 const CancelReasonsPage: React.FC = () => {
+  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [result, setResult] =
-    React.useState<PaginatedResponse<CancelReason> | null>(null);
-  const [loading, setLoading] = React.useState(true);
   const [page, setPage] = React.useState(
     Number(searchParams.get("page") ?? "1") > 0
       ? Number(searchParams.get("page") ?? "1")
@@ -70,39 +69,24 @@ const CancelReasonsPage: React.FC = () => {
 
   const idParam = searchParams.get("id");
   const selectedId = idParam ? Number(idParam) : null;
+  const { data: result = null, isLoading: loading } = useQuery({
+    queryKey: ["cancel-reasons", { page, keyword, ...filters }],
+    queryFn: () =>
+      cancelReasonsService.getList({
+        page,
+        limit: PAGE_SIZE,
+        keyword: keyword || undefined,
+        isActive: filters.enableIsActiveFilter ? filters.isActive : undefined,
+        orderCol: "id",
+        orderDir: "DESC",
+      }),
+    staleTime: 30 * 1000,
+  });
+
   const selectedReason =
     selectedId && result?.items
       ? (result.items.find((x) => x.id === selectedId) ?? null)
       : null;
-
-  const fetchList = React.useCallback(
-    async (p: number, kw: string, f: CancelReasonFilters) => {
-      setLoading(true);
-      try {
-        const resp = await cancelReasonsService.getList({
-          page: p,
-          limit: PAGE_SIZE,
-          keyword: kw || undefined,
-          isActive: f.enableIsActiveFilter ? f.isActive : undefined,
-          orderCol: "id",
-          orderDir: "DESC",
-        });
-        setResult(resp);
-      } catch (err: unknown) {
-        const msg =
-          err instanceof Error ? err.message : "Không thể tải lý do hủy.";
-        toast.error(msg);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [],
-  );
-
-  React.useEffect(() => {
-    fetchList(page, keyword, filters);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, filters, keyword]);
 
   React.useEffect(() => {
     const paramsToSerialize = { ...filters };
@@ -169,13 +153,15 @@ const CancelReasonsPage: React.FC = () => {
     try {
       await cancelReasonsService.remove(item.id);
       toast.success("Đã xóa.");
-      setResult((prev) =>
-        prev
-          ? {
-              ...prev,
-              items: prev.items.filter((x) => x.id !== item.id),
-            }
-          : prev,
+      queryClient.setQueryData(
+        ["cancel-reasons", { page, keyword, ...filters }],
+        (prev: PaginatedResponse<CancelReason> | null) =>
+          prev
+            ? {
+                ...prev,
+                items: prev.items.filter((x) => x.id !== item.id),
+              }
+            : prev,
       );
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Xóa thất bại.";
@@ -192,13 +178,15 @@ const CancelReasonsPage: React.FC = () => {
       const updated = await cancelReasonsService.update(item.id, {
         isActive: next,
       });
-      setResult((prev) =>
-        prev
-          ? {
-              ...prev,
-              items: prev.items.map((x) => (x.id === updated.id ? updated : x)),
-            }
-          : prev,
+      queryClient.setQueryData(
+        ["cancel-reasons", { page, keyword, ...filters }],
+        (prev: PaginatedResponse<CancelReason> | null) =>
+          prev
+            ? {
+                ...prev,
+                items: prev.items.map((x) => (x.id === updated.id ? updated : x)),
+              }
+            : prev,
       );
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Cập nhật thất bại.";
@@ -305,18 +293,20 @@ const CancelReasonsPage: React.FC = () => {
           }
         }}
         onSaved={(reason, mode) =>
-          setResult((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  items:
-                    mode === "create"
-                      ? [reason, ...prev.items]
-                      : prev.items.map((x) =>
-                          x.id === reason.id ? reason : x,
-                        ),
-                }
-              : prev,
+          queryClient.setQueryData(
+            ["cancel-reasons", { page, keyword, ...filters }],
+            (prev: PaginatedResponse<CancelReason> | null) =>
+              prev
+                ? {
+                    ...prev,
+                    items:
+                      mode === "create"
+                        ? [reason, ...prev.items]
+                        : prev.items.map((x) =>
+                            x.id === reason.id ? reason : x,
+                          ),
+                  }
+                : prev,
           )
         }
       />
@@ -329,14 +319,12 @@ const CancelReasonsPage: React.FC = () => {
           setFilters(draftFilters);
           setPage(1);
           setFilterOpen(false);
-          fetchList(1, keyword, draftFilters);
         }}
         onClear={() => {
           setDraftFilters(defaultFilters);
           setFilters(defaultFilters);
           setPage(1);
           setFilterOpen(false);
-          fetchList(1, keyword, defaultFilters);
         }}
         onRequestClose={() => setFilterOpen(false)}
       />

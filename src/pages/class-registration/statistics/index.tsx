@@ -1,9 +1,9 @@
 import React from "react";
-import { useStatistics } from "./useStatistics";
-import TotalOverviewChart from "./components/TotalOverviewChart";
 import DetailedStatsChart from "./components/DetailedStatsChart";
-import SummaryWidget from "./components/SummaryWidget";
 import PeakDayCard from "./components/PeakDayCard";
+import SummaryWidget from "./components/SummaryWidget";
+import TotalOverviewChart from "./components/TotalOverviewChart";
+import { useStatistics } from "./useStatistics";
 
 const ClassRegistrationStatisticsPage: React.FC = () => {
   const {

@@ -2,6 +2,7 @@ import Drawer from "@/components/drawer/Drawer";
 import { inquiriesService } from "@/services/inquiry";
 import type { Inquiry, InquiryType, UpdateInquiryDto } from "@/types/inquiry";
 import type { MessageStatus } from "@/types/messageStatus";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React from "react";
 import { MdSave } from "react-icons/md";
@@ -24,10 +25,9 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
   onInquiryChanged,
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
   const answerEditorRef = React.useRef<ReactQuill>(null);
   const questionEditorRef = React.useRef<ReactQuill>(null);
-  const [detail, setDetail] = React.useState<Inquiry | null>(null);
-  const [loading, setLoading] = React.useState(false);
   const [savingInfo, setSavingInfo] = React.useState(false);
   const [form, setForm] = React.useState<{
     types: InquiryType[];
@@ -36,24 +36,20 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
     messageStatus: MessageStatus | null;
   } | null>(null);
 
+  // Fetch inquiry detail — result is cached globally under ['inquiry', inquiryId]
+  const { data: detail, isLoading: loading } = useQuery({
+    queryKey: ["inquiry", inquiryId],
+    queryFn: () => inquiriesService.getById(inquiryId!),
+    enabled: inquiryId != null,
+    staleTime: 30 * 1000,
+  });
+
+  // Sync form from query data
   React.useEffect(() => {
     if (inquiryId == null) {
-      setDetail(null);
+      setForm(null);
       return;
     }
-    setLoading(true);
-    inquiriesService
-      .getById(inquiryId)
-      .then(setDetail)
-      .catch((err: unknown) => {
-        const msg =
-          err instanceof Error ? err.message : "Không thể tải chi tiết.";
-        toast.error(msg);
-      })
-      .finally(() => setLoading(false));
-  }, [inquiryId]);
-
-  React.useEffect(() => {
     if (!detail) {
       setForm(null);
       return;
@@ -64,7 +60,7 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
       answer: detail.answer ?? "",
       messageStatus: detail.messageStatus ?? null,
     });
-  }, [detail]);
+  }, [detail, inquiryId]);
 
   // Focus on editor when focus param is present
   React.useEffect(() => {
@@ -136,7 +132,8 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
     setSavingInfo(true);
     try {
       const updated = await inquiriesService.update(detail.id, dto);
-      setDetail(updated);
+      // Update the cached data so re-opening the drawer shows fresh data
+      queryClient.setQueryData(["inquiry", inquiryId], updated);
       onInquiryChanged(updated);
       toast.success("Cập nhật thành công.");
     } catch (err: unknown) {

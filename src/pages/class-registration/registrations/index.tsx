@@ -9,6 +9,7 @@ import type {
 } from "@/types/classRegistration";
 import type { PaginatedResponse } from "@/types/common";
 import { formatDate } from "@/utils/date";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React from "react";
 import {
@@ -37,10 +38,8 @@ const defaultFilters: RegistrationFilters = {
 };
 
 const ClassRegistrationsPage: React.FC = () => {
+  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [result, setResult] =
-    React.useState<PaginatedResponse<ClassRegistration> | null>(null);
-  const [loading, setLoading] = React.useState(true);
 
   const [keyword, setKeyword] = React.useState(
     searchParams.get("keyword") ?? "",
@@ -81,42 +80,26 @@ const ClassRegistrationsPage: React.FC = () => {
   const [updatingMessageStatusIds, setUpdatingMessageStatusIds] =
     React.useState<Set<number>>(new Set());
 
-  const fetchList = React.useCallback(
-    async (p: number, kw: string, f: RegistrationFilters) => {
-      setLoading(true);
-      try {
-        const resp = await classRegistrationsService.getList({
-          page: p,
-          limit: PAGE_SIZE,
-          keyword: kw || undefined,
-          studentCode: f.studentCode || undefined,
-          academicYear: f.academicYear || undefined,
-          smartOrder: f.smartOrder ? "true" : undefined,
-          messageStatuses: f.messageStatuses.length
-            ? f.messageStatuses
-            : undefined,
-          messageId: f.messageId ? Number(f.messageId) : undefined,
-          orderCol: "createdAt",
-          orderDir: "DESC",
-        });
-        setResult(resp);
-      } catch (err: unknown) {
-        const msg =
-          err instanceof Error
-            ? err.message
-            : "Không thể tải danh sách đăng kí lớp.";
-        toast.error(msg);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [],
-  );
-
-  React.useEffect(() => {
-    fetchList(page, keyword, filters);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, filters, keyword]);
+  // Fetch paginated registrations
+  const { data: result = null, isLoading: loading } = useQuery({
+    queryKey: ["class-registrations", { page, keyword, ...filters }],
+    queryFn: () =>
+      classRegistrationsService.getList({
+        page,
+        limit: PAGE_SIZE,
+        keyword: keyword || undefined,
+        studentCode: filters.studentCode || undefined,
+        academicYear: filters.academicYear || undefined,
+        smartOrder: filters.smartOrder ? "true" : undefined,
+        messageStatuses: filters.messageStatuses.length
+          ? filters.messageStatuses
+          : undefined,
+        messageId: filters.messageId ? Number(filters.messageId) : undefined,
+        orderCol: "createdAt",
+        orderDir: "DESC",
+      }),
+    staleTime: 30 * 1000,
+  });
 
   React.useEffect(() => {
     setSearchValue(
@@ -178,14 +161,8 @@ const ClassRegistrationsPage: React.FC = () => {
     try {
       await classRegistrationsService.remove(row.id);
       toast.success("Xóa thành công.");
-      setResult((prev) =>
-        prev
-          ? {
-              ...prev,
-              items: prev.items.filter((i) => i.id !== row.id),
-            }
-          : prev,
-      );
+      // Invalidate to refetch
+      queryClient.invalidateQueries({ queryKey: ["class-registrations"] });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Xóa thất bại.";
       toast.error(msg);
@@ -200,15 +177,18 @@ const ClassRegistrationsPage: React.FC = () => {
         const updated = await classRegistrationsService.update(row.id, {
           messageStatus: newStatus,
         });
-        setResult((prev) =>
-          prev
-            ? {
-                ...prev,
-                items: prev.items.map((x) =>
-                  x.id === updated.id ? updated : x,
-                ),
-              }
-            : prev,
+        
+        queryClient.setQueryData(
+          ["class-registrations", { page, keyword, ...filters }],
+          (old: PaginatedResponse<ClassRegistration> | undefined) => {
+            if (!old) return old;
+            return {
+              ...old,
+              items: old.items.map((x) =>
+                x.id === updated.id ? updated : x,
+              ),
+            };
+          }
         );
         toast.success("Cập nhật thành công.");
       } catch (err: unknown) {
@@ -344,40 +324,44 @@ const ClassRegistrationsPage: React.FC = () => {
           next.delete("id");
           setSearchParams(next, { replace: true });
         }}
-        onRegistrationChanged={(updated) =>
-          setResult((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  items: prev.items.map((x) =>
-                    x.id === updated.id ? updated : x,
-                  ),
-                }
-              : prev,
-          )
-        }
+        onRegistrationChanged={(updated) => {
+          queryClient.setQueryData(
+            ["class-registrations", { page, keyword, ...filters }],
+            (old: PaginatedResponse<ClassRegistration> | undefined) => {
+              if (!old) return old;
+              return {
+                ...old,
+                items: old.items.map((x) =>
+                  x.id === updated.id ? updated : x,
+                ),
+              };
+            }
+          );
+        }}
       />
 
       <PreviewReplyModal
         registrationId={previewId}
         onClose={() => setPreviewId(null)}
-        onSent={(closeAfterSend) =>
-          setResult((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  items: prev.items.map((x) =>
-                    x.id === previewId
-                      ? {
-                          ...x,
-                          messageStatus: closeAfterSend ? "closed" : "replied",
-                        }
-                      : x,
-                  ),
-                }
-              : prev,
-          )
-        }
+        onSent={(closeAfterSend) => {
+          queryClient.setQueryData(
+            ["class-registrations", { page, keyword, ...filters }],
+            (old: PaginatedResponse<ClassRegistration> | undefined) => {
+              if (!old) return old;
+              return {
+                ...old,
+                items: old.items.map((x) =>
+                  x.id === previewId
+                    ? {
+                        ...x,
+                        messageStatus: closeAfterSend ? "closed" : "replied",
+                      }
+                    : x,
+                ),
+              };
+            }
+          );
+        }}
       />
 
       <AdvancedFilterModal
@@ -388,14 +372,12 @@ const ClassRegistrationsPage: React.FC = () => {
           setFilters(draftFilters);
           setPage(1);
           setFilterOpen(false);
-          fetchList(1, keyword, draftFilters);
         }}
         onClear={() => {
           setDraftFilters(defaultFilters);
           setFilters(defaultFilters);
           setPage(1);
           setFilterOpen(false);
-          fetchList(1, keyword, defaultFilters);
         }}
         onRequestClose={() => setFilterOpen(false)}
       />
