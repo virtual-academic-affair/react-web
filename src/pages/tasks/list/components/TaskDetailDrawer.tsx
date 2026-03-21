@@ -77,7 +77,7 @@ const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
   }, [taskId, onClose]);
 
   const handleSave = async () => {
-    if (!taskId || !form || !form.name.trim()) {
+    if (!taskId || !form || !detail || !form.name.trim()) {
       return;
     }
 
@@ -95,18 +95,32 @@ const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
           : undefined,
       });
 
+      const reconstructedAssignees = form.assigneeIds.map(id => {
+        const existing = detail.assignees?.find?.(a => a.assigneeId === id);
+        if (existing) return existing;
+        const userToAdd = users.find(u => u.id === id);
+        return {
+          taskId: taskId,
+          assigneeId: id,
+          assignerId: 0,
+          assignedAt: new Date().toISOString(),
+          assignee: userToAdd
+        } as any;
+      });
+
       setForm({
         name: updated.name,
         description: updated.description || "",
         priority: updated.priority,
         status: updated.status,
         due: updated.due ? updated.due.slice(0, 16) : "",
-        assigneeIds: updated.assignees ? updated.assignees.map((a) => a.assigneeId) : form.assigneeIds,
+        assigneeIds: form.assigneeIds,
         assigners: updated.assigners ? updated.assigners.join(", ") : "",
       });
-      const fullUpdated = { ...detail, ...updated };
-      setDetail(fullUpdated);
-      onTaskChanged(fullUpdated);
+      const fullUpdated = { ...detail, ...updated, assignees: reconstructedAssignees };
+      setDetail(fullUpdated as Task);
+      onTaskChanged(fullUpdated as Task);
+      
       toast.success("Cập nhật thành công.");
     } catch (err: unknown) {
       console.error(err);
