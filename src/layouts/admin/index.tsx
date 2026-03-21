@@ -1,10 +1,3 @@
-/**
- * Admin Layout
- * Wraps all /admin/* pages with the Sidebar and Navbar.
- * Owns the single dynamic-data fetch so both the Navbar and AdminPage
- * share the same data without duplicate requests.
- */
-
 import Navbar from "@/components/navbar";
 import Sidebar from "@/components/sidebar";
 import UsersPage from "@/pages/auth/accounts";
@@ -24,8 +17,7 @@ import TasksPage from "@/pages/tasks/list";
 import TaskStatisticsPage from "@/pages/tasks/statistics";
 import TaskDetailPage from "@/pages/tasks/view";
 import routes from "@/routes";
-import { dynamicDataService } from "@/services/shared";
-import type { DynamicDataResponse } from "@/types/shared";
+import { useDynamicData } from "@/hooks/useDynamicData";
 import React from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
@@ -37,28 +29,12 @@ const DYNAMIC_DATA_PARAMS = {
     "email.lastPullAt",
     "email.labels",
   ],
-} satisfies Parameters<typeof dynamicDataService.get>[0];
+} as const;
 
 const AdminLayout: React.FC = () => {
   const [open, setOpen] = React.useState(true);
-  const [data, setData] = React.useState<DynamicDataResponse | null>(null);
-  const [dataLoading, setDataLoading] = React.useState(true);
-
-  const fetchData = React.useCallback(async () => {
-    setDataLoading(true);
-    try {
-      const result = await dynamicDataService.get(DYNAMIC_DATA_PARAMS);
-      setData(result);
-    } catch {
-      // keep existing data on refresh failure
-    } finally {
-      setDataLoading(false);
-    }
-  }, []);
-
-  React.useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const { data: rawData, isLoading: dataLoading, refetch: onRefresh } = useDynamicData(DYNAMIC_DATA_PARAMS);
+  const data = rawData ?? null;
 
   const profile = data?.settings?.["email.superEmail"];
 
@@ -113,7 +89,7 @@ const AdminLayout: React.FC = () => {
                 <GmailConfigPage
                   data={data}
                   dataLoading={dataLoading}
-                  onRefresh={fetchData}
+                  onRefresh={onRefresh}
                 />
               }
             />

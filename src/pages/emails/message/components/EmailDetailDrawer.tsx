@@ -2,8 +2,7 @@ import Drawer from "@/components/drawer/Drawer";
 import { messagesService } from "@/services/email";
 import type { Message, SystemLabel } from "@/types/email";
 import type { SystemLabelEnumData } from "@/types/shared";
-import { message as toast } from "antd";
-import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDate } from "../labelUtils";
 import MessageLabelEditor from "./MessageLabelEditor";
 
@@ -20,23 +19,14 @@ const EmailDetailDrawer: React.FC<EmailDetailDrawerProps> = ({
   onClose,
   onLabelChanged,
 }) => {
-  const [detail, setDetail] = useState<Message | null>(null);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (messageId == null) return;
-    setLoading(true);
-    setDetail(null);
-    messagesService
-      .getMessageById(messageId)
-      .then(setDetail)
-      .catch((err: unknown) => {
-        const msg =
-          err instanceof Error ? err.message : "Không thể tải chi tiết email.";
-        toast.error(msg);
-      })
-      .finally(() => setLoading(false));
-  }, [messageId]);
+  const { data: detail = null, isLoading: loading } = useQuery({
+    queryKey: ["message", messageId],
+    queryFn: () => messagesService.getMessageById(messageId!),
+    enabled: messageId != null,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const isOpen = messageId != null;
 
@@ -134,10 +124,11 @@ const EmailDetailDrawer: React.FC<EmailDetailDrawerProps> = ({
                 message={detail}
                 systemLabelEnum={systemLabelEnum}
                 onLabelChanged={(id, labels) => {
-                  setDetail((prev) =>
-                    prev && prev.id === id
-                      ? { ...prev, systemLabels: labels }
-                      : prev,
+                  // Optimistic update
+                  queryClient.setQueryData(
+                    ["message", messageId],
+                    (old: Message | undefined) =>
+                      old ? { ...old, systemLabels: labels } : old
                   );
                   onLabelChanged(id, labels);
                 }}

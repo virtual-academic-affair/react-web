@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Calendar, Spin } from "antd";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
@@ -200,11 +201,26 @@ const DEFAULT_TASK_CLASSES =
   "bg-lightPrimary text-navy-700 dark:bg-navy-700 dark:text-white";
 
 const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ onTaskClick }) => {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
   const [calendarDate, setCalendarDate] = useState<Dayjs>(dayjs());
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const navigate = useNavigate();
+
+  const startOfMonth = calendarDate.startOf("month").format("YYYY-MM-DD");
+  const endOfMonth = calendarDate.endOf("month").format("YYYY-MM-DD");
+
+  const { data: tasksResult, isLoading: loading } = useQuery({
+    queryKey: ["tasks", "calendar", { startOfMonth, endOfMonth }],
+    queryFn: () =>
+      tasksService.getList({
+        dueDateFrom: startOfMonth,
+        dueDateTo: endOfMonth,
+        limit: 500,
+      }),
+    staleTime: 30 * 1000,
+  });
+
+  const tasks = tasksResult?.items || [];
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -212,28 +228,6 @@ const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ onTaskClick }) => {
       activationConstraint: { distance: 5 },
     }),
   );
-
-  const fetchTasks = async (currentDate: Dayjs) => {
-    setLoading(true);
-    try {
-      const startOfMonth = currentDate.startOf("month").format("YYYY-MM-DD");
-      const endOfMonth = currentDate.endOf("month").format("YYYY-MM-DD");
-      const res = await tasksService.getList({
-        dueDateFrom: startOfMonth,
-        dueDateTo: endOfMonth,
-        limit: 500,
-      });
-      setTasks(res.items);
-    } catch (error) {
-      console.error("Failed to fetch tasks for calendar:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchTasks(calendarDate);
-  }, [calendarDate]);
 
   const onPanelChange = (value: Dayjs, mode: string) => {
     if (mode === "month") {
@@ -274,7 +268,17 @@ const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ onTaskClick }) => {
       .second(oldDateObj.second());
 
     const previousTasks = [...tasks];
-    setTasks(tasks.map((t) => (t.id === taskId ? { ...t, due: newDateObj.toISOString() } : t)));
+    const queryKey = ["tasks", "calendar", { startOfMonth, endOfMonth }];
+
+    queryClient.setQueryData(queryKey, (old: any) => {
+      if (!old) return old;
+      return {
+        ...old,
+        items: old.items.map((t: Task) =>
+          t.id === taskId ? { ...t, due: newDateObj.toISOString() } : t,
+        ),
+      };
+    });
 
     try {
       await tasksService.update(taskId, { due: newDateObj.toISOString() });
@@ -282,7 +286,13 @@ const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ onTaskClick }) => {
     } catch (err: unknown) {
       console.error(err);
       toast.error("Cập nhật thất bại.");
-      setTasks(previousTasks);
+      queryClient.setQueryData(queryKey, (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          items: previousTasks,
+        };
+      });
     }
   };
 

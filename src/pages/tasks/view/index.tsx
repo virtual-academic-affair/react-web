@@ -1,10 +1,10 @@
 import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { message as toast } from "antd";
+import { useQuery } from "@tanstack/react-query";
 import { tasksService } from "@/services/tasks.service";
-import { usersService } from "@/services/users/users.service";
+import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { TaskPriority, TaskStatus } from "@/types/task";
-import type { User } from "@/types/users";
 import Card from "@/components/card";
 import { MdArrowBack, MdSave, MdDeleteOutline } from "react-icons/md";
 import RichTextEditor from "@/components/fields/RichTextEditor";
@@ -12,9 +12,8 @@ import RichTextEditor from "@/components/fields/RichTextEditor";
 const TaskDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
-  const [users, setUsers] = React.useState<User[]>([]);
+  const { admins: users } = useAdminUsers();
   const [form, setForm] = React.useState<{
     name: string;
     description: string;
@@ -35,41 +34,27 @@ const TaskDetailPage: React.FC = () => {
     messageId: "",
   });
 
+  const { isLoading: loading, data: task } = useQuery({
+    queryKey: ["task", Number(id)],
+    queryFn: () => tasksService.getById(Number(id)),
+    enabled: !!id,
+    staleTime: 30 * 1000,
+  });
+
+  // Populate form when task loads
   React.useEffect(() => {
-    if (!id) {
-      return;
-    }
-
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [task, usersResp] = await Promise.all([
-          tasksService.getById(Number(id)),
-          usersService.getUsers({ roles: ["admin"], limit: 100 }),
-        ]);
-
-        setUsers(usersResp.items);
-        setForm({
-          name: task.name,
-          description: task.description || "",
-          priority: task.priority,
-          status: task.status,
-          due: task.due ? task.due.slice(0, 16) : "",
-          assigneeIds: task.assignees.map((a) => a.assigneeId),
-          assigners: task.assigners ? task.assigners.join(", ") : "",
-          messageId: task.messageId ? String(task.messageId) : "",
-        });
-      } catch (err: unknown) {
-        console.error(err);
-        toast.error("Không thể tải thông tin công việc.");
-        navigate("/admin/tasks/list");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [id, navigate]);
+    if (!task) return;
+    setForm({
+      name: task.name,
+      description: task.description || "",
+      priority: task.priority,
+      status: task.status,
+      due: task.due ? task.due.slice(0, 16) : "",
+      assigneeIds: task.assignees.map((a) => a.assigneeId),
+      assigners: task.assigners ? task.assigners.join(", ") : "",
+      messageId: task.messageId ? String(task.messageId) : "",
+    });
+  }, [task]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();

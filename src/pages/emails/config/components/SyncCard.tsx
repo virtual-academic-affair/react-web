@@ -3,6 +3,7 @@ import Switch from "@/components/switch";
 import Tooltip from "@/components/tooltip/Tooltip";
 import { emailSettingsService, messagesService } from "@/services/email";
 import type { DynamicDataResponse } from "@/types/shared";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message } from "antd";
 import React from "react";
 import { MdAutorenew, MdInfoOutline } from "react-icons/md";
@@ -34,27 +35,22 @@ const SyncCard: React.FC<SyncCardProps> = ({
   dataLoading,
   onRefresh,
 }) => {
+  const queryClient = useQueryClient();
   const [syncing, setSyncing] = React.useState(false);
-  const [canSaveContent, setCanSaveContent] = React.useState(false);
   const [updatingContent, setUpdatingContent] = React.useState(false);
 
-  React.useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const val = await emailSettingsService.getCanSaveContent();
-        setCanSaveContent(val);
-      } catch (err) {
-        console.error("Failed to fetch email settings", err);
-      }
-    };
-    fetchSettings();
-  }, []);
+  const { data: canSaveContent = false } = useQuery({
+    queryKey: ["email-can-save-content"],
+    queryFn: () => emailSettingsService.getCanSaveContent(),
+    staleTime: 5 * 60 * 1000,
+  });
 
   const handleToggleContent = async (checked: boolean) => {
     setUpdatingContent(true);
     try {
       await emailSettingsService.updateCanSaveContent(checked);
-      setCanSaveContent(checked);
+      // Optimistic update — no need to refetch
+      queryClient.setQueryData(["email-can-save-content"], checked);
       message.success("Cập nhật thành công.");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Cập nhật thất bại.";

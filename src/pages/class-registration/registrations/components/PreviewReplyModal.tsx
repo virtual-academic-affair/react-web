@@ -6,6 +6,7 @@ import React from "react";
 import { MdClose, MdEdit, MdSend } from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
 import RichTextEditor from "@/components/fields/RichTextEditor";
+import { useQuery } from "@tanstack/react-query";
 
 interface PreviewReplyModalProps {
   registrationId: number | null;
@@ -19,9 +20,17 @@ const PreviewReplyModal: React.FC<PreviewReplyModalProps> = ({
   onSent,
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [loading, setLoading] = React.useState(false);
   const [sending, setSending] = React.useState(false);
-  const [content, setContent] = React.useState("");
+
+  const { data: previewData, isLoading: loading } = useQuery({
+    queryKey: ["class-registration-preview", registrationId],
+    queryFn: () => classRegistrationsService.previewReply(registrationId!),
+    enabled: registrationId != null,
+    staleTime: 0, // Always fetch fresh preview
+  });
+
+  const content = previewData?.content || "";
+
   const [customContent, setCustomContent] = React.useState("");
   const [showEditor, setShowEditor] = React.useState(false);
   const contentRef = React.useRef<HTMLDivElement>(null);
@@ -29,23 +38,9 @@ const PreviewReplyModal: React.FC<PreviewReplyModalProps> = ({
   React.useEffect(() => {
     if (registrationId == null) {
       // Reset state when modal is closed
-      setContent("");
       setCustomContent("");
       setShowEditor(false);
-      return;
     }
-    setLoading(true);
-    classRegistrationsService
-      .previewReply(registrationId)
-      .then((resp) => {
-        setContent(resp.content || "");
-      })
-      .catch((err: unknown) => {
-        const msg =
-          err instanceof Error ? err.message : "Không thể tải preview.";
-        toast.error(msg);
-      })
-      .finally(() => setLoading(false));
   }, [registrationId]);
 
   // Handle all clicks in content to open in new tab

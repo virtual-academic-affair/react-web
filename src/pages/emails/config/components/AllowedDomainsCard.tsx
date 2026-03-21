@@ -1,36 +1,23 @@
 import Card from "@/components/card";
 import { allowedDomainsService } from "@/services/email";
 import type { UpdateAllowedDomainsDto } from "@/types/email";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message } from "antd";
 import React from "react";
 import { MdAdd, MdClose, MdDomain, MdEdit, MdSave } from "react-icons/md";
 
 const AllowedDomainsCard: React.FC = () => {
-  const [domains, setDomains] = React.useState<string[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const queryClient = useQueryClient();
   const [saving, setSaving] = React.useState(false);
   const [editing, setEditing] = React.useState(false);
   const [draft, setDraft] = React.useState<string[]>([]);
   const [newDomain, setNewDomain] = React.useState("");
 
-  // ── fetch ──────────────────────────────────────────────────────────────────
-  const fetchDomains = async () => {
-    setLoading(true);
-    try {
-      const data = await allowedDomainsService.getAllowedDomains();
-      setDomains(data);
-    } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Tải danh sách tên miền thất bại.";
-      message.error(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  React.useEffect(() => {
-    fetchDomains();
-  }, []);
+  const { data: domains = [], isLoading: loading } = useQuery({
+    queryKey: ["email-allowed-domains"],
+    queryFn: () => allowedDomainsService.getAllowedDomains(),
+    staleTime: 5 * 60 * 1000,
+  });
 
   // ── edit controls ──────────────────────────────────────────────────────────
   const handleEdit = () => {
@@ -74,7 +61,7 @@ const AllowedDomainsCard: React.FC = () => {
     try {
       const dto: UpdateAllowedDomainsDto = { domains: draft };
       await allowedDomainsService.updateAllowedDomains(dto);
-      setDomains(draft);
+      queryClient.setQueryData(["email-allowed-domains"], draft);
       setEditing(false);
       message.success("Cập nhật thành công.");
     } catch (err: unknown) {

@@ -67,8 +67,8 @@ export interface EnumsMap {
 
 /** Query params for GET /shared/dynamic-data */
 export interface DynamicDataParams {
-  settings?: SettingKey[];
-  enums?: EnumPath[];
+  settings?: readonly SettingKey[] | SettingKey[];
+  enums?: readonly EnumPath[] | EnumPath[];
 }
 
 /** Response from GET /shared/dynamic-data */

@@ -5,8 +5,8 @@ import {
   RegistrationActionColors,
 } from "@/types/classRegistration";
 import type { ApexOptions } from "apexcharts";
-import { message as toast } from "antd";
 import React from "react";
+import { useQuery } from "@tanstack/react-query";
 import LineChart from "@/components/charts/LineChart";
 import BarChart from "@/components/charts/BarChart";
 import balanceImg from "@/assets/img/dashboards/balanceImg.png";
@@ -77,44 +77,30 @@ function getDateRange(range: TimeRangeType) {
 const ClassRegistrationStatisticsPage: React.FC = () => {
   const [timeRange, setTimeRange] =
     React.useState<TimeRangeType>("this_week");
-  const [loading, setLoading] = React.useState(false);
-  const [summaryData, setSummaryData] = React.useState<
-    Record<string, ClassRegistrationStatsItem | number>
-  >({});
-  const [detailData, setDetailData] = React.useState<
-    Record<string, ClassRegistrationStatsItem>
-  >({});
 
-  const fetchStats = React.useCallback(async (range: TimeRangeType) => {
-    setLoading(true);
-    try {
-      const { from, to } = getDateRange(range);
-      const [summaryRes, detailRes] = await Promise.all([
-        classRegistrationsService.getStats({
-          from: from.toISOString(),
-          to: to.toISOString(),
-          isDetail: false,
-        }),
-        classRegistrationsService.getStats({
-          from: from.toISOString(),
-          to: to.toISOString(),
-          isDetail: true,
-        }),
-      ]);
-      setSummaryData(summaryRes as Record<string, ClassRegistrationStatsItem>);
-      setDetailData(detailRes as Record<string, ClassRegistrationStatsItem>);
-    } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Có lỗi xảy ra khi lấy thống kê.";
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const { from, to } = React.useMemo(() => getDateRange(timeRange), [timeRange]);
 
-  React.useEffect(() => {
-    fetchStats(timeRange);
-  }, [timeRange, fetchStats]);
+  const { data: summaryData = {}, isLoading: loadingSummary } = useQuery({
+    queryKey: ["class-registration-stats", "summary", timeRange],
+    queryFn: () => classRegistrationsService.getStats({
+      from: from.toISOString(),
+      to: to.toISOString(),
+      isDetail: false,
+    }) as Promise<Record<string, ClassRegistrationStatsItem>>,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: detailData = {}, isLoading: loadingDetail } = useQuery({
+    queryKey: ["class-registration-stats", "detail", timeRange],
+    queryFn: () => classRegistrationsService.getStats({
+      from: from.toISOString(),
+      to: to.toISOString(),
+      isDetail: true,
+    }) as Promise<Record<string, ClassRegistrationStatsItem>>,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const loading = loadingSummary || loadingDetail;
 
   const summary = React.useMemo(() => {
     let total = 0;

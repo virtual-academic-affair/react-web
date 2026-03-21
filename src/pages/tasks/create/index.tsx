@@ -2,10 +2,9 @@ import RichTextEditor from "@/components/fields/RichTextEditor";
 import CreatePageLayout from "@/components/layouts/CreatePageLayout";
 import { messagesService } from "@/services/email/messages.service";
 import { tasksService } from "@/services/tasks.service";
-import { usersService } from "@/services/users/users.service";
-import type { Message } from "@/types/email";
+import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { TaskPriority, TaskStatus } from "@/types/task";
-import type { User } from "@/types/users";
+import { useQuery } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -21,9 +20,7 @@ const TaskCreatePage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [currentStep, setCurrentStep] = React.useState(1);
   const [loading, setLoading] = React.useState(false);
-  const [users, setUsers] = React.useState<User[]>([]);
-  const [message, setMessage] = React.useState<Message | null>(null);
-  const [messageLoading, setMessageLoading] = React.useState(false);
+  const { admins: users } = useAdminUsers();
   const [form, setForm] = React.useState<{
     name: string;
     description: string;
@@ -46,36 +43,32 @@ const TaskCreatePage: React.FC = () => {
       : undefined,
   });
 
+  const mId = searchParams.get("messageId") ? Number(searchParams.get("messageId")) : undefined;
+
+  // Fetch related message if messageId param is present
+  const { data: message, isLoading: messageLoading } = useQuery({
+    queryKey: ["message", mId],
+    queryFn: () => messagesService.getMessageById(mId!),
+    enabled: !!mId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Pre-fill form name + due from query params / message
   React.useEffect(() => {
     const dueParam = searchParams.get("due");
     if (dueParam) {
       setForm((prev) => ({ ...prev, due: `${dueParam}T23:59` }));
     }
-
-    const mId = searchParams.get("messageId");
-    if (mId) {
-      setMessageLoading(true);
-      messagesService
-        .getMessageById(Number(mId))
-        .then((m) => {
-          setMessage(m);
-          setForm((prev) => ({
-            ...prev,
-            messageId: m.id,
-            name: prev.name || m.subject || "",
-          }));
-        })
-        .catch(() => toast.error("Không thể tải thông tin tin nhắn."))
-        .finally(() => setMessageLoading(false));
-    }
   }, [searchParams]);
 
   React.useEffect(() => {
-    usersService
-      .getUsers({ roles: ["admin"], limit: 100 })
-      .then((resp) => setUsers(resp.items))
-      .catch(() => toast.error("Không thể tải danh sách người quản trị."));
-  }, []);
+    if (!message) return;
+    setForm((prev) => ({
+      ...prev,
+      messageId: message.id,
+      name: prev.name || message.subject || "",
+    }));
+  }, [message]);
 
   const validateStep1 = () => {
     if (!form.name.trim()) {
@@ -144,7 +137,7 @@ const TaskCreatePage: React.FC = () => {
       sideContent={sideContent}
     >
       <RelatedMessageView
-        message={message}
+        message={message ?? null}
         loading={messageLoading}
         onReselect={() => navigate("/admin/email/message")}
       />

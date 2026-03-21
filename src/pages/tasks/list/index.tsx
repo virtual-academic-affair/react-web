@@ -1,8 +1,8 @@
 import { tasksService } from "@/services/tasks.service";
-import { usersService } from "@/services/users";
+import { useAdminUsers } from "@/hooks/useAdminUsers";
 import type { PaginatedResponse } from "@/types/common";
 import { type Task, TaskPriority, TaskStatus } from "@/types/task";
-import type { User } from "@/types/users";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React from "react";
 import {
@@ -52,12 +52,10 @@ const defaultFilters: TaskFilters = {
 };
 
 const TasksPage: React.FC = () => {
+  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [result, setResult] = React.useState<PaginatedResponse<Task> | null>(
-    null,
-  );
-  const [loading, setLoading] = React.useState(true);
-  const [admins, setAdmins] = React.useState<User[]>([]);
+  const [loading, setLoading] = React.useState(false);
+  const { admins } = useAdminUsers();
 
   const [keyword, setKeyword] = React.useState(
     searchParams.get("keyword") ?? "",
@@ -113,56 +111,37 @@ const TasksPage: React.FC = () => {
     ? Number(searchParams.get("id"))
     : null;
 
-  const fetchAdmins = React.useCallback(async () => {
-    try {
-      const resp = await usersService.getUsers({
-        roles: ["admin"],
-        limit: 100,
-      });
-      setAdmins(resp.items);
-    } catch {
-      // Silent fail
-    }
-  }, []);
+  // ── Build query params for the tasks list
+  const tasksQueryParams = React.useMemo(() => ({
+    page: view === "table" ? page : undefined,
+    limit: view === "table" ? PAGE_SIZE : 100,
+    keyword: keyword || undefined,
+    statuses: filters.statuses.length ? filters.statuses : undefined,
+    priorities: filters.priorities.length ? filters.priorities : undefined,
+    dueDateFrom: filters.dueDateFrom || undefined,
+    dueDateTo: filters.dueDateTo || undefined,
+    assigneeIds: filters.assigneeIds.length ? filters.assigneeIds : undefined,
+    messageId: filters.messageId ? Number(filters.messageId) : undefined,
+    messageStatuses: filters.messageStatuses.length ? filters.messageStatuses : undefined,
+    orderCol: "createdAt" as const,
+    orderDir: "DESC" as const,
+  }), [page, view, keyword, filters]);
 
-  const fetchList = React.useCallback(
-    async (p: number, kw: string, f: TaskFilters, v: ViewMode) => {
-      setLoading(true);
-      try {
-        const resp = await tasksService.getList({
-          page: v === "table" ? p : undefined,
-          limit: v === "table" ? PAGE_SIZE : 100, // Load more for board/calendar
-          keyword: kw || undefined,
-          statuses: f.statuses.length ? f.statuses : undefined,
-          priorities: f.priorities.length ? f.priorities : undefined,
-          dueDateFrom: f.dueDateFrom || undefined,
-          dueDateTo: f.dueDateTo || undefined,
-          assigneeIds: f.assigneeIds.length ? f.assigneeIds : undefined,
-          messageId: f.messageId ? Number(f.messageId) : undefined,
-          messageStatuses: f.messageStatuses.length
-            ? f.messageStatuses
-            : undefined,
-          orderCol: "createdAt",
-          orderDir: "DESC",
-        });
-        setResult(resp);
-      } catch (err: unknown) {
-        console.error(err);
-        const msg =
-          err instanceof Error
-            ? err.message
-            : "Không thể tải danh sách công việc.";
-        toast.error(msg);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [],
-  );
+  const { data: result, isFetching } = useQuery({
+    queryKey: ["tasks", tasksQueryParams],
+    queryFn: () => tasksService.getList(tasksQueryParams),
+    staleTime: 30 * 1000, // 30 seconds
+    placeholderData: (prev) => prev, // keep previous data while loading (like keepPreviousData)
+  });
 
+  // Sync loading state for child components
   React.useEffect(() => {
-    fetchList(page, keyword, filters, view);
-  }, [page, filters, fetchList, keyword, view]);
+    setLoading(isFetching);
+  }, [isFetching]);
+
+  // Force refetch when filters are applied imperatively (onApply / onClear)
+  const refetchTasks = () =>
+    queryClient.invalidateQueries({ queryKey: ["tasks"] });
 
   React.useEffect(() => {
     setSearchValue(
@@ -173,11 +152,6 @@ const TasksPage: React.FC = () => {
       ]),
     );
   }, [keyword, filters, view]);
-
-
-  React.useEffect(() => {
-    fetchAdmins();
-  }, [fetchAdmins]);
 
   React.useEffect(() => {
     const next = new URLSearchParams();
@@ -242,6 +216,12 @@ const TasksPage: React.FC = () => {
   };
 
 
+  const updateCache = (updater: (prev: PaginatedResponse<Task>) => PaginatedResponse<Task>) => {
+    queryClient.setQueryData<PaginatedResponse<Task>>(["tasks", tasksQueryParams], (prev) =>
+      prev ? updater(prev) : prev,
+    );
+  };
+
   const handleDelete = React.useCallback(async (row: Task) => {
     if (!window.confirm(`Xóa công việc "${row.name}"?`)) {
       return;
@@ -249,37 +229,25 @@ const TasksPage: React.FC = () => {
     try {
       await tasksService.remove(row.id);
       toast.success("Xóa thành công.");
-      setResult((prev) =>
-        prev
-          ? {
-              ...prev,
-              items: prev.items.filter((i) => i.id !== row.id),
-              pagination: {
-                ...prev.pagination,
-                total: prev.pagination.total - 1,
-              },
-            }
-          : prev,
-      );
+      updateCache((prev) => ({
+        ...prev,
+        items: prev.items.filter((i) => i.id !== row.id),
+        pagination: { ...prev.pagination, total: prev.pagination.total - 1 },
+      }));
     } catch (err: unknown) {
       console.error(err);
       toast.error("Xóa thất bại.");
     }
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryClient, tasksQueryParams]);
 
   const handleUpdateTaskStatus = async (task: Task, status: TaskStatus) => {
     try {
       const updated = await tasksService.update(task.id, { status });
-      setResult((prev) =>
-        prev
-          ? {
-              ...prev,
-              items: prev.items.map((t) =>
-                t.id === updated.id ? { ...t, ...updated } : t,
-              ),
-            }
-          : prev,
-      );
+      updateCache((prev) => ({
+        ...prev,
+        items: prev.items.map((t) => (t.id === updated.id ? { ...t, ...updated } : t)),
+      }));
       toast.success("Cập nhật thành công.");
     } catch (err: unknown) {
       console.error(err);
@@ -288,22 +256,13 @@ const TasksPage: React.FC = () => {
     }
   };
 
-  const handleUpdateTaskPriority = async (
-    task: Task,
-    priority: TaskPriority,
-  ) => {
+  const handleUpdateTaskPriority = async (task: Task, priority: TaskPriority) => {
     try {
       const updated = await tasksService.update(task.id, { priority });
-      setResult((prev) =>
-        prev
-          ? {
-              ...prev,
-              items: prev.items.map((t) =>
-                t.id === updated.id ? { ...t, ...updated } : t,
-              ),
-            }
-          : prev,
-      );
+      updateCache((prev) => ({
+        ...prev,
+        items: prev.items.map((t) => (t.id === updated.id ? { ...t, ...updated } : t)),
+      }));
       toast.success(`Cập nhật thành công.`);
     } catch (err: unknown) {
       console.error(err);
@@ -315,19 +274,11 @@ const TasksPage: React.FC = () => {
     const currentIds = task.assignees.map((a) => a.assigneeId);
     if (currentIds.includes(userId)) return;
     try {
-      const updated = await tasksService.update(task.id, {
-        assigneeIds: [...currentIds, userId],
-      });
-      setResult((prev) =>
-        prev
-          ? {
-              ...prev,
-              items: prev.items.map((t) =>
-                t.id === updated.id ? { ...t, ...updated } : t,
-              ),
-            }
-          : prev,
-      );
+      const updated = await tasksService.update(task.id, { assigneeIds: [...currentIds, userId] });
+      updateCache((prev) => ({
+        ...prev,
+        items: prev.items.map((t) => (t.id === updated.id ? { ...t, ...updated } : t)),
+      }));
       toast.success("Đã phân công thêm người.");
     } catch (err: unknown) {
       console.error(err);
@@ -336,23 +287,13 @@ const TasksPage: React.FC = () => {
   };
 
   const handleRemoveAssignee = async (task: Task, userId: number) => {
-    const nextIds = task.assignees
-      .map((a) => a.assigneeId)
-      .filter((id) => id !== userId);
+    const nextIds = task.assignees.map((a) => a.assigneeId).filter((id) => id !== userId);
     try {
-      const updated = await tasksService.update(task.id, {
-        assigneeIds: nextIds,
-      });
-      setResult((prev) =>
-        prev
-          ? {
-              ...prev,
-              items: prev.items.map((t) =>
-                t.id === updated.id ? { ...t, ...updated } : t,
-              ),
-            }
-          : prev,
-      );
+      const updated = await tasksService.update(task.id, { assigneeIds: nextIds });
+      updateCache((prev) => ({
+        ...prev,
+        items: prev.items.map((t) => (t.id === updated.id ? { ...t, ...updated } : t)),
+      }));
       toast.success("Đã gỡ người thực hiện.");
     } catch (err: unknown) {
       console.error(err);
@@ -420,7 +361,7 @@ const TasksPage: React.FC = () => {
 
       {view === "table" && (
         <TaskTableView
-          result={result}
+          result={result ?? null}
           loading={loading}
           page={page}
           pageSize={PAGE_SIZE}
@@ -461,30 +402,17 @@ const TasksPage: React.FC = () => {
           setSearchParams(next, { replace: true });
         }}
         onTaskChanged={(updated) =>
-          setResult((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  items: prev.items.map((x) =>
-                    x.id === updated.id ? updated : x,
-                  ),
-                }
-              : prev,
-          )
+          updateCache((prev) => ({
+            ...prev,
+            items: prev.items.map((x) => (x.id === updated.id ? updated : x)),
+          }))
         }
         onTaskDeleted={(id) => {
-          setResult((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  items: prev.items.filter((x) => x.id !== id),
-                  pagination: {
-                    ...prev.pagination,
-                    total: prev.pagination.total - 1,
-                  },
-                }
-              : prev,
-          );
+          updateCache((prev) => ({
+            ...prev,
+            items: prev.items.filter((x) => x.id !== id),
+            pagination: { ...prev.pagination, total: prev.pagination.total - 1 },
+          }));
         }}
       />
 
@@ -497,14 +425,14 @@ const TasksPage: React.FC = () => {
           setFilters(draftFilters);
           setPage(1);
           setFilterOpen(false);
-          fetchList(1, keyword, draftFilters, view);
+          refetchTasks();
         }}
         onClear={() => {
           setDraftFilters(defaultFilters);
           setFilters(defaultFilters);
           setPage(1);
           setFilterOpen(false);
-          fetchList(1, keyword, defaultFilters, view);
+          refetchTasks();
         }}
         onRequestClose={() => setFilterOpen(false)}
       />

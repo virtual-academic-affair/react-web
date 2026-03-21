@@ -4,7 +4,8 @@ import { usersService } from "@/services/users";
 import type { Role, UpdateUserDto, User } from "@/types/users.ts";
 import { formatDate } from "@/utils/date";
 import { message as toast } from "antd";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getUserAvatarUrl } from "../utils.ts";
 import RoleSelector from "./RoleSelector.tsx";
 
@@ -19,28 +20,15 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
   onClose,
   onUserChanged,
 }) => {
-  const [detail, setDetail] = useState<User | null>(null);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (userId == null) {
-      setDetail(null);
-      return;
-    }
-    setLoading(true);
-    usersService
-      .getUserById(userId)
-      .then(setDetail)
-      .catch((err: unknown) => {
-        const msg =
-          err instanceof Error
-            ? err.message
-            : "Không thể tải chi tiết tài khoản.";
-        toast.error(msg);
-      })
-      .finally(() => setLoading(false));
-  }, [userId]);
+  const { data: detail = null, isLoading: loading } = useQuery({
+    queryKey: ["user", userId],
+    queryFn: () => usersService.getUserById(userId!),
+    enabled: userId != null,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const handleRoleChange = async (newRole: Role) => {
     if (!detail || detail.role === newRole) {
@@ -51,7 +39,7 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
     try {
       const dto: UpdateUserDto = { role: newRole };
       const updated = await usersService.updateUser(detail.id, dto);
-      setDetail(updated);
+      queryClient.setQueryData(["user", userId], updated);
       toast.success("Cập nhật thành công.");
       onUserChanged(updated);
     } catch (err: unknown) {
@@ -71,7 +59,7 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
     try {
       const dto: UpdateUserDto = { isActive: newStatus };
       const updated = await usersService.updateUser(detail.id, dto);
-      setDetail(updated);
+      queryClient.setQueryData(["user", userId], updated);
       toast.success(
         newStatus ? "Đã kích hoạt tài khoản." : "Đã vô hiệu hóa tài khoản.",
       );

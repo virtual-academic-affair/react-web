@@ -3,8 +3,8 @@ import CreatePageLayout from "@/components/layouts/CreatePageLayout";
 import InquiryTypeSelector from "@/components/selector/InquiryTypeSelector";
 import { messagesService } from "@/services/email/messages.service";
 import { inquiriesService } from "@/services/inquiry";
-import type { Message } from "@/types/email";
 import type { CreateInquiryDto, InquiryType } from "@/types/inquiry";
+import { useQuery } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React from "react";
 import { MdExpandMore } from "react-icons/md";
@@ -22,40 +22,40 @@ const InquiryCreatePage: React.FC = () => {
   const [question, setQuestion] = React.useState("");
   const [answer, setAnswer] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
-  const [message, setMessage] = React.useState<Message | null>(null);
-  const [messageLoading, setMessageLoading] = React.useState(false);
 
   const messageId = searchParams.get("messageId")
     ? Number(searchParams.get("messageId"))
     : undefined;
 
-  React.useEffect(() => {
-    if (messageId) {
-      setMessageLoading(true);
-      messagesService
-        .getMessageById(messageId)
-        .then((m) => {
-          setMessage(m);
-          // If question is empty, pre-fill with subject
-          if (!question) {
-            setQuestion(m.subject || "");
-          }
+  // Fetch related message
+  const { data: message, isLoading: messageLoading } = useQuery({
+    queryKey: ["message", messageId],
+    queryFn: () => messagesService.getMessageById(messageId!),
+    enabled: !!messageId,
+    staleTime: 5 * 60 * 1000,
+  });
 
-          // Check for existing inquiry
-          inquiriesService
-            .getList({ messageId: m.id, limit: 1 })
-            .then((resp) => {
-              if (resp.items.length > 0) {
-                const existing = resp.items[0];
-                toast.info("Tin nhắn này đã có thông tin thắc mắc.");
-                navigate(`/admin/inquiry/inquiries/${existing.id}`);
-              }
-            });
-        })
-        .catch(() => toast.error("Không thể tải thông tin tin nhắn."))
-        .finally(() => setMessageLoading(false));
-    }
-  }, [messageId, navigate, question]);
+  // Check if the message already has an inquiry attached
+  useQuery({
+    queryKey: ["inquiries", { messageId }],
+    queryFn: () => inquiriesService.getList({ messageId: message!.id, limit: 1 }),
+    enabled: !!message,
+    staleTime: 0,
+    select: (resp) => {
+      if (resp.items.length > 0) {
+        const existing = resp.items[0];
+        toast.info("Tin nhắn này đã có thông tin thắc mắc.");
+        navigate(`/admin/inquiry/inquiries/${existing.id}`);
+      }
+      return resp;
+    },
+  });
+
+  // Pre-fill question from message subject
+  React.useEffect(() => {
+    if (!message) return;
+    if (!question) setQuestion(message.subject || "");
+  }, [message, question]);
 
   const validateStep1 = () => {
     if (!messageId) {
@@ -197,7 +197,7 @@ const InquiryCreatePage: React.FC = () => {
       sideContent={sideContent}
     >
       <RelatedMessageView
-        message={message}
+        message={message ?? null}
         loading={messageLoading}
         onReselect={() => navigate("/admin/email/message")}
       />
