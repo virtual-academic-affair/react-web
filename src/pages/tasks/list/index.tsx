@@ -1,3 +1,4 @@
+import ConfirmModal from "@/components/modal/ConfirmModal";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { tasksService } from "@/services/tasks.service";
 import type { PaginatedResponse } from "@/types/common";
@@ -15,7 +16,6 @@ import TaskBoard from "./components/TaskBoard";
 import TaskCalendarView from "./components/TaskCalendarView";
 import TaskDetailDrawer from "./components/TaskDetailDrawer";
 import TaskTableView from "./components/TaskTableView";
-import ConfirmModal from "@/components/modal/ConfirmModal";
 
 type ViewMode = "table" | "calendar" | "board";
 
@@ -315,7 +315,6 @@ const TasksPage: React.FC = () => {
         ...prev,
         items: prev.items.map((t) => (t.id === updated.id ? finalTask : t)),
       }));
-
       toast.success("Đã phân công thêm người.");
     } catch (err: unknown) {
       console.error(err);
@@ -342,7 +341,6 @@ const TasksPage: React.FC = () => {
         ...prev,
         items: prev.items.map((t) => (t.id === updated.id ? finalTask : t)),
       }));
-
       toast.success("Đã gỡ người thực hiện.");
     } catch (err: unknown) {
       console.error(err);
