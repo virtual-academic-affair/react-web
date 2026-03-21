@@ -15,7 +15,7 @@ export const DYNAMIC_DATA_QUERY_KEY = ["dynamicData"] as const;
 export function useDynamicData(params?: DynamicDataParams): {
   data: DynamicDataResponse | undefined;
   isLoading: boolean;
-  refetch: () => void;
+  refetch: () => Promise<void>;
 } {
   const queryClient = useQueryClient();
 
