@@ -15,6 +15,7 @@ import TaskBoard from "./components/TaskBoard";
 import TaskCalendarView from "./components/TaskCalendarView";
 import TaskDetailDrawer from "./components/TaskDetailDrawer";
 import TaskTableView from "./components/TaskTableView";
+import ConfirmModal from "@/components/modal/ConfirmModal";
 
 type ViewMode = "table" | "calendar" | "board";
 
@@ -97,6 +98,8 @@ const TasksPage: React.FC = () => {
 
   const [filterOpen, setFilterOpen] = React.useState(false);
   const [draftFilters, setDraftFilters] = React.useState(filters);
+  const [taskToDelete, setTaskToDelete] = React.useState<Task | null>(null);
+  const [deleting, setDeleting] = React.useState(false);
 
   const selectedId = searchParams.get("id")
     ? Number(searchParams.get("id"))
@@ -220,27 +223,30 @@ const TasksPage: React.FC = () => {
     );
   };
 
-  const handleDelete = React.useCallback(
-    async (row: Task) => {
-      if (!window.confirm(`Xóa công việc "${row.name}"?`)) {
-        return;
-      }
-      try {
-        await tasksService.remove(row.id);
-        toast.success("Xóa thành công.");
-        updateCache((prev) => ({
-          ...prev,
-          items: prev.items.filter((i) => i.id !== row.id),
-          pagination: { ...prev.pagination, total: prev.pagination.total - 1 },
-        }));
-      } catch (err: unknown) {
-        console.error(err);
-        toast.error("Xóa thất bại.");
-      }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    },
-    [queryClient, tasksQueryParams],
-  );
+  const handleDelete = React.useCallback((row: Task) => {
+    setTaskToDelete(row);
+  }, []);
+
+  const executeDelete = React.useCallback(async () => {
+    if (!taskToDelete) return;
+    setDeleting(true);
+    try {
+      await tasksService.remove(taskToDelete.id);
+      toast.success("Xóa thành công.");
+      updateCache((prev) => ({
+        ...prev,
+        items: prev.items.filter((i) => i.id !== taskToDelete.id),
+        pagination: { ...prev.pagination, total: prev.pagination.total - 1 },
+      }));
+      setTaskToDelete(null);
+    } catch (err: unknown) {
+      console.error(err);
+      toast.error("Xóa thất bại.");
+    } finally {
+      setDeleting(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [taskToDelete, queryClient, tasksQueryParams]);
 
   const handleUpdateTaskStatus = async (task: Task, status: TaskStatus) => {
     try {
@@ -482,6 +488,15 @@ const TasksPage: React.FC = () => {
           refetchTasks();
         }}
         onRequestClose={() => setFilterOpen(false)}
+      />
+
+      <ConfirmModal
+        open={!!taskToDelete}
+        onCancel={() => setTaskToDelete(null)}
+        onConfirm={executeDelete}
+        title="Xóa công việc"
+        subTitle={`Bạn có chắc chắn muốn xóa công việc "${taskToDelete?.name}" không? Hành động này không thể hoàn tác.`}
+        loading={deleting}
       />
     </div>
   );
