@@ -7,9 +7,11 @@ interface DrawerProps {
   onClose: () => void;
   title: string;
   children: ReactNode;
+  footerLeft?: ReactNode;
+  footerRight?: ReactNode;
 }
 
-const Drawer: React.FC<DrawerProps> = ({ isOpen, onClose, title, children }) => {
+const Drawer: React.FC<DrawerProps> = ({ isOpen, onClose, title, children, footerLeft, footerRight }) => {
   return (
     <>
       {/* Backdrop */}
@@ -40,8 +42,16 @@ const Drawer: React.FC<DrawerProps> = ({ isOpen, onClose, title, children }) => 
             </button>
           </div>
 
-          {/* Body */}
+          {/* Body (scrollable) */}
           <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
+
+          {/* Footer (sticky) */}
+          {(footerLeft || footerRight) && (
+            <div className="flex items-center justify-between border-t border-gray-100 px-6 py-4 dark:border-white/10">
+              <div className="flex items-center gap-3 empty:hidden">{footerLeft}</div>
+              <div className="flex items-center gap-2 empty:hidden">{footerRight}</div>
+            </div>
+          )}
         </div>
       </div>
     </>

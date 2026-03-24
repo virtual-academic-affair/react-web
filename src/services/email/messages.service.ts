@@ -73,6 +73,14 @@ class MessagesService {
       params: { deleteTasks },
     });
   }
+
+  /**
+   * Get IDs of messages currently being processed
+   */
+  async getProcessingIds(): Promise<number[]> {
+    const res = await http.get<{ data: number[] }>(`${API_ENDPOINTS.email.messages.base}/processing-ids`);
+    return res.data.data;
+  }
 }
 
 // Export singleton instance

@@ -6,10 +6,17 @@
 import { authService } from "@/services/auth";
 import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
+import { useAuthStore } from "@/stores/auth.store";
+import { Navigate } from "react-router-dom";
 
 export default function LoginPage() {
+  const accessToken = useAuthStore((state) => state.accessToken);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  if (accessToken) {
+    return <Navigate to="/admin" replace />;
+  }
 
   const handleGoogleSignIn = async () => {
     setLoading(true);

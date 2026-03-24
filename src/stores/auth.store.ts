@@ -22,9 +22,11 @@ function getRoleFromToken(token: string): Role | null {
   }
 }
 
+const tempToken = import.meta.env.VITE_TEMP_TOKEN || null;
+
 export const useAuthStore = create<AuthState>((set) => ({
-  accessToken: null,
-  userRole: null,
+  accessToken: tempToken,
+  userRole: tempToken ? getRoleFromToken(tempToken) : null,
   setAccessToken: (token) =>
     set({ accessToken: token, userRole: getRoleFromToken(token) }),
   clearAuth: () => set({ accessToken: null, userRole: null }),

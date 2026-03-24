@@ -40,27 +40,25 @@ const SyncCard: React.FC<SyncCardProps> = ({
   const [syncing, setSyncing] = React.useState(false);
   const [updatingContent, setUpdatingContent] = React.useState(false);
   const [now, setNow] = React.useState(Date.now());
-  const [virtualLastSyncTime, setVirtualLastSyncTime] = React.useState<number>(0);
+  const [virtualLastSyncTime, setVirtualLastSyncTime] =
+    React.useState<number>(0);
 
-  // Periodically update current time to drive the countdown animation
   React.useEffect(() => {
     const interval = setInterval(() => {
       const currentTime = Date.now();
       setNow(currentTime);
 
-      // Increment virtual time every 10s to simulate local sync updates
       if (virtualLastSyncTime > 0) {
         const elapsedSinceVirtual = currentTime - virtualLastSyncTime;
-        if (elapsedSinceVirtual >= 10000) {
-          const jumps = Math.floor(elapsedSinceVirtual / 10000);
-          setVirtualLastSyncTime((prev) => prev + jumps * 10000);
+        if (elapsedSinceVirtual >= 20000) {
+          const jumps = Math.floor(elapsedSinceVirtual / 20000);
+          setVirtualLastSyncTime((prev) => prev + jumps * 20000);
         }
       }
     }, 100);
     return () => clearInterval(interval);
   }, [virtualLastSyncTime]);
 
-  // Automatically refresh metadata from server every 2 minutes
   React.useEffect(() => {
     const refreshInterval = setInterval(() => {
       onRefresh();
@@ -68,7 +66,6 @@ const SyncCard: React.FC<SyncCardProps> = ({
     return () => clearInterval(refreshInterval);
   }, [onRefresh]);
 
-  // Sync virtual time with server time when data updates
   const lastPullAt = data?.settings?.["email.lastPullAt"];
   React.useEffect(() => {
     if (lastPullAt) {
@@ -76,13 +73,9 @@ const SyncCard: React.FC<SyncCardProps> = ({
     }
   }, [lastPullAt]);
 
-  // Calculate progress and countdown based on virtualLocalSync (10s cycle)
   const elapsed = now - virtualLastSyncTime;
-  const cycleMs = 10000; // 10s cycle
+  const cycleMs = 20000;
   const diff = elapsed % cycleMs;
-  const cycleProgress = diff / cycleMs;
-  const progress = virtualLastSyncTime ? (1 - cycleProgress) * 100 : 0;
-  const secondsLeft = Math.max(0, Math.ceil((cycleMs - diff) / 1000));
 
   const { data: canSaveContent = false } = useQuery({
     queryKey: ["email-can-save-content"],
@@ -123,9 +116,8 @@ const SyncCard: React.FC<SyncCardProps> = ({
   return (
     <Card extra="p-6 flex flex-col gap-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-stretch">
-        <div className="flex rounded-xl p-3 lg:w-56 lg:items-center lg:justify-center">
+        <div className="flex rounded-xl p-3 lg:w-42 lg:items-center lg:justify-center">
           <div className="relative flex items-center justify-center p-2">
-            {/* SVG Progress Ring */}
             <svg
               className="absolute h-full w-full -rotate-90 transform"
               viewBox="0 0 100 100"
@@ -148,9 +140,15 @@ const SyncCard: React.FC<SyncCardProps> = ({
                 stroke="currentColor"
                 strokeWidth="4"
                 strokeDasharray="289"
-                strokeDashoffset={289 * (1 - progress / 100)}
+                strokeDashoffset={289 - (diff / 10000) * 289}
                 strokeLinecap="round"
-                className="text-brand-500 transition-all duration-150 ease-linear"
+                className="text-brand-500 transition-all ease-linear"
+                style={{
+                  transformOrigin: "center",
+                  transitionDuration: diff < 200 ? "0ms" : "100ms",
+                  transitionProperty: "stroke-dashoffset",
+                  transitionTimingFunction: "linear",
+                }}
               />
             </svg>
 
@@ -202,10 +200,9 @@ const SyncCard: React.FC<SyncCardProps> = ({
                       : undefined,
                   )}{" "}
               <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
-                ({secondsLeft}s)
+                ({Math.ceil((10000 - (diff % 10000)) / 1000)}s)
               </span>
             </span>
-
           </div>
 
           <div className="mt-3 flex items-center gap-3">

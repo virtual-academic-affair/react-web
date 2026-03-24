@@ -25,6 +25,7 @@ import {
   MdAdd,
   MdClose,
   MdDeleteOutline,
+  MdOutlineRateReview,
   MdSave,
   MdUndo,
 } from "react-icons/md";
@@ -38,12 +39,16 @@ interface RegistrationDetailDrawerProps {
   registrationId: number | null;
   onClose: () => void;
   onRegistrationChanged: (next: ClassRegistration) => void;
+  onRegistrationDeleted?: (id: number) => void;
+  onPreviewReply?: (id: number) => void;
 }
 
 const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
   registrationId,
   onClose,
   onRegistrationChanged,
+  onRegistrationDeleted,
+  onPreviewReply,
 }) => {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -386,8 +391,60 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
 
   const isOpen = registrationId != null;
 
+  const footerLeft = detail && (
+    <>
+        <Tooltip label="Xem trước phản hồi">
+          <button
+             onClick={() => {
+              if (detail) onPreviewReply?.(detail.id);
+             }}
+             className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500 text-white transition-colors hover:bg-blue-600 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+          >
+            <MdOutlineRateReview className="h-4 w-4" />
+          </button>
+        </Tooltip>
+
+        <Tooltip label="Xóa">
+          <button
+            onClick={() => {
+              if (detail) {
+                onClose();
+                onRegistrationDeleted?.(detail.id);
+              }
+            }}
+            disabled={savingInfo}
+            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600 disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-600"
+          >
+            <MdDeleteOutline className="h-4 w-4" />
+          </button>
+        </Tooltip>
+    </>
+  );
+
+  const footerRight = detail && isDirty && (
+    <>
+          <button
+            type="button"
+            disabled={savingInfo}
+            onClick={handleResetForm}
+            className="rounded-xl px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-white/10"
+          >
+            Hủy
+          </button>
+          <button
+            type="button"
+            disabled={savingInfo}
+            onClick={handleSaveInfo}
+            className="bg-brand-500 hover:bg-brand-600 flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
+          >
+            <MdSave className="h-4 w-4" />
+            {savingInfo ? "Đang lưu..." : "Lưu"}
+          </button>
+    </>
+  );
+
   return (
-    <Drawer isOpen={isOpen} onClose={onClose} title="Chi tiết đăng kí lớp">
+    <Drawer isOpen={isOpen} onClose={onClose} title="Chi tiết đăng kí lớp" footerLeft={footerLeft} footerRight={footerRight}>
       {loadingDetail || !form ? (
         <div className="flex flex-col gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -482,28 +539,8 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                 />
               </div>
             </div>
-            {isDirty && (
-              <div className="mt-2 flex justify-end gap-2">
-                <button
-                  type="button"
-                  disabled={savingInfo}
-                  onClick={handleResetForm}
-                  className="rounded-xl px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-white/10"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="button"
-                  disabled={savingInfo}
-                  onClick={handleSaveInfo}
-                  className="bg-brand-500 hover:bg-brand-600 flex items-center gap-1 rounded-xl px-4 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-50"
-                >
-                  <MdSave className="h-4 w-4" />
-                  {savingInfo ? "Đang lưu..." : "Lưu"}
-                </button>
-              </div>
-            )}
-          </div>
+            </div>
+
 
           {/* Child items - kết quả đăng ký */}
           <div className="mt-2 border-t border-gray-100 pt-4 dark:border-white/10">

@@ -20,6 +20,7 @@ import routes from "@/routes";
 import { useDynamicData } from "@/hooks/useDynamicData";
 import React from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
+import { useEmailSockets } from "@/hooks/useEmailSockets";
 
 const DYNAMIC_DATA_PARAMS = {
   enums: ["authentication.role", "shared.systemLabel"],
@@ -35,6 +36,8 @@ const AdminLayout: React.FC = () => {
   const [open, setOpen] = React.useState(true);
   const { data: rawData, isLoading: dataLoading, refetch: onRefresh } = useDynamicData(DYNAMIC_DATA_PARAMS);
   const data = rawData ?? null;
+
+  useEmailSockets();
 
   const profile = data?.settings?.["email.superEmail"];
 

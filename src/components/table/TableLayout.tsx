@@ -125,28 +125,29 @@ function TableLayout<T extends { id: number | string }>({
         <div className="flex flex-col gap-4">
           {/* Table */}
           <div className="overflow-x-auto overflow-y-hidden rounded-2xl">
-            <table className="w-full">
+            <table className="w-full min-w-[800px] table-fixed">
               <thead>
                 <tr className="border-b border-gray-100 dark:border-white/10">
                   {columns.map((col) => (
                     <th
                       key={col.key}
-                      className={`px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500 table-column-header-${col.key} ${
-                        col.width ? col.width : ""
-                      } ${col.maxWidth ? `max-w-[${col.maxWidth}]` : ""}`}
-                      style={
-                        col.width
-                          ? { width: col.width }
-                          : col.maxWidth
-                            ? { maxWidth: col.maxWidth }
-                            : undefined
-                      }
+                      className={`px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500 table-column-header-${col.key}`}
+                      style={{
+                        width: col.width,
+                        maxWidth: col.maxWidth,
+                      }}
                     >
                       {col.header}
                     </th>
                   ))}
                   {actions.length > 0 && (
-                    <th className="py-3 text-center text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    <th 
+                      className="whitespace-nowrap px-4 py-3 text-center text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500 sticky right-0 bg-white dark:bg-navy-800 z-20"
+                      style={{ 
+                        width: `${Math.max(100, actions.length * 55)}px`,
+                        boxShadow: "-10px 0 10px -10px rgba(0,0,0,0.15)" 
+                      }}
+                    >
                       Thao tác
                     </th>
                   )}
@@ -160,12 +161,22 @@ function TableLayout<T extends { id: number | string }>({
                       className="border-b border-gray-50 dark:border-white/5"
                     >
                       {columns.map((col) => (
-                        <td key={col.key} className="px-4 py-3">
+                        <td
+                          key={col.key}
+                          className="px-4 py-3"
+                          style={{
+                            width: col.width,
+                            maxWidth: col.maxWidth,
+                          }}
+                        >
                           <div className="dark:bg-navy-700 h-4 animate-pulse rounded bg-gray-200" />
                         </td>
                       ))}
                       {actions.length > 0 && (
-                        <td className="px-4 py-3">
+                        <td 
+                          className="px-4 py-3 sticky right-0 z-10 bg-white dark:bg-navy-800"
+                          style={{ boxShadow: "-10px 0 10px -10px rgba(0,0,0,0.15)" }}
+                        >
                           <div className="dark:bg-navy-700 h-4 animate-pulse rounded bg-gray-200" />
                         </td>
                       )}
@@ -184,18 +195,30 @@ function TableLayout<T extends { id: number | string }>({
                   items.map((item, index) => (
                     <tr
                       key={String(item.id)}
-                      className={`hover:bg-lightPrimary dark:hover:bg-navy-700 border-b border-gray-50 transition-colors dark:border-white/5 ${
+                      className={`group hover:bg-lightPrimary dark:hover:bg-navy-700 border-b border-gray-50 transition-colors dark:border-white/5 ${
                         onRowClick ? "cursor-pointer" : ""
                       }`}
                       onClick={() => onRowClick?.(item)}
                     >
                       {columns.map((col) => (
-                        <td key={col.key} className="px-4 py-3">
-                          {col.render(item, index)}
+                        <td
+                          key={col.key}
+                          className="max-w-0 px-4 py-3"
+                          style={{
+                            width: col.width,
+                            maxWidth: col.maxWidth,
+                          }}
+                        >
+                          <div className="w-full min-w-0 truncate">
+                            {col.render(item, index)}
+                          </div>
                         </td>
                       ))}
                       {actions.length > 0 && (
-                        <td className="py-3 pr-2">
+                        <td 
+                          className="whitespace-nowrap py-3 pr-2 sticky right-0 z-10 bg-white group-hover:bg-lightPrimary dark:bg-navy-800 dark:group-hover:bg-navy-700 transition-colors"
+                          style={{ boxShadow: "-10px 0 10px -10px rgba(0,0,0,0.15)" }}
+                        >
                           <div className="flex items-center justify-center gap-2">
                             {actions.map((action) => (
                               <Tooltip key={action.key} label={action.label}>

@@ -20,7 +20,7 @@ const CreatePageLayout: React.FC<CreatePageLayoutProps> = ({
     <div className="relative flex min-h-[84vh] w-full flex-col items-center pt-[25vh] pb-10">
       {/* Background gradient */}
       <div
-        className="absolute top-0 h-[45vh] w-full rounded-[20px]"
+        className="absolute top-0 h-[45vh] w-full rounded-[40px]"
         style={{
           backgroundImage:
             "linear-gradient(to bottom, var(--color-brand-400), var(--color-brand-600))",

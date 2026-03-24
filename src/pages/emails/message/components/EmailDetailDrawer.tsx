@@ -6,11 +6,19 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDate } from "../labelUtils";
 import MessageLabelEditor from "./MessageLabelEditor";
 
+import Tooltip from "@/components/tooltip/Tooltip.tsx";
+import { MdDeleteOutline, MdPostAdd } from "react-icons/md";
+import { SiGmail } from "react-icons/si";
+
 interface EmailDetailDrawerProps {
   messageId: number | null;
   systemLabelEnum?: SystemLabelEnumData | null;
   onClose: () => void;
   onLabelChanged: (id: number, labels: SystemLabel[]) => void;
+  processingIds?: number[];
+  onOpenGmail?: (msg: Message) => void;
+  onCreateTask?: (msg: Message) => void;
+  onDelete?: (msg: Message) => void;
 }
 
 const EmailDetailDrawer: React.FC<EmailDetailDrawerProps> = ({
@@ -18,6 +26,10 @@ const EmailDetailDrawer: React.FC<EmailDetailDrawerProps> = ({
   systemLabelEnum,
   onClose,
   onLabelChanged,
+  processingIds = [],
+  onOpenGmail,
+  onCreateTask,
+  onDelete,
 }) => {
   const queryClient = useQueryClient();
 
@@ -30,8 +42,47 @@ const EmailDetailDrawer: React.FC<EmailDetailDrawerProps> = ({
 
   const isOpen = messageId != null;
 
+  const footerLeft = detail && (
+    <>
+      <Tooltip label="Gmail">
+        <button
+          onClick={() => onOpenGmail?.(detail)}
+          className="flex h-10 w-10 items-center justify-center rounded-2xl bg-pink-500 text-white transition-colors hover:bg-pink-600 dark:bg-pink-500 dark:hover:bg-pink-600"
+        >
+          <SiGmail className="h-4 w-4" />
+        </button>
+      </Tooltip>
+
+      <Tooltip label="Tạo công việc">
+        <button
+          onClick={() => onCreateTask?.(detail)}
+          className="flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500 text-white transition-colors hover:bg-green-600 dark:bg-green-500 dark:hover:bg-green-600"
+        >
+          <MdPostAdd className="h-5 w-5" />
+        </button>
+      </Tooltip>
+
+      <Tooltip label="Xóa">
+        <button
+          onClick={() => {
+            onClose();
+            onDelete?.(detail);
+          }}
+          className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600 dark:bg-red-500 dark:hover:bg-red-600"
+        >
+          <MdDeleteOutline className="h-4 w-4" />
+        </button>
+      </Tooltip>
+    </>
+  );
+
   return (
-    <Drawer isOpen={isOpen} onClose={onClose} title="Chi tiết tin nhắn">
+    <Drawer
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Chi tiết tin nhắn"
+      footerLeft={footerLeft}
+    >
       {loading ? (
         <div className="flex flex-col gap-4">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -128,10 +179,11 @@ const EmailDetailDrawer: React.FC<EmailDetailDrawerProps> = ({
                   queryClient.setQueryData(
                     ["message", messageId],
                     (old: Message | undefined) =>
-                      old ? { ...old, systemLabels: labels } : old
+                      old ? { ...old, systemLabels: labels } : old,
                   );
                   onLabelChanged(id, labels);
                 }}
+                isProcessing={processingIds.includes(detail.id)}
               />
             </div>
           </div>
@@ -139,15 +191,15 @@ const EmailDetailDrawer: React.FC<EmailDetailDrawerProps> = ({
           {/* Message content */}
           {detail.content && (
             <div className="flex flex-col gap-2">
-              <div className="w-100 shrink-0 border-b border-gray-100 pb-1 dark:border-white/10 text-gray-400">
+              <div className="w-100 shrink-0 pb-1 text-gray-400 dark:border-white/10">
                 <p className="text-xs font-semibold tracking-wide uppercase dark:text-gray-500">
                   Nội dung tin nhắn
                 </p>
               </div>
-              <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/50 p-4 dark:border-white/10 dark:bg-navy-800 overflow-x-auto select-auto">
+              <div className="dark:bg-navy-800 mt-2 overflow-x-auto rounded-4xl bg-gray-50/50 p-4 select-auto dark:border-white/10">
                 <div
+                  className="prose prose-sm dark:prose-invert max-w-none leading-relaxed wrap-break-word whitespace-pre-wrap text-gray-700 select-text dark:text-gray-300"
                   dangerouslySetInnerHTML={{ __html: detail.content }}
-                  className="prose dark:prose-invert max-w-none text-sm"
                 />
               </div>
             </div>

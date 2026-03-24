@@ -34,6 +34,7 @@ export interface Message {
   tasksCount?: number;
   hasInquiry?: number;
   hasClassRegistration?: number;
+  isProcessing?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
