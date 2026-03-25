@@ -3,10 +3,9 @@ import Switch from "@/components/switch";
 import { usersService } from "@/services/users";
 import type { Role, UpdateUserDto, User } from "@/types/users.ts";
 import { formatDate } from "@/utils/date";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getUserAvatarUrl } from "../utils.ts";
 import RoleSelector from "./RoleSelector.tsx";
 
 interface UserDetailDrawerProps {
@@ -65,14 +64,12 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
       );
       onUserChanged(updated);
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Cập nhật thất bại.";
+      const msg = err instanceof Error ? err.message : "Cập nhật thất bại.";
       toast.error(msg);
     } finally {
       setSaving(false);
     }
   };
-
 
   const isOpen = userId != null;
 
@@ -101,11 +98,19 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
               </p>
             </div>
             <div className="flex-1">
-              <img
-                src={getUserAvatarUrl(detail)}
-                alt={detail.name || detail.email}
-                className="h-12 w-12 rounded-[14px] object-cover"
-              />
+              <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full">
+                {detail.picture ? (
+                  <img
+                    src={detail.picture}
+                    alt={detail.name || detail.email}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="bg-brand-500 flex h-full w-full items-center justify-center text-sm font-bold text-white">
+                    {(detail.name || detail.email)[0].toUpperCase()}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

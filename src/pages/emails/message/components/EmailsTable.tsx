@@ -13,9 +13,9 @@ import {
 import { SiGmail } from "react-icons/si";
 
 import Tag from "@/components/tag/Tag";
+import Tooltip from "../../../../components/tooltip/Tooltip.tsx";
 import { formatDate, getLabelColor, getLabelVi } from "../labelUtils";
 import SystemLabelSelector from "./SystemLabelSelector";
-import Tooltip from "../../../../components/tooltip/Tooltip.tsx";
 
 interface EmailsTableProps {
   result: PaginatedResponse<Message> | null;
@@ -144,7 +144,12 @@ const EmailsTable: React.FC<EmailsTableProps> = ({
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap items-center gap-1">
-                      {msg.systemLabels?.length ? (
+                      {(msg.isProcessing &&
+                        (!msg.systemLabels || msg.systemLabels.length === 0)) ||
+                      msg.systemLabels === null ||
+                      msg.systemLabels === undefined ? (
+                        <div className="mr-2 h-6 w-32 animate-pulse rounded bg-linear-to-r from-blue-400 via-purple-500 to-pink-500" />
+                      ) : msg.systemLabels?.length ? (
                         msg.systemLabels.map((sl) => (
                           <Tag
                             key={sl}

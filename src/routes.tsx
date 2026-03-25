@@ -3,7 +3,13 @@
  * Used by the Sidebar to render navigation links.
  */
 
-import { MdDashboard, MdPerson, MdQuestionAnswer, MdSchool } from "react-icons/md";
+import {
+  MdDashboard,
+  MdDescription,
+  MdPerson,
+  MdQuestionAnswer,
+  MdSchool,
+} from "react-icons/md";
 import { SiGmail } from "react-icons/si";
 
 const routes: RoutesType[] = [
@@ -126,6 +132,36 @@ const routes: RoutesType[] = [
         name: "Tạo thắc mắc",
         layout: "/admin",
         path: "inquiry/create",
+      },
+    ],
+  },
+  {
+    name: "Tài liệu",
+    layout: "/admin",
+    path: "documents",
+    icon: <MdDescription className="h-6 w-6" />,
+    children: [
+      {
+        name: "Quản lý tệp tin",
+        layout: "/admin",
+        path: "documents/list",
+      },
+      {
+        name: "Quản lý nhãn tài liệu",
+        layout: "/admin",
+        path: "",
+        children: [
+          {
+            name: "DS nhãn tài liệu",
+            layout: "/admin",
+            path: "documents/metadata/index",
+          },
+          {
+            name: "Tạo nhãn tài liệu",
+            layout: "/admin",
+            path: "documents/metadata/create",
+          },
+        ],
       },
     ],
   },

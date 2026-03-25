@@ -6,20 +6,20 @@ import { messagesService } from "@/services/email";
 import type { PaginatedResponse } from "@/types/common";
 import type { Message, SystemLabel } from "@/types/email";
 import type { DynamicDataResponse, SystemLabelEnumData } from "@/types/shared";
+import { parseSearchString, stringifySearchQuery } from "@/utils/search";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
+import dayjs from "dayjs";
 import React from "react";
-import { MdInfoOutline, MdPostAdd, MdDeleteOutline } from "react-icons/md";
+import { MdDeleteOutline, MdInfoOutline, MdPostAdd } from "react-icons/md";
 import { SiGmail } from "react-icons/si";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Tooltip from "../../../components/tooltip/Tooltip.tsx";
 import AdvancedFilterModal from "./components/AdvancedFilterModal";
 import EmailDetailDrawer from "./components/EmailDetailDrawer";
-import MessageLabelEditor from "./components/MessageLabelEditor";
 import MessageDeleteModal from "./components/MessageDeleteModal";
+import MessageLabelEditor from "./components/MessageLabelEditor";
 import { formatDate } from "./labelUtils";
-import { parseSearchString, stringifySearchQuery } from "@/utils/search";
-
 
 const PAGE_SIZE = 10;
 
@@ -63,17 +63,27 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
         page,
         limit: PAGE_SIZE,
         keyword: keyword || undefined,
-        systemLabels: systemLabelsFilter.length ? systemLabelsFilter : undefined,
+        systemLabels: systemLabelsFilter.length
+          ? systemLabelsFilter
+          : undefined,
         orderCol: "sentAt",
         orderDir: "DESC",
       }),
     staleTime: 30 * 1000,
   });
 
+  // Fetch processing IDs
+  const { data: processingIds = [] } = useQuery({
+    queryKey: ["processingMessageIds"],
+    queryFn: () => messagesService.getProcessingIds(),
+    staleTime: 10 * 1000,
+  });
 
   // Delete state
   const [deleteModalOpen, setDeleteModalOpen] = React.useState(false);
-  const [deletingMessage, setDeletingMessage] = React.useState<Message | null>(null);
+  const [deletingMessage, setDeletingMessage] = React.useState<Message | null>(
+    null,
+  );
   const [deleteLoading, setDeleteLoading] = React.useState(false);
 
   const systemLabelEnum: SystemLabelEnumData | null | undefined =
@@ -109,22 +119,27 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
     );
   }, [keyword, systemLabelsFilter]);
 
-
   React.useEffect(() => {
-    const tourType = searchParams.get("startTour") as "inquiry" | "class-registration" | null;
-    
+    const tourType = searchParams.get("startTour") as
+      | "inquiry"
+      | "class-registration"
+      | null;
+
     if (tourType && result?.items.length) {
       // Start tour immediately once data is ready
       setTimeout(() => {
         import("@/utils/tours").then(({ startMessageSelectionTour }) => {
           startMessageSelectionTour(tourType);
-          
+
           // Clean up the param so it doesn't re-trigger
-          setSearchParams((prev) => {
-            const next = new URLSearchParams(prev);
-            next.delete("startTour");
-            return next;
-          }, { replace: true });
+          setSearchParams(
+            (prev) => {
+              const next = new URLSearchParams(prev);
+              next.delete("startTour");
+              return next;
+            },
+            { replace: true },
+          );
         });
       }, 0);
     }
@@ -149,7 +164,14 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
       next.set("startTour", tourParam);
     }
     setSearchParams(next, { replace: true });
-  }, [keyword, page, systemLabelsFilter, idParam, searchParams, setSearchParams]);
+  }, [
+    keyword,
+    page,
+    systemLabelsFilter,
+    idParam,
+    searchParams,
+    setSearchParams,
+  ]);
 
   const handleSearch = () => {
     const parsed = parseSearchString(searchValue);
@@ -161,7 +183,6 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
     setSystemLabelsFilter(nextLabels);
     setPage(1);
   };
-
 
   const handlePageChange = (p: number) => {
     setPage(p);
@@ -180,7 +201,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
               m.id === id ? { ...m, systemLabels: labels } : m,
             ),
           };
-        }
+        },
       );
     },
     [queryClient, page, keyword, systemLabelsFilter],
@@ -189,7 +210,6 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
   const handleKeywordChange = (value: string) => {
     setSearchValue(value);
   };
-
 
   const handleOpenFilter = () => {
     setDraftSystemLabels(systemLabelsFilter);
@@ -253,51 +273,77 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
       {
         key: "subject",
         header: "Tiêu đề",
-        width: "400px",
-        maxWidth: "450px",
-        render: (msg) => (
-          <Tooltip label={msg.subject || "(Không có tiêu đề)"}>
-            <p className="text-navy-700 w-full max-w-100 truncate text-base font-medium dark:text-white">
-              {msg.subject || "(Không có tiêu đề)"}
-            </p>
-          </Tooltip>
-        ),
-      },
-      {
-        key: "sender",
-        header: "Người gửi",
-        width: "400px",
-        maxWidth: "250px",
-        render: (msg) => (
-          <Tooltip label={msg.senderName}>
-            <p className="text-navy-700 w-full max-w-62.5 truncate text-sm dark:text-white">
-              {msg.senderName}
-            </p>
-          </Tooltip>
-        ),
+        width: "45%",
+        render: (msg) => {
+          return (
+            <div className="flex w-full min-w-0 items-center gap-2 overflow-hidden">
+              <div className="flex w-full min-w-0 flex-col">
+                <Tooltip
+                  label={msg.subject || "(Không có tiêu đề)"}
+                  className="block w-full min-w-0"
+                >
+                  <p className="text-navy-700 truncate text-sm font-bold dark:text-white">
+                    {msg.subject || "(Không có tiêu đề)"}
+                  </p>
+                </Tooltip>
+
+                <Tooltip
+                  label={msg.senderName}
+                  className="block w-full min-w-0"
+                >
+                  <p className="mt-0.5 truncate text-xs text-gray-500">
+                    Từ: {msg.senderName}
+                  </p>
+                </Tooltip>
+              </div>
+            </div>
+          );
+        },
       },
       {
         key: "systemLabels",
         header: "Nhãn hệ thống",
+        width: "20%",
         render: (msg) => (
           <MessageLabelEditor
             message={msg}
             systemLabelEnum={systemLabelEnum}
             onLabelChanged={handleLabelChanged}
+            isProcessing={processingIds.includes(msg.id)}
           />
         ),
       },
       {
         key: "sentAt",
         header: "Thời gian gửi",
-        render: (msg) => (
-          <p className="text-navy-700 text-sm dark:text-white">
-            {formatDate(msg.sentAt)}
-          </p>
-        ),
+        render: (msg) => {
+          const sentAt = dayjs(msg.sentAt);
+          const now = dayjs();
+          const diffInMin = now.diff(sentAt, "minute");
+          const diffInHour = now.diff(sentAt, "hour");
+
+          let displayTime;
+          if (diffInMin < 1) {
+            displayTime = "mới đây";
+          } else if (diffInHour < 5) {
+            if (diffInHour < 1) {
+              displayTime = `${diffInMin} phút trước`;
+            } else {
+              displayTime = `${diffInHour} giờ trước`;
+            }
+          } else {
+            displayTime = formatDate(msg.sentAt);
+          }
+
+          return (
+            <p className="text-navy-700 text-sm dark:text-white">
+              {displayTime}
+            </p>
+          );
+        },
       },
     ],
-    [systemLabelEnum, handleLabelChanged],
+    [systemLabelEnum, handleLabelChanged, processingIds],
   );
 
   // Define table actions
@@ -361,7 +407,6 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
         searchValue={searchValue}
         onSearchChange={handleKeywordChange}
         onSearch={handleSearch}
-
         searchPlaceholder="Tìm kiếm theo tiêu đề, người gửi..."
         showFilter={true}
         onFilterClick={handleOpenFilter}
@@ -374,6 +419,18 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
             systemLabelEnum={data?.enums?.["shared.systemLabel"]}
             onClose={handleCloseDetail}
             onLabelChanged={handleLabelChanged}
+            processingIds={processingIds}
+            onOpenGmail={(msg) => {
+              const url = superEmail?.email
+                ? `https://mail.google.com/mail/u/${superEmail.email}/#inbox/${msg.threadId}`
+                : `https://mail.google.com/mail/u/0/#inbox/${msg.threadId}`;
+              window.open(url, "_blank", "noopener,noreferrer");
+            }}
+            onCreateTask={(msg) => handleCreateBusiness(msg, "task")}
+            onDelete={(msg) => {
+              setDeletingMessage(msg);
+              setDeleteModalOpen(true);
+            }}
           />
         }
       />

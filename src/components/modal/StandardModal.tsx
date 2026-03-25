@@ -1,5 +1,6 @@
 import Card from "@/components/card";
 import React from "react";
+import { createPortal } from "react-dom";
 
 interface StandardModalProps {
   open: boolean;
@@ -30,13 +31,13 @@ const StandardModal: React.FC<StandardModalProps> = ({
     return null;
   }
 
-  return (
+  return createPortal(
     <>
       <div
-        className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px]"
+        className="fixed inset-0 z-999 bg-black/20 backdrop-blur-[2px]"
         onClick={onCancel}
       />
-      <div className="fixed top-20 left-1/2 z-50 w-full max-w-2xl -translate-x-1/2 px-4 md:px-0">
+      <div className="fixed top-1/2 left-1/2 z-1000 w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 px-4 md:px-0">
         <Card extra="p-5 shadow-2xl border border-gray-200 dark:border-white/10 dark:bg-navy-800">
           <div className="flex flex-col gap-4">
             {title && (
@@ -67,7 +68,8 @@ const StandardModal: React.FC<StandardModalProps> = ({
           </div>
         </Card>
       </div>
-    </>
+    </>,
+    document.body,
   );
 };
 

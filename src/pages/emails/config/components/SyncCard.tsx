@@ -27,7 +27,8 @@ function formatLastPullAt(iso: string | undefined): string {
   const year = d.getFullYear();
   const hours = d.getHours().toString().padStart(2, "0");
   const minutes = d.getMinutes().toString().padStart(2, "0");
-  return `${hours}:${minutes} ${date}/${month}/${year}`;
+  const seconds = d.getSeconds().toString().padStart(2, "0");
+  return `${hours}:${minutes}:${seconds} ${date}/${month}/${year}`;
 }
 
 const SyncCard: React.FC<SyncCardProps> = ({
@@ -38,6 +39,43 @@ const SyncCard: React.FC<SyncCardProps> = ({
   const queryClient = useQueryClient();
   const [syncing, setSyncing] = React.useState(false);
   const [updatingContent, setUpdatingContent] = React.useState(false);
+  const [now, setNow] = React.useState(Date.now());
+  const [virtualLastSyncTime, setVirtualLastSyncTime] =
+    React.useState<number>(0);
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      const currentTime = Date.now();
+      setNow(currentTime);
+
+      if (virtualLastSyncTime > 0) {
+        const elapsedSinceVirtual = currentTime - virtualLastSyncTime;
+        if (elapsedSinceVirtual >= 20000) {
+          const jumps = Math.floor(elapsedSinceVirtual / 20000);
+          setVirtualLastSyncTime((prev) => prev + jumps * 20000);
+        }
+      }
+    }, 100);
+    return () => clearInterval(interval);
+  }, [virtualLastSyncTime]);
+
+  React.useEffect(() => {
+    const refreshInterval = setInterval(() => {
+      onRefresh();
+    }, 120000); // 2 minutes
+    return () => clearInterval(refreshInterval);
+  }, [onRefresh]);
+
+  const lastPullAt = data?.settings?.["email.lastPullAt"];
+  React.useEffect(() => {
+    if (lastPullAt) {
+      setVirtualLastSyncTime(new Date(lastPullAt).getTime());
+    }
+  }, [lastPullAt]);
+
+  const elapsed = now - virtualLastSyncTime;
+  const cycleMs = 20000;
+  const diff = elapsed % cycleMs;
 
   const { data: canSaveContent = false } = useQuery({
     queryKey: ["email-can-save-content"],
@@ -78,23 +116,59 @@ const SyncCard: React.FC<SyncCardProps> = ({
   return (
     <Card extra="p-6 flex flex-col gap-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-stretch">
-        <div className="flex rounded-xl p-3 lg:w-56 lg:items-center lg:justify-center">
-          <div className="text-brand-500 bg-lightPrimary dark:bg-navy-700! flex items-center justify-center rounded-full p-6.5 text-5xl font-bold dark:text-white">
+        <div className="flex rounded-xl p-3 lg:w-42 lg:items-center lg:justify-center">
+          <div className="relative flex items-center justify-center p-2">
             <svg
-              stroke="currentColor"
-              fill="currentColor"
-              strokeWidth="0"
-              viewBox="0 0 16 16"
-              height="1em"
-              width="1em"
+              className="absolute h-full w-full -rotate-90 transform"
+              viewBox="0 0 100 100"
               xmlns="http://www.w3.org/2000/svg"
             >
-              <path
-                fillRule="evenodd"
-                d="M10.354 6.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7 8.793l2.646-2.647a.5.5 0 0 1 .708 0z"
+              <circle
+                cx="50"
+                cy="50"
+                r="46"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="4"
+                className="dark:text-navy-700 text-gray-100"
               />
-              <path d="M4.406 3.342A5.53 5.53 0 0 1 8 2c2.69 0 4.923 2 5.166 4.579C14.758 6.804 16 8.137 16 9.773 16 11.569 14.502 13 12.687 13H3.781C1.708 13 0 11.366 0 9.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383zm.653.757c-.757.653-1.153 1.44-1.153 2.056v.448l-.445.049C2.064 6.805 1 7.952 1 9.318 1 10.785 2.23 12 3.781 12h8.906C13.98 12 15 10.988 15 9.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 4.825 10.328 3 8 3a4.53 4.53 0 0 0-2.941 1.1z" />
+              <circle
+                cx="50"
+                cy="50"
+                r="46"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="4"
+                strokeDasharray="289"
+                strokeDashoffset={289 - (diff / 10000) * 289}
+                strokeLinecap="round"
+                className="text-brand-500 transition-all ease-linear"
+                style={{
+                  transformOrigin: "center",
+                  transitionDuration: diff < 200 ? "0ms" : "100ms",
+                  transitionProperty: "stroke-dashoffset",
+                  transitionTimingFunction: "linear",
+                }}
+              />
             </svg>
+
+            <div className="text-brand-500 bg-lightPrimary dark:bg-navy-700! relative flex items-center justify-center rounded-full p-6.5 text-5xl font-bold dark:text-white">
+              <svg
+                stroke="currentColor"
+                fill="currentColor"
+                strokeWidth="0"
+                viewBox="0 0 16 16"
+                height="1em"
+                width="1em"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10.354 6.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7 8.793l2.646-2.647a.5.5 0 0 1 .708 0z"
+                />
+                <path d="M4.406 3.342A5.53 5.53 0 0 1 8 2c2.69 0 4.923 2 5.166 4.579C14.758 6.804 16 8.137 16 9.773 16 11.569 14.502 13 12.687 13H3.781C1.708 13 0 11.366 0 9.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383zm.653.757c-.757.653-1.153 1.44-1.153 2.056v.448l-.445.049C2.064 6.805 1 7.952 1 9.318 1 10.785 2.23 12 3.781 12h8.906C13.98 12 15 10.988 15 9.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 4.825 10.328 3 8 3a4.53 4.53 0 0 0-2.941 1.1z" />
+              </svg>
+            </div>
           </div>
         </div>
 
@@ -120,7 +194,14 @@ const SyncCard: React.FC<SyncCardProps> = ({
             <span className="text-navy-700 text-base font-medium dark:text-white">
               {dataLoading
                 ? "Đang tải..."
-                : formatLastPullAt(data?.settings?.["email.lastPullAt"])}
+                : formatLastPullAt(
+                    virtualLastSyncTime
+                      ? new Date(virtualLastSyncTime).toISOString()
+                      : undefined,
+                  )}{" "}
+              <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
+                ({Math.ceil((10000 - (diff % 10000)) / 1000)}s)
+              </span>
             </span>
           </div>
 

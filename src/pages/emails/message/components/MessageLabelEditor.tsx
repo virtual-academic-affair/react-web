@@ -18,12 +18,14 @@ interface MessageLabelEditorProps {
   message: Message;
   systemLabelEnum?: SystemLabelEnumData | null;
   onLabelChanged?: (id: number, labels: SystemLabel[]) => void;
+  isProcessing?: boolean;
 }
 
 const MessageLabelEditor: React.FC<MessageLabelEditorProps> = ({
   message,
   systemLabelEnum,
   onLabelChanged,
+  isProcessing,
 }) => {
   const navigate = useNavigate();
   const [editingId, setEditingId] = React.useState<number | null>(null);
@@ -124,7 +126,25 @@ const MessageLabelEditor: React.FC<MessageLabelEditorProps> = ({
   return (
     <>
       <div className="message-label-column relative z-1 flex flex-wrap items-center gap-1">
-        {message.systemLabels?.length ? (
+        {isProcessing &&
+        (!message.systemLabels || message.systemLabels.length === 0) ? (
+          <Tooltip label="Đang gắn nhãn tự động...">
+            <div className="mr-2 h-4 w-32 overflow-hidden rounded-md bg-purple-600">
+              <div
+                className="h-full w-[200%] animate-[slide_0.8s_linear_infinite] bg-gradient-to-r from-purple-600 via-blue-400/80 via-blue-500 to-purple-600 [background-size:50%_100%]"
+                style={{
+                  animation: "slide 0.8s linear infinite",
+                }}
+              />
+              <style>{`
+    @keyframes slide {
+      from { transform: translateX(-50%); }
+      to { transform: translateX(0); }
+    }
+  `}</style>
+            </div>
+          </Tooltip>
+        ) : message.systemLabels?.length ? (
           message.systemLabels.map((sl) => {
             let count = 0;
             const isBusinessLabel = [
