@@ -9,9 +9,18 @@ interface DrawerProps {
   children: ReactNode;
   footerLeft?: ReactNode;
   footerRight?: ReactNode;
+  width?: string;
 }
 
-const Drawer: React.FC<DrawerProps> = ({ isOpen, onClose, title, children, footerLeft, footerRight }) => {
+const Drawer: React.FC<DrawerProps> = ({
+  isOpen,
+  onClose,
+  title,
+  children,
+  footerLeft,
+  footerRight,
+  width = "max-w-3xl",
+}) => {
   return (
     <>
       {/* Backdrop */}
@@ -25,7 +34,7 @@ const Drawer: React.FC<DrawerProps> = ({ isOpen, onClose, title, children, foote
       {/* Drawer */}
       <div className="pointer-events-none fixed inset-0 z-50 flex justify-end">
         <div
-          className={`dark:bg-navy-800 pointer-events-auto my-6 mr-6 flex h-[calc(100%-48px)] w-full max-w-3xl flex-col rounded-[30px] bg-white shadow-2xl transition-transform duration-300 ${
+          className={`dark:bg-navy-800 pointer-events-auto my-6 mr-6 flex h-[calc(100%-48px)] w-full ${width} flex-col rounded-[30px] bg-white shadow-2xl transition-transform duration-300 ${
             isOpen ? "translate-x-0" : "translate-x-[calc(100%+48px)]"
           }`}
         >
@@ -48,8 +57,12 @@ const Drawer: React.FC<DrawerProps> = ({ isOpen, onClose, title, children, foote
           {/* Footer (sticky) */}
           {(footerLeft || footerRight) && (
             <div className="flex items-center justify-between border-t border-gray-100 px-6 py-4 dark:border-white/10">
-              <div className="flex items-center gap-3 empty:hidden">{footerLeft}</div>
-              <div className="flex items-center gap-2 empty:hidden">{footerRight}</div>
+              <div className="flex items-center gap-3 empty:hidden">
+                {footerLeft}
+              </div>
+              <div className="flex items-center gap-2 empty:hidden">
+                {footerRight}
+              </div>
             </div>
           )}
         </div>

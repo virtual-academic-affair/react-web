@@ -1,0 +1,213 @@
+import { API_ENDPOINTS } from "@/config/api.config";
+import http from "./http";
+import ragHttp from "./rag-http";
+
+/**
+ * Service for document management.
+ * Combines calls to Nest API (accesses, bookmarks) and Python RAG (file details, list, upload).
+ */
+export const DocumentsService = {
+  // ── Nest API Endpoints ─────────────────────────────────────────────────────
+
+  /**
+   * Record that a file was accessed.
+   */
+  async recordAccess(fileId: string): Promise<void> {
+    await http.post(API_ENDPOINTS.document.accesses.base, { fileId });
+  },
+
+  /**
+   * Get recently accessed files.
+   */
+  async getRecentAccesses(): Promise<{ fileId: string; accessedAt: string }[]> {
+    return http.get(API_ENDPOINTS.document.accesses.recent);
+  },
+
+  /**
+   * Toggle bookmark status.
+   */
+  async toggleBookmark(fileId: string, isBookmarked: boolean): Promise<void> {
+    if (isBookmarked) {
+      await http.delete(API_ENDPOINTS.document.bookmarks.byId(fileId));
+    } else {
+      await http.post(API_ENDPOINTS.document.bookmarks.byId(fileId));
+    }
+  },
+
+  /**
+   * Get all user bookmarks.
+   */
+  async getBookmarks(): Promise<{ fileId: string; bookmarkedAt: string }[]> {
+    return http.get(API_ENDPOINTS.document.bookmarks.base);
+  },
+
+  // ── Python RAG API Endpoints ───────────────────────────────────────────────
+
+  /**
+   * List files from RAG.
+   */
+  async listFiles(params?: any): Promise<{ files: any[]; total: number }> {
+    const { data } = await ragHttp.get(API_ENDPOINTS.rag.files.base, {
+      params,
+    });
+    return data;
+  },
+
+  /**
+   * Get file detail from RAG.
+   * Also optionally records access in Nest API.
+   */
+  async getFileDetail(fileId: string, recordAccess = false): Promise<any> {
+    if (recordAccess) {
+      // Background call to nest api
+      this.recordAccess(fileId).catch(console.error);
+    }
+    const { data } = await ragHttp.get(API_ENDPOINTS.rag.files.byId(fileId));
+    return data;
+  },
+
+  /**
+   * Upload file to RAG.
+   */
+  async uploadFile(formData: FormData): Promise<any> {
+    const { data } = await ragHttp.post(
+      API_ENDPOINTS.rag.files.base,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      },
+    );
+    return data;
+  },
+
+  /**
+   * Update file display name in RAG.
+   */
+  async updateFileName(fileId: string, displayName: string): Promise<any> {
+    const { data } = await ragHttp.patch(API_ENDPOINTS.rag.files.byId(fileId), {
+      display_name: displayName,
+    });
+    return data;
+  },
+
+  /**
+   * Delete file from RAG.
+   */
+  async deleteFile(fileId: string): Promise<void> {
+    await ragHttp.delete(API_ENDPOINTS.rag.files.byId(fileId));
+  },
+
+  /**
+   * Update file metadata.
+   */
+  async updateFileMetadata(fileId: string, updates: {
+    displayName?: string;
+    customMetadata?: Record<string, string>;
+  }): Promise<any> {
+    const { data } = await ragHttp.patch(
+      API_ENDPOINTS.rag.files.byId(fileId),
+      {
+        displayName: updates.displayName,
+        customMetadata: updates.customMetadata,
+      },
+    );
+    return data;
+  },
+
+  /**
+   * Download file.
+   */
+  async downloadFile(fileId: string): Promise<Blob> {
+    const response = await ragHttp.get(
+      API_ENDPOINTS.rag.files.download(fileId),
+      { responseType: "blob" },
+    );
+    return response.data;
+  },
+};
+
+/**
+ * Service for metadata management (Python RAG).
+ */
+export const MetadataService = {
+  /**
+   * List all metadata types.
+   */
+  async listTypes(activeOnly = false): Promise<any[]> {
+    const { data } = await ragHttp.get(API_ENDPOINTS.rag.metadata.base, {
+      params: { active_only: activeOnly },
+    });
+    const items = data.metadataTypes || data.metadata_types || [];
+    // Ensure each item has an 'id' for TableLayout compatibility
+    return items.map((item: any) => ({
+      ...item,
+      id: item.id || item.metadataId || item.key,
+    }));
+  },
+
+  /**
+   * Get metadata type details.
+   */
+  async getType(key: string): Promise<any> {
+    const { data } = await ragHttp.get(API_ENDPOINTS.rag.metadata.byId(key));
+    return data;
+  },
+
+  /**
+   * Create new metadata type.
+   */
+  async createType(typeData: any): Promise<any> {
+    const { data } = await ragHttp.post(
+      API_ENDPOINTS.rag.metadata.base,
+      typeData,
+    );
+    return data;
+  },
+
+  /**
+   * Update metadata type.
+   */
+  async updateType(key: string, updates: any): Promise<any> {
+    const { data } = await ragHttp.patch(
+      API_ENDPOINTS.rag.metadata.byId(key),
+      updates,
+    );
+    return data;
+  },
+
+  /**
+   * Delete metadata type.
+   */
+  async deleteType(key: string): Promise<void> {
+    await ragHttp.delete(API_ENDPOINTS.rag.metadata.byId(key));
+  },
+
+  /**
+   * Add value to metadata type.
+   */
+  async addValue(key: string, valueData: any): Promise<any> {
+    const { data } = await ragHttp.post(
+      API_ENDPOINTS.rag.metadata.values(key),
+      valueData,
+    );
+    return data;
+  },
+
+  /**
+   * Update metadata value.
+   */
+  async updateValue(key: string, valueKey: string, updates: any): Promise<any> {
+    const { data } = await ragHttp.patch(
+      API_ENDPOINTS.rag.metadata.valueById(key, valueKey),
+      updates,
+    );
+    return data;
+  },
+
+  /**
+   * Delete metadata value.
+   */
+  async deleteValue(key: string, valueKey: string): Promise<void> {
+    await ragHttp.delete(API_ENDPOINTS.rag.metadata.valueById(key, valueKey));
+  },
+};

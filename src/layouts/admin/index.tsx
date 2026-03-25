@@ -1,5 +1,7 @@
 import Navbar from "@/components/navbar";
 import Sidebar from "@/components/sidebar";
+import { useDynamicData } from "@/hooks/useDynamicData";
+import { useEmailSockets } from "@/hooks/useEmailSockets";
 import UsersPage from "@/pages/auth/accounts";
 import AssignRolePage from "@/pages/auth/assign-role";
 import CancelReasonsPage from "@/pages/class-registration/cancel-reasons";
@@ -7,20 +9,21 @@ import CancelReasonCreatePage from "@/pages/class-registration/cancel-reasons/cr
 import ClassRegistrationCreatePage from "@/pages/class-registration/create";
 import ClassRegistrationsPage from "@/pages/class-registration/registrations";
 import ClassRegistrationStatisticsPage from "@/pages/class-registration/statistics";
-import InquiriesPage from "@/pages/inquiry/inquiries";
-import InquiryCreatePage from "@/pages/inquiry/create";
-import InquiryStatisticsPage from "@/pages/inquiry/statistics";
+import DocumentListPage from "@/pages/documents/list";
+import MetadataManagementPage from "@/pages/documents/metadata";
+import MetadataTypeCreatePage from "@/pages/documents/metadata/create";
 import GmailConfigPage from "@/pages/emails/config";
 import MessagesPage from "@/pages/emails/message";
+import InquiryCreatePage from "@/pages/inquiry/create";
+import InquiriesPage from "@/pages/inquiry/inquiries";
+import InquiryStatisticsPage from "@/pages/inquiry/statistics";
 import TaskCreatePage from "@/pages/tasks/create";
 import TasksPage from "@/pages/tasks/list";
 import TaskStatisticsPage from "@/pages/tasks/statistics";
 import TaskDetailPage from "@/pages/tasks/view";
 import routes from "@/routes";
-import { useDynamicData } from "@/hooks/useDynamicData";
 import React from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
-import { useEmailSockets } from "@/hooks/useEmailSockets";
 
 const DYNAMIC_DATA_PARAMS = {
   enums: ["authentication.role", "shared.systemLabel"],
@@ -34,7 +37,11 @@ const DYNAMIC_DATA_PARAMS = {
 
 const AdminLayout: React.FC = () => {
   const [open, setOpen] = React.useState(true);
-  const { data: rawData, isLoading: dataLoading, refetch: onRefresh } = useDynamicData(DYNAMIC_DATA_PARAMS);
+  const {
+    data: rawData,
+    isLoading: dataLoading,
+    refetch: onRefresh,
+  } = useDynamicData(DYNAMIC_DATA_PARAMS);
   const data = rawData ?? null;
 
   useEmailSockets();
@@ -122,33 +129,24 @@ const AdminLayout: React.FC = () => {
               path="class-registration/cancel-reasons/create"
               element={<CancelReasonCreatePage />}
             />
-            <Route
-              path="inquiry/inquiries"
-              element={<InquiriesPage />}
-            />
-            <Route
-              path="inquiry/create"
-              element={<InquiryCreatePage />}
-            />
+            <Route path="inquiry/inquiries" element={<InquiriesPage />} />
+            <Route path="inquiry/create" element={<InquiryCreatePage />} />
             <Route
               path="inquiry/statistics"
               element={<InquiryStatisticsPage />}
             />
+            <Route path="tasks/statistics" element={<TaskStatisticsPage />} />
+            <Route path="tasks/list" element={<TasksPage />} />
+            <Route path="tasks/create" element={<TaskCreatePage />} />
+            <Route path="tasks/view/:id" element={<TaskDetailPage />} />
+            <Route path="documents/list" element={<DocumentListPage />} />
             <Route
-              path="tasks/statistics"
-              element={<TaskStatisticsPage />}
+              path="documents/metadata/index"
+              element={<MetadataManagementPage />}
             />
             <Route
-              path="tasks/list"
-              element={<TasksPage />}
-            />
-            <Route
-              path="tasks/create"
-              element={<TaskCreatePage />}
-            />
-            <Route
-              path="tasks/view/:id"
-              element={<TaskDetailPage />}
+              path="documents/metadata/create"
+              element={<MetadataTypeCreatePage />}
             />
             <Route
               path="tasks"
@@ -157,10 +155,7 @@ const AdminLayout: React.FC = () => {
             <Route
               path="class-registration"
               element={
-                <Navigate
-                  to="/admin/class-registration/statistics"
-                  replace
-                />
+                <Navigate to="/admin/class-registration/statistics" replace />
               }
             />
             <Route

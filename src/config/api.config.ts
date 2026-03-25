@@ -5,6 +5,7 @@
 
 export const API_CONFIG = {
   baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:3000",
+  ragBaseURL: import.meta.env.VITE_RAG_API_BASE_URL || "http://localhost:8000",
   timeout: 30000, // 30 seconds
 } as const;
 
@@ -93,6 +94,33 @@ export const API_ENDPOINTS = {
       base: "/task/tasks",
       byId: (id: number) => `/task/tasks/${id}`,
       stats: "/task/tasks/stats",
+    },
+  },
+  
+  // Documents (Nest API)
+  document: {
+    accesses: {
+      base: "/document/files/accesses",
+      recent: "/document/files/accesses/recent",
+    },
+    bookmarks: {
+      base: "/document/files/bookmarks",
+      byId: (fileId: string) => `/document/files/bookmarks/${fileId}`,
+    },
+  },
+
+  // RAG API (Python)
+  rag: {
+    files: {
+      base: "/api/files",
+      byId: (fileId: string) => `/api/files/${fileId}`,
+      download: (fileId: string) => `/api/files/${fileId}/download`,
+    },
+    metadata: {
+      base: "/api/metadata",
+      byId: (key: string) => `/api/metadata/${key}`,
+      values: (key: string) => `/api/metadata/${key}/values`,
+      valueById: (key: string, value: string) => `/api/metadata/${key}/values/${value}`,
     },
   },
 } as const;

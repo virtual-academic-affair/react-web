@@ -220,28 +220,31 @@ function TableLayout<T extends { id: number | string }>({
                           style={{ boxShadow: "-10px 0 10px -10px rgba(0,0,0,0.15)" }}
                         >
                           <div className="flex items-center justify-center gap-2">
-                            {actions.map((action) => (
-                              <Tooltip key={action.key} label={action.label}>
-                                {action.render ? (
-                                  action.render(item)
-                                ) : (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      action.onClick(item);
-                                    }}
-                                    title={action.label}
-                                    className={
-                                      action.className ||
-                                      "bg-brand-500 hover:bg-brand-600 dark:bg-brand-500 dark:hover:bg-brand-400 flex h-10 w-10 items-center justify-center rounded-2xl text-white transition-colors dark:text-white"
-                                    }
-                                  >
-                                    {action.icon}
-                                  </button>
-                                )}
-                              </Tooltip>
-                            ))}
+                            {actions.map((action) => {
+                              const customRendered = action.render ? action.render(item) : undefined;
+                              return (
+                                <Tooltip key={action.key} label={action.label}>
+                                  {customRendered !== undefined ? (
+                                    customRendered
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        action.onClick(item);
+                                      }}
+                                      title={action.label}
+                                      className={
+                                        action.className ||
+                                        "bg-brand-500 hover:bg-brand-600 dark:bg-brand-500 dark:hover:bg-brand-400 flex h-10 w-10 items-center justify-center rounded-2xl text-white transition-colors dark:text-white"
+                                      }
+                                    >
+                                      {action.icon}
+                                    </button>
+                                  )}
+                                </Tooltip>
+                              );
+                            })}
                           </div>
                         </td>
                       )}
