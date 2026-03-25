@@ -25,7 +25,7 @@ export default function LoginPage() {
       const url = await authService.getGoogleAuthUrl();
       window.location.href = url;
     } catch {
-      setError("Unable to connect to authentication server. Please try again.");
+      setError("Không thể kết nối tới máy chủ. Vui lòng thử lại.");
       setLoading(false);
     }
   };

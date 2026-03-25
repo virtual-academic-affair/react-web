@@ -30,9 +30,15 @@ const Sidebar = (props: {
     document.body.classList.contains("dark"),
   );
 
-  const handleLogout = () => {
-    clearAuth();
-    navigate("/auth/login", { replace: true });
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error("Logout error", error);
+    } finally {
+      clearAuth();
+      navigate("/auth/login", { replace: true });
+    }
   };
   return (
     <div

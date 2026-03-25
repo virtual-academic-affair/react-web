@@ -18,7 +18,7 @@ export default function GoogleCallbackPage() {
         const code = searchParams.get("code");
 
         if (!code) {
-            setError("Missing authorization code. Please try signing in again.");
+            setError("Thiếu mã xác thực. Vui lòng đăng nhập lại.");
             return;
         }
 
@@ -31,7 +31,7 @@ export default function GoogleCallbackPage() {
                     await grantsService.grantGmailAccess({ code, redirectUrl });
                     navigate("/admin/email/config", { replace: true });
                 } catch {
-                    setError("Failed to grant Gmail access. Please try again.");
+                    setError("Cấp quyền Gmail thất bại. Vui lòng thử lại.");
                 }
             };
             grantAccess();
@@ -43,7 +43,7 @@ export default function GoogleCallbackPage() {
                     const role = useAuthStore.getState().userRole;
                     navigate(getRolePath(role), { replace: true });
                 } catch {
-                    setError("Authentication failed. Please try again.");
+                    setError("Đăng nhập thất bại. Vui lòng thử lại.");
                 }
             };
             authenticate();
