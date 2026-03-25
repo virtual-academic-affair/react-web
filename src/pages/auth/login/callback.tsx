@@ -1,7 +1,7 @@
 import { authService } from "@/services/auth";
 import { grantsService } from "@/services/email/grants.service";
 import { useAuthStore } from "@/stores/auth.store";
-import { getRolePath } from "@/utils/auth.util";
+import { consumeAuthCallbackFlow, getRolePath } from "@/utils/auth.util";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
@@ -16,6 +16,7 @@ export default function GoogleCallbackPage() {
         hasCalledRef.current = true;
 
         const code = searchParams.get("code");
+        const flow = consumeAuthCallbackFlow();
 
         if (!code) {
             setError("Thiếu mã xác thực. Vui lòng đăng nhập lại.");
@@ -23,8 +24,9 @@ export default function GoogleCallbackPage() {
         }
 
         const accessToken = useAuthStore.getState().accessToken;
+        const shouldGrantAccess = flow === "gmail_grant" || !!accessToken;
 
-        if (accessToken) {
+        if (shouldGrantAccess) {
             const grantAccess = async () => {
                 try {
                     const redirectUrl = `${window.location.origin}/auth/callback`;
