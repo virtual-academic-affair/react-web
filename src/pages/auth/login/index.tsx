@@ -8,6 +8,7 @@ import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 import { useAuthStore } from "@/stores/auth.store";
 import { Navigate } from "react-router-dom";
+import { setAuthCallbackFlow } from "@/utils/auth.util";
 
 export default function LoginPage() {
   const accessToken = useAuthStore((state) => state.accessToken);
@@ -22,10 +23,11 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     try {
+      setAuthCallbackFlow("signin");
       const url = await authService.getGoogleAuthUrl();
       window.location.href = url;
     } catch {
-      setError("Unable to connect to authentication server. Please try again.");
+      setError("Không thể kết nối tới máy chủ. Vui lòng thử lại.");
       setLoading(false);
     }
   };

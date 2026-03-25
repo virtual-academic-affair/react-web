@@ -2,6 +2,7 @@ import banner from "@/assets/img/auth/banner.png";
 import Card from "@/components/card";
 import { grantsService } from "@/services/email";
 import type { DynamicDataResponse } from "@/types/shared";
+import { setAuthCallbackFlow } from "@/utils/auth.util";
 import { useEffect, useRef, useState } from "react";
 
 interface ProfileCardProps {
@@ -36,6 +37,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ data, loading }) => {
   const handleGrant = async () => {
     setGranting(true);
     try {
+      setAuthCallbackFlow("gmail_grant");
       const url = await grantsService.getGmailAuthUrl();
       window.location.href = url;
     } catch {

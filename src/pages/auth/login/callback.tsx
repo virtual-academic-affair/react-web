@@ -1,7 +1,7 @@
 import { authService } from "@/services/auth";
 import { grantsService } from "@/services/email/grants.service";
 import { useAuthStore } from "@/stores/auth.store";
-import { getRolePath } from "@/utils/auth.util";
+import { consumeAuthCallbackFlow, getRolePath } from "@/utils/auth.util";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
@@ -16,22 +16,24 @@ export default function GoogleCallbackPage() {
         hasCalledRef.current = true;
 
         const code = searchParams.get("code");
+        const flow = consumeAuthCallbackFlow();
 
         if (!code) {
-            setError("Missing authorization code. Please try signing in again.");
+            setError("Thiếu mã xác thực. Vui lòng đăng nhập lại.");
             return;
         }
 
         const accessToken = useAuthStore.getState().accessToken;
+        const shouldGrantAccess = flow === "gmail_grant" || !!accessToken;
 
-        if (accessToken) {
+        if (shouldGrantAccess) {
             const grantAccess = async () => {
                 try {
                     const redirectUrl = `${window.location.origin}/auth/callback`;
                     await grantsService.grantGmailAccess({ code, redirectUrl });
                     navigate("/admin/email/config", { replace: true });
                 } catch {
-                    setError("Failed to grant Gmail access. Please try again.");
+                    setError("Cấp quyền Gmail thất bại. Vui lòng thử lại.");
                 }
             };
             grantAccess();
@@ -43,7 +45,7 @@ export default function GoogleCallbackPage() {
                     const role = useAuthStore.getState().userRole;
                     navigate(getRolePath(role), { replace: true });
                 } catch {
-                    setError("Authentication failed. Please try again.");
+                    setError("Đăng nhập thất bại. Vui lòng thử lại.");
                 }
             };
             authenticate();
