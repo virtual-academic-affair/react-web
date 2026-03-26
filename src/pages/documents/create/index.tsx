@@ -1,97 +1,82 @@
+import React, { useState, useRef, useCallback, useMemo } from "react";
 import { message as toast } from "antd";
-import React, { useCallback, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { MdCloudUpload } from "react-icons/md";
 
-import Drawer from "@/components/drawer/Drawer";
-import Tag from "@/components/tag/Tag";
-import { DocumentsService } from "@/services/documents.service";
+import CreatePageLayout from "@/components/layouts/CreatePageLayout";
+import { DocumentsService, MetadataService } from "@/services/documents.service";
 import { RoleColors } from "@/types/users";
 import { parseError } from "@/utils/parseError";
+
+interface MetadataValue {
+  value: string;
+  displayName: string;
+  isActive: boolean;
+  color?: string;
+  visibleRoles?: string[];
+}
 
 interface MetadataType {
   key: string;
   displayName: string;
-  allowedValues?: Array<{
-    value: string;
-    displayName: string;
-    color?: string;
-    visibleRoles?: string[];
-  }>;
-}
-
-interface UploadDrawerProps {
-  open: boolean;
-  metadataTypes: MetadataType[];
-  onClose: () => void;
-  onSuccess: () => void;
+  isActive: boolean;
+  allowedValues?: MetadataValue[];
 }
 
 const ALLOWED_EXTENSIONS = [".pdf", ".doc", ".docx", ".txt", ".md", ".html"];
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
-const UploadDrawer: React.FC<UploadDrawerProps> = ({
-  open,
-  metadataTypes,
-  onClose,
-  onSuccess,
-}) => {
+const DocumentCreatePage: React.FC = () => {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [displayName, setDisplayName] = useState("");
-  const [customMetadata, setCustomMetadata] = useState<Record<string, string>>(
-    {},
-  );
+  const [customMetadata, setCustomMetadata] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Reset state on close
-  const handleClose = useCallback(() => {
-    setSelectedFile(null);
-    setDisplayName("");
-    setCustomMetadata({});
-    setUploading(false);
-    onClose();
-  }, [onClose]);
+  const { data: metadataTypes = [] } = useQuery({
+    queryKey: ["metadata-types"],
+    queryFn: () => MetadataService.listTypes(true),
+  });
 
-  // Handle file selection
-  const handleFileSelect = useCallback(
-    (file: File) => {
-      // Check extension
-      const ext = "." + file.name.split(".").pop()?.toLowerCase();
-      if (!ALLOWED_EXTENSIONS.includes(ext)) {
-        toast.error(
-          `Định dạng không được hỗ trợ. Cho phép: ${ALLOWED_EXTENSIONS.join(", ")}`,
-        );
-        return;
-      }
-      // Check size
-      if (file.size > MAX_FILE_SIZE) {
-        toast.error("Kích thước file vượt quá 20MB.");
-        return;
-      }
-      setSelectedFile(file);
-      // Auto-fill display name from filename
-      if (!displayName) {
-        const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
-        setDisplayName(nameWithoutExt);
-      }
-    },
-    [displayName],
-  );
+  // Filter to only show active metadata types with active allowed values
+  const activeMetadataTypes = useMemo(() => {
+    return metadataTypes
+      .filter((type: MetadataType) => type.isActive)
+      .map((type: MetadataType) => ({
+        ...type,
+        allowedValues: (type.allowedValues || []).filter((v: MetadataValue) => v.isActive),
+      }));
+  }, [metadataTypes]);
 
-  // Handle file drop
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      setDragOver(false);
-      const file = e.dataTransfer.files[0];
-      if (file) {
-        handleFileSelect(file);
-      }
-    },
-    [handleFileSelect],
-  );
+  const handleFileSelect = useCallback((file: File) => {
+    const ext = "." + file.name.split(".").pop()?.toLowerCase();
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+      toast.error(`Định dạng không được hỗ trợ. Cho phép: ${ALLOWED_EXTENSIONS.join(", ")}`);
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error("Kích thước file vượt quá 20MB.");
+      return;
+    }
+    setSelectedFile(file);
+    if (!displayName) {
+      const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+      setDisplayName(nameWithoutExt);
+    }
+  }, [displayName]);
 
-  // Handle metadata change
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFileSelect(file);
+  }, [handleFileSelect]);
+
   const handleMetadataChange = (key: string, value: string) => {
     setCustomMetadata((prev) => ({
       ...prev,
@@ -99,14 +84,12 @@ const UploadDrawer: React.FC<UploadDrawerProps> = ({
     }));
   };
 
-  // Handle upload
   const handleUpload = async () => {
     if (!selectedFile) {
       toast.error("Vui lòng chọn file.");
       return;
     }
 
-    // Validate required metadata
     const hasAccessScope = customMetadata.accessScope;
     const hasAcademicYear = customMetadata.academicYear;
     const hasCohort = customMetadata.cohort;
@@ -125,18 +108,15 @@ const UploadDrawer: React.FC<UploadDrawerProps> = ({
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
-
       if (displayName.trim()) {
         formData.append("displayName", displayName.trim());
       }
-
-      // Add metadata as JSON string
       formData.append("customMetadata", JSON.stringify(customMetadata));
 
       await DocumentsService.uploadFile(formData);
       toast.success("Tải lên thành công.");
-      handleClose();
-      onSuccess();
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
+      navigate("/admin/documents/list");
     } catch (err) {
       toast.error(parseError(err));
     } finally {
@@ -144,10 +124,9 @@ const UploadDrawer: React.FC<UploadDrawerProps> = ({
     }
   };
 
-  // Get metadata type display info
   const getMetadataInfo = (key: string) => {
-    const type = metadataTypes.find((t) => t.key === key);
-    if (!type) return { typeName: key, allowedValues: [] };
+    const type = activeMetadataTypes.find((t: MetadataType) => t.key === key);
+    if (!type) return { typeName: key, allowedValues: [] as MetadataValue[] };
     return {
       typeName: type.displayName || key,
       allowedValues: type.allowedValues || [],
@@ -155,12 +134,7 @@ const UploadDrawer: React.FC<UploadDrawerProps> = ({
   };
 
   return (
-    <Drawer
-      isOpen={open}
-      onClose={handleClose}
-      title="Tải lên tài liệu mới"
-      width="max-w-2xl"
-    >
+    <CreatePageLayout title="Tải lên tài liệu">
       <div className="flex flex-col gap-5">
         {/* File upload area */}
         <div>
@@ -207,21 +181,11 @@ const UploadDrawer: React.FC<UploadDrawerProps> = ({
               </p>
             </div>
           ) : (
-            <div className="dark:bg-navy-800 flex items-center justify-between rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-white/10">
+            <div className="flex items-center justify-between rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-white/10 dark:bg-navy-800">
               <div className="flex items-center gap-3">
-                <div className="bg-brand-500 flex h-10 w-10 items-center justify-center rounded-xl text-white">
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-500 text-white">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 </div>
                 <div>
@@ -238,18 +202,8 @@ const UploadDrawer: React.FC<UploadDrawerProps> = ({
                 onClick={() => setSelectedFile(null)}
                 className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-200 dark:hover:bg-white/10"
               >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
@@ -268,7 +222,7 @@ const UploadDrawer: React.FC<UploadDrawerProps> = ({
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="dark:bg-navy-800 w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+              className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white dark:bg-navy-800"
               placeholder="Tên hiển thị (tùy chọn)"
             />
           </div>
@@ -280,17 +234,14 @@ const UploadDrawer: React.FC<UploadDrawerProps> = ({
             Nhãn tài liệu
           </p>
 
-          {metadataTypes.length === 0 ? (
-            <p className="text-sm text-gray-500">
-              Chưa có nhãn nào được cấu hình.
-            </p>
+          {activeMetadataTypes.length === 0 ? (
+            <p className="text-sm text-gray-500">Chưa có nhãn nào được cấu hình.</p>
           ) : (
             <div className="flex flex-col gap-4">
-              {metadataTypes.map((type) => {
+              {activeMetadataTypes.map((type: MetadataType) => {
                 const info = getMetadataInfo(type.key);
                 const currentValue = customMetadata[type.key] || "";
 
-                // Access scope is special - show as role tags
                 if (type.key === "access_scope") {
                   return (
                     <div key={type.key} className="flex items-start gap-6">
@@ -301,7 +252,7 @@ const UploadDrawer: React.FC<UploadDrawerProps> = ({
                       </div>
                       <div className="flex-1">
                         <div className="flex flex-wrap gap-2">
-                          {type.allowedValues?.map((val) => {
+                          {info.allowedValues.map((val: MetadataValue) => {
                             const isSelected = currentValue === val.value;
                             const colors = val.visibleRoles?.includes("student")
                               ? RoleColors.student
@@ -310,20 +261,14 @@ const UploadDrawer: React.FC<UploadDrawerProps> = ({
                               <button
                                 key={val.value}
                                 type="button"
-                                onClick={() =>
-                                  handleMetadataChange(type.key, val.value)
-                                }
-                                className="cursor-pointer"
+                                onClick={() => handleMetadataChange(type.key, val.value)}
+                                className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                                  isSelected
+                                    ? `${colors.bg} ${colors.text} border-transparent`
+                                    : "border-gray-200 bg-gray-100 text-gray-500 dark:border-white/10 dark:bg-navy-800 dark:text-gray-400"
+                                }`}
                               >
-                                <Tag
-                                  color={
-                                    isSelected
-                                      ? colors.text.replace("text-", "#").replace("-800", "00")
-                                      : "#6b7280"
-                                  }
-                                >
-                                  {val.displayName || val.value}
-                                </Tag>
+                                {val.displayName || val.value}
                               </button>
                             );
                           })}
@@ -333,9 +278,7 @@ const UploadDrawer: React.FC<UploadDrawerProps> = ({
                   );
                 }
 
-                // Other metadata types - dropdown select
-                const isRequired =
-                  type.key === "academic_year" || type.key === "cohort";
+                const isRequired = type.key === "academic_year" || type.key === "cohort";
 
                 return (
                   <div key={type.key} className="flex items-start gap-6">
@@ -347,13 +290,11 @@ const UploadDrawer: React.FC<UploadDrawerProps> = ({
                     <div className="flex-1">
                       <select
                         value={currentValue}
-                        onChange={(e) =>
-                          handleMetadataChange(type.key, e.target.value)
-                        }
-                        className="dark:bg-navy-800 w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+                        onChange={(e) => handleMetadataChange(type.key, e.target.value)}
+                        className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white dark:bg-navy-800"
                       >
                         <option value="">— Chọn —</option>
-                        {type.allowedValues?.map((val) => (
+                        {info.allowedValues.map((val: MetadataValue) => (
                           <option key={val.value} value={val.value}>
                             {val.displayName || val.value}
                           </option>
@@ -364,7 +305,9 @@ const UploadDrawer: React.FC<UploadDrawerProps> = ({
                 );
               })}
 
-              <p className="text-xs text-gray-500">* Bắt buộc</p>
+              <p className="text-xs text-gray-500">
+                * Bắt buộc
+              </p>
             </div>
           )}
         </div>
@@ -374,7 +317,7 @@ const UploadDrawer: React.FC<UploadDrawerProps> = ({
           <button
             type="button"
             disabled={uploading}
-            onClick={handleClose}
+            onClick={() => navigate("/admin/documents/list")}
             className="rounded-xl px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-white/10"
           >
             Hủy
@@ -392,27 +335,15 @@ const UploadDrawer: React.FC<UploadDrawerProps> = ({
               </>
             ) : (
               <>
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                  />
-                </svg>
+                <MdCloudUpload className="h-4 w-4" />
                 Tải lên
               </>
             )}
           </button>
         </div>
       </div>
-    </Drawer>
+    </CreatePageLayout>
   );
 };
 
-export default UploadDrawer;
+export default DocumentCreatePage;

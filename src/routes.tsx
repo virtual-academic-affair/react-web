@@ -147,6 +147,11 @@ const routes: RoutesType[] = [
         path: "documents/list",
       },
       {
+        name: "Tải lên tài liệu",
+        layout: "/admin",
+        path: "documents/create",
+      },
+      {
         name: "Quản lý nhãn tài liệu",
         layout: "/admin",
         path: "",

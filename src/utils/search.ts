@@ -67,6 +67,7 @@ export function stringifySearchQuery(
     "orderBy",
     "orderCol",
     "orderDir",
+    "enableIsActiveFilter",
   ],
 ): string {
   const result: string[] = [];
@@ -84,7 +85,9 @@ export function stringifySearchQuery(
     if (key === "smartOrder" && value === false) {
       return;
     }
-
+    if (key === "enableIsActiveFilter") {
+      return;
+    }
     // Skip empty arrays
     if (Array.isArray(value) && value.length === 0) {
       return;

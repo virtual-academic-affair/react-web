@@ -400,7 +400,7 @@ const MetadataTypeDrawer: React.FC<MetadataTypeDrawerProps> = ({
           </div>
           <div className="flex-1">
             {isEdit ? (
-              <p className="text-sm font-medium text-gray-800 dark:text-white">
+              <p className="text-sm font-semibold text-gray-800 dark:text-white">
                 #{key}
               </p>
             ) : (

@@ -73,7 +73,7 @@ const AllowedDomainsCard: React.FC = () => {
   };
 
   // ── render ─────────────────────────────────────────────────────────────────
-  const displayList = editing ? draft : domains;
+  const displayList = editing ? draft : (domains ?? []);
 
   return (
     <Card extra="p-6 flex flex-col gap-4">

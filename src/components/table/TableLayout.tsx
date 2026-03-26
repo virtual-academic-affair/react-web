@@ -1,4 +1,5 @@
 import Card from "@/components/card";
+import Tooltip from "@/components/tooltip/Tooltip.tsx";
 import type { PaginatedResponse } from "@/types/common";
 import React from "react";
 import {
@@ -7,7 +8,6 @@ import {
   MdFilterList,
   MdSearch,
 } from "react-icons/md";
-import Tooltip from "@/components/tooltip/Tooltip.tsx";
 
 export interface TableColumn<T> {
   key: string;
@@ -141,11 +141,11 @@ function TableLayout<T extends { id: number | string }>({
                     </th>
                   ))}
                   {actions.length > 0 && (
-                    <th 
-                      className="whitespace-nowrap px-4 py-3 text-center text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500 sticky right-0 bg-white dark:bg-navy-800 z-20"
-                      style={{ 
+                    <th
+                      className="dark:bg-navy-800 sticky right-0 z-20 bg-white px-4 py-3 text-center text-xs font-semibold tracking-wide whitespace-nowrap text-gray-400 uppercase dark:text-gray-500"
+                      style={{
                         width: `${Math.max(100, actions.length * 55)}px`,
-                        boxShadow: "-10px 0 10px -10px rgba(0,0,0,0.15)" 
+                        boxShadow: "-10px 0 10px -10px rgba(0,0,0,0.15)",
                       }}
                     >
                       Thao tác
@@ -173,9 +173,11 @@ function TableLayout<T extends { id: number | string }>({
                         </td>
                       ))}
                       {actions.length > 0 && (
-                        <td 
-                          className="px-4 py-3 sticky right-0 z-10 bg-white dark:bg-navy-800"
-                          style={{ boxShadow: "-10px 0 10px -10px rgba(0,0,0,0.15)" }}
+                        <td
+                          className="dark:bg-navy-800 sticky right-0 z-10 bg-white px-4 py-3"
+                          style={{
+                            boxShadow: "-10px 0 10px -10px rgba(0,0,0,0.15)",
+                          }}
                         >
                           <div className="dark:bg-navy-700 h-4 animate-pulse rounded bg-gray-200" />
                         </td>
@@ -215,13 +217,17 @@ function TableLayout<T extends { id: number | string }>({
                         </td>
                       ))}
                       {actions.length > 0 && (
-                        <td 
-                          className="whitespace-nowrap py-3 pr-2 sticky right-0 z-10 bg-white group-hover:bg-lightPrimary dark:bg-navy-800 dark:group-hover:bg-navy-700 transition-colors"
-                          style={{ boxShadow: "-10px 0 10px -10px rgba(0,0,0,0.15)" }}
+                        <td
+                          className="group-hover:bg-lightPrimary dark:bg-navy-800 dark:group-hover:bg-navy-700 sticky right-0 z-10 bg-white py-3 pr-2 whitespace-nowrap transition-colors"
+                          style={{
+                            boxShadow: "-10px 0 10px -10px rgba(0,0,0,0.15)",
+                          }}
                         >
                           <div className="flex items-center justify-center gap-2">
                             {actions.map((action) => {
-                              const customRendered = action.render ? action.render(item) : undefined;
+                              const customRendered = action.render
+                                ? action.render(item)
+                                : undefined;
                               return (
                                 <Tooltip key={action.key} label={action.label}>
                                   {customRendered !== undefined ? (
