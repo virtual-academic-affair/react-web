@@ -260,17 +260,6 @@ const AdvancedFilterModal: React.FC<{
     (t) => !["access_scope", "academic_year", "cohort"].includes(t.key),
   );
 
-  // Check if any filter is active
-  const hasAccessScope = (value.accessScope?.length ?? 0) > 0;
-  const hasAcademicYear = (value.academicYear?.length ?? 0) > 0;
-  const hasCohort = (value.cohort?.length ?? 0) > 0;
-  const hasOtherFilters = otherFilters.some(
-    (t) => (value[t.key]?.length ?? 0) > 0,
-  );
-
-  const hasAnyFilter =
-    hasAccessScope || hasAcademicYear || hasCohort || hasOtherFilters;
-
   return (
     <AdvancedFilterModalBase
       open={open}

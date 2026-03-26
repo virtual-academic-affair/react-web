@@ -97,7 +97,7 @@ const DocumentCreatePage: React.FC = () => {
 
   const { data: metadataTypes = [] } = useQuery({
     queryKey: ["metadata-types"],
-    queryFn: () => MetadataService.listTypes(true),
+    queryFn: () => MetadataService.listTypes(),
   });
 
   // Filter to only show active metadata types with active allowed values
