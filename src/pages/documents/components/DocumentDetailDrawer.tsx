@@ -43,7 +43,6 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
   fileId,
   metadataTypes,
   isOpen,
-  isReadOnly = false,
   onClose,
   onDeleted,
 }) => {
@@ -68,7 +67,7 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
   // Fetch full metadata types for display (including inactive)
   const { data: fullMetadataTypes = [] } = useQuery({
     queryKey: ["metadata-types-full"],
-    queryFn: () => MetadataService.listTypes(false),
+    queryFn: () => MetadataService.listTypes(),
     enabled: Boolean(fileId),
   });
 
