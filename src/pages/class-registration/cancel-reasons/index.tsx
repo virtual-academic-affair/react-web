@@ -7,17 +7,16 @@ import { cancelReasonsService } from "@/services/class-registration";
 import type { CancelReason } from "@/types/classRegistration";
 import type { PaginatedResponse } from "@/types/common";
 import { formatDate } from "@/utils/date";
+import { parseSearchString, stringifySearchQuery } from "@/utils/search";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { MdDeleteOutline, MdEdit } from "react-icons/md";
+import { MdDeleteOutline, MdInfoOutline } from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
 import AdvancedFilterModal, {
   type CancelReasonFilters,
 } from "./components/AdvancedFilterModal";
 import CancelReasonDrawer from "./components/CancelReasonDrawer";
-import { parseSearchString, stringifySearchQuery } from "@/utils/search";
-
 
 const PAGE_SIZE = 10;
 
@@ -47,7 +46,6 @@ const CancelReasonsPage: React.FC = () => {
     };
   });
 
-
   const [searchValue, setSearchValue] = React.useState(() => {
     const params = { ...filters };
     if (!filters.enableIsActiveFilter) {
@@ -60,8 +58,6 @@ const CancelReasonsPage: React.FC = () => {
       ["page", "limit"],
     );
   });
-
-
 
   const [draftFilters, setDraftFilters] =
     React.useState<CancelReasonFilters>(defaultFilters);
@@ -92,9 +88,9 @@ const CancelReasonsPage: React.FC = () => {
     const paramsToSerialize = { ...filters };
     if (!filters.enableIsActiveFilter) {
       delete (paramsToSerialize as Record<string, unknown>).isActive;
-      delete (paramsToSerialize as Record<string, unknown>).enableIsActiveFilter;
+      delete (paramsToSerialize as Record<string, unknown>)
+        .enableIsActiveFilter;
     }
-
 
     setSearchValue(
       stringifySearchQuery(
@@ -103,9 +99,7 @@ const CancelReasonsPage: React.FC = () => {
         ["page", "limit"],
       ),
     );
-
   }, [keyword, filters]);
-
 
   React.useEffect(() => {
     const next = new URLSearchParams();
@@ -135,7 +129,6 @@ const CancelReasonsPage: React.FC = () => {
     setFilters(nextFilters);
     setPage(1);
   };
-
 
   const handleEdit = React.useCallback(
     (item: CancelReason) => {
@@ -184,7 +177,9 @@ const CancelReasonsPage: React.FC = () => {
           prev
             ? {
                 ...prev,
-                items: prev.items.map((x) => (x.id === updated.id ? updated : x)),
+                items: prev.items.map((x) =>
+                  x.id === updated.id ? updated : x,
+                ),
               }
             : prev,
       );
@@ -243,8 +238,8 @@ const CancelReasonsPage: React.FC = () => {
     () => [
       {
         key: "edit",
-        icon: <MdEdit className="h-4 w-4" />,
-        label: "Sửa",
+        icon: <MdInfoOutline className="h-4 w-4" />,
+        label: "Chi tiết",
         onClick: handleEdit,
       },
       {
@@ -269,7 +264,6 @@ const CancelReasonsPage: React.FC = () => {
         searchValue={searchValue}
         onSearchChange={setSearchValue}
         onSearch={handleSearch}
-
         searchPlaceholder="Tìm theo nội dung..."
         showFilter={true}
         onFilterClick={() => {

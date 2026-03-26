@@ -1,15 +1,19 @@
-import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { message as toast } from "antd";
+import React, { useEffect, useState } from "react";
 import { MdDeleteOutline } from "react-icons/md";
 
 import Drawer from "@/components/drawer/Drawer";
 import Tag from "@/components/tag/Tag";
 import Tooltip from "@/components/tooltip/Tooltip";
-import { DocumentsService, MetadataService } from "@/services/documents.service";
+import {
+  DocumentsService,
+  MetadataService,
+} from "@/services/documents.service";
 import { RoleColors } from "@/types/users";
 import { formatDate } from "@/utils/date";
 import { parseError } from "@/utils/parseError";
+import AccessScopeBadge from "./AccessScopeBadge";
 
 interface MetadataValue {
   value: string;
@@ -47,7 +51,9 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
 
   // File data
   const [displayName, setDisplayName] = useState("");
-  const [customMetadata, setCustomMetadata] = useState<Record<string, string>>({});
+  const [customMetadata, setCustomMetadata] = useState<Record<string, string>>(
+    {},
+  );
 
   // Saving states
   const [saving, setSaving] = useState(false);
@@ -69,7 +75,9 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
   // Initialize form when fileDetail changes
   useEffect(() => {
     if (fileDetail) {
-      setDisplayName(fileDetail.displayName || fileDetail.originalFilename || "");
+      setDisplayName(
+        fileDetail.displayName || fileDetail.originalFilename || "",
+      );
       const meta = fileDetail.customMetadata || {};
       setCustomMetadata(meta);
     }
@@ -78,7 +86,11 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
   // Handle delete
   const handleDelete = async () => {
     if (!fileId) return;
-    if (!window.confirm(`Xóa tệp "${fileDetail?.displayName || fileDetail?.originalFilename}"?`)) {
+    if (
+      !window.confirm(
+        `Xóa tệp "${fileDetail?.displayName || fileDetail?.originalFilename}"?`,
+      )
+    ) {
       return;
     }
 
@@ -118,7 +130,9 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
     }
 
     const currentValue = customMetadata[key];
-    const allowedValue = type.allowedValues?.find((v: MetadataValue) => v.value === currentValue);
+    const allowedValue = type.allowedValues?.find(
+      (v: MetadataValue) => v.value === currentValue,
+    );
 
     return {
       typeName: type.displayName || key,
@@ -144,14 +158,6 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
     </Tooltip>
   );
 
-  // Get display color for a value
-  const getDisplayColor = (value: MetadataValue) => {
-    if (value.color) return value.color;
-    if (value.visibleRoles?.includes("student")) return "#3b82f6"; // blue-500
-    if (value.visibleRoles?.includes("lecture")) return "#eab308"; // yellow-500
-    return "#9ca3af"; // gray-400
-  };
-
   return (
     <Drawer
       isOpen={isOpen}
@@ -172,148 +178,131 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
       ) : (
         <div className="flex flex-col gap-4">
           {/* File info section */}
-          <div>
-            <p className="text-navy-700 mb-4 text-xs font-semibold tracking-wide uppercase dark:text-white">
-              Thông tin tệp tin
-            </p>
-
-            {/* Tên hiển thị */}
-            <div className="flex items-center gap-6">
-              <div className="w-40 shrink-0">
-                <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                  Tên hiển thị
-                </p>
-              </div>
-              <div className="flex-1">
-                {isReadOnly ? (
-                  <p className="text-navy-700 text-base dark:text-white">
-                    {displayName || fileDetail?.originalFilename || "—"}
-                  </p>
-                ) : (
-                  <input
-                    type="text"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
-                    placeholder="Tên hiển thị"
-                  />
-                )}
-              </div>
+          {/* Tên hiển thị */}
+          <div className="flex items-center gap-6">
+            <div className="w-40 shrink-0">
+              <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                Tên hiển thị
+              </p>
             </div>
-
-            {/* Tên file gốc */}
-            <div className="flex items-center gap-6">
-              <div className="w-40 shrink-0">
-                <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                  Tên file gốc
-                </p>
-              </div>
-              <div className="flex-1">
-                <p className="text-navy-700 text-base dark:text-white">
-                  {fileDetail?.originalFilename || "—"}
-                </p>
-              </div>
-            </div>
-
-            {/* Kích thước */}
-            <div className="flex items-center gap-6">
-              <div className="w-40 shrink-0">
-                <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                  Kích thước
-                </p>
-              </div>
-              <div className="flex-1">
-                <p className="text-navy-700 text-base dark:text-white">
-                  {fileDetail?.fileSize
-                    ? `${(fileDetail.fileSize / 1024 / 1024).toFixed(2)} MB`
-                    : "—"}
-                </p>
-              </div>
-            </div>
-
-            {/* Trạng thái */}
-            <div className="flex items-center gap-6">
-              <div className="w-40 shrink-0">
-                <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                  Trạng thái
-                </p>
-              </div>
-              <div className="flex-1">
-                <Tag color={fileDetail?.status === "active" ? "#22c55e" : "#6b7280"}>
-                  {fileDetail?.status === "active" ? "Hiển thị" : "Ẩn"}
-                </Tag>
-              </div>
-            </div>
-
-            {/* Ngày tải lên */}
-            <div className="flex items-center gap-6">
-              <div className="w-40 shrink-0">
-                <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                  Ngày tải lên
-                </p>
-              </div>
-              <div className="flex-1">
-                <p className="text-navy-700 text-base dark:text-white">
-                  {fileDetail?.createdAt ? formatDate(fileDetail.createdAt) : "—"}
-                </p>
-              </div>
+            <div className="flex-1">
+              <input
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+                placeholder="Tên hiển thị"
+              />
             </div>
           </div>
 
-          {/* Metadata section - read only display with tags */}
-          {fullMetadataTypes.length > 0 && customMetadata && Object.keys(customMetadata).length > 0 && (
-            <div>
-              <p className="text-navy-700 mb-4 text-xs font-semibold tracking-wide uppercase dark:text-white">
-                Nhãn tài liệu
+          {/* Phạm vi truy cập */}
+          <div className="flex items-center gap-6">
+            <div className="w-40 shrink-0">
+              <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                Phạm vi truy cập
               </p>
+            </div>
+            <div className="flex-1">
+              <AccessScopeBadge
+                value={fileDetail?.customMetadata?.accessScope}
+              />
+            </div>
+          </div>
 
-              <div className="flex flex-col gap-4">
-                {fullMetadataTypes
-                  .filter((type: MetadataType) => customMetadata[type.key])
-                  .map((type: MetadataType) => {
-                    const info = getMetadataInfo(type.key);
-                    const currentValue = customMetadata[type.key];
+          {/* Trạng thái */}
+          <div className="flex items-center gap-6">
+            <div className="w-40 shrink-0">
+              <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                Trạng thái xử lý
+              </p>
+            </div>
+            <div className="flex-1">
+              <Tag
+                color={fileDetail?.status === "active" ? "#22c55e" : "#b2161e"}
+              >
+                {fileDetail?.status === "active"
+                  ? "Đang hoạt động"
+                  : "Thất bại"}
+              </Tag>
+            </div>
+          </div>
 
-                    // Find the current value info from allowedValues
-                    const valueInfo = type.allowedValues?.find((v) => v.value === currentValue);
+          {/* Metadata section */}
+          {fullMetadataTypes.length > 0 &&
+            customMetadata &&
+            Object.keys(customMetadata).length > 0 && (
+              <div className="mt-4 border-t border-gray-100 pt-4 dark:border-white/10">
+                <p className="text-navy-700 mb-4 text-xs font-semibold tracking-wide uppercase dark:text-white">
+                  Nhãn tài liệu
+                </p>
 
-                    return (
-                      <div key={type.key} className={`flex items-center gap-6 ${!info.isTypeActive ? "opacity-50" : ""}`}>
-                        <div className="w-40 shrink-0">
-                          <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                            {info.typeName}
-                          </p>
-                          {!info.isTypeActive && (
-                            <p className="text-xs text-gray-400">(Đã vô hiệu hóa)</p>
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex flex-wrap gap-2">
-                            {type.key === "access_scope" ? (
-                              // Access scope as role badge
-                              <Tag color={getDisplayColor(valueInfo || { value: currentValue, displayName: currentValue, isActive: true })}>
-                                {valueInfo?.displayName || currentValue}
-                                {valueInfo && !valueInfo.isActive && (
-                                  <span className="ml-1 opacity-70">(Ẩn)</span>
-                                )}
-                              </Tag>
-                            ) : (
-                              // Other metadata as tag
-                              <Tag color={valueInfo?.color || (valueInfo?.isActive !== false ? "#432afc" : "#6b7280")}>
-                                {valueInfo?.displayName || currentValue}
-                                {valueInfo && !valueInfo.isActive && (
-                                  <span className="ml-1 opacity-70">(Ẩn)</span>
-                                )}
-                              </Tag>
+                <div className="flex flex-col gap-6 text-sm text-gray-600 dark:text-gray-400">
+                  {fullMetadataTypes
+                    .filter((type: MetadataType) => customMetadata[type.key])
+                    .map((type: MetadataType) => {
+                      const currentValue = customMetadata[type.key];
+
+                      // Access scope: always show 2 tags (Giảng viên, Sinh viên)
+                      if (type.key === "access_scope") {
+                        return (
+                          <div
+                            key={type.key}
+                            className="flex items-center gap-6"
+                          >
+                            <div className="w-40 shrink-0">
+                              <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                                {type.displayName}
+                              </p>
+                            </div>
+                            <div className="flex-1">
+                              <AccessScopeBadge value={currentValue} />
+                            </div>
+                          </div>
+                        );
+                      }
+                      // Other metadata types
+                      const info = getMetadataInfo(type.key);
+                      const valueInfo = type.allowedValues?.find(
+                        (v) => v.value === currentValue,
+                      );
+
+                      return (
+                        <div
+                          key={type.key}
+                          className={`flex items-center gap-6 ${!info.isTypeActive ? "opacity-50" : ""}`}
+                        >
+                          <div className="w-40 shrink-0">
+                            <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                              {info.typeName}
+                            </p>
+                            {!info.isTypeActive && (
+                              <p className="text-xs text-gray-400">
+                                (Đã vô hiệu hóa)
+                              </p>
                             )}
                           </div>
+                          <div className="flex-1">
+                            <Tag
+                              color={
+                                valueInfo?.color ||
+                                (valueInfo?.isActive !== false
+                                  ? "#432afc"
+                                  : "#6b7280")
+                              }
+                            >
+                              {valueInfo?.displayName || currentValue}
+                              {valueInfo && !valueInfo.isActive && (
+                                <span className="ml-1 opacity-70">(Ẩn)</span>
+                              )}
+                            </Tag>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Technical info */}
           {fileDetail && (
@@ -329,8 +318,51 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
                     </p>
                   </div>
                   <div className="flex-1">
-                    <p className="text-navy-700 text-base dark:text-white break-all">
+                    <p className="text-navy-700 text-base break-all dark:text-white">
                       {fileDetail.fileId}
+                    </p>
+                  </div>
+                </div>
+                {/* Kích thước */}
+                <div className="flex items-center gap-6">
+                  <div className="w-40 shrink-0">
+                    <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                      Kích thước
+                    </p>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-navy-700 text-base dark:text-white">
+                      {fileDetail?.fileSize
+                        ? `${(fileDetail.fileSize / 1024 / 1024).toFixed(2)} MB`
+                        : "—"}
+                    </p>
+                  </div>
+                </div>
+                {/* Ngày tải lên */}
+                <div className="flex items-center gap-6">
+                  <div className="w-40 shrink-0">
+                    <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                      Ngày tải lên
+                    </p>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-navy-700 text-base dark:text-white">
+                      {fileDetail?.createdAt
+                        ? formatDate(fileDetail.createdAt)
+                        : "—"}
+                    </p>
+                  </div>
+                </div>
+                {/* Tên file gốc */}
+                <div className="flex items-center gap-6">
+                  <div className="w-40 shrink-0">
+                    <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                      Tên file gốc
+                    </p>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-navy-700 text-base dark:text-white">
+                      {fileDetail?.originalFilename || "—"}
                     </p>
                   </div>
                 </div>

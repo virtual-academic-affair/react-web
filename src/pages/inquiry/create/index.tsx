@@ -1,3 +1,4 @@
+import Tag from "@/components/tag/Tag";
 import RichTextEditor from "@/components/fields/RichTextEditor";
 import CreatePageLayout from "@/components/layouts/CreatePageLayout";
 import InquiryTypeSelector from "@/components/selector/InquiryTypeSelector";
@@ -152,12 +153,7 @@ const InquiryCreatePage: React.FC = () => {
               </div>
               <div className="text-navy-700 flex items-center gap-2 text-base dark:text-white">
                 <span>Chọn nhãn</span>
-                <span
-                  style={{ backgroundColor: "#17c1e820", color: "#17c1e8" }}
-                  className="rounded-full px-2.5 py-0.5 text-xs font-bold shadow-sm"
-                >
-                  Thắc mắc
-                </span>
+                <Tag color="#17c1e8">Thắc mắc</Tag>
                 <span>để bắt đầu tạo hồ sơ.</span>
               </div>
             </div>

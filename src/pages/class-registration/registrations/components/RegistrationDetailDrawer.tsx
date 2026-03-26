@@ -1,6 +1,7 @@
 import Drawer from "@/components/drawer/Drawer";
 import RichTextEditor from "@/components/fields/RichTextEditor";
 import MessageStatusSelector from "@/components/selector/MessageStatusSelector";
+import Tag from "@/components/tag/Tag";
 import Switch from "@/components/switch";
 import Tooltip from "@/components/tooltip/Tooltip.tsx";
 import {
@@ -661,11 +662,9 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                           </p>
                         </div>
                         <div className="flex-1">
-                          <span
-                            className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${ItemStatusColors[item.status].bg} ${ItemStatusColors[item.status].text}`}
-                          >
+                          <Tag color={ItemStatusColors[item.status].hex}>
                             {ItemStatusLabels[item.status]}
-                          </span>
+                          </Tag>
                         </div>
                       </div>
                     </div>

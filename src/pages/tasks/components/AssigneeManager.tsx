@@ -1,8 +1,8 @@
 import Tooltip from "@/components/tooltip/Tooltip";
 import type { User } from "@/types/users";
-import { Popover, Empty } from "antd";
+import { Empty, Popover } from "antd";
 import React from "react";
-import { MdPersonAdd, MdClose } from "react-icons/md";
+import { MdClose, MdPersonAdd } from "react-icons/md";
 
 interface AssigneeManagerProps {
   /** List of currently assigned user IDs */
@@ -68,7 +68,7 @@ const AssigneeManager: React.FC<AssigneeManagerProps> = ({
               label={
                 <div className="flex flex-col gap-1">
                   <p className="text-navy-700 text-base font-bold dark:text-white">
-                    {user.name || "Không tên"}
+                    {user.name || "—"}
                   </p>
                   <p className="text-xs text-gray-500">{user.email}</p>
                   <button
@@ -163,7 +163,7 @@ const AssigneeManager: React.FC<AssigneeManagerProps> = ({
                         </div>
                         <div className="flex-1 truncate">
                           <p className="truncate text-sm font-bold dark:text-white">
-                            {u.name || "Không tên"}
+                            {u.name || "—"}
                           </p>
                           <p className="truncate text-[10px] text-gray-400">
                             {u.email}

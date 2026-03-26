@@ -5,6 +5,7 @@
  */
 
 import authImg from "@/assets/img/auth/auth.png";
+import LogoBgWhite from "@/assets/img/logo/logo-bg-white-circle.svg";
 import { useAuthStore } from "@/stores/auth.store";
 import { getRolePath } from "@/utils/auth.util";
 import React from "react";
@@ -59,36 +60,12 @@ export default function AuthLayout() {
                   style={{ backgroundImage: `url(${authImg})` }}
                 >
                   {/* Logo icon */}
-                  <div className="flex h-32 w-32 items-center justify-center rounded-full bg-white shadow-2xl xl:h-40 xl:w-40">
-                    <svg
-                      width="70"
-                      height="70"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="xl:h-[90px] xl:w-[90px]"
-                    >
-                      <path
-                        d="M12 3L2 8.5L12 14L22 8.5L12 3Z"
-                        fill="#422afb"
-                        opacity="0.9"
-                      />
-                      <path
-                        d="M2 15.5L12 21L22 15.5"
-                        stroke="#422afb"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        opacity="0.7"
-                      />
-                      <path
-                        d="M2 12L12 17.5L22 12"
-                        stroke="#422afb"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
+                  <div className="flex h-52 w-52 items-center justify-center">
+                    <img
+                      src={LogoBgWhite}
+                      alt="Logo"
+                      className="object-fit h-full w-full rounded-full"
+                    />
                   </div>
 
                   {/* Brand text */}

@@ -45,10 +45,20 @@ export const DocumentsService = {
 
   /**
    * List files from RAG.
+   * @param params - Query parameters including metadataFilter as JSON string
    */
-  async listFiles(params?: any): Promise<{ files: any[]; total: number }> {
+  async listFiles(params?: {
+    page?: number;
+    limit?: number;
+    keywords?: string;
+    metadataFilter?: Record<string, string[]>;
+  }): Promise<{ files: unknown[]; total: number }> {
+    const queryParams: Record<string, unknown> = { ...params };
+    if (params?.metadataFilter) {
+      queryParams.metadataFilter = JSON.stringify(params.metadataFilter);
+    }
     const { data } = await ragHttp.get(API_ENDPOINTS.rag.files.base, {
-      params,
+      params: queryParams,
     });
     return data;
   },
@@ -130,12 +140,33 @@ export const DocumentsService = {
  * Service for metadata management (Python RAG).
  */
 export const MetadataService = {
+  // ── Metadata Endpoints (RAG) ────────────────────────────────────────────────
+
+  /**
+   * Check if a metadata key already exists.
+   */
+  async checkKeyExists(key: string): Promise<boolean> {
+    const { data } = await ragHttp.get(`${API_ENDPOINTS.rag.metadata.base}/exists`, {
+      params: { key },
+    });
+    return data.exists;
+  },
+
   /**
    * List all metadata types.
    */
-  async listTypes(activeOnly = false): Promise<any[]> {
+  async listTypes(params?: {
+    keywords?: string;
+    isActive?: boolean;
+    enableIsActiveFilter?: boolean;
+  }): Promise<any[]> {
     const { data } = await ragHttp.get(API_ENDPOINTS.rag.metadata.base, {
-      params: { active_only: activeOnly },
+      params: {
+        ...(params?.keywords ? { keywords: params.keywords } : {}),
+        ...(params?.enableIsActiveFilter && params.isActive !== undefined
+          ? { isActive: params.isActive }
+          : {}),
+      },
     });
     const items = data.metadataTypes || data.metadata_types || [];
     // Ensure each item has an 'id' for TableLayout compatibility

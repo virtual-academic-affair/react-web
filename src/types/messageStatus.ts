@@ -12,5 +12,5 @@ export const MessageStatusColors: Record<
 > = {
   opened: { bg: "bg-blue-100", text: "text-blue-800" },
   replied: { bg: "bg-green-100", text: "text-green-800" },
-  closed: { bg: "bg-gray-100", text: "text-gray-800" },
+  closed: { bg: "bg-red-100", text: "text-red-800" },
 };

@@ -1,11 +1,13 @@
 import CreatePageLayout from "@/components/layouts/CreatePageLayout";
 import Switch from "@/components/switch";
+import Tag from "@/components/tag/Tag";
 import Tooltip from "@/components/tooltip/Tooltip";
 import { MetadataService } from "@/services/documents.service";
 import { RoleColors, RoleLabels } from "@/types/users";
 import { parseError } from "@/utils/parseError";
 import { toSnakeCase } from "@/utils/snakeCase";
 import { message as toast } from "antd";
+import debounce from "lodash/debounce";
 import React from "react";
 import { MdAdd, MdDeleteOutline } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
@@ -37,9 +39,26 @@ const MetadataTypeCreatePage: React.FC = () => {
 
   // Label info (step 1)
   const [key, setKey] = React.useState("");
+  const [keyError, setKeyError] = React.useState("");
   const [displayName, setDisplayName] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [isActive, setIsActive] = React.useState(true);
+
+  // Debounced check for key existence
+  const checkKeyExists = React.useRef(
+    debounce(async (keyValue: string) => {
+      if (!keyValue.trim()) {
+        setKeyError("");
+        return;
+      }
+      try {
+        const exists = await MetadataService.checkKeyExists(keyValue);
+        setKeyError(exists ? "Code đã tồn tại" : "");
+      } catch {
+        setKeyError("");
+      }
+    }, 500),
+  ).current;
 
   // Values (step 2) - list of editable items
   const [values, setValues] = React.useState<ValueDraft[]>([emptyValue()]);
@@ -48,6 +67,10 @@ const MetadataTypeCreatePage: React.FC = () => {
   const validateStep1 = () => {
     if (!key.trim()) {
       toast.error("Vui lòng nhập code.");
+      return false;
+    }
+    if (keyError) {
+      toast.error("Code đã tồn tại.");
       return false;
     }
     if (!displayName.trim()) {
@@ -171,13 +194,22 @@ const MetadataTypeCreatePage: React.FC = () => {
                 onChange={(e) => {
                   const newVal = toSnakeCase(e.target.value);
                   setKey(newVal);
+                  checkKeyExists(newVal);
                 }}
                 placeholder="Nhập code"
-                className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2.5 text-sm outline-none dark:border-white/10 dark:text-white"
+                className={`w-full rounded-2xl border bg-transparent px-3 py-2.5 text-sm outline-none dark:text-white ${
+                  keyError
+                    ? "border-red-500 dark:border-red-500"
+                    : "border-gray-200 dark:border-white/10"
+                }`}
               />
-              <p className="absolute mt-1 text-xs text-red-500 dark:text-gray-400">
-                Code không thể chỉnh sửa sau khi tạo
-              </p>
+              {keyError ? (
+                <p className="absolute mt-1 text-xs text-red-500">{keyError}</p>
+              ) : (
+                <p className="absolute mt-1 text-xs text-red-500">
+                  Code không thể chỉnh sửa sau khi tạo
+                </p>
+              )}
             </div>
           </div>
 
@@ -243,7 +275,7 @@ const MetadataTypeCreatePage: React.FC = () => {
             <button
               type="button"
               onClick={handleNext}
-              disabled={submitting}
+              disabled={submitting || !!keyError}
               className="bg-brand-500 hover:bg-brand-600 rounded-2xl px-6 py-3.5 text-sm font-semibold text-white transition-colors disabled:opacity-50"
             >
               Tiếp tục
@@ -340,23 +372,18 @@ const MetadataTypeCreatePage: React.FC = () => {
                         const checked = item.visibleRoles.includes(role);
                         const colors = RoleColors[role];
                         return (
-                          <button
+                          <Tag
                             key={role}
-                            type="button"
+                            color={checked ? colors.hex : "gray"}
                             onClick={() => {
                               const next = checked
                                 ? item.visibleRoles.filter((r) => r !== role)
                                 : [...item.visibleRoles, role];
                               updateValue(item.key, "visibleRoles", next);
                             }}
-                            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
-                              checked
-                                ? `${colors.bg} ${colors.text} border-transparent`
-                                : "dark:bg-navy-800 border-gray-200 bg-gray-100 text-gray-500 dark:border-white/10 dark:text-gray-400"
-                            }`}
                           >
                             {RoleLabels[role]}
-                          </button>
+                          </Tag>
                         );
                       })}
                     </div>
