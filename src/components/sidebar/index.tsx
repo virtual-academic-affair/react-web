@@ -78,7 +78,9 @@ const Sidebar = (props: {
                 <div className="mt-3 ml-4">
                   <p className="text-navy-700 font-bold dark:text-white">
                     {userName ?? "—"}
-                    <div className="mt-1 text-sm font-normal">{userEmail}</div>
+                  </p>
+                  <p className="mt-1 text-sm font-normal text-gray-600 dark:text-gray-400">
+                    {userEmail}
                   </p>
                 </div>
                 <div className="mt-3 h-px w-full bg-gray-200 dark:bg-white/20" />

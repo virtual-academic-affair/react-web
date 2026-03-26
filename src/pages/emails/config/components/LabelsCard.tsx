@@ -6,6 +6,7 @@ import {
 } from "@/pages/emails/message/labelUtils";
 import { labelsService } from "@/services/email";
 import type {
+  GmailLabel,
   LabelMappingDto,
   UpdateLabelsDto,
 } from "@/types/email.ts";
@@ -32,13 +33,13 @@ const LabelsCard: React.FC<LabelsCardProps> = ({ systemLabelEnum }) => {
   const [saving, setSaving] = useState(false);
   const [autoCreating, setAutoCreating] = useState(false);
 
-  const { data: mapping = null, isLoading: loadingMapping, refetch: refetchLabels } = useQuery({
+  const { data: mapping = null, isLoading: loadingMapping, refetch: refetchLabels } = useQuery<LabelMappingDto>({
     queryKey: ["email-labels"],
     queryFn: () => labelsService.getLabels(),
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: gmailLabels = [], isLoading: loadingGmail } = useQuery({
+  const { data: gmailLabels = [], isLoading: loadingGmail } = useQuery<GmailLabel[]>({
     queryKey: ["email-gmail-labels"],
     queryFn: () => labelsService.getGmailLabels(),
     staleTime: 60 * 1000,

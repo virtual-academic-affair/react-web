@@ -77,6 +77,7 @@ const MetadataTypeCreatePage: React.FC = () => {
     return values.some(
       (v) =>
         v.key !== checkItemKey &&
+        v.value.toLowerCase() !== "" &&
         v.value.toLowerCase() === checkKey.toLowerCase(),
     );
   };

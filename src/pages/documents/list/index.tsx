@@ -3,7 +3,6 @@ import { message as toast } from "antd";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import {
-  MdCloudUpload,
   MdDeleteOutline,
   MdFileDownload,
   MdInfoOutline,
@@ -13,6 +12,7 @@ import TableLayout, {
   type TableAction,
   type TableColumn,
 } from "@/components/table/TableLayout";
+import Tag from "@/components/tag/Tag";
 import { DocumentsService, MetadataService } from "@/services/documents.service";
 import { formatDate } from "@/utils/date";
 import { parseError } from "@/utils/parseError";
@@ -23,7 +23,6 @@ import DocumentDetailDrawer from "../components/DocumentDetailDrawer";
 import AdvancedFilterModal, {
   type DocumentFilters,
 } from "../components/AdvancedFilterModal";
-import UploadDrawer from "../components/UploadDrawer";
 
 const PAGE_SIZE = 10;
 
@@ -54,7 +53,6 @@ const DocumentListPage: React.FC = () => {
 
   const [draftFilters, setDraftFilters] = useState<DocumentFilters>(filters);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [uploadOpen, setUploadOpen] = useState(false);
 
   // Detail drawer
   const idParam = searchParams.get("id");
@@ -150,36 +148,25 @@ const DocumentListPage: React.FC = () => {
     [queryClient, handleCloseDetail],
   );
 
-  const handleUploadSuccess = () => {
-    setUploadOpen(false);
-    queryClient.invalidateQueries({ queryKey: ["documents"] });
-  };
-
   // ── Helpers ────────────────────────────────────────────────────────────────────
-  const getMetadataDisplay = useCallback(
+  const getAccessScopeDisplay = useCallback(
     (file: any) => {
       const meta = file.customMetadata || {};
-      const displayTags: { key: string; value: string; color: string; label: string }[] = [];
+      const accessScope = meta.accessScope;
 
-      metadataTypes.forEach((type: any) => {
-        const rawKey = type.key;
-        const rawValue = meta[rawKey];
-        if (rawValue) {
-          const allowedValue = type.allowedValues?.find(
-            (v: any) => v.value === rawValue,
-          );
-          displayTags.push({
-            key: rawKey,
-            value: rawValue,
-            color: allowedValue?.color || RoleColors.student.bg,
-            label:
-              allowedValue?.displayName ||
-              rawValue,
-          });
-        }
-      });
+      if (!accessScope) {
+        return { label: "N/A", color: RoleColors.student.bg };
+      }
 
-      return displayTags;
+      const accessScopeType = metadataTypes.find((t: any) => t.key === "access_scope");
+      const allowedValue = accessScopeType?.allowedValues?.find(
+        (v: any) => v.value === accessScope,
+      );
+
+      const color = allowedValue?.color || RoleColors.student.bg;
+      const label = allowedValue?.displayName || accessScope;
+
+      return { label, color };
     },
     [metadataTypes],
   );
@@ -190,7 +177,7 @@ const DocumentListPage: React.FC = () => {
       {
         key: "displayName",
         header: "Tài liệu",
-        width: "40%",
+        width: "50%",
         render: (x) => (
           <div className="flex flex-col">
             <p className="text-navy-700 truncate text-sm font-bold dark:text-white">
@@ -203,26 +190,15 @@ const DocumentListPage: React.FC = () => {
         ),
       },
       {
-        key: "metadata",
-        header: "Nhãn",
-        width: "35%",
+        key: "accessScope",
+        header: "Phạm vi truy cập",
+        width: "20%",
         render: (x) => {
-          const tags = getMetadataDisplay(x);
-          if (tags.length === 0) {
-            return <span className="text-xs text-gray-400">Chưa có nhãn</span>;
-          }
+          const { label, color } = getAccessScopeDisplay(x);
           return (
-            <div className="flex flex-wrap gap-1">
-              {tags.map((tag) => (
-                <span
-                  key={tag.key}
-                  className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-white"
-                  style={{ backgroundColor: tag.color }}
-                >
-                  {tag.label}
-                </span>
-              ))}
-            </div>
+            <Tag color={color}>
+              {label}
+            </Tag>
           );
         },
       },
@@ -239,24 +215,18 @@ const DocumentListPage: React.FC = () => {
       {
         key: "isActive",
         header: "Hoạt động",
-        width: "10%",
+        width: "15%",
         render: (x) => {
           const isActive = x.status === "active";
           return (
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                isActive
-                  ? "bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400"
-                  : "bg-gray-100 text-gray-500 dark:bg-gray-500/20 dark:text-gray-400"
-              }`}
-            >
+            <Tag color={isActive ? "#22c55e" : "#6b7280"}>
               {isActive ? "Hiển thị" : "Ẩn"}
-            </span>
+            </Tag>
           );
         },
       },
     ],
-    [getMetadataDisplay],
+    [getAccessScopeDisplay],
   );
 
   const actions: TableAction<any>[] = useMemo(
@@ -301,17 +271,6 @@ const DocumentListPage: React.FC = () => {
     [handleOpenDetail, handleDelete],
   );
 
-  const rightSlot = (
-    <button
-      type="button"
-      onClick={() => setUploadOpen(true)}
-      className="bg-brand-500 hover:bg-brand-600 flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-medium text-white transition-colors"
-    >
-      <MdCloudUpload className="h-5 w-5" />
-      Tải lên
-    </button>
-  );
-
   return (
     <div className="flex flex-col gap-4">
       <TableLayout
@@ -328,7 +287,6 @@ const DocumentListPage: React.FC = () => {
           setDraftFilters(filters);
           setFilterOpen(true);
         }}
-        rightSlot={rightSlot}
         columns={columns}
         actions={actions}
         onPageChange={setPage}
@@ -339,13 +297,11 @@ const DocumentListPage: React.FC = () => {
         fileId={selectedFileId}
         metadataTypes={metadataTypes}
         isOpen={selectedFileId !== null}
+        isReadOnly={true}
         onClose={handleCloseDetail}
         onDeleted={() => {
           queryClient.invalidateQueries({ queryKey: ["documents"] });
           handleCloseDetail();
-        }}
-        onUpdated={() => {
-          queryClient.invalidateQueries({ queryKey: ["documents"] });
         }}
       />
 
@@ -367,13 +323,6 @@ const DocumentListPage: React.FC = () => {
           setFilterOpen(false);
         }}
         onRequestClose={() => setFilterOpen(false)}
-      />
-
-      <UploadDrawer
-        open={uploadOpen}
-        metadataTypes={metadataTypes}
-        onClose={() => setUploadOpen(false)}
-        onSuccess={handleUploadSuccess}
       />
     </div>
   );

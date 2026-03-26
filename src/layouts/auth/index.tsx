@@ -58,7 +58,6 @@ export default function AuthLayout() {
                   className="absolute flex h-full w-full flex-col items-center justify-center bg-cover bg-center lg:rounded-bl-[120px] xl:rounded-bl-[200px]"
                   style={{ backgroundImage: `url(${authImg})` }}
                 >
-
                   {/* Logo icon */}
                   <div className="flex h-32 w-32 items-center justify-center rounded-full bg-white shadow-2xl xl:h-40 xl:w-40">
                     <svg

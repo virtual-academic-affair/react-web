@@ -17,7 +17,6 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { Spin } from "antd";
 import dayjs from "dayjs";
 import React from "react";
 import { MdAccessTime } from "react-icons/md";
@@ -187,7 +186,6 @@ const BoardTaskCard = ({
 
 const TaskBoard: React.FC<TaskBoardProps> = ({
   tasks,
-  loading,
   onTaskClick,
   onStatusChange,
   onPriorityChange,
@@ -241,14 +239,6 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
       setLocalTasks(previousTasks);
     }
   };
-
-  if (loading && localTasks.length === 0) {
-    return (
-      <div className="flex h-150 w-full items-center justify-center">
-        <Spin size="large" />
-      </div>
-    );
-  }
 
   return (
     <DndContext

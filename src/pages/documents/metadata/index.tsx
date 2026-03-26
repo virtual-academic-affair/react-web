@@ -3,50 +3,83 @@ import TableLayout, {
   type TableAction,
   type TableColumn,
 } from "@/components/table/TableLayout";
+import Tag from "@/components/tag/Tag";
+import Tooltip from "@/components/tooltip/Tooltip";
 import { MetadataService } from "@/services/documents.service";
 import type { PaginatedResponse } from "@/types/common";
-import { formatDate } from "@/utils/date";
 import { parseError } from "@/utils/parseError";
+import { parseSearchString, stringifySearchQuery } from "@/utils/search";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { MdDeleteOutline, MdEdit, MdAdd } from "react-icons/md";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { MdDeleteOutline, MdInfoOutline } from "react-icons/md";
+import { useSearchParams } from "react-router-dom";
+import MetadataFilterModal, {
+  type MetadataFilters,
+  metadataDefaultFilters,
+} from "./components/MetadataFilterModal";
 import MetadataTypeDrawer from "./components/MetadataTypeDrawer";
 
 const PAGE_SIZE = 10;
+
+interface AllowedValue {
+  value: string;
+  displayName: string;
+  isActive: boolean;
+  color?: string;
+  visibleRoles?: string[];
+  totalFiles?: number;
+}
 
 interface MetadataType {
   id: string | number;
   key: string;
   displayName: string;
   description?: string;
+  isSystem?: boolean;
   isActive: boolean;
-  allowedValues?: Array<{
-    value: string;
-    displayName: string;
-    isActive: boolean;
-    color?: string;
-    visibleRoles?: string[];
-    totalFiles?: number;
-  }>;
+  allowedValues?: AllowedValue[];
+  totalFiles?: number;
   createdAt?: string;
   updatedAt?: string;
 }
 
 const MetadataManagementPage: React.FC = () => {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [page, setPage] = React.useState(
     Number(searchParams.get("page") ?? "1") > 0
       ? Number(searchParams.get("page") ?? "1")
       : 1,
   );
-  const [keyword, setKeyword] = React.useState(
-    searchParams.get("keyword") ?? "",
-  );
   const [updatingIds, setUpdatingIds] = React.useState<Set<string>>(new Set());
+  const [filterOpen, setFilterOpen] = React.useState(false);
+
+  const [filters, setFilters] = React.useState<MetadataFilters>(() => {
+    const enableFilter = searchParams.get("enableIsActiveFilter") === "true";
+    const isActive = searchParams.get("isActive") !== "false";
+    return {
+      enableIsActiveFilter: enableFilter,
+      isActive,
+    };
+  });
+
+  const [searchValue, setSearchValue] = React.useState(() => {
+    const params = { ...filters };
+    if (!filters.enableIsActiveFilter) {
+      delete (params as Record<string, unknown>).isActive;
+      delete (params as Record<string, unknown>).enableIsActiveFilter;
+    }
+    return stringifySearchQuery(
+      searchParams.get("keyword") ?? "",
+      params as unknown as Record<string, unknown>,
+      ["page", "limit"],
+    );
+  });
+
+  const [draftFilters, setDraftFilters] = React.useState<MetadataFilters>(
+    metadataDefaultFilters,
+  );
 
   const idParam = searchParams.get("id");
   const selectedTypeKey = idParam || null;
@@ -56,16 +89,33 @@ const MetadataManagementPage: React.FC = () => {
     queryFn: () => MetadataService.listTypes(false),
   });
 
+  const parsedSearch = React.useMemo(
+    () => parseSearchString(searchValue),
+    [searchValue],
+  );
+  const keyword = parsedSearch.keyword;
+
   const filteredTypes = React.useMemo(() => {
-    if (!keyword.trim()) return allTypes;
-    const lower = keyword.toLowerCase();
-    return allTypes.filter(
-      (t: MetadataType) =>
-        t.key.toLowerCase().includes(lower) ||
-        t.displayName?.toLowerCase().includes(lower) ||
-        t.description?.toLowerCase().includes(lower),
-    );
-  }, [allTypes, keyword]);
+    let result = allTypes.filter((t: MetadataType) => t.key !== "access_scope");
+
+    if (keyword.trim()) {
+      const lower = keyword.toLowerCase();
+      result = result.filter(
+        (t: MetadataType) =>
+          t.key.toLowerCase().includes(lower) ||
+          t.displayName?.toLowerCase().includes(lower) ||
+          t.description?.toLowerCase().includes(lower),
+      );
+    }
+
+    if (filters.enableIsActiveFilter) {
+      result = result.filter(
+        (t: MetadataType) => t.isActive === filters.isActive,
+      );
+    }
+
+    return result;
+  }, [allTypes, keyword, filters]);
 
   const paginatedResult = React.useMemo(() => {
     const start = (page - 1) * PAGE_SIZE;
@@ -83,8 +133,25 @@ const MetadataManagementPage: React.FC = () => {
 
   const selectedType =
     selectedTypeKey && allTypes.length > 0
-      ? allTypes.find((t: MetadataType) => t.key === selectedTypeKey) ?? null
+      ? (allTypes.find((t: MetadataType) => t.key === selectedTypeKey) ?? null)
       : null;
+
+  React.useEffect(() => {
+    const paramsToSerialize = { ...filters };
+    if (!filters.enableIsActiveFilter) {
+      delete (paramsToSerialize as Record<string, unknown>).isActive;
+      delete (paramsToSerialize as Record<string, unknown>)
+        .enableIsActiveFilter;
+    }
+
+    setSearchValue(
+      stringifySearchQuery(
+        keyword,
+        paramsToSerialize as unknown as Record<string, unknown>,
+        ["page", "limit"],
+      ),
+    );
+  }, [keyword, filters]);
 
   React.useEffect(() => {
     const next = new URLSearchParams();
@@ -95,14 +162,50 @@ const MetadataManagementPage: React.FC = () => {
     if (selectedTypeKey) {
       next.set("id", selectedTypeKey);
     }
+    if (filters.enableIsActiveFilter) {
+      next.set("enableIsActiveFilter", "true");
+      next.set("isActive", String(filters.isActive));
+    }
     setSearchParams(next, { replace: true });
-  }, [keyword, page, selectedTypeKey, setSearchParams]);
+  }, [filters, keyword, page, selectedTypeKey, setSearchParams]);
 
   const handleSearch = () => {
+    const parsed = parseSearchString(searchValue);
+    const nextFilters: MetadataFilters = {
+      isActive: parsed.params.isActive !== "false",
+      enableIsActiveFilter: parsed.params.enableIsActiveFilter === "true",
+    };
+    setFilters(nextFilters);
     setPage(1);
   };
 
-  const handleEdit = React.useCallback(
+  const handleKeywordChange = (value: string) => {
+    setSearchValue(value);
+  };
+
+  const handleOpenFilter = () => {
+    setDraftFilters(filters);
+    setFilterOpen(true);
+  };
+
+  const handleApplyFilter = () => {
+    setFilters(draftFilters);
+    setPage(1);
+    setFilterOpen(false);
+  };
+
+  const handleCloseFilter = () => {
+    setFilterOpen(false);
+  };
+
+  const handleClearFilter = () => {
+    setDraftFilters(metadataDefaultFilters);
+    setFilters(metadataDefaultFilters);
+    setPage(1);
+    setFilterOpen(false);
+  };
+
+  const handleOpenDetail = React.useCallback(
     (item: MetadataType) => {
       const next = new URLSearchParams(searchParams);
       next.set("id", item.key);
@@ -111,18 +214,36 @@ const MetadataManagementPage: React.FC = () => {
     [searchParams, setSearchParams],
   );
 
-  const handleDelete = React.useCallback(async (item: MetadataType) => {
-    if (!window.confirm(`Xóa nhãn "${item.displayName || item.key}"?\nThao tác này không thể hoàn tác.`)) {
-      return;
-    }
-    try {
-      await MetadataService.deleteType(item.key);
-      toast.success("Đã xóa nhãn.");
-      queryClient.invalidateQueries({ queryKey: ["metadata-types-all"] });
-    } catch (err: unknown) {
-      toast.error(parseError(err));
-    }
-  }, [queryClient]);
+  const handleDelete = React.useCallback(
+    async (item: MetadataType) => {
+      if (item.isSystem) {
+        toast.error("Không thể xóa nhãn hệ thống.");
+        return;
+      }
+      const totalFiles =
+        item.allowedValues?.reduce((sum, v) => sum + (v.totalFiles || 0), 0) ||
+        0;
+      if (totalFiles > 0) {
+        toast.error(`Không thể xóa nhãn đã có tài liệu.`);
+        return;
+      }
+      if (
+        !window.confirm(
+          `Xóa nhãn "${item.displayName || item.key}"?\nThao tác này không thể hoàn tác.`,
+        )
+      ) {
+        return;
+      }
+      try {
+        await MetadataService.deleteType(item.key);
+        toast.success("Đã xóa nhãn.");
+        queryClient.invalidateQueries({ queryKey: ["metadata-types-all"] });
+      } catch (err: unknown) {
+        toast.error(parseError(err));
+      }
+    },
+    [queryClient],
+  );
 
   const handleToggleActive = React.useCallback(
     async (item: MetadataType, next: boolean) => {
@@ -132,7 +253,7 @@ const MetadataManagementPage: React.FC = () => {
       setUpdatingIds((prev) => new Set(prev).add(item.key));
       try {
         await MetadataService.updateType(item.key, { isActive: next });
-        toast.success(next ? "Đã kích hoạt nhãn." : "Đã vô hiệu hóa nhãn.");
+        toast.success(next ? "Cập nhật thành công" : "Cập nhật thành công");
         queryClient.invalidateQueries({ queryKey: ["metadata-types-all"] });
       } catch (err: unknown) {
         toast.error(parseError(err));
@@ -150,73 +271,77 @@ const MetadataManagementPage: React.FC = () => {
   const columns: TableColumn<MetadataType>[] = React.useMemo(
     () => [
       {
-        key: "key",
-        header: "Code",
-        width: "20%",
-        render: (x) => (
-          <p className="font-mono text-sm font-semibold text-navy-700 dark:text-white">
-            {x.key}
-          </p>
-        ),
-      },
-      {
         key: "displayName",
         header: "Tên hiển thị",
-        width: "25%",
+        width: "30%",
         render: (x) => (
-          <p className="text-navy-700 text-sm font-medium dark:text-white">
-            {x.displayName || "-"}
-          </p>
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <p className="text-navy-700 text-sm font-medium dark:text-white">
+                {x.displayName || "-"}
+              </p>
+              {x.isSystem && <Tag>Hệ thống</Tag>}
+            </div>
+            <p className="text-xs text-gray-400 dark:text-gray-500">#{x.key}</p>
+          </div>
         ),
       },
       {
-        key: "description",
-        header: "Mô tả",
-        width: "20%",
+        key: "values",
+        header: "SL giá trị",
+        width: "100px",
         render: (x) => (
-          <p className="truncate text-sm text-gray-500 dark:text-gray-400">
-            {x.description || "-"}
-          </p>
+          <span className="text-navy-700 text-sm dark:text-white">
+            {x.allowedValues?.length ?? 0}
+          </span>
         ),
       },
       {
-        key: "allowedValues",
-        header: "Giá trị",
-        width: "15%",
+        key: "files",
+        header: "SL tài liệu",
+        width: "100px",
         render: (x) => {
-          const count = x.allowedValues?.length ?? 0;
+          const totalFiles =
+            x.allowedValues?.reduce((sum, v) => sum + (v.totalFiles || 0), 0) ||
+            0;
           return (
-            <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-500/20 dark:text-blue-400">
-              {count} giá trị
+            <span className="text-navy-700 flex text-sm dark:text-white">
+              {totalFiles}
             </span>
           );
         },
       },
       {
         key: "isActive",
-        header: "Trạng thái",
-        width: "10%",
-        render: (x) => (
-          <div className="flex items-center gap-2">
+        header: "Trạng thái hiển thị",
+        width: "16%",
+        render: (x) => {
+          const isUpdating = updatingIds.has(x.key);
+          const isSystem = x.isSystem;
+          const tooltip = isSystem
+            ? "Không thể thay đổi trạng thái nhãn hệ thống."
+            : undefined;
+
+          const switchButton = (
             <Switch
               checked={x.isActive}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 handleToggleActive(x, e.target.checked)
               }
-              disabled={updatingIds.has(x.key)}
+              disabled={isUpdating || isSystem}
             />
-          </div>
-        ),
-      },
-      {
-        key: "updatedAt",
-        header: "Chỉnh sửa lần cuối",
-        width: "10%",
-        render: (x) => (
-          <p className="text-navy-700 text-sm dark:text-white">
-            {x.updatedAt ? formatDate(x.updatedAt) : "-"}
-          </p>
-        ),
+          );
+
+          return (
+            <div className="flex items-center gap-2">
+              {isSystem ? (
+                <Tooltip label={tooltip}>{switchButton}</Tooltip>
+              ) : (
+                switchButton
+              )}
+            </div>
+          );
+        },
       },
     ],
     [handleToggleActive, updatingIds],
@@ -225,34 +350,54 @@ const MetadataManagementPage: React.FC = () => {
   const actions: TableAction<MetadataType>[] = React.useMemo(
     () => [
       {
-        key: "edit",
-        icon: <MdEdit className="h-4 w-4" />,
-        label: "Sửa",
-        onClick: handleEdit,
+        key: "detail",
+        icon: <MdInfoOutline className="h-4 w-4" />,
+        label: "Chi tiết",
+        onClick: handleOpenDetail,
         className:
           "flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-500 text-white transition-colors hover:bg-brand-600",
       },
       {
         key: "delete",
-        icon: <MdDeleteOutline className="h-4 w-4" />,
         label: "Xóa",
         onClick: handleDelete,
         className:
           "flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600",
+        icon: <MdDeleteOutline className="h-4 w-4" />,
+        render: (x) => {
+          const isSystem = x.isSystem;
+          const totalFiles =
+            x.allowedValues?.reduce((sum, v) => sum + (v.totalFiles || 0), 0) ||
+            0;
+          const isDisabled = isSystem || totalFiles > 0;
+          let tooltip = "";
+          if (isSystem) {
+            tooltip = "Không thể xóa nhãn hệ thống.";
+          } else if (totalFiles > 0) {
+            tooltip = `Không thể xóa nhãn đã có tài liệu.`;
+          }
+          const button = (
+            <button
+              type="button"
+              onClick={() => handleDelete(x)}
+              disabled={isDisabled}
+              className={`flex h-10 w-10 items-center justify-center rounded-2xl text-white transition-colors ${
+                isDisabled
+                  ? "cursor-not-allowed bg-gray-300 opacity-50 dark:bg-gray-600"
+                  : "bg-red-500 hover:bg-red-600"
+              }`}
+            >
+              <MdDeleteOutline className="h-4 w-4" />
+            </button>
+          );
+          if (isDisabled) {
+            return <Tooltip label={tooltip}>{button}</Tooltip>;
+          }
+          return button;
+        },
       },
     ],
-    [handleEdit, handleDelete],
-  );
-
-  const rightSlot = (
-    <button
-      type="button"
-      onClick={() => navigate("/admin/documents/metadata/create")}
-      className="bg-brand-500 hover:bg-brand-600 flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-medium text-white transition-colors"
-    >
-      <MdAdd className="h-5 w-5" />
-      Tạo nhãn mới
-    </button>
+    [handleOpenDetail, handleDelete],
   );
 
   return (
@@ -262,16 +407,25 @@ const MetadataManagementPage: React.FC = () => {
         loading={typesLoading}
         page={page}
         pageSize={PAGE_SIZE}
-        searchValue={keyword}
-        onSearchChange={setKeyword}
+        searchValue={searchValue}
+        onSearchChange={handleKeywordChange}
         onSearch={handleSearch}
-        searchPlaceholder="Tìm theo code, tên hiển thị..."
-        showFilter={false}
-        rightSlot={rightSlot}
+        searchPlaceholder="Tìm theo tên, code..."
+        showFilter={true}
+        onFilterClick={handleOpenFilter}
         columns={columns}
         actions={actions}
         onPageChange={setPage}
-        onRowClick={handleEdit}
+        onRowClick={() => {}}
+      />
+
+      <MetadataFilterModal
+        open={filterOpen}
+        value={draftFilters}
+        onChange={setDraftFilters}
+        onClear={handleClearFilter}
+        onApply={handleApplyFilter}
+        onRequestClose={handleCloseFilter}
       />
 
       <MetadataTypeDrawer
@@ -287,9 +441,7 @@ const MetadataManagementPage: React.FC = () => {
         }}
         onSaved={(_type, mode) => {
           toast.success(
-            mode === "create"
-              ? "Đã tạo nhãn mới."
-              : "Đã cập nhật nhãn.",
+            mode === "create" ? "Đã tạo nhãn mới." : "Đã cập nhật nhãn.",
           );
           queryClient.invalidateQueries({ queryKey: ["metadata-types-all"] });
           if (mode === "create") {

@@ -10,6 +10,7 @@ import ClassRegistrationCreatePage from "@/pages/class-registration/create";
 import ClassRegistrationsPage from "@/pages/class-registration/registrations";
 import ClassRegistrationStatisticsPage from "@/pages/class-registration/statistics";
 import DocumentListPage from "@/pages/documents/list";
+import DocumentCreatePage from "@/pages/documents/create";
 import MetadataManagementPage from "@/pages/documents/metadata";
 import MetadataTypeCreatePage from "@/pages/documents/metadata/create";
 import GmailConfigPage from "@/pages/emails/config";
@@ -140,6 +141,7 @@ const AdminLayout: React.FC = () => {
             <Route path="tasks/create" element={<TaskCreatePage />} />
             <Route path="tasks/view/:id" element={<TaskDetailPage />} />
             <Route path="documents/list" element={<DocumentListPage />} />
+            <Route path="documents/create" element={<DocumentCreatePage />} />
             <Route
               path="documents/metadata/index"
               element={<MetadataManagementPage />}
