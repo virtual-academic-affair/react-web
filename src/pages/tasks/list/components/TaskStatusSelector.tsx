@@ -1,10 +1,7 @@
+import Tag from "@/components/tag/Tag.tsx";
 import type { TaskStatus } from "@/types/task";
-import {
-  TaskStatusColors,
-  TaskStatusLabels,
-} from "@/types/task";
+import { TaskStatusLabels } from "@/types/task";
 import React from "react";
-import { MdExpandMore } from "react-icons/md";
 
 interface TaskStatusSelectorProps {
   value: TaskStatus;
@@ -13,45 +10,38 @@ interface TaskStatusSelectorProps {
   className?: string;
 }
 
+const ALL_STATUSES: TaskStatus[] = ["todo", "doing", "done", "cancelled"];
+
+const TaskStatusHexColors: Record<TaskStatus, string> = {
+  todo: "#a3aed0",
+  doing: "#3b82f6",
+  done: "#10b981",
+  cancelled: "#ef4444",
+};
+
 const TaskStatusSelector: React.FC<TaskStatusSelectorProps> = ({
   value,
   onChange,
   disabled = false,
   className,
 }) => {
-  const statuses: TaskStatus[] = ["todo", "doing", "done", "cancelled"];
-  const colors = TaskStatusColors[value];
+  const options = ALL_STATUSES.map((s) => ({
+    value: s,
+    label: TaskStatusLabels[s],
+  }));
 
   return (
-    <div className={className ?? "relative inline-flex"}>
-      {/* Visible tag style with expand icon */}
-      <span
-        className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold ${
-          colors.bg
-        } ${colors.text} ${
-          disabled ? "cursor-not-allowed opacity-50" : "border-transparent"
-        }`}
-      >
-        <span>{TaskStatusLabels[value]}</span>
-        <MdExpandMore className="h-4 w-4 text-inherit" />
-      </span>
-
-      {/* Invisible native select for interaction */}
-      {!disabled && (
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value as TaskStatus)}
-          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-          style={{ zIndex: 10 }}
-        >
-          {statuses.map((s) => (
-            <option key={s} value={s}>
-              {TaskStatusLabels[s]}
-            </option>
-          ))}
-        </select>
-      )}
-    </div>
+    <Tag
+      variant="selection"
+      color={TaskStatusHexColors[value]}
+      value={value}
+      options={options}
+      onChange={(v) => onChange(v as TaskStatus)}
+      disabled={disabled}
+      className={className}
+    >
+      {TaskStatusLabels[value]}
+    </Tag>
   );
 };
 

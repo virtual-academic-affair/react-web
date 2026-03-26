@@ -1,8 +1,8 @@
 import Card from "@/components/card";
+import Tag from "@/components/tag/Tag";
 import {
   getLabelColor,
   getLabelVi,
-  labelPillStyle,
 } from "@/pages/emails/message/labelUtils";
 import { labelsService } from "@/services/email";
 import type {
@@ -17,7 +17,6 @@ import React, { useMemo, useState } from "react";
 import {
   MdAutoAwesome,
   MdEdit,
-  MdExpandMore,
   MdLabel,
   MdSave,
 } from "react-icons/md";
@@ -188,54 +187,39 @@ const LabelsCard: React.FC<LabelsCardProps> = ({ systemLabelEnum }) => {
                 className="flex items-center gap-3 rounded-xl px-4 py-2.5"
               >
                 <span className="w-40 shrink-0">
-                  <span
-                    style={
-                      systemLabelEnum
-                        ? labelPillStyle(getLabelColor(key, systemLabelEnum))
-                        : undefined
-                    }
-                    className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium text-gray-700 dark:border-white/10 dark:text-gray-100"
-                  >
+                  <Tag color={getLabelColor(key, systemLabelEnum)}>
                     {getLabelVi(key, systemLabelEnum)}
-                  </span>
+                  </Tag>
                 </span>
                 {editing ? (
-                  <div className="relative flex-1">
-                    <span className="inline-flex items-center gap-1 rounded-full border border-gray-200 px-3 py-1 text-xs font-medium text-gray-700 dark:border-white/10 dark:text-gray-100">
-                      <span>
-                        {draft?.[key]
-                          ? (gmailLabels.find((g) => g.value === draft?.[key])
-                              ?.label ?? draft?.[key])
-                          : "—"}
-                      </span>
-                      <MdExpandMore className="h-3.5 w-3.5 text-gray-400" />
-                    </span>
-                    <select
-                      value={draft?.[key] ?? ""}
-                      onChange={(e) =>
-                        setDraft((prev) =>
-                          prev
-                            ? { ...prev, [key]: e.target.value || null }
-                            : prev,
-                        )
-                      }
-                      className="dark:bg-navy-700 absolute inset-0 h-full w-full cursor-pointer opacity-0 focus-visible:outline-none"
-                    >
-                      <option value="">—</option>
-                      {gmailLabels.map((gl) => (
-                        <option key={gl.value} value={gl.value}>
-                          {gl.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <Tag
+                    variant="selection"
+                    value={draft?.[key] ?? ""}
+                    options={gmailLabels.map((gl) => ({
+                      value: gl.value,
+                      label: gl.label,
+                    }))}
+                    onChange={(v) =>
+                      setDraft((prev) =>
+                        prev
+                          ? { ...prev, [key]: v || null }
+                          : prev,
+                      )
+                    }
+                    className="flex-1"
+                  >
+                    {draft?.[key]
+                      ? (gmailLabels.find((g) => g.value === draft?.[key])
+                          ?.label ?? draft?.[key])
+                      : "—"}
+                  </Tag>
                 ) : (
                   <div className="flex-1">
                     {currentValue ? (
-                      <span className="inline-flex items-center rounded-full border border-gray-200 px-3 py-1 text-xs font-medium text-gray-700 dark:border-white/10 dark:text-gray-100">
+                      <Tag>
                         {gmailLabels.find((g) => g.value === currentValue)
                           ?.label ?? currentValue}
-                      </span>
+                      </Tag>
                     ) : (
                       <span className="text-sm text-gray-400 italic dark:text-gray-500">
                         —

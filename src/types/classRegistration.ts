@@ -28,11 +28,11 @@ export const ItemStatusLabels: Record<ItemStatus, string> = {
 
 export const ItemStatusColors: Record<
   ItemStatus,
-  { bg: string; text: string }
+  { bg: string; text: string; hex: string }
 > = {
-  pending: { bg: "bg-yellow-100", text: "text-yellow-800" },
-  approved: { bg: "bg-green-100", text: "text-green-800" },
-  rejected: { bg: "bg-red-100", text: "text-red-800" },
+  pending: { bg: "bg-yellow-100", text: "text-yellow-800", hex: "#eab308" },
+  approved: { bg: "bg-green-100", text: "text-green-800", hex: "#10b981" },
+  rejected: { bg: "bg-red-100", text: "text-red-800", hex: "#ef4444" },
 };
 
 export interface ClassRegistrationItem {

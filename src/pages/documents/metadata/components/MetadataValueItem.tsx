@@ -1,4 +1,5 @@
 import Switch from "@/components/switch";
+import Tag from "@/components/tag/Tag";
 import Tooltip from "@/components/tooltip/Tooltip";
 import { RoleColors, RoleLabels } from "@/types/users";
 import React from "react";
@@ -111,24 +112,20 @@ const MetadataValueItem: React.FC<MetadataValueItemProps> = ({
                 const checked = form.visibleRoles.includes(role);
                 const colors = RoleColors[role];
                 return (
-                  <button
+                  <Tag
                     key={role}
-                    type="button"
-                    disabled={saving || (form.totalFiles ?? 0) > 0}
+                    color={checked ? colors.hex : "gray"}
                     onClick={() => {
+                      if (saving) return;
                       const next = checked
                         ? form.visibleRoles.filter((r) => r !== role)
                         : [...form.visibleRoles, role];
                       onFormChange({ visibleRoles: next });
                     }}
-                    className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
-                      checked
-                        ? `${colors.bg} ${colors.text} border-transparent`
-                        : "dark:bg-navy-800 border-gray-200 bg-gray-100 text-gray-500 dark:border-white/10 dark:text-gray-400"
-                    } `}
+                    className={`cursor-pointer ${checked ? "" : "opacity-50"} ${saving ? "cursor-not-allowed" : ""}`}
                   >
                     {RoleLabels[role]}
-                  </button>
+                  </Tag>
                 );
               })}
             </div>
@@ -185,7 +182,7 @@ const MetadataValueItem: React.FC<MetadataValueItemProps> = ({
                 if (input) input.click();
               }}
               className="focus:ring-brand-500 dark:focus:ring-offset-navy-900 focus:ring-1.5 h-10 w-10 shrink-0 cursor-pointer rounded-full border-2 border-gray-200 bg-transparent transition-all focus:ring-offset-2 focus:outline-none dark:border-white/10"
-              style={{ backgroundColor: form.color || "#cccccc" }}
+              style={{ backgroundColor: form.color || "#432afc" }}
             />
             <input
               id={`color-input-${valueKey}`}

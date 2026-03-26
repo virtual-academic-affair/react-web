@@ -1,6 +1,7 @@
 import Drawer from "@/components/drawer/Drawer";
 import ConfirmModal from "@/components/modal/ConfirmModal";
 import Switch from "@/components/switch";
+import Tag from "@/components/tag/Tag";
 import Tooltip from "@/components/tooltip/Tooltip.tsx";
 import MetadataValueItem from "@/pages/documents/metadata/components/MetadataValueItem";
 import { MetadataService } from "@/services/documents.service";
@@ -645,11 +646,11 @@ const MetadataTypeDrawer: React.FC<MetadataTypeDrawerProps> = ({
                             draftValue.visibleRoles.includes(role);
                           const colors = RoleColors[role];
                           return (
-                            <button
+                            <Tag
                               key={role}
-                              type="button"
-                              disabled={savingValues.has("__new__")}
+                              color={colors.hex}
                               onClick={() => {
+                                if (savingValues.has("__new__")) return;
                                 const newRoles = checked
                                   ? draftValue.visibleRoles.filter(
                                       (r) => r !== role,
@@ -660,14 +661,10 @@ const MetadataTypeDrawer: React.FC<MetadataTypeDrawerProps> = ({
                                   visibleRoles: newRoles,
                                 });
                               }}
-                              className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
-                                checked
-                                  ? `${colors.bg} ${colors.text} border-transparent`
-                                  : "dark:bg-navy-800 border-gray-200 bg-gray-100 text-gray-500 dark:border-white/10 dark:text-gray-400"
-                              } disabled:cursor-not-allowed`}
+                              className={`cursor-pointer ${checked ? "" : "opacity-40"} ${savingValues.has("__new__") ? "cursor-not-allowed" : ""}`}
                             >
                               {RoleLabels[role]}
-                            </button>
+                            </Tag>
                           );
                         })}
                       </div>

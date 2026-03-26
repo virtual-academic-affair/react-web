@@ -1,10 +1,7 @@
+import Tag from "@/components/tag/Tag.tsx";
 import type { TaskPriority } from "@/types/task";
-import {
-  TaskPriorityColors,
-  TaskPriorityLabels,
-} from "@/types/task";
+import { TaskPriorityLabels } from "@/types/task";
 import React from "react";
-import { MdExpandMore } from "react-icons/md";
 
 interface TaskPrioritySelectorProps {
   value: TaskPriority;
@@ -14,6 +11,15 @@ interface TaskPrioritySelectorProps {
   className?: string;
 }
 
+const ALL_PRIORITIES: TaskPriority[] = ["low", "medium", "high", "urgent"];
+
+const TaskPriorityHexColors: Record<TaskPriority, string> = {
+  low: "#a3aed0",
+  medium: "#3b82f6",
+  high: "#f97316",
+  urgent: "#ef4444",
+};
+
 const TaskPrioritySelector: React.FC<TaskPrioritySelectorProps> = ({
   value,
   onChange,
@@ -21,39 +27,31 @@ const TaskPrioritySelector: React.FC<TaskPrioritySelectorProps> = ({
   readonly = false,
   className,
 }) => {
-  const priorities: TaskPriority[] = ["low", "medium", "high", "urgent"];
-  const colors = TaskPriorityColors[value];
+  const options = ALL_PRIORITIES.map((p) => ({
+    value: p,
+    label: TaskPriorityLabels[p],
+  }));
+
+  if (readonly || !onChange) {
+    return (
+      <Tag color={TaskPriorityHexColors[value]} className={className}>
+        {TaskPriorityLabels[value]}
+      </Tag>
+    );
+  }
 
   return (
-    <div className={className ?? "relative inline-flex"}>
-      {/* Visible tag style with expand icon */}
-      <span
-        className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold ${
-          colors.bg
-        } ${colors.text} ${
-          disabled ? "cursor-not-allowed opacity-50" : "border-transparent"
-        }`}
-      >
-        <span>{TaskPriorityLabels[value]}</span>
-        {!readonly && <MdExpandMore className="h-4 w-4 text-inherit" />}
-      </span>
-
-      {/* Invisible native select for interaction */}
-      {!disabled && !readonly && onChange && (
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value as TaskPriority)}
-          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-          style={{ zIndex: 10 }}
-        >
-          {priorities.map((p) => (
-            <option key={p} value={p}>
-              {TaskPriorityLabels[p]}
-            </option>
-          ))}
-        </select>
-      )}
-    </div>
+    <Tag
+      variant="selection"
+      color={TaskPriorityHexColors[value]}
+      value={value}
+      options={options}
+      onChange={(v) => onChange(v as TaskPriority)}
+      disabled={disabled}
+      className={className}
+    >
+      {TaskPriorityLabels[value]}
+    </Tag>
   );
 };
 

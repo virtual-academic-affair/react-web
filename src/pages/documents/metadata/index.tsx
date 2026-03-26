@@ -64,18 +64,15 @@ const MetadataManagementPage: React.FC = () => {
     };
   });
 
-  const [searchValue, setSearchValue] = React.useState(() => {
-    const params = { ...filters };
-    if (!filters.enableIsActiveFilter) {
-      delete (params as Record<string, unknown>).isActive;
-      delete (params as Record<string, unknown>).enableIsActiveFilter;
-    }
-    return stringifySearchQuery(
-      searchParams.get("keyword") ?? "",
-      params as unknown as Record<string, unknown>,
+  const initialKeyword = searchParams.get("keyword") ?? "";
+  const [keyword, setKeyword] = React.useState(initialKeyword);
+  const [searchValue, setSearchValue] = React.useState(() =>
+    stringifySearchQuery(
+      initialKeyword,
+      { enableIsActiveFilter: false } as unknown as Record<string, unknown>,
       ["page", "limit"],
-    );
-  });
+    ),
+  );
 
   const [draftFilters, setDraftFilters] = React.useState<MetadataFilters>(
     metadataDefaultFilters,
@@ -85,37 +82,18 @@ const MetadataManagementPage: React.FC = () => {
   const selectedTypeKey = idParam || null;
 
   const { data: allTypes = [], isLoading: typesLoading } = useQuery({
-    queryKey: ["metadata-types-all"],
-    queryFn: () => MetadataService.listTypes(false),
+    queryKey: ["metadata-types-all", keyword, filters],
+    queryFn: () =>
+      MetadataService.listTypes({
+        keywords: keyword.trim() || undefined,
+        isActive: filters.isActive,
+        enableIsActiveFilter: filters.enableIsActiveFilter,
+      }),
   });
 
-  const parsedSearch = React.useMemo(
-    () => parseSearchString(searchValue),
-    [searchValue],
-  );
-  const keyword = parsedSearch.keyword;
-
   const filteredTypes = React.useMemo(() => {
-    let result = allTypes.filter((t: MetadataType) => t.key !== "access_scope");
-
-    if (keyword.trim()) {
-      const lower = keyword.toLowerCase();
-      result = result.filter(
-        (t: MetadataType) =>
-          t.key.toLowerCase().includes(lower) ||
-          t.displayName?.toLowerCase().includes(lower) ||
-          t.description?.toLowerCase().includes(lower),
-      );
-    }
-
-    if (filters.enableIsActiveFilter) {
-      result = result.filter(
-        (t: MetadataType) => t.isActive === filters.isActive,
-      );
-    }
-
-    return result;
-  }, [allTypes, keyword, filters]);
+    return allTypes.filter((t: MetadataType) => t.key !== "access_scope");
+  }, [allTypes]);
 
   const paginatedResult = React.useMemo(() => {
     const start = (page - 1) * PAGE_SIZE;
@@ -137,23 +115,6 @@ const MetadataManagementPage: React.FC = () => {
       : null;
 
   React.useEffect(() => {
-    const paramsToSerialize = { ...filters };
-    if (!filters.enableIsActiveFilter) {
-      delete (paramsToSerialize as Record<string, unknown>).isActive;
-      delete (paramsToSerialize as Record<string, unknown>)
-        .enableIsActiveFilter;
-    }
-
-    setSearchValue(
-      stringifySearchQuery(
-        keyword,
-        paramsToSerialize as unknown as Record<string, unknown>,
-        ["page", "limit"],
-      ),
-    );
-  }, [keyword, filters]);
-
-  React.useEffect(() => {
     const next = new URLSearchParams();
     if (keyword) {
       next.set("keyword", keyword);
@@ -169,11 +130,29 @@ const MetadataManagementPage: React.FC = () => {
     setSearchParams(next, { replace: true });
   }, [filters, keyword, page, selectedTypeKey, setSearchParams]);
 
+  // Sync searchValue when keyword or filters change (from filter modal or URL)
+  React.useEffect(() => {
+    const paramsToSerialize = { ...filters };
+    if (!filters.enableIsActiveFilter) {
+      delete (paramsToSerialize as Record<string, unknown>).isActive;
+      delete (paramsToSerialize as Record<string, unknown>).enableIsActiveFilter;
+    }
+    setSearchValue(
+      stringifySearchQuery(keyword, paramsToSerialize as unknown as Record<string, unknown>, [
+        "page",
+        "limit",
+      ]),
+    );
+  }, [keyword, filters]);
+
   const handleSearch = () => {
     const parsed = parseSearchString(searchValue);
+    setKeyword(parsed.keyword);
+
+    // Sync filters from typed params
     const nextFilters: MetadataFilters = {
       isActive: parsed.params.isActive !== "false",
-      enableIsActiveFilter: parsed.params.enableIsActiveFilter === "true",
+      enableIsActiveFilter: parsed.params.isActive !== undefined,
     };
     setFilters(nextFilters);
     setPage(1);
