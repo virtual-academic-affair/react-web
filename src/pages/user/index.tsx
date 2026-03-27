@@ -65,7 +65,7 @@ const UserDashboard: React.FC = () => {
 
         {/* Gradient overlay */}
         <div
-          className="pointer-events-none absolute inset-0 bg-linear-to-r from-black/80 via-black/50 to-transparent"
+          className="pointer-events-none absolute inset-0 bg-linear-to-r from-black/20 via-black/10 to-transparent"
           aria-hidden
         />
 
@@ -75,7 +75,7 @@ const UserDashboard: React.FC = () => {
             <div className="mb-1 text-sm tracking-widest uppercase">
               Hệ thống
             </div>
-            <div className="font-momo-display text-7xl font-semibold tracking-wider">
+            <div className="font-momo-display font-semibold tracking-wider sm:text-4xl md:text-7xl">
               Giáo vụ số
             </div>
           </h1>
