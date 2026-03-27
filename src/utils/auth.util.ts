@@ -6,7 +6,7 @@ import type { Role } from "@/types/users";
  */
 export function getRolePath(role: Role | null): string {
   if (role === "admin") return "/admin/dashboard";
-  if (role) return "/user/dashboard";
+  if (role) return "/user";
   return "/auth/login";
 }
 
