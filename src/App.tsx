@@ -5,6 +5,7 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import RoleRoute from "@/components/auth/RoleRoute";
 import LoginPage from "@/pages/auth/login";
 import GoogleCallbackPage from "@/pages/auth/login/callback";
+import UserDashboard from "@/pages/user";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { ConfigProvider, theme } from "antd";
 import { useEffect, useState } from "react";
@@ -13,7 +14,6 @@ import dayjs from "dayjs";
 import "dayjs/locale/vi";
 import "driver.js/dist/driver.css";
 
-// Globally set dayjs locale to Vietnamese
 dayjs.locale("vi");
 
 export default function App() {
@@ -28,7 +28,6 @@ export default function App() {
   }, []);
 
   return (
-    
     <ConfigProvider
       locale={viVN}
       theme={{
@@ -37,20 +36,25 @@ export default function App() {
           colorBgBase: isDark ? "#0b1437" : "#ffffff",
           colorBgContainer: isDark ? "#111c44" : "#ffffff",
           colorBgElevated: isDark ? "#111c44" : "#ffffff",
-          colorBorderSecondary: isDark ? "#2b3674" : "#f0f0f0", // Calendar borders
+          colorBorderSecondary: isDark ? "#2b3674" : "#f0f0f0",
           colorTextBase: isDark ? "#ffffff" : "#1b2559",
           colorText: isDark ? "#ffffff" : "#1b2559",
-          colorTextQuaternary: isDark ? "#a3aed0" : "#a0aec0", // e.g. placeholder, empty text
+          colorTextQuaternary: isDark ? "#a3aed0" : "#a0aec0",
         },
       }}
     >
       <BrowserRouter>
         <Routes>
+          {/* ── Auth ── */}
           <Route path="/auth" element={<AuthLayout />}>
             <Route path="login" element={<LoginPage />} />
             <Route path="callback" element={<GoogleCallbackPage />} />
           </Route>
 
+          {/* ── Public landing — must come BEFORE ProtectedRoute ── */}
+          <Route path="/" element={<UserDashboard />} />
+
+          {/* ── Protected routes ── */}
           <Route element={<ProtectedRoute />}>
             <Route element={<RoleRoute allowedRoles={["admin"]} />}>
               <Route path="/admin/*" element={<AdminLayout />} />
@@ -61,7 +65,8 @@ export default function App() {
             </Route>
           </Route>
 
-          <Route path="*" element={<Navigate to="/admin/email/config" replace />} />
+          {/* ── Fallback ── */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </ConfigProvider>

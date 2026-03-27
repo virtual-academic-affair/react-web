@@ -308,6 +308,8 @@
   --font-dm: "Momo Trust Sans", sans-serif;
   --font-poppins: "Poppins", sans-serif;
   --font-momo: "Momo Trust Sans", sans-serif;
+  --font-momo-display: "Momo Trust Display", sans-serif;
+  --font-momo-signature: "Momo Signature", cursive;
   --font-sans: "Momo Trust Sans", ui-sans-serif, system-ui, sans-serif;
 
   --shadow-3xl: 14px 17px 40px 4px;
