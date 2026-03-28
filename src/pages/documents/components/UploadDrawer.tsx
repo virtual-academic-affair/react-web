@@ -26,7 +26,20 @@ interface UploadDrawerProps {
   onSuccess: () => void;
 }
 
-const ALLOWED_EXTENSIONS = [".pdf", ".doc", ".docx", ".txt", ".md", ".html"];
+const ALLOWED_EXTENSIONS = [
+  ".pdf",
+  ".doc",
+  ".docx",
+  ".txt",
+  ".xlxs",
+  ".xls",
+  ".md",
+  ".html",
+  ".xml",
+  ".csv",
+  ".tsv",
+  ".rtf",
+];
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
 const UploadDrawer: React.FC<UploadDrawerProps> = ({
