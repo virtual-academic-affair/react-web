@@ -1,22 +1,26 @@
-import { Viewer, Worker } from "@react-pdf-viewer/core";
-import { defaultLayoutPlugin } from "@react-pdf-viewer/default-layout";
 import { useQuery } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import mammoth from "mammoth";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import {
+  MdChevronLeft,
+  MdChevronRight,
   MdClose,
   MdDescription,
   MdErrorOutline,
   MdFileDownload,
 } from "react-icons/md";
+import { Document, Page, pdfjs } from "react-pdf";
 
 import { DocumentsService } from "@/services/documents";
 
-import "@react-pdf-viewer/core/lib/styles/index.css";
-import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 import "./FilePreviewModal.css";
+
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.min.mjs",
+  import.meta.url,
+).toString();
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -89,13 +93,79 @@ interface FilePreviewModalProps {
 // ── Sub-components ───────────────────────────────────────────────────────────
 
 const PdfPreview: React.FC<{ url: string }> = ({ url }) => {
-  const defaultLayoutPluginInstance = defaultLayoutPlugin();
+  const [numPages, setNumPages] = useState<number>(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [scale, setScale] = useState(1.2);
 
   return (
-    <div className="fpv-pdf-container h-full w-full">
-      <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
-        <Viewer fileUrl={url} plugins={[defaultLayoutPluginInstance]} />
-      </Worker>
+    <div className="flex h-full flex-col">
+      {/* PDF toolbar */}
+      <div className="flex shrink-0 items-center justify-center gap-3 border-b border-white/8 bg-[#202124]/80 px-4 py-2">
+        <button
+          type="button"
+          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+          disabled={currentPage <= 1}
+          className="rounded-lg p-1.5 text-white/70 transition-colors hover:bg-white/10 disabled:opacity-30"
+        >
+          <MdChevronLeft className="h-5 w-5" />
+        </button>
+        <span className="text-sm text-white/80">
+          {currentPage} / {numPages || "–"}
+        </span>
+        <button
+          type="button"
+          onClick={() => setCurrentPage((p) => Math.min(numPages, p + 1))}
+          disabled={currentPage >= numPages}
+          className="rounded-lg p-1.5 text-white/70 transition-colors hover:bg-white/10 disabled:opacity-30"
+        >
+          <MdChevronRight className="h-5 w-5" />
+        </button>
+        <span className="mx-2 h-5 w-px bg-white/20" />
+        <button
+          type="button"
+          onClick={() => setScale((s) => Math.max(0.5, s - 0.2))}
+          className="rounded-lg px-2 py-1 text-sm text-white/70 transition-colors hover:bg-white/10"
+        >
+          −
+        </button>
+        <span className="text-sm text-white/80">
+          {Math.round(scale * 100)}%
+        </span>
+        <button
+          type="button"
+          onClick={() => setScale((s) => Math.min(3, s + 0.2))}
+          className="rounded-lg px-2 py-1 text-sm text-white/70 transition-colors hover:bg-white/10"
+        >
+          +
+        </button>
+      </div>
+
+      {/* PDF content */}
+      <div className="flex flex-1 justify-center overflow-auto bg-gray-800/50 p-8">
+        <Document
+          file={url}
+          onLoadSuccess={({ numPages: n }) => setNumPages(n)}
+          loading={
+            <div className="flex items-center justify-center py-20">
+              <div className="fpv-spinner" />
+            </div>
+          }
+          error={
+            <div className="flex flex-col items-center justify-center gap-3 py-20 text-gray-400">
+              <MdErrorOutline className="h-12 w-12" />
+              <p className="text-sm">Không thể hiển thị PDF.</p>
+            </div>
+          }
+        >
+          <Page
+            pageNumber={currentPage}
+            scale={scale}
+            className="shadow-lg"
+            renderTextLayer={true}
+            renderAnnotationLayer={true}
+          />
+        </Document>
+      </div>
     </div>
   );
 };
@@ -126,8 +196,8 @@ const TextPreview: React.FC<{ blob: Blob }> = ({ blob }) => {
   }
 
   return (
-    <div className="h-full overflow-auto bg-[#1e1e2e] p-8">
-      <pre className="mx-auto max-w-[900px] rounded-xl border border-white/5 bg-[#282a36] p-8 font-mono text-[13px] leading-relaxed break-all whitespace-pre-wrap text-slate-200 shadow-2xl">
+    <div className="h-full overflow-auto bg-gray-800/50 p-8">
+      <pre className="mx-auto min-h-[80vh] max-w-[816px] rounded bg-white p-12 font-mono text-[13px] leading-relaxed break-all whitespace-pre-wrap text-gray-800 shadow-lg">
         {content}
       </pre>
     </div>
@@ -182,7 +252,7 @@ const DocxPreview: React.FC<{ blob: Blob }> = ({ blob }) => {
   }
 
   return (
-    <div className="h-full overflow-auto bg-gray-100 p-8">
+    <div className="h-full overflow-auto bg-gray-800/50 p-8">
       <div
         className="fpv-docx-content mx-auto min-h-[80vh] max-w-[816px] rounded bg-white px-16 py-12 text-sm leading-relaxed text-gray-800 shadow-lg"
         dangerouslySetInnerHTML={{ __html: html }}
@@ -332,8 +402,10 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
     }
   };
 
+  if (!document.body) return null;
+
   return createPortal(
-    <div className="animate-in fade-in fixed inset-0 z-[9999] flex items-center justify-center duration-200">
+    <div className="animate-in fade-in fixed inset-0 z-9999 flex items-center justify-center duration-200">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/85 backdrop-blur-sm"
@@ -343,7 +415,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
       {/* Modal container */}
       <div className="relative flex h-full w-full flex-col">
         {/* Header */}
-        <div className="z-1 flex shrink-0 items-center justify-between border-b border-white/[0.08] bg-[#202124]/95 px-5 py-3">
+        <div className="z-1 flex shrink-0 items-center justify-between border-b border-white/8 bg-[#202124]/95 px-5 py-3">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10">
               <MdDescription className="h-5 w-5 text-gray-300" />
@@ -362,7 +434,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
             <button
               type="button"
               onClick={handleDownload}
-              className="flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition-all hover:bg-white/[0.12] hover:text-white active:scale-92"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition-all hover:bg-white/12 hover:text-white active:scale-92"
               title="Tải xuống"
             >
               <MdFileDownload className="h-5 w-5" />
@@ -370,7 +442,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition-all hover:bg-white/[0.12] hover:text-white active:scale-92"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition-all hover:bg-white/12 hover:text-white active:scale-92"
               title="Đóng"
             >
               <MdClose className="h-5 w-5" />

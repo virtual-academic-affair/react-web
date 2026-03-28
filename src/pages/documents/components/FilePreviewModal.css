@@ -1,31 +1,7 @@
 /* Only overrides that Tailwind can't handle:
-   - react-pdf-viewer internal class overrides
    - dangerouslySetInnerHTML (docx) child element styling
    - custom keyframe for the spinner
 */
-
-/* ── PDF Viewer theme overrides ───────────────────────────────────────────── */
-
-.fpv-pdf-container .rpv-core__viewer {
-  height: 100% !important;
-}
-
-.fpv-pdf-container .rpv-default-layout__container {
-  border: none !important;
-}
-
-.fpv-pdf-container .rpv-default-layout__toolbar {
-  background: rgba(32, 33, 36, 0.95) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-}
-
-.fpv-pdf-container .rpv-default-layout__sidebar--opened {
-  background: rgba(32, 33, 36, 0.95) !important;
-}
-
-.fpv-pdf-container .rpv-default-layout__body {
-  background: rgba(41, 42, 45, 0.95) !important;
-}
 
 /* ── DOCX rendered HTML child styling ─────────────────────────────────────── */
 
