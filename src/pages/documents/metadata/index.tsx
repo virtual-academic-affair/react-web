@@ -5,7 +5,7 @@ import TableLayout, {
 } from "@/components/table/TableLayout";
 import Tag from "@/components/tag/Tag";
 import Tooltip from "@/components/tooltip/Tooltip";
-import { MetadataService } from "@/services/documents.service";
+import { MetadataService } from "@/services/documents";
 import type { PaginatedResponse } from "@/types/common";
 import { parseError } from "@/utils/parseError";
 import { parseSearchString, stringifySearchQuery } from "@/utils/search";
@@ -135,13 +135,15 @@ const MetadataManagementPage: React.FC = () => {
     const paramsToSerialize = { ...filters };
     if (!filters.enableIsActiveFilter) {
       delete (paramsToSerialize as Record<string, unknown>).isActive;
-      delete (paramsToSerialize as Record<string, unknown>).enableIsActiveFilter;
+      delete (paramsToSerialize as Record<string, unknown>)
+        .enableIsActiveFilter;
     }
     setSearchValue(
-      stringifySearchQuery(keyword, paramsToSerialize as unknown as Record<string, unknown>, [
-        "page",
-        "limit",
-      ]),
+      stringifySearchQuery(
+        keyword,
+        paramsToSerialize as unknown as Record<string, unknown>,
+        ["page", "limit"],
+      ),
     );
   }, [keyword, filters]);
 

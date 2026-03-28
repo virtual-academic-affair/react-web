@@ -1,6 +1,7 @@
 import ConfirmModal from "@/components/modal/ConfirmModal";
+import Tooltip from "@/components/tooltip/Tooltip";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
-import { tasksService } from "@/services/tasks.service";
+import { tasksService } from "@/services/tasks";
 import type { PaginatedResponse } from "@/types/common";
 import { type Task, TaskPriority, TaskStatus } from "@/types/task";
 import { parseSearchString, stringifySearchQuery } from "@/utils/search";
@@ -14,9 +15,6 @@ import {
   MdGridView,
   MdSearch,
 } from "react-icons/md";
-import Tooltip from "@/components/tooltip/Tooltip";
-
-
 
 import { useSearchParams } from "react-router-dom";
 import TaskAdvancedFilterModal, {
@@ -394,10 +392,10 @@ const TasksPage: React.FC = () => {
           <MdFilterList className="h-5 w-5" />
         </button>
 
-        <div className="relative dark:bg-navy-900 flex shrink-0 items-center rounded-full border border-gray-200 bg-white p-1 dark:border-[#ffffff33]">
+        <div className="dark:bg-navy-900 relative flex shrink-0 items-center rounded-full border border-gray-200 bg-white p-1 dark:border-[#ffffff33]">
           {/* Sliding highlight */}
           <div
-            className="absolute h-[calc(100%-8px)] rounded-full bg-brand-50 transition-all duration-300 ease-in-out dark:bg-brand-500/20"
+            className="bg-brand-50 dark:bg-brand-500/20 absolute h-[calc(100%-8px)] rounded-full transition-all duration-300 ease-in-out"
             style={{
               width: "calc((100% - 8px) / 3)",
               left: "4px",
@@ -428,9 +426,7 @@ const TasksPage: React.FC = () => {
               </button>
             </Tooltip>
           ))}
-
         </div>
-
       </div>
 
       {view === "table" && (

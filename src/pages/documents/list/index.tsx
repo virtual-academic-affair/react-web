@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
-import React, { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { MdDeleteOutline, MdFileDownload, MdInfoOutline } from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
 
@@ -9,10 +9,7 @@ import TableLayout, {
   type TableColumn,
 } from "@/components/table/TableLayout";
 import Tag from "@/components/tag/Tag";
-import {
-  DocumentsService,
-  MetadataService,
-} from "@/services/documents.service";
+import { DocumentsService, MetadataService } from "@/services/documents";
 import { formatDate } from "@/utils/date";
 import { parseError } from "@/utils/parseError";
 import { parseSearchString, stringifySearchQuery } from "@/utils/search";
@@ -27,7 +24,7 @@ const PAGE_SIZE = 10;
 
 const defaultFilters: DocumentFilters = {};
 
-const DocumentListPage: React.FC = () => {
+const DocumentListPage = () => {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -159,7 +156,7 @@ const DocumentListPage: React.FC = () => {
   });
 
   // ── Effects ────────────────────────────────────────────────────────────────────
-  React.useEffect(() => {
+  useEffect(() => {
     const next = new URLSearchParams();
     if (keyword) next.set("keyword", keyword);
     next.set("page", String(page));
@@ -187,7 +184,7 @@ const DocumentListPage: React.FC = () => {
   }, [keyword, page, filters, selectedFileId, setSearchParams]);
 
   // Sync searchValue when keyword or filters change (from filter modal or URL)
-  React.useEffect(() => {
+  useEffect(() => {
     const params = { ...filters };
     setSearchValue(
       stringifySearchQuery(

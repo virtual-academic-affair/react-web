@@ -1,13 +1,13 @@
-import React from "react";
-import type { ApexOptions } from "apexcharts";
-import { tasksService } from "@/services/tasks.service";
+import { tasksService } from "@/services/tasks";
 import {
   type TaskStatsItem,
   TaskPriorityColors,
   TaskPriorityLabels,
 } from "@/types/task";
-import { type TimeRangeType, getDateRange } from "./utils/dateRange";
 import { useQuery } from "@tanstack/react-query";
+import type { ApexOptions } from "apexcharts";
+import React from "react";
+import { type TimeRangeType, getDateRange } from "./utils/dateRange";
 
 interface Summary {
   total: number;
@@ -38,8 +38,7 @@ interface UseTaskStatisticsReturn {
 }
 
 export function useTaskStatistics(): UseTaskStatisticsReturn {
-  const [timeRange, setTimeRange] =
-    React.useState<TimeRangeType>("this_week");
+  const [timeRange, setTimeRange] = React.useState<TimeRangeType>("this_week");
 
   const { data = {}, isLoading: loading } = useQuery({
     queryKey: ["task-stats", timeRange],

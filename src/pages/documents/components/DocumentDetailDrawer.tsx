@@ -6,10 +6,7 @@ import { MdDeleteOutline } from "react-icons/md";
 import Drawer from "@/components/drawer/Drawer";
 import Tag from "@/components/tag/Tag";
 import Tooltip from "@/components/tooltip/Tooltip";
-import {
-  DocumentsService,
-  MetadataService,
-} from "@/services/documents.service";
+import { DocumentsService, MetadataService } from "@/services/documents";
 import { RoleColors } from "@/types/users";
 import { formatDate } from "@/utils/date";
 import { parseError } from "@/utils/parseError";

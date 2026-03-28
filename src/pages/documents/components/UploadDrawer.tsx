@@ -3,7 +3,7 @@ import React, { useCallback, useRef, useState } from "react";
 
 import Drawer from "@/components/drawer/Drawer";
 import Tag from "@/components/tag/Tag";
-import { DocumentsService } from "@/services/documents.service";
+import { DocumentsService } from "@/services/documents";
 import { RoleColors } from "@/types/users";
 import { parseError } from "@/utils/parseError";
 import AccessScopeBadge from "./AccessScopeBadge";

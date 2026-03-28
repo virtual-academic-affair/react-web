@@ -4,10 +4,7 @@ import React, { useCallback, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import CreatePageLayout from "@/components/layouts/CreatePageLayout";
-import {
-  DocumentsService,
-  MetadataService,
-} from "@/services/documents.service";
+import { DocumentsService, MetadataService } from "@/services/documents";
 import { RoleColors } from "@/types/users";
 import { parseError } from "@/utils/parseError";
 

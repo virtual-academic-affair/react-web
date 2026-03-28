@@ -1,6 +1,6 @@
 import { API_ENDPOINTS } from "@/config/api.config";
-import http from "./http";
-import ragHttp from "./rag-http";
+import http from "../http";
+import ragHttp from "../rag-http";
 
 /**
  * Service for document management.
@@ -110,17 +110,17 @@ export const DocumentsService = {
   /**
    * Update file metadata.
    */
-  async updateFileMetadata(fileId: string, updates: {
-    displayName?: string;
-    customMetadata?: Record<string, string>;
-  }): Promise<any> {
-    const { data } = await ragHttp.patch(
-      API_ENDPOINTS.rag.files.byId(fileId),
-      {
-        displayName: updates.displayName,
-        customMetadata: updates.customMetadata,
-      },
-    );
+  async updateFileMetadata(
+    fileId: string,
+    updates: {
+      displayName?: string;
+      customMetadata?: Record<string, string>;
+    },
+  ): Promise<any> {
+    const { data } = await ragHttp.patch(API_ENDPOINTS.rag.files.byId(fileId), {
+      displayName: updates.displayName,
+      customMetadata: updates.customMetadata,
+    });
     return data;
   },
 
@@ -146,9 +146,12 @@ export const MetadataService = {
    * Check if a metadata key already exists.
    */
   async checkKeyExists(key: string): Promise<boolean> {
-    const { data } = await ragHttp.get(`${API_ENDPOINTS.rag.metadata.base}/exists`, {
-      params: { key },
-    });
+    const { data } = await ragHttp.get(
+      `${API_ENDPOINTS.rag.metadata.base}/exists`,
+      {
+        params: { key },
+      },
+    );
     return data.exists;
   },
 

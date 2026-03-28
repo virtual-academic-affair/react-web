@@ -4,7 +4,7 @@ import Switch from "@/components/switch";
 import Tag from "@/components/tag/Tag";
 import Tooltip from "@/components/tooltip/Tooltip.tsx";
 import MetadataValueItem from "@/pages/documents/metadata/components/MetadataValueItem";
-import { MetadataService } from "@/services/documents.service";
+import { MetadataService } from "@/services/documents";
 import { RoleColors, RoleLabels } from "@/types/users";
 import { formatDate } from "@/utils/date";
 import { parseError } from "@/utils/parseError";

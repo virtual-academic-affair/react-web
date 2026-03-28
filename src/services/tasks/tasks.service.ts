@@ -1,14 +1,14 @@
 import { API_ENDPOINTS } from "@/config/api.config";
+import type { PaginatedResponse } from "@/types/common";
 import type {
-  Task,
-  TaskStats,
   CreateTaskDto,
   GetTasksParams,
   GetTaskStatsParams,
+  Task,
+  TaskStats,
   UpdateTaskDto,
 } from "@/types/task";
-import type { PaginatedResponse } from "@/types/common";
-import http from "./http";
+import http from "../http";
 
 class TasksService {
   async getList(params?: GetTasksParams): Promise<PaginatedResponse<Task>> {
