@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React, { useEffect, useState } from "react";
-import { MdDeleteOutline } from "react-icons/md";
+import { MdDeleteOutline, MdVisibility } from "react-icons/md";
 
 import Drawer from "@/components/drawer/Drawer";
 import Tag from "@/components/tag/Tag";
@@ -34,6 +34,7 @@ interface DocumentDetailDrawerProps {
   isReadOnly?: boolean;
   onClose: () => void;
   onDeleted: () => void;
+  onPreview?: () => void;
 }
 
 const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
@@ -42,6 +43,7 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
   isOpen,
   onClose,
   onDeleted,
+  onPreview,
 }) => {
   const isEdit = Boolean(fileId);
 
@@ -154,12 +156,25 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
     </Tooltip>
   );
 
+  const footerRight = isEdit && onPreview && (
+    <Tooltip label="Xem trước tệp">
+      <button
+        type="button"
+        onClick={onPreview}
+        className="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-500 text-white transition-colors hover:bg-brand-600"
+      >
+        <MdVisibility className="h-4 w-4" />
+      </button>
+    </Tooltip>
+  );
+
   return (
     <Drawer
       isOpen={isOpen}
       onClose={onClose}
       title={isEdit ? "Chi tiết tài liệu" : "Tải lên tài liệu mới"}
       footerLeft={footerLeft}
+      footerRight={footerRight}
       width="max-w-2xl"
     >
       {isLoading ? (

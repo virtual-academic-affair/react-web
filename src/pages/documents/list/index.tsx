@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MdDeleteOutline, MdFileDownload, MdInfoOutline } from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
 
@@ -83,11 +83,10 @@ const DocumentListPage = () => {
     useState<DocumentFilters>(defaultFilters);
   const [filterOpen, setFilterOpen] = useState(false);
 
-  // File preview
-  const [previewFile, setPreviewFile] = useState<{
-    fileId: string;
-    fileName: string;
-  } | null>(null);
+  // File preview (URL-driven: ?id=fileId&preview=true)
+  const isPreview = searchParams.get("preview") === "true";
+  const previewFileId = isPreview ? (searchParams.get("id") || null) : null;
+  const wasDrawerOpenBeforePreview = useRef(false);
 
   // Detail drawer
   const idParam = searchParams.get("id");
@@ -162,6 +161,12 @@ const DocumentListPage = () => {
     staleTime: 30 * 1000,
   });
 
+  const previewFileName = useMemo(() => {
+    if (!previewFileId || !result?.items) return "";
+    const file = result.items.find((f: any) => f.fileId === previewFileId);
+    return file?.originalFilename || file?.displayName || "";
+  }, [previewFileId, result]);
+
   // ── Effects ────────────────────────────────────────────────────────────────────
   useEffect(() => {
     const next = new URLSearchParams();
@@ -187,8 +192,9 @@ const DocumentListPage = () => {
       next.set("metadataFilter", JSON.stringify(otherFilters));
     }
     if (selectedFileId) next.set("id", selectedFileId);
+    if (isPreview) next.set("preview", "true");
     setSearchParams(next, { replace: true });
-  }, [keyword, page, filters, selectedFileId, setSearchParams]);
+  }, [keyword, page, filters, selectedFileId, isPreview, setSearchParams]);
 
   // Sync searchValue when keyword or filters change (from filter modal or URL)
   useEffect(() => {
@@ -290,10 +296,11 @@ const DocumentListPage = () => {
             className="group flex flex-col text-left"
             onClick={(e) => {
               e.stopPropagation();
-              setPreviewFile({
-                fileId: x.fileId,
-                fileName: x.originalFilename,
-              });
+              wasDrawerOpenBeforePreview.current = false;
+              const next = new URLSearchParams(searchParams);
+              next.set("id", x.fileId);
+              next.set("preview", "true");
+              setSearchParams(next, { replace: true });
             }}
           >
             <p className="text-navy-700 truncate text-sm font-bold transition-colors group-hover:text-brand-500 group-hover:underline dark:text-white dark:group-hover:text-brand-400">
@@ -406,12 +413,19 @@ const DocumentListPage = () => {
       <DocumentDetailDrawer
         fileId={selectedFileId}
         metadataTypes={metadataTypes}
-        isOpen={selectedFileId !== null}
+        isOpen={selectedFileId !== null && !isPreview}
         isReadOnly={true}
         onClose={handleCloseDetail}
         onDeleted={() => {
           queryClient.invalidateQueries({ queryKey: ["documents"] });
           handleCloseDetail();
+        }}
+        onPreview={() => {
+          if (!selectedFileId) return;
+          wasDrawerOpenBeforePreview.current = true;
+          const next = new URLSearchParams(searchParams);
+          next.set("preview", "true");
+          setSearchParams(next, { replace: true });
         }}
       />
 
@@ -435,10 +449,17 @@ const DocumentListPage = () => {
       />
 
       <FilePreviewModal
-        fileId={previewFile?.fileId ?? null}
-        fileName={previewFile?.fileName ?? ""}
-        isOpen={previewFile !== null}
-        onClose={() => setPreviewFile(null)}
+        fileId={previewFileId}
+        fileName={previewFileName}
+        isOpen={previewFileId !== null}
+        onClose={() => {
+          const next = new URLSearchParams(searchParams);
+          next.delete("preview");
+          if (!wasDrawerOpenBeforePreview.current) {
+            next.delete("id");
+          }
+          setSearchParams(next, { replace: true });
+        }}
       />
     </div>
   );

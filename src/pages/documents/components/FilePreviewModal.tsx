@@ -407,52 +407,49 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
   return createPortal(
     <div className="animate-in fade-in fixed inset-0 z-9999 flex items-center justify-center duration-200">
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/85 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Modal container */}
-      <div className="relative flex h-full w-full flex-col">
-        {/* Header */}
-        <div className="z-1 flex shrink-0 items-center justify-between border-b border-white/8 bg-[#202124]/95 px-5 py-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10">
-              <MdDescription className="h-5 w-5 text-gray-300" />
+      <div className="absolute inset-0 bg-black/85 backdrop-blur-sm">
+        {/* Modal container */}
+        <div className="relative flex h-full w-full flex-col">
+          {/* Header */}
+          <div className="z-1 flex shrink-0 items-center justify-between border-b border-white/8 bg-[#202124]/95 px-5 py-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10">
+                <MdDescription className="h-5 w-5 text-gray-300" />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-white">
+                  {fileName}
+                </p>
+                <p className="text-xs text-gray-400 uppercase">
+                  {getExtension(fileName)} file
+                </p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-white">
-                {fileName}
-              </p>
-              <p className="text-xs text-gray-400 uppercase">
-                {getExtension(fileName)} file
-              </p>
+
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={handleDownload}
+                className="flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition-all hover:bg-white/12 hover:text-white active:scale-92"
+                title="Tải xuống"
+              >
+                <MdFileDownload className="h-5 w-5" />
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition-all hover:bg-white/12 hover:text-white active:scale-92"
+                title="Đóng"
+              >
+                <MdClose className="h-5 w-5" />
+              </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={handleDownload}
-              className="flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition-all hover:bg-white/12 hover:text-white active:scale-92"
-              title="Tải xuống"
-            >
-              <MdFileDownload className="h-5 w-5" />
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition-all hover:bg-white/12 hover:text-white active:scale-92"
-              title="Đóng"
-            >
-              <MdClose className="h-5 w-5" />
-            </button>
+          {/* Content */}
+          <div className="relative flex-1 overflow-auto text-white">
+            {renderContent()}
           </div>
-        </div>
-
-        {/* Content */}
-        <div className="relative flex-1 overflow-auto text-white">
-          {renderContent()}
         </div>
       </div>
     </div>,

@@ -89,7 +89,7 @@ const DraggableTask = ({
         isDone
           ? "dark:bg-navy-800 bg-gray-100 text-gray-500 line-through opacity-60 dark:text-gray-400"
           : defaultTaskClasses
-      } ${isDragging ? "ring-brand-500 !z-50 !cursor-grabbing opacity-50 shadow-xl ring-2" : ""}`}
+      } ${isDragging ? "ring-brand-500 z-50! cursor-grabbing! opacity-50 shadow-xl ring-2" : ""}`}
       title={task.name}
     >
       <div className="line-clamp-1 leading-tight font-bold">{task.name}</div>
