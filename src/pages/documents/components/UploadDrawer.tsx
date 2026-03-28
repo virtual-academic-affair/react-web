@@ -299,7 +299,14 @@ const UploadDrawer: React.FC<UploadDrawerProps> = ({
                         {selectedFile.name}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                        {(() => {
+                          const bytes = selectedFile.size;
+                          if (bytes < 1024) return `${bytes} Bytes`;
+                          const kb = bytes / 1024;
+                          if (kb < 1024) return `${kb.toFixed(2)} KB`;
+                          const mb = kb / 1024;
+                          return `${mb.toFixed(2)} MB`;
+                        })()}
                       </p>
                     </div>
                   </div>

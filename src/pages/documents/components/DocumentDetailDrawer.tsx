@@ -328,9 +328,16 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
                   </div>
                   <div className="flex-1">
                     <p className="text-navy-700 text-base dark:text-white">
-                      {fileDetail?.fileSize
-                        ? `${(fileDetail.fileSize / 1024 / 1024).toFixed(2)} MB`
-                        : "—"}
+                      {(() => {
+                        if (!fileDetail?.fileSize && fileDetail?.fileSize !== 0)
+                          return "—";
+                        const bytes = fileDetail.fileSize;
+                        if (bytes < 1024) return `${bytes} Bytes`;
+                        const kb = bytes / 1024;
+                        if (kb < 1024) return `${kb.toFixed(2)} KB`;
+                        const mb = kb / 1024;
+                        return `${mb.toFixed(2)} MB`;
+                      })()}
                     </p>
                   </div>
                 </div>

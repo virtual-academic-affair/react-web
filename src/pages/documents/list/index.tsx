@@ -19,6 +19,7 @@ import AdvancedFilterModal, {
   type DocumentFilters,
 } from "../components/AdvancedFilterModal";
 import DocumentDetailDrawer from "../components/DocumentDetailDrawer";
+import FilePreviewModal from "../components/FilePreviewModal";
 
 const PAGE_SIZE = 10;
 
@@ -81,6 +82,12 @@ const DocumentListPage = () => {
   const [draftFilters, setDraftFilters] =
     useState<DocumentFilters>(defaultFilters);
   const [filterOpen, setFilterOpen] = useState(false);
+
+  // File preview
+  const [previewFile, setPreviewFile] = useState<{
+    fileId: string;
+    fileName: string;
+  } | null>(null);
 
   // Detail drawer
   const idParam = searchParams.get("id");
@@ -278,14 +285,24 @@ const DocumentListPage = () => {
         header: "Tài liệu",
         width: "50%",
         render: (x) => (
-          <div className="flex flex-col">
-            <p className="text-navy-700 truncate text-sm font-bold dark:text-white">
+          <button
+            type="button"
+            className="group flex flex-col text-left"
+            onClick={(e) => {
+              e.stopPropagation();
+              setPreviewFile({
+                fileId: x.fileId,
+                fileName: x.originalFilename,
+              });
+            }}
+          >
+            <p className="text-navy-700 truncate text-sm font-bold transition-colors group-hover:text-brand-500 group-hover:underline dark:text-white dark:group-hover:text-brand-400">
               {x.displayName || x.originalFilename}
             </p>
             <p className="mt-0.5 truncate text-xs text-gray-500">
               {x.originalFilename}
             </p>
-          </div>
+          </button>
         ),
       },
       {
@@ -415,6 +432,13 @@ const DocumentListPage = () => {
           setFilterOpen(false);
         }}
         onRequestClose={() => setFilterOpen(false)}
+      />
+
+      <FilePreviewModal
+        fileId={previewFile?.fileId ?? null}
+        fileName={previewFile?.fileName ?? ""}
+        isOpen={previewFile !== null}
+        onClose={() => setPreviewFile(null)}
       />
     </div>
   );
