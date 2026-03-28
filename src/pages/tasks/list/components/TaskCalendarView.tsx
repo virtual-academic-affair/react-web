@@ -1,4 +1,4 @@
-import { tasksService } from "@/services/tasks.service";
+import { tasksService } from "@/services/tasks";
 import type { Task } from "@/types/task";
 import { TaskStatus } from "@/types/task";
 import {

@@ -3,7 +3,7 @@ import React, { useCallback, useRef, useState } from "react";
 
 import Drawer from "@/components/drawer/Drawer";
 import Tag from "@/components/tag/Tag";
-import { DocumentsService } from "@/services/documents.service";
+import { DocumentsService } from "@/services/documents";
 import { RoleColors } from "@/types/users";
 import { parseError } from "@/utils/parseError";
 import AccessScopeBadge from "./AccessScopeBadge";
@@ -26,7 +26,20 @@ interface UploadDrawerProps {
   onSuccess: () => void;
 }
 
-const ALLOWED_EXTENSIONS = [".pdf", ".doc", ".docx", ".txt", ".md", ".html"];
+const ALLOWED_EXTENSIONS = [
+  ".pdf",
+  ".doc",
+  ".docx",
+  ".txt",
+  ".xlxs",
+  ".xls",
+  ".md",
+  ".html",
+  ".xml",
+  ".csv",
+  ".tsv",
+  ".rtf",
+];
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
 const UploadDrawer: React.FC<UploadDrawerProps> = ({
@@ -299,7 +312,14 @@ const UploadDrawer: React.FC<UploadDrawerProps> = ({
                         {selectedFile.name}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                        {(() => {
+                          const bytes = selectedFile.size;
+                          if (bytes < 1024) return `${bytes} Bytes`;
+                          const kb = bytes / 1024;
+                          if (kb < 1024) return `${kb.toFixed(2)} KB`;
+                          const mb = kb / 1024;
+                          return `${mb.toFixed(2)} MB`;
+                        })()}
                       </p>
                     </div>
                   </div>

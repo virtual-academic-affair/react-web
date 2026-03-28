@@ -5,6 +5,7 @@
 // ─── Setting types ────────────────────────────────────────────────────────────
 
 import type { LabelMappingDto } from "./email";
+import type { Role } from "./users";
 
 /** Known setting keys for /shared/dynamic-data */
 export type SettingKey =
@@ -43,14 +44,6 @@ export interface SystemLabelLangItem {
 
 /** Shape returned for the "shared.systemLabel" enum path — flat record of label key → i18n+color */
 export type SystemLabelEnumData = Record<string, SystemLabelLangItem>;
-
-/** Role values */
-export const Role = {
-  Student: "student",
-  Admin: "admin",
-  Lecture: "lecture",
-} as const;
-export type Role = (typeof Role)[keyof typeof Role];
 
 /** Shape returned for the "authentication.role" enum path */
 export interface RoleEnumData {

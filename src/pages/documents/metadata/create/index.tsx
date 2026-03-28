@@ -2,7 +2,7 @@ import CreatePageLayout from "@/components/layouts/CreatePageLayout";
 import Switch from "@/components/switch";
 import Tag from "@/components/tag/Tag";
 import Tooltip from "@/components/tooltip/Tooltip";
-import { MetadataService } from "@/services/documents.service";
+import { MetadataService } from "@/services/documents";
 import { RoleColors, RoleLabels } from "@/types/users";
 import { parseError } from "@/utils/parseError";
 import { toSnakeCase } from "@/utils/snakeCase";

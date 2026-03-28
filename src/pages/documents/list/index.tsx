@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
-import React, { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MdDeleteOutline, MdFileDownload, MdInfoOutline } from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
 
@@ -9,10 +9,7 @@ import TableLayout, {
   type TableColumn,
 } from "@/components/table/TableLayout";
 import Tag from "@/components/tag/Tag";
-import {
-  DocumentsService,
-  MetadataService,
-} from "@/services/documents.service";
+import { DocumentsService, MetadataService } from "@/services/documents";
 import { formatDate } from "@/utils/date";
 import { parseError } from "@/utils/parseError";
 import { parseSearchString, stringifySearchQuery } from "@/utils/search";
@@ -22,12 +19,13 @@ import AdvancedFilterModal, {
   type DocumentFilters,
 } from "../components/AdvancedFilterModal";
 import DocumentDetailDrawer from "../components/DocumentDetailDrawer";
+import FilePreviewModal from "../components/FilePreviewModal";
 
 const PAGE_SIZE = 10;
 
 const defaultFilters: DocumentFilters = {};
 
-const DocumentListPage: React.FC = () => {
+const DocumentListPage = () => {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -84,6 +82,11 @@ const DocumentListPage: React.FC = () => {
   const [draftFilters, setDraftFilters] =
     useState<DocumentFilters>(defaultFilters);
   const [filterOpen, setFilterOpen] = useState(false);
+
+  // File preview (URL-driven: ?id=fileId&preview=true)
+  const isPreview = searchParams.get("preview") === "true";
+  const previewFileId = isPreview ? (searchParams.get("id") || null) : null;
+  const wasDrawerOpenBeforePreview = useRef(false);
 
   // Detail drawer
   const idParam = searchParams.get("id");
@@ -158,8 +161,14 @@ const DocumentListPage: React.FC = () => {
     staleTime: 30 * 1000,
   });
 
+  const previewFileName = useMemo(() => {
+    if (!previewFileId || !result?.items) return "";
+    const file = result.items.find((f: any) => f.fileId === previewFileId);
+    return file?.originalFilename || file?.displayName || "";
+  }, [previewFileId, result]);
+
   // ── Effects ────────────────────────────────────────────────────────────────────
-  React.useEffect(() => {
+  useEffect(() => {
     const next = new URLSearchParams();
     if (keyword) next.set("keyword", keyword);
     next.set("page", String(page));
@@ -183,11 +192,12 @@ const DocumentListPage: React.FC = () => {
       next.set("metadataFilter", JSON.stringify(otherFilters));
     }
     if (selectedFileId) next.set("id", selectedFileId);
+    if (isPreview) next.set("preview", "true");
     setSearchParams(next, { replace: true });
-  }, [keyword, page, filters, selectedFileId, setSearchParams]);
+  }, [keyword, page, filters, selectedFileId, isPreview, setSearchParams]);
 
   // Sync searchValue when keyword or filters change (from filter modal or URL)
-  React.useEffect(() => {
+  useEffect(() => {
     const params = { ...filters };
     setSearchValue(
       stringifySearchQuery(
@@ -281,14 +291,25 @@ const DocumentListPage: React.FC = () => {
         header: "Tài liệu",
         width: "50%",
         render: (x) => (
-          <div className="flex flex-col">
-            <p className="text-navy-700 truncate text-sm font-bold dark:text-white">
+          <button
+            type="button"
+            className="group flex flex-col text-left"
+            onClick={(e) => {
+              e.stopPropagation();
+              wasDrawerOpenBeforePreview.current = false;
+              const next = new URLSearchParams(searchParams);
+              next.set("id", x.fileId);
+              next.set("preview", "true");
+              setSearchParams(next, { replace: true });
+            }}
+          >
+            <p className="text-navy-700 truncate text-sm font-bold transition-colors group-hover:text-brand-500 group-hover:underline dark:text-white dark:group-hover:text-brand-400">
               {x.displayName || x.originalFilename}
             </p>
             <p className="mt-0.5 truncate text-xs text-gray-500">
               {x.originalFilename}
             </p>
-          </div>
+          </button>
         ),
       },
       {
@@ -392,12 +413,19 @@ const DocumentListPage: React.FC = () => {
       <DocumentDetailDrawer
         fileId={selectedFileId}
         metadataTypes={metadataTypes}
-        isOpen={selectedFileId !== null}
+        isOpen={selectedFileId !== null && !isPreview}
         isReadOnly={true}
         onClose={handleCloseDetail}
         onDeleted={() => {
           queryClient.invalidateQueries({ queryKey: ["documents"] });
           handleCloseDetail();
+        }}
+        onPreview={() => {
+          if (!selectedFileId) return;
+          wasDrawerOpenBeforePreview.current = true;
+          const next = new URLSearchParams(searchParams);
+          next.set("preview", "true");
+          setSearchParams(next, { replace: true });
         }}
       />
 
@@ -418,6 +446,20 @@ const DocumentListPage: React.FC = () => {
           setFilterOpen(false);
         }}
         onRequestClose={() => setFilterOpen(false)}
+      />
+
+      <FilePreviewModal
+        fileId={previewFileId}
+        fileName={previewFileName}
+        isOpen={previewFileId !== null}
+        onClose={() => {
+          const next = new URLSearchParams(searchParams);
+          next.delete("preview");
+          if (!wasDrawerOpenBeforePreview.current) {
+            next.delete("id");
+          }
+          setSearchParams(next, { replace: true });
+        }}
       />
     </div>
   );

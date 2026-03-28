@@ -1,15 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React, { useEffect, useState } from "react";
-import { MdDeleteOutline } from "react-icons/md";
+import { MdDeleteOutline, MdVisibility } from "react-icons/md";
 
 import Drawer from "@/components/drawer/Drawer";
 import Tag from "@/components/tag/Tag";
 import Tooltip from "@/components/tooltip/Tooltip";
-import {
-  DocumentsService,
-  MetadataService,
-} from "@/services/documents.service";
+import { DocumentsService, MetadataService } from "@/services/documents";
 import { RoleColors } from "@/types/users";
 import { formatDate } from "@/utils/date";
 import { parseError } from "@/utils/parseError";
@@ -37,6 +34,7 @@ interface DocumentDetailDrawerProps {
   isReadOnly?: boolean;
   onClose: () => void;
   onDeleted: () => void;
+  onPreview?: () => void;
 }
 
 const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
@@ -45,6 +43,7 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
   isOpen,
   onClose,
   onDeleted,
+  onPreview,
 }) => {
   const isEdit = Boolean(fileId);
 
@@ -157,12 +156,25 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
     </Tooltip>
   );
 
+  const footerRight = isEdit && onPreview && (
+    <Tooltip label="Xem trước tệp">
+      <button
+        type="button"
+        onClick={onPreview}
+        className="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-500 text-white transition-colors hover:bg-brand-600"
+      >
+        <MdVisibility className="h-4 w-4" />
+      </button>
+    </Tooltip>
+  );
+
   return (
     <Drawer
       isOpen={isOpen}
       onClose={onClose}
       title={isEdit ? "Chi tiết tài liệu" : "Tải lên tài liệu mới"}
       footerLeft={footerLeft}
+      footerRight={footerRight}
       width="max-w-2xl"
     >
       {isLoading ? (
@@ -331,9 +343,16 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
                   </div>
                   <div className="flex-1">
                     <p className="text-navy-700 text-base dark:text-white">
-                      {fileDetail?.fileSize
-                        ? `${(fileDetail.fileSize / 1024 / 1024).toFixed(2)} MB`
-                        : "—"}
+                      {(() => {
+                        if (!fileDetail?.fileSize && fileDetail?.fileSize !== 0)
+                          return "—";
+                        const bytes = fileDetail.fileSize;
+                        if (bytes < 1024) return `${bytes} Bytes`;
+                        const kb = bytes / 1024;
+                        if (kb < 1024) return `${kb.toFixed(2)} KB`;
+                        const mb = kb / 1024;
+                        return `${mb.toFixed(2)} MB`;
+                      })()}
                     </p>
                   </div>
                 </div>

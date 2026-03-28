@@ -1,18 +1,18 @@
 import Drawer from "@/components/drawer/Drawer";
 import RichTextEditor from "@/components/fields/RichTextEditor";
+import Tooltip from "@/components/tooltip/Tooltip";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
-import { tasksService } from "@/services/tasks.service";
-import { TaskPriority, TaskStatus } from "@/types/task";
+import { tasksService } from "@/services/tasks";
 import type { Task } from "@/types/task";
+import { TaskPriority, TaskStatus } from "@/types/task";
 import { formatDate } from "@/utils/date";
 import { useQuery } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React from "react";
 import { MdDeleteOutline, MdSave } from "react-icons/md";
-import TaskStatusSelector from "./TaskStatusSelector";
-import Tooltip from "@/components/tooltip/Tooltip";
-import TaskPrioritySelector from "./TaskPrioritySelector";
 import AssigneeManager from "../../components/AssigneeManager";
+import TaskPrioritySelector from "./TaskPrioritySelector";
+import TaskStatusSelector from "./TaskStatusSelector";
 
 interface TaskDetailDrawerProps {
   taskId: number | null;
@@ -97,16 +97,16 @@ const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
           : undefined,
       });
 
-      const reconstructedAssignees = form.assigneeIds.map(id => {
-        const existing = detail.assignees?.find?.(a => a.assigneeId === id);
+      const reconstructedAssignees = form.assigneeIds.map((id) => {
+        const existing = detail.assignees?.find?.((a) => a.assigneeId === id);
         if (existing) return existing;
-        const userToAdd = users.find(u => u.id === id);
+        const userToAdd = users.find((u) => u.id === id);
         return {
           taskId: taskId,
           assigneeId: id,
           assignerId: 0,
           assignedAt: new Date().toISOString(),
-          assignee: userToAdd
+          assignee: userToAdd,
         } as any;
       });
 
@@ -119,10 +119,14 @@ const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
         assigneeIds: form.assigneeIds,
         assigners: updated.assigners ? updated.assigners.join(", ") : "",
       });
-      const fullUpdated = { ...detail, ...updated, assignees: reconstructedAssignees };
+      const fullUpdated = {
+        ...detail,
+        ...updated,
+        assignees: reconstructedAssignees,
+      };
       setDetail(fullUpdated as Task);
       onTaskChanged(fullUpdated as Task);
-      
+
       toast.success("Cập nhật thành công.");
     } catch (err: unknown) {
       console.error(err);
@@ -175,47 +179,53 @@ const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
 
   const footerLeft = detail && (
     <>
-        <Tooltip label="Xóa">
-          <button
-            onClick={() => {
-              if (taskId) {
-                onClose();
-                onTaskDeleted?.(taskId); 
-              }
-            }}
-            disabled={saving}
-            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600 disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-600"
-          >
-            <MdDeleteOutline className="h-4 w-4" />
-          </button>
-        </Tooltip>
+      <Tooltip label="Xóa">
+        <button
+          onClick={() => {
+            if (taskId) {
+              onClose();
+              onTaskDeleted?.(taskId);
+            }
+          }}
+          disabled={saving}
+          className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600 disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-600"
+        >
+          <MdDeleteOutline className="h-4 w-4" />
+        </button>
+      </Tooltip>
     </>
   );
 
   const footerRight = detail && isDirty && (
     <>
-          <button
-            type="button"
-            disabled={saving}
-            onClick={handleResetForm}
-            className="rounded-xl px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-white/10"
-          >
-            Hủy
-          </button>
-          <button
-            type="button"
-            disabled={saving}
-            onClick={handleSave}
-            className="bg-brand-500 hover:bg-brand-600 flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
-          >
-            <MdSave className="h-4 w-4" />
-            {saving ? "Đang lưu..." : "Lưu"}
-          </button>
+      <button
+        type="button"
+        disabled={saving}
+        onClick={handleResetForm}
+        className="rounded-xl px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-white/10"
+      >
+        Hủy
+      </button>
+      <button
+        type="button"
+        disabled={saving}
+        onClick={handleSave}
+        className="bg-brand-500 hover:bg-brand-600 flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
+      >
+        <MdSave className="h-4 w-4" />
+        {saving ? "Đang lưu..." : "Lưu"}
+      </button>
     </>
   );
 
   return (
-    <Drawer isOpen={isOpen} onClose={onClose} title="Chi tiết công việc" footerLeft={footerLeft} footerRight={footerRight}>
+    <Drawer
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Chi tiết công việc"
+      footerLeft={footerLeft}
+      footerRight={footerRight}
+    >
       {loading || !form || !detail ? (
         <div className="flex flex-col gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -339,9 +349,7 @@ const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                 />
               </div>
             </div>
-
-            </div>
-
+          </div>
 
           {/* Metadata / Technical Info Section */}
           <div className="mt-4 border-t border-gray-100 pt-4 dark:border-white/10">

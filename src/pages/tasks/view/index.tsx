@@ -1,7 +1,7 @@
 import Card from "@/components/card";
 import RichTextEditor from "@/components/fields/RichTextEditor";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
-import { tasksService } from "@/services/tasks.service";
+import { tasksService } from "@/services/tasks";
 import { TaskPriority, TaskStatus } from "@/types/task";
 import { useQuery } from "@tanstack/react-query";
 import { message as toast } from "antd";
