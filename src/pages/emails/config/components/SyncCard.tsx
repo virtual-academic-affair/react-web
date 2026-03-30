@@ -50,9 +50,9 @@ const SyncCard: React.FC<SyncCardProps> = ({
 
       if (virtualLastSyncTime > 0) {
         const elapsedSinceVirtual = currentTime - virtualLastSyncTime;
-        if (elapsedSinceVirtual >= 20000) {
-          const jumps = Math.floor(elapsedSinceVirtual / 20000);
-          setVirtualLastSyncTime((prev) => prev + jumps * 20000);
+        if (elapsedSinceVirtual >= 10000) {
+          const jumps = Math.floor(elapsedSinceVirtual / 10000);
+          setVirtualLastSyncTime((prev) => prev + jumps * 10000);
         }
       }
     }, 100);
@@ -74,7 +74,7 @@ const SyncCard: React.FC<SyncCardProps> = ({
   }, [lastPullAt]);
 
   const elapsed = now - virtualLastSyncTime;
-  const cycleMs = 20000;
+  const cycleMs = 10000;
   const diff = elapsed % cycleMs;
 
   const { data: canSaveContent = false } = useQuery({

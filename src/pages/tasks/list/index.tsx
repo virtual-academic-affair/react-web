@@ -2,6 +2,7 @@ import ConfirmModal from "@/components/modal/ConfirmModal";
 import Tooltip from "@/components/tooltip/Tooltip";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { tasksService } from "@/services/tasks";
+import { useAuthStore } from "@/stores/auth.store";
 import type { PaginatedResponse } from "@/types/common";
 import { type Task, TaskPriority, TaskStatus } from "@/types/task";
 import { parseSearchString, stringifySearchQuery } from "@/utils/search";
@@ -27,20 +28,6 @@ import TaskTableView from "./components/TaskTableView";
 
 type ViewMode = "table" | "calendar" | "board";
 
-/** Decode JWT payload (no signature verification — client-side only) */
-function decodeJwtPayload(token: string): Record<string, unknown> {
-  try {
-    const base64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
-    return JSON.parse(atob(base64));
-  } catch {
-    return {};
-  }
-}
-
-const JWT_PAYLOAD = decodeJwtPayload(import.meta.env.VITE_TEMP_TOKEN ?? "");
-const CURRENT_USER_ID: number | null =
-  typeof JWT_PAYLOAD.sub === "number" ? JWT_PAYLOAD.sub : null;
-
 const PAGE_SIZE = 10;
 
 const defaultFilters: TaskFilters = {
@@ -58,6 +45,22 @@ const TasksPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = React.useState(false);
   const { admins } = useAdminUsers();
+
+  // Derive the current user's numeric ID from the JWT in the auth store
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const currentUserId = React.useMemo<number | null>(() => {
+    if (!accessToken) return null;
+    try {
+      const base64 = accessToken
+        .split(".")[1]
+        .replace(/-/g, "+")
+        .replace(/_/g, "/");
+      const payload = JSON.parse(atob(base64));
+      return typeof payload.sub === "number" ? payload.sub : null;
+    } catch {
+      return null;
+    }
+  }, [accessToken]);
 
   const [keyword, setKeyword] = React.useState(
     searchParams.get("keyword") ?? "",
@@ -305,7 +308,7 @@ const TasksPage: React.FC = () => {
         ? ({
             taskId: task.id,
             assigneeId: userId,
-            assignerId: CURRENT_USER_ID || 0,
+            assignerId: currentUserId || 0,
             assignedAt: new Date().toISOString(),
             assignee: userToAdd,
           } as any)
@@ -492,7 +495,7 @@ const TasksPage: React.FC = () => {
         open={filterOpen}
         value={draftFilters}
         onChange={setDraftFilters}
-        currentUserId={CURRENT_USER_ID}
+        currentUserId={currentUserId}
         onApply={() => {
           setFilters(draftFilters);
           setPage(1);
