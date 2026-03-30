@@ -83,7 +83,7 @@ export const FileCard: React.FC<FileItemProps> = ({
 
       {/* Name */}
       <button type="button" className="text-left" onClick={onPreview}>
-        <p className="text-navy-700 line-clamp-2 text-sm font-semibold leading-snug transition-colors group-hover:text-brand-500 dark:text-white dark:group-hover:text-brand-400">
+        <p className="text-navy-700 h-10 line-clamp-2 text-sm font-semibold leading-snug transition-colors group-hover:text-brand-500 dark:text-white dark:group-hover:text-brand-400">
           {name}
         </p>
         <p className="mt-0.5 truncate text-xs text-gray-400">

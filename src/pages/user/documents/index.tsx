@@ -10,12 +10,15 @@ import React, {
 import {
   MdDescription,
   MdGridView,
+  MdLogout,
   MdSearch,
   MdTableRows,
 } from "react-icons/md";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { DocumentsService, MetadataService } from "@/services/documents";
+import { authService } from "@/services/auth";
+import { useAuthStore } from "@/stores/auth.store";
 import DocumentDetailDrawer from "@/pages/documents/components/DocumentDetailDrawer";
 import FilePreviewModal from "@/pages/documents/components/FilePreviewModal";
 
@@ -38,6 +41,7 @@ type UserDocFilters = Record<string, string[]>;
 
 const UserDocumentsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   // View mode
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -242,10 +246,31 @@ const UserDocumentsPage: React.FC = () => {
     (v) => Array.isArray(v) && v.length > 0
   );
 
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch (e) {
+      console.error("Logout error", e);
+    } finally {
+      useAuthStore.getState().clearAuth();
+      navigate("/auth/login");
+    }
+  };
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen px-4 py-8 sm:px-8">
+    <div className="relative min-h-screen px-4 py-8 sm:px-8">
+      {/* ── Logout Button ──────────────────────────────────────────────── */}
+      <button
+        onClick={handleLogout}
+        className="absolute top-4 right-4 flex items-center gap-2 rounded-xl bg-white/50 px-3 py-2 text-sm font-medium text-red-500 shadow-sm backdrop-blur-md transition-all hover:bg-red-50 sm:top-8 sm:right-8 sm:px-4 dark:bg-navy-800/50 dark:hover:bg-red-500/10"
+        title="Đăng xuất"
+      >
+        <MdLogout className="h-5 w-5" />
+        <span className="hidden sm:inline">Đăng xuất</span>
+      </button>
+
       {/* ── Hero header + search ────────────────────────────────────────── */}
       <div className="mx-auto mb-8 max-w-3xl text-center">
         <h1 className="text-navy-700 mb-2 text-2xl font-bold dark:text-white">
