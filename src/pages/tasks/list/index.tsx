@@ -51,7 +51,10 @@ const TasksPage: React.FC = () => {
   const currentUserId = React.useMemo<number | null>(() => {
     if (!accessToken) return null;
     try {
-      const base64 = accessToken.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+      const base64 = accessToken
+        .split(".")[1]
+        .replace(/-/g, "+")
+        .replace(/_/g, "/");
       const payload = JSON.parse(atob(base64));
       return typeof payload.sub === "number" ? payload.sub : null;
     } catch {
