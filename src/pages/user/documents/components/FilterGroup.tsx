@@ -115,7 +115,7 @@ const FilterGroup: React.FC<FilterGroupProps> = ({
           <div
             ref={dropdownRef}
             style={{ top: dropPos.top, left: dropPos.left }}
-            className="dark:bg-navy-900 fixed z-[9999] w-[280px] max-w-[calc(100vw-24px)] rounded-2xl border border-gray-100 bg-white p-3 shadow-xl dark:border-white/10"
+            className="dark:bg-navy-900 fixed z-9999 w-[280px] max-w-[calc(100vw-24px)] rounded-2xl border border-gray-100 bg-white p-3 shadow-xl dark:border-white/10"
           >
             <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
               {label}
