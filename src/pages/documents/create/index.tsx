@@ -112,7 +112,7 @@ const DocumentCreatePage: React.FC = () => {
 
   // Compute access scope value based on selections
   const accessScopeValue = useMemo(() => {
-    if (accessScopeLecture && accessScopeStudent) return "both";
+    if (accessScopeLecture && accessScopeStudent) return "public";
     if (accessScopeLecture) return "lecture";
     if (accessScopeStudent) return "student";
     return "private";
@@ -408,7 +408,7 @@ const DocumentCreatePage: React.FC = () => {
                         {accessScopeValue === "private" && "Nội bộ"}
                         {accessScopeValue === "student" && "Chỉ sinh viên"}
                         {accessScopeValue === "lecture" && "Chỉ giảng viên"}
-                        {accessScopeValue === "both" && "Tất cả mọi người"}
+                        {accessScopeValue === "public" && "Tất cả mọi người"}
                       </span>
                     </p>
                   </div>

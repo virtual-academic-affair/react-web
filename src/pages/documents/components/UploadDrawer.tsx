@@ -446,7 +446,7 @@ const UploadDrawer: React.FC<UploadDrawerProps> = ({
                                 "Chỉ giảng viên & sinh viên được chọn"}
                               {currentValue === "student" && "Chỉ sinh viên"}
                               {currentValue === "lecture" && "Chỉ giảng viên"}
-                              {currentValue === "both" && "Tất cả mọi người"}
+                              {currentValue === "public" && "Tất cả mọi người"}
                               {!currentValue && "—"}
                             </span>
                           </p>
