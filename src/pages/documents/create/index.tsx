@@ -1,96 +1,19 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { message as toast } from "antd";
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 
 import CreatePageLayout from "@/components/layouts/CreatePageLayout";
-import { DocumentsService, MetadataService } from "@/services/documents";
-import { RoleColors } from "@/types/users";
-import { parseError } from "@/utils/parseError";
+import { MetadataService } from "@/services/documents";
 
-interface MetadataValue {
-  value: string;
-  displayName: string;
-  isActive: boolean;
-  color?: string;
-  visibleRoles?: string[];
-}
+import { ProcessSteps, UploadForm } from "../components/UploadDrawer";
 
-interface MetadataType {
-  key: string;
-  displayName: string;
-  isActive: boolean;
-  allowedValues?: MetadataValue[];
-}
-
-const ALLOWED_EXTENSIONS = [".pdf", ".doc", ".docx", ".txt", ".md", ".html"];
-const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
-
-// Process Steps Component
-const ProcessSteps: React.FC<{ currentStep: number }> = ({ currentStep }) => {
-  const steps = [
-    { number: 1, label: "Chọn tệp tin" },
-    { number: 2, label: "Nhãn tài liệu" },
-  ];
-
-  return (
-    <div className="mb-6 flex items-center justify-center gap-4">
-      {steps.map((step, index) => (
-        <React.Fragment key={step.number}>
-          <div className="flex flex-col items-center gap-2">
-            <div
-              className={`flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm font-semibold transition-all ${
-                currentStep >= step.number
-                  ? "border-brand-500 bg-brand-500 text-white"
-                  : "border-gray-300 bg-transparent text-gray-400 dark:border-gray-600 dark:text-gray-500"
-              }`}
-            >
-              {currentStep > step.number ? (
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              ) : (
-                step.number
-              )}
-            </div>
-            <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
-              {step.label}
-            </span>
-          </div>
-          {index < steps.length - 1 && (
-            <div className="h-0.5 w-16 bg-gray-300 transition-all dark:bg-gray-600" />
-          )}
-        </React.Fragment>
-      ))}
-    </div>
-  );
-};
-
+/**
+ * Full-page version of the upload wizard.
+ * Uses the shared UploadForm — no logic duplication with UploadDrawer.
+ */
 const DocumentCreatePage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-
-  const [currentStep, setCurrentStep] = useState(1);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [displayName, setDisplayName] = useState("");
-  const [customMetadata, setCustomMetadata] = useState<Record<string, string>>(
-    {},
-  );
-  const [accessScopeLecture, setAccessScopeLecture] = useState(false);
-  const [accessScopeStudent, setAccessScopeStudent] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [dragOver, setDragOver] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: metadataTypes = [] } = useQuery({
     queryKey: ["metadata-types"],
@@ -238,7 +161,7 @@ const DocumentCreatePage: React.FC = () => {
   return (
     <CreatePageLayout
       title="Tải lên tài liệu"
-      processSteps={<ProcessSteps currentStep={currentStep} />}
+      processSteps={<ProcessSteps currentStep={1} />}
     >
       <div className="flex flex-col gap-5">
         {/* Step 1: Chọn tệp tin */}

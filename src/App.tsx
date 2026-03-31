@@ -1,29 +1,81 @@
-import AdminLayout from "@/layouts/admin";
-import UserLayout from "@/layouts/user";
-import AuthLayout from "@/layouts/auth";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import RoleRoute from "@/components/auth/RoleRoute";
+import AdminLayout from "@/layouts/admin";
+import AuthLayout from "@/layouts/auth";
+import UserLayout from "@/layouts/user";
 import LoginPage from "@/pages/auth/login";
 import GoogleCallbackPage from "@/pages/auth/login/callback";
 import UserDashboard from "@/pages/user";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { refreshTokens } from "@/services/http";
+import { useAuthStore } from "@/stores/auth.store";
 import { ConfigProvider, theme } from "antd";
-import { useEffect, useState } from "react";
 import viVN from "antd/locale/vi_VN";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
 import "driver.js/dist/driver.css";
+import { useEffect, useState } from "react";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 dayjs.locale("vi");
 
+/**
+ * On fresh page load the Zustand store has no token (in-memory only).
+ * We attempt a silent token refresh via the HTTP-only cookie.
+ * - If refresh succeeds  → redirect to the user's home
+ * - If refresh fails     → show the public landing page
+ *
+ * This mirrors the same pattern used by ProtectedRoute.
+ */
+function RootRedirect() {
+  const { accessToken } = useAuthStore();
+
+  const [status, setStatus] = useState<"checking" | "done">(
+    accessToken ? "done" : "checking",
+  );
+
+  useEffect(() => {
+    if (status !== "checking") return;
+    refreshTokens()
+      .then((tokens) => {
+        useAuthStore.getState().setAccessToken(tokens.accessToken);
+        setStatus("done");
+      })
+      .catch(() => {
+        setStatus("done"); // not logged in → show landing
+      });
+  }, [status]);
+
+  if (status === "checking") {
+    return (
+      <div className="bg-lightPrimary dark:bg-navy-900 flex min-h-screen items-center justify-center">
+        <div className="border-t-brand-500 h-10 w-10 animate-spin rounded-full border-4 border-gray-200" />
+      </div>
+    );
+  }
+
+  // Re-read from store after refresh
+  const { accessToken: token, userRole: role } = useAuthStore.getState();
+  if (token) {
+    if (role === "admin") return <Navigate to="/admin" replace />;
+    return <Navigate to="/user/documents" replace />;
+  }
+
+  return <UserDashboard />;
+}
+
 export default function App() {
-  const [isDark, setIsDark] = useState(() => document.body.classList.contains("dark"));
+  const [isDark, setIsDark] = useState(() =>
+    document.body.classList.contains("dark"),
+  );
 
   useEffect(() => {
     const observer = new MutationObserver(() => {
       setIsDark(document.body.classList.contains("dark"));
     });
-    observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
     return () => observer.disconnect();
   }, []);
 
@@ -51,8 +103,8 @@ export default function App() {
             <Route path="callback" element={<GoogleCallbackPage />} />
           </Route>
 
-          {/* ── Public landing — must come BEFORE ProtectedRoute ── */}
-          <Route path="/" element={<UserDashboard />} />
+          {/* ── Root: landing for guests, redirect for authenticated users ── */}
+          <Route path="/" element={<RootRedirect />} />
 
           {/* ── Protected routes ── */}
           <Route element={<ProtectedRoute />}>
@@ -60,7 +112,9 @@ export default function App() {
               <Route path="/admin/*" element={<AdminLayout />} />
             </Route>
 
-            <Route element={<RoleRoute allowedRoles={["student", "lecture"]} />}>
+            <Route
+              element={<RoleRoute allowedRoles={["student", "lecture"]} />}
+            >
               <Route path="/user/*" element={<UserLayout />} />
             </Route>
           </Route>
