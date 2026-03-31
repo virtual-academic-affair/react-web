@@ -1,5 +1,4 @@
 const HTML_TAG_PATTERN = /<\/?[a-z][\s\S]*>/i;
-const REFERENCE_PATTERN = /\[\^(\d+)\]/g;
 const BULLET_PATTERN = /^\s*[\*-]\s+(.*)$/;
 
 export function hasHtmlTags(value: string): boolean {
