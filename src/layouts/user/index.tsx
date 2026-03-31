@@ -3,11 +3,13 @@
  * Wraps all /user/* pages with Navbar and content area.
  */
 
+import React from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
+
 import Navbar from "@/components/navbar";
 import { useAuthStore } from "@/stores/auth.store";
 import { getUserInfoFromToken } from "@/utils/auth.util";
-import React from "react";
-import { Route, Routes } from "react-router-dom";
+import UserDocumentsPage from "@/pages/user/documents";
 
 const UserLayout: React.FC = () => {
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -27,7 +29,8 @@ const UserLayout: React.FC = () => {
 
         <div className="relative h-full min-h-[calc(100vh-64px)] w-full">
           <Routes>
-            <Route path="/" element={<div className="p-6 text-white">Trang người dùng</div>} />
+            <Route path="/" element={<Navigate to="/user/documents" replace />} />
+            <Route path="/documents" element={<UserDocumentsPage />} />
           </Routes>
         </div>
       </div>
