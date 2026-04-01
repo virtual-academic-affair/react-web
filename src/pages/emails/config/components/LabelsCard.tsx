@@ -187,7 +187,7 @@ const LabelsCard: React.FC<LabelsCardProps> = ({ systemLabelEnum }) => {
                 className="flex items-center gap-3 rounded-xl px-4 py-2.5"
               >
                 <span className="w-40 shrink-0">
-                  <Tag color={getLabelColor(key, systemLabelEnum)}>
+                  <Tag color={getLabelColor(key, systemLabelEnum)} interactive={false}>
                     {getLabelVi(key, systemLabelEnum)}
                   </Tag>
                 </span>
@@ -216,7 +216,7 @@ const LabelsCard: React.FC<LabelsCardProps> = ({ systemLabelEnum }) => {
                 ) : (
                   <div className="flex-1">
                     {currentValue ? (
-                      <Tag>
+                      <Tag interactive={false}>
                         {gmailLabels.find((g) => g.value === currentValue)
                           ?.label ?? currentValue}
                       </Tag>
