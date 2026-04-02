@@ -111,7 +111,6 @@ const PdfPreview: React.FC<{ url: string }> = ({ url }) => {
        const el = pageRefs.current[i];
        if (!el) continue;
        const pageTop = el.offsetTop;
-       const pageBottom = pageTop + el.offsetHeight;
        const pageMiddle = pageTop + el.offsetHeight / 2;
        
        const distance = Math.abs(middleY - pageMiddle);
