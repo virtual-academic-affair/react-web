@@ -91,7 +91,64 @@ interface FilePreviewModalProps {
 
 const PdfPreview: React.FC<{ url: string }> = ({ url }) => {
   const [numPages, setNumPages] = useState<number>(0);
+  const [currentPage, setCurrentPage] = useState(1);
   const [scale, setScale] = useState(1.2);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const handleScroll = () => {
+    if (!containerRef.current) return;
+    const { scrollTop, clientHeight } = containerRef.current;
+    
+    // Tìm trang nào đang chiếm phần lớn diện tích nhìn thấy (viewport)
+    // Tọa độ giữa màn hình
+    const middleY = scrollTop + clientHeight / 2;
+
+    let closestPage = 1;
+    let minDistance = Infinity;
+
+    for (let i = 0; i < numPages; i++) {
+       const el = pageRefs.current[i];
+       if (!el) continue;
+       const pageTop = el.offsetTop;
+       const pageBottom = pageTop + el.offsetHeight;
+       const pageMiddle = pageTop + el.offsetHeight / 2;
+       
+       const distance = Math.abs(middleY - pageMiddle);
+       if (distance < minDistance) {
+         minDistance = distance;
+         closestPage = i + 1;
+       }
+    }
+    
+    if (closestPage !== currentPage) {
+      setCurrentPage(closestPage);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage <= 1 || !containerRef.current) return;
+    const prevPageRef = pageRefs.current[currentPage - 2];
+    if (prevPageRef) {
+      containerRef.current.scrollTo({
+        top: prevPageRef.offsetTop - 32, // trừ hao padding
+        behavior: "smooth"
+      });
+      setCurrentPage((prev) => prev - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage >= numPages || !containerRef.current) return;
+    const nextPageRef = pageRefs.current[currentPage];
+    if (nextPageRef) {
+      containerRef.current.scrollTo({
+        top: nextPageRef.offsetTop - 32,
+        behavior: "smooth"
+      });
+      setCurrentPage((prev) => prev + 1);
+    }
+  };
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -99,12 +156,32 @@ const PdfPreview: React.FC<{ url: string }> = ({ url }) => {
       <div className="flex shrink-0 items-center justify-center gap-3 border-b border-white/8 bg-[#202124]/80 px-4 py-2 z-10">
         <button
           type="button"
+          onClick={handlePrevPage}
+          disabled={currentPage <= 1}
+          className="rounded-lg p-1.5 text-white/70 transition-colors hover:bg-white/10 disabled:opacity-30"
+        >
+          <MdChevronLeft className="h-5 w-5" />
+        </button>
+        <span className="text-sm text-white/80 w-16 text-center">
+          {currentPage} / {numPages || "–"}
+        </span>
+        <button
+          type="button"
+          onClick={handleNextPage}
+          disabled={currentPage >= numPages}
+          className="rounded-lg p-1.5 text-white/70 transition-colors hover:bg-white/10 disabled:opacity-30"
+        >
+          <MdChevronRight className="h-5 w-5" />
+        </button>
+        <span className="mx-2 h-5 w-px bg-white/20" />
+        <button
+          type="button"
           onClick={() => setScale((s) => Math.max(0.5, s - 0.2))}
           className="rounded-lg px-2 py-1 text-sm text-white/70 transition-colors hover:bg-white/10"
         >
           −
         </button>
-        <span className="text-sm text-white/80">
+        <span className="text-sm text-white/80 w-12 text-center">
           {Math.round(scale * 100)}%
         </span>
         <button
@@ -117,33 +194,48 @@ const PdfPreview: React.FC<{ url: string }> = ({ url }) => {
       </div>
 
       {/* PDF content */}
-      <div className="flex-1 overflow-auto bg-gray-800/50 p-8 flex justify-center">
+      <div 
+        ref={containerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-auto bg-gray-800/50 p-8 flex justify-center relative"
+      >
         <Document
           file={url}
-          onLoadSuccess={({ numPages: n }) => setNumPages(n)}
+          onLoadSuccess={({ numPages: n }) => {
+            setNumPages(n);
+            pageRefs.current = new Array(n).fill(null);
+          }}
           loading={
-            <div className="flex flex-col items-center justify-center gap-2 py-20 text-white/70">
+            <div className="flex flex-col items-center justify-center gap-2 py-20 text-white/70 h-full w-full absolute inset-0">
               <div className="fpv-spinner" />
               <span>Đang tải PDF...</span>
             </div>
           }
           error={
-            <div className="flex flex-col items-center justify-center gap-3 py-20 text-gray-400">
+            <div className="flex flex-col items-center justify-center gap-3 py-20 text-gray-400 h-full w-full absolute inset-0">
               <MdErrorOutline className="h-12 w-12" />
               <p className="text-sm">Không thể hiển thị PDF.</p>
             </div>
           }
         >
           <div className="flex flex-col gap-6 items-center">
-            {Array.from(new Array(numPages), (el, index) => (
-              <Page
+            {Array.from(new Array(numPages), (_, index) => (
+              <div 
                 key={`page_${index + 1}`}
-                pageNumber={index + 1}
-                scale={scale}
-                className="shadow-lg bg-white"
-                renderTextLayer={false}
-                renderAnnotationLayer={false}
-              />
+                ref={(el) => { 
+                  if (pageRefs.current) {
+                    pageRefs.current[index] = el; 
+                  }
+                }}
+              >
+                <Page
+                  pageNumber={index + 1}
+                  scale={scale}
+                  className="shadow-lg bg-white"
+                  renderTextLayer={false}
+                  renderAnnotationLayer={false}
+                />
+              </div>
             ))}
           </div>
         </Document>
