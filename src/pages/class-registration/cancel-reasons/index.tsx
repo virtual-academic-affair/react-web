@@ -140,7 +140,7 @@ const CancelReasonsPage: React.FC = () => {
   );
 
   const handleDelete = React.useCallback(async (item: CancelReason) => {
-    if (!window.confirm(`Xóa lý do hủy #${item.id}?`)) {
+    if (!window.confirm(`Xóa lý do từ chối #${item.id}?`)) {
       return;
     }
     try {
