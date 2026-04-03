@@ -4,8 +4,8 @@ import { useDynamicData } from "@/hooks/useDynamicData";
 import { useEmailSockets } from "@/hooks/useEmailSockets";
 import UsersPage from "@/pages/auth/accounts";
 import AssignRolePage from "@/pages/auth/assign-role";
-import CancelReasonsPage from "@/pages/class-registration/cancel-reasons";
 import CancelReasonCreatePage from "@/pages/class-registration/cancel-reasons/create";
+import CancelReasonsPage from "@/pages/class-registration/cancel-reasons/list";
 import ClassRegistrationCreatePage from "@/pages/class-registration/create";
 import ClassRegistrationsPage from "@/pages/class-registration/registrations";
 import ClassRegistrationStatisticsPage from "@/pages/class-registration/statistics";
@@ -175,6 +175,15 @@ const AdminLayout: React.FC = () => {
             <Route
               path="tasks"
               element={<Navigate to="/admin/tasks/statistics" replace />}
+            />
+            <Route
+              path="class-registration/cancel-reasons"
+              element={
+                <Navigate
+                  to="/admin/class-registration/cancel-reasons/index"
+                  replace
+                />
+              }
             />
             <Route
               path="class-registration"
