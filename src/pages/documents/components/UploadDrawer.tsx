@@ -1,9 +1,9 @@
-import { message as toast } from "antd";
+import { message as toast, Tag } from "antd";
 import React, { useCallback, useRef, useState } from "react";
 
 import Drawer from "@/components/drawer/Drawer";
 import { DocumentsService } from "@/services/documents";
-import { RoleColors } from "@/types/users";
+import { Role, RoleColors } from "@/types/users";
 import { parseError } from "@/utils/parseError";
 import AccessScopeBadge from "./AccessScopeBadge";
 
@@ -405,7 +405,7 @@ export const UploadForm: React.FC<UploadFormProps> = ({
                       <div key={type.key} className="flex items-start gap-6">
                         <div className="w-40 shrink-0">
                           <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                            {info.typeName} *
+                            {type.displayName} *
                           </p>
                         </div>
                         <div className="flex-1">
@@ -415,8 +415,8 @@ export const UploadForm: React.FC<UploadFormProps> = ({
                               const colors = val.visibleRoles?.includes(
                                 "student",
                               )
-                                ? RoleColors.student
-                                : RoleColors.lecture;
+                                ? RoleColors[Role.Student]
+                                : RoleColors[Role.Lecture];
                               return (
                                 <button
                                   key={val.value}
@@ -428,11 +428,7 @@ export const UploadForm: React.FC<UploadFormProps> = ({
                                 >
                                   <Tag
                                     color={
-                                      isSelected
-                                        ? colors.text
-                                            .replace("text-", "#")
-                                            .replace("-800", "00")
-                                        : "#6b7280"
+                                      isSelected ? colors.hex : "#6b7280"
                                     }
                                   >
                                     {val.displayName || val.value}
