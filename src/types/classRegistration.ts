@@ -14,6 +14,12 @@ export const RegistrationActionLabels: Record<RegistrationAction, string> = {
   requestOpen: "Mở môn",
 };
 
+export const RegistrationActionOptions = [
+  { value: "register", label: "Đăng ký thêm" },
+  { value: "cancel", label: "Hủy môn" },
+  { value: "requestOpen", label: "Mở môn" },
+];
+
 export const RegistrationActionColors: Record<RegistrationAction, { bg: string; text: string; hex: string }> = {
   register: { bg: "bg-indigo-100", text: "text-indigo-800", hex: "#6366f1" },
   cancel: { bg: "bg-red-100", text: "text-red-800", hex: "#ef4444" },

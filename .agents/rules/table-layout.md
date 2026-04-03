@@ -12,6 +12,7 @@ Always use the **TableLayout** component from [TableLayout.tsx](mdc:src/componen
 ## Component Location
 
 The TableLayout component is located at:
+
 - `src/components/table/TableLayout.tsx`
 
 ## Required Imports
@@ -29,6 +30,7 @@ import type { PaginatedResponse } from "@/types/common";
 ### 1. Define Table Columns
 
 Use `TableColumn<T>[]` to define columns. Each column must have:
+
 - `key`: Unique identifier (string)
 - `header`: Column header text
 - `render`: Function that returns ReactNode for cell content
@@ -36,6 +38,7 @@ Use `TableColumn<T>[]` to define columns. Each column must have:
 - `maxWidth` (optional): Maximum width (e.g., "450px")
 
 **Example:**
+
 ```typescript
 const columns: TableColumn<Message>[] = React.useMemo(
   () => [
@@ -58,6 +61,7 @@ const columns: TableColumn<Message>[] = React.useMemo(
 ### 2. Define Table Actions
 
 Use `TableAction<T>[]` for row actions. Each action must have:
+
 - `key`: Unique identifier
 - `icon`: ReactNode (usually from react-icons)
 - `label`: Tooltip text
@@ -65,6 +69,7 @@ Use `TableAction<T>[]` for row actions. Each action must have:
 - `className` (optional): Custom button styling
 
 **Example:**
+
 ```typescript
 const actions: TableAction<Message>[] = React.useMemo(
   () => [
@@ -105,18 +110,21 @@ const actions: TableAction<Message>[] = React.useMemo(
 ## Best Practices
 
 ### 1. Column Rendering
+
 - Use `React.useMemo` for columns and actions to prevent unnecessary re-renders
 - Include all dependencies in the dependency array
 - For long text, use `truncate` class and wrap with `Tooltip` component
 - Follow typography consistency: use `text-base font-medium` for primary content, `text-sm` for secondary
 
 ### 2. Actions
+
 - Keep action buttons consistent: `h-10 w-10 rounded-2xl`
 - Use brand color (`bg-brand-500`) for primary actions
 - Use `stopPropagation()` in onClick handlers to prevent row click
 - Always provide `label` for accessibility (tooltip)
 
 ### 3. Search & Filter
+
 - Search input supports Enter key automatically
 - Filter button is optional - only show if `showFilter={true}`
 - Handle search state in parent component
@@ -126,11 +134,12 @@ const actions: TableAction<Message>[] = React.useMemo(
   - Sharing URLs with applied filters
   - Preserving state on page refresh
 - **Pattern for URL param synchronization:**
+
   ```typescript
   import { useSearchParams } from "react-router-dom";
-  
+
   const [searchParams, setSearchParams] = useSearchParams();
-  
+
   // Initialize state from URL params
   const [keyword, setKeyword] = React.useState(
     searchParams.get("keyword") ?? "",
@@ -148,7 +157,7 @@ const actions: TableAction<Message>[] = React.useMemo(
       // ... other filter fields
     };
   });
-  
+
   // Sync state to URL params
   React.useEffect(() => {
     const next = new URLSearchParams();
@@ -169,6 +178,7 @@ const actions: TableAction<Message>[] = React.useMemo(
     setSearchParams(next, { replace: true });
   }, [filters, keyword, page, selectedId, setSearchParams]);
   ```
+
 - **Advanced Filter Modal pattern:**
   - **Always use the shared `AdvancedFilterModal` component** from [src/components/filter/AdvancedFilterModal.tsx](mdc:src/components/filter/AdvancedFilterModal.tsx)
   - The shared component provides: backdrop overlay, card container, grid layout, and button footer
@@ -182,11 +192,13 @@ const actions: TableAction<Message>[] = React.useMemo(
     - [src/pages/class-registration/registrations/components/AdvancedFilterModal.tsx](mdc:src/pages/class-registration/registrations/components/AdvancedFilterModal.tsx)
 
 ### 4. Pagination
+
 - Pagination is automatically handled by TableLayout
 - Uses condensed page numbers (1 ... prev, current, next ... last)
 - Shows "Trang X trên Y · Z bản ghi" format
 
 ### 5. Detail Drawer & URL Params
+
 - Pass drawer component as `detailDrawer` prop (or render directly under the table page component).
 - **Use URL params for row-level detail/edit wherever possible:**
   - Use `useSearchParams` to read/write an `id` param (or similar) when opening/closing drawers.
@@ -210,6 +222,7 @@ const actions: TableAction<Message>[] = React.useMemo(
 - Use the `Drawer` component from `src/components/drawer/Drawer.tsx` (as used by email and users pages) for consistency.
 
 ### 6. Drawer Layout & Styling (Detail / Edit)
+
 - Use the **2-column layout** for each field row, matching `EmailDetailDrawer` and `UserDetailDrawer`:
   ```tsx
   <div className="flex items-center gap-6">
@@ -218,11 +231,10 @@ const actions: TableAction<Message>[] = React.useMemo(
         Label
       </p>
     </div>
-    <div className="flex-1">
-      {/* content */}
-    </div>
+    <div className="flex-1">{/* content */}</div>
   </div>
   ```
+
   - Use `items-start` instead of `items-center` when content is multi-line (e.g. textarea).
 - **Loading state** inside drawer:
   ```tsx
@@ -237,9 +249,7 @@ const actions: TableAction<Message>[] = React.useMemo(
   ```
 - **Empty state**:
   ```tsx
-  <p className="text-sm text-gray-600 dark:text-gray-400">
-    Không có dữ liệu.
-  </p>
+  <p className="text-sm text-gray-600 dark:text-gray-400">Không có dữ liệu.</p>
   ```
 - **“Thông số kỹ thuật” section** for system fields:
   ```tsx
@@ -256,16 +266,20 @@ const actions: TableAction<Message>[] = React.useMemo(
   - Container: `className="mt-4 flex justify-end gap-2"`.
   - Cancel:
     ```tsx
-    className="rounded-xl px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10"
+    className =
+      "rounded-xl px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10";
     ```
   - Submit (Lưu):
     ```tsx
-    className="bg-brand-500 hover:bg-brand-600 flex items-center gap-1 rounded-xl px-4 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-50"
+    className =
+      "bg-brand-500 hover:bg-brand-600 flex items-center gap-1 rounded-xl px-4 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-50";
     ```
+
     - **MUST include `MdSave` icon** from `react-icons/md`:
+
       ```tsx
       import { MdSave } from "react-icons/md";
-      
+
       <button
         type="button" // or "submit"
         disabled={saving}
@@ -274,11 +288,13 @@ const actions: TableAction<Message>[] = React.useMemo(
       >
         <MdSave className="h-4 w-4" />
         {saving ? "Đang lưu..." : "Lưu"}
-      </button>
+      </button>;
       ```
+
     - Always use `rounded-xl` (not `rounded-lg`) for consistency across all buttons in the app.
 
 ### 6. Optimistic Per-Row / Per-Cell Updates (Avoid UI Jank)
+
 - **Do NOT** refetch the entire list (`fetch*` API) after a small inline update (e.g. change role, toggle active, update labels).
 - Instead, update only the affected row (and ideally only the changed fields) in local state:
   - Use the `id` field to identify the row.
@@ -286,11 +302,11 @@ const actions: TableAction<Message>[] = React.useMemo(
 - Pattern for optimistic update on a single field:
 
 ```typescript
-setResult(prev =>
+setResult((prev) =>
   prev
     ? {
         ...prev,
-        items: prev.items.map(item =>
+        items: prev.items.map((item) =>
           item.id === updated.id
             ? { ...item, someField: updated.someField }
             : item,
@@ -306,6 +322,7 @@ setResult(prev =>
 ## Example: Complete Implementation
 
 See [src/pages/emails/message/index.tsx](mdc:src/pages/emails/message/index.tsx) for a complete example of:
+
 - Column definitions with tooltips
 - Action buttons with custom styling
 - Search and filter integration
@@ -315,6 +332,7 @@ See [src/pages/emails/message/index.tsx](mdc:src/pages/emails/message/index.tsx)
 ## Common Patterns
 
 ### Truncated Text with Tooltip
+
 ```typescript
 render: (item) => (
   <Tooltip label={item.longText}>
@@ -326,6 +344,7 @@ render: (item) => (
 ```
 
 ### Custom Action Button
+
 ```typescript
 {
   key: "custom",
@@ -337,6 +356,7 @@ render: (item) => (
 ```
 
 ### Row Click Handler
+
 ```typescript
 onRowClick={(item) => {
   // Navigate to detail or open drawer

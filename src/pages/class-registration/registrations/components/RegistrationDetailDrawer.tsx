@@ -1,8 +1,8 @@
 import Drawer from "@/components/drawer/Drawer";
 import RichTextEditor from "@/components/fields/RichTextEditor";
 import MessageStatusSelector from "@/components/selector/MessageStatusSelector";
-import Tag from "@/components/tag/Tag";
 import Switch from "@/components/switch";
+import Tag from "@/components/tag/Tag";
 import Tooltip from "@/components/tooltip/Tooltip.tsx";
 import {
   cancelReasonsService,
@@ -19,6 +19,9 @@ import type {
 import {
   ItemStatusColors,
   ItemStatusLabels,
+  RegistrationActionColors,
+  RegistrationActionLabels,
+  RegistrationActionOptions,
   type UpdateClassRegistrationDto,
 } from "@/types/classRegistration";
 import { formatDate } from "@/utils/date";
@@ -117,11 +120,17 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
     const original: Record<number, string[]> = {};
     (detail.items ?? []).forEach((item) => {
       const reasons = item.rejectReasons ?? [];
-      // Ensure at least one empty input
-      const reasonsWithEmpty =
-        reasons.length === 0 || reasons[reasons.length - 1] !== ""
-          ? [...reasons, ""]
-          : reasons;
+      // Ensure only one empty input at most (at the end)
+      console.log(reasons);
+      const emptyCount = reasons.filter((r) => r.trim() === "").length;
+      let reasonsWithEmpty: string[];
+      if (emptyCount === 0) {
+        reasonsWithEmpty = [...reasons, ""];
+      } else {
+        // Remove extra empty strings, keep only one at the end
+        const nonEmptyReasons = reasons.filter((r) => r.trim() !== "");
+        reasonsWithEmpty = [...nonEmptyReasons, ""];
+      }
       forms[item.id] = {
         rejectReasons: reasonsWithEmpty,
         isInCurriculum: item.isInCurriculum ?? false,
@@ -216,8 +225,12 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
     setUpdatingItemIds((prev) => new Set(prev).add(item.id));
     try {
       const itemForm = itemForms[item.id];
+      let fieldValue = itemForm?.[field];
+      if (field === "rejectReasons" && Array.isArray(fieldValue)) {
+        fieldValue = fieldValue.filter((r) => r.trim().length > 0);
+      }
       const dto: any = {
-        [field]: itemForm?.[field],
+        [field]: fieldValue,
       };
       const updated = await classRegistrationItemsService.update(
         detail.id,
@@ -258,7 +271,9 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
   };
 
   const handleReject = async (item: ClassRegistrationItem) => {
-    const reasons = itemForms[item.id]?.rejectReasons ?? [];
+    const reasons = (itemForms[item.id]?.rejectReasons ?? []).filter(
+      (r) => r.trim().length > 0,
+    );
     if (reasons.length === 0) {
       toast.error("Vui lòng nhập lý do từ chối.");
       return;
@@ -564,7 +579,11 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                 return (
                   <div
                     key={item.id}
-                    className="dark:bg-navy-700/40 rounded-2xl bg-gray-50 p-4 dark:border-white/10"
+                    className={`rounded-2xl bg-gray-50 p-4 outline-4 dark:border-white/10`}
+                    style={{
+                      outlineColor:
+                        ItemStatusColors[item.status ?? "pending"].hex + "40",
+                    }}
                   >
                     {/* Header with remove button */}
                     <div className="mb-3 flex items-center justify-between">
@@ -653,7 +672,21 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                           />
                         </div>
                       </div>
-
+                      {/* Loại yêu cầu */}
+                      <div className="flex items-center gap-6">
+                        <div className="w-32 shrink-0">
+                          <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                            Loại yêu cầu
+                          </p>
+                        </div>
+                        <div className="flex-1">
+                          <Tag
+                            color={RegistrationActionColors[item.action].hex}
+                          >
+                            {RegistrationActionLabels[item.action]}
+                          </Tag>
+                        </div>
+                      </div>
                       {/* Status */}
                       <div className="flex items-center gap-6">
                         <div className="w-32 shrink-0">
@@ -696,10 +729,25 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                                       ];
                                       newReasons[index] = e.target.value;
 
-                                      // If the last input is filled, add a new empty one
                                       const isLastInput =
                                         index ===
                                         itemForm.rejectReasons.length - 1;
+
+                                      // If input becomes empty and not the last input, remove it
+                                      if (
+                                        !isLastInput &&
+                                        e.target.value.trim() === ""
+                                      ) {
+                                        newReasons.splice(index, 1);
+                                        updateItemForm(
+                                          item.id,
+                                          "rejectReasons",
+                                          newReasons,
+                                        );
+                                        return;
+                                      }
+
+                                      // If the last input is filled, add a new empty one
                                       if (
                                         isLastInput &&
                                         e.target.value.trim() !== ""
@@ -775,11 +823,12 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                                       itemForm.rejectReasons.filter(
                                         (_, i) => i !== index,
                                       );
-                                    // Ensure at least one empty input remains
-                                    if (
-                                      newReasons.length === 0 ||
-                                      newReasons.every((r) => r.trim() !== "")
-                                    ) {
+                                    // Count empty strings after deletion
+                                    const emptyCount = newReasons.filter(
+                                      (r) => r.trim() === "",
+                                    ).length;
+                                    // Add empty input only if no empty string remains
+                                    if (emptyCount === 0) {
                                       newReasons.push("");
                                     }
                                     updateItemForm(
@@ -804,8 +853,9 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                                   itemForm.rejectReasons.filter(
                                     (r) => r.trim().length > 0,
                                   );
-                                const originalReasons =
-                                  originalItemRejectReasons[item.id] ?? [];
+                                const originalReasons = (
+                                  originalItemRejectReasons[item.id] ?? []
+                                ).filter((r) => r.trim().length > 0);
                                 const currentSorted = [...currentReasons]
                                   .sort()
                                   .join("\n");
@@ -827,16 +877,15 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                                         type="button"
                                         disabled={updating}
                                         onClick={() => {
-                                          // Rollback to original, ensure at least one empty input
+                                          // Rollback to original, ensure only one empty input if needed
                                           const rolledBackReasons = [
                                             ...originalReasons,
                                           ];
-                                          if (
-                                            rolledBackReasons.length === 0 ||
-                                            rolledBackReasons[
-                                              rolledBackReasons.length - 1
-                                            ] !== ""
-                                          ) {
+                                          const emptyCount =
+                                            rolledBackReasons.filter(
+                                              (r) => r.trim() === "",
+                                            ).length;
+                                          if (emptyCount === 0) {
                                             rolledBackReasons.push("");
                                           }
                                           updateItemForm(
@@ -1079,6 +1128,33 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                           }
                           disabled={updatingItemIds.has(-1)}
                         />
+                      </div>
+                    </div>
+
+                    {/* Loại yêu cầu */}
+
+                    <div className="flex items-center gap-6">
+                      <div className="w-32 shrink-0">
+                        <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                          Loại yêu cầu
+                        </p>
+                      </div>
+                      <div className="flex-1">
+                        <Tag
+                          variant="selection"
+                          color={RegistrationActionColors[draftItem.action].hex}
+                          value={draftItem.action}
+                          options={RegistrationActionOptions}
+                          disabled={updatingItemIds.has(-1)}
+                          onChange={(value) =>
+                            setDraftItem({
+                              ...draftItem,
+                              action: value as typeof draftItem.action,
+                            })
+                          }
+                        >
+                          {RegistrationActionLabels[draftItem.action]}
+                        </Tag>
                       </div>
                     </div>
                   </div>

@@ -399,87 +399,63 @@ export const UploadForm: React.FC<UploadFormProps> = ({
               {activeMetadataTypes.map((type) => {
                 const currentValue = customMetadata[type.key] || "";
 
-                // access_scope → role toggle buttons
-                if (type.key === "access_scope") {
-                  return (
-                    <div key={type.key} className="flex items-start gap-6">
-                      <div className="w-40 shrink-0">
-                        <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                          {type.displayName} *
-                        </p>
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex flex-wrap gap-2">
-                          {(
-                            [
-                              { role: "lecture", label: "Giảng viên" },
-                              { role: "student", label: "Sinh viên" },
-                            ] as const
-                          ).map(({ role, label }) => {
-                            const isSelected =
-                              currentValue === role || currentValue === "both";
-                            const colors = RoleColors[role];
-                            return (
-                              <button
-                                key={role}
-                                type="button"
-                                onClick={() => {
-                                  // Toggle logic: both / single / private
-                                  const isLecture =
-                                    currentValue === "lecture" ||
-                                    currentValue === "both";
-                                  const isStudent =
-                                    currentValue === "student" ||
-                                    currentValue === "both";
-                                  let next: string;
-                                  if (role === "lecture") {
-                                    const nowLecture = !isLecture;
-                                    next =
-                                      nowLecture && isStudent
-                                        ? "both"
-                                        : nowLecture
-                                          ? "lecture"
-                                          : isStudent
-                                            ? "student"
-                                            : "private";
-                                  } else {
-                                    const nowStudent = !isStudent;
-                                    next =
-                                      isLecture && nowStudent
-                                        ? "both"
-                                        : isLecture
-                                          ? "lecture"
-                                          : nowStudent
-                                            ? "student"
-                                            : "private";
-                                  }
-                                  handleMetadataChange(type.key, next);
-                                }}
-                                className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
-                                  isSelected
-                                    ? `${colors.bg} ${colors.text} border-transparent`
-                                    : "dark:bg-navy-800 border-gray-200 bg-gray-100 text-gray-500 dark:border-white/10 dark:text-gray-400"
-                                }`}
-                              >
-                                {label}
-                              </button>
-                            );
-                          })}
+                  // Access scope is special - show as role tags
+                  if (type.key === "access_scope") {
+                    return (
+                      <div key={type.key} className="flex items-start gap-6">
+                        <div className="w-40 shrink-0">
+                          <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                            {info.typeName} *
+                          </p>
                         </div>
-                        <p className="mt-2 text-xs text-gray-500">
-                          Quyền truy cập:{" "}
-                          <span className="font-medium">
-                            {currentValue === "private" && "Nội bộ"}
-                            {currentValue === "student" && "Chỉ sinh viên"}
-                            {currentValue === "lecture" && "Chỉ giảng viên"}
-                            {currentValue === "both" && "Tất cả mọi người"}
-                            {!currentValue && "—"}
-                          </span>
-                        </p>
+                        <div className="flex-1">
+                          <div className="flex flex-wrap gap-2">
+                            {type.allowedValues?.map((val) => {
+                              const isSelected = currentValue === val.value;
+                              const colors = val.visibleRoles?.includes(
+                                "student",
+                              )
+                                ? RoleColors.student
+                                : RoleColors.lecture;
+                              return (
+                                <button
+                                  key={val.value}
+                                  type="button"
+                                  onClick={() =>
+                                    handleMetadataChange(type.key, val.value)
+                                  }
+                                  className="cursor-pointer"
+                                >
+                                  <Tag
+                                    color={
+                                      isSelected
+                                        ? colors.text
+                                            .replace("text-", "#")
+                                            .replace("-800", "00")
+                                        : "#6b7280"
+                                    }
+                                  >
+                                    {val.displayName || val.value}
+                                  </Tag>
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <p className="mt-2 text-xs text-gray-500">
+                            Quyền truy cập:{" "}
+                            <span className="font-medium">
+                              {currentValue === "private" &&
+                                "Chỉ giảng viên & sinh viên được chọn"}
+                              {currentValue === "student" && "Chỉ sinh viên"}
+                              {currentValue === "lecture" && "Chỉ giảng viên"}
+                              {currentValue === "public" && "Tất cả mọi người"}
+                              {!currentValue && "—"}
+                            </span>
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  );
-                }
+                    );
+                  }
 
                 // All other metadata types → select dropdown
                 const isRequired =
