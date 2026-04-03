@@ -1,0 +1,14 @@
+﻿@keyframes fpv-spin {
+  to { 
+    transform: rotate(360deg); 
+  }
+}
+
+.fpv-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #7c3aed;
+  border-radius: 50%;
+  animation: fpv-spin 0.8s linear infinite;
+}

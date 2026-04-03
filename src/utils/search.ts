@@ -58,9 +58,18 @@ export function parseSearchString(searchString: string): SearchState {
 export function stringifySearchQuery(
   keyword: string,
   params: Record<string, unknown>,
-  excludeKeys: string[] = ["page", "pageSize", "limit", "offset", "order", "orderBy", "orderCol", "orderDir"]
+  excludeKeys: string[] = [
+    "page",
+    "pageSize",
+    "limit",
+    "offset",
+    "order",
+    "orderBy",
+    "orderCol",
+    "orderDir",
+    "enableIsActiveFilter",
+  ],
 ): string {
-
   const result: string[] = [];
 
   if (keyword.trim()) {
@@ -73,9 +82,12 @@ export function stringifySearchQuery(
       return;
     }
 
-
-
-
+    if (key === "smartOrder" && value === false) {
+      return;
+    }
+    if (key === "enableIsActiveFilter") {
+      return;
+    }
     // Skip empty arrays
     if (Array.isArray(value) && value.length === 0) {
       return;

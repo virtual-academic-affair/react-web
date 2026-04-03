@@ -1,6 +1,7 @@
 import Navbar from "@/components/navbar";
 import Sidebar from "@/components/sidebar";
 import { useDynamicData } from "@/hooks/useDynamicData";
+import { useEmailSockets } from "@/hooks/useEmailSockets";
 import UsersPage from "@/pages/auth/accounts";
 import AssignRolePage from "@/pages/auth/assign-role";
 import CancelReasonCreatePage from "@/pages/class-registration/cancel-reasons/create";
@@ -8,6 +9,10 @@ import CancelReasonsPage from "@/pages/class-registration/cancel-reasons/list";
 import ClassRegistrationCreatePage from "@/pages/class-registration/create";
 import ClassRegistrationsPage from "@/pages/class-registration/registrations";
 import ClassRegistrationStatisticsPage from "@/pages/class-registration/statistics";
+import DocumentCreatePage from "@/pages/documents/create";
+import DocumentListPage from "@/pages/documents/list";
+import MetadataManagementPage from "@/pages/documents/metadata";
+import MetadataTypeCreatePage from "@/pages/documents/metadata/create";
 import GmailConfigPage from "@/pages/emails/config";
 import MessagesPage from "@/pages/emails/message";
 import InquiryCreatePage from "@/pages/inquiry/create";
@@ -18,7 +23,7 @@ import TasksPage from "@/pages/tasks/list";
 import TaskStatisticsPage from "@/pages/tasks/statistics";
 import TaskDetailPage from "@/pages/tasks/view";
 import routes from "@/routes";
-import React from "react";
+import { useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 const DYNAMIC_DATA_PARAMS = {
@@ -32,13 +37,16 @@ const DYNAMIC_DATA_PARAMS = {
 } as const;
 
 const AdminLayout: React.FC = () => {
-  const [open, setOpen] = React.useState(true);
+  const [open, setOpen] = useState(true);
+  const [collapsed, setCollapsed] = useState(false);
   const {
     data: rawData,
     isLoading: dataLoading,
     refetch: onRefresh,
   } = useDynamicData(DYNAMIC_DATA_PARAMS);
   const data = rawData ?? null;
+
+  useEmailSockets();
 
   const profile = data?.settings?.["email.superEmail"];
 
@@ -70,12 +78,27 @@ const AdminLayout: React.FC = () => {
 
   return (
     <div className="bg-lightPrimary dark:bg-navy-900! flex min-h-screen w-full">
-      <Sidebar open={open} onClose={() => setOpen(false)} />
+      <Sidebar
+        open={open}
+        onClose={() => setOpen(false)}
+        collapsed={collapsed}
+        onToggleCollapse={() => setCollapsed((c) => !c)}
+      />
 
       {/* Main content */}
-      <div className="relative flex min-h-screen w-full flex-col xl:ml-[343px]">
+      <div
+        className={`relative flex min-h-screen w-full flex-col transition-all duration-300 ${
+          collapsed ? "xl:ml-[100px]" : "xl:ml-[343px]"
+        }`}
+      >
         {/* Navbar */}
-        <div className="mx-auto w-[calc(100vw-6%)] md:w-[calc(100vw-8%)] lg:w-[calc(100vw-6%)] xl:w-[calc(100vw-405px)] 2xl:w-[calc(100vw-405px)]">
+        <div
+          className={`mx-auto w-[calc(100vw-6%)] transition-all duration-300 md:w-[calc(100vw-8%)] lg:w-[calc(100vw-6%)] ${
+            collapsed
+              ? "xl:w-[calc(100vw-162px)] 2xl:w-[calc(100vw-162px)]"
+              : "xl:w-[calc(100vw-405px)] 2xl:w-[calc(100vw-405px)]"
+          }`}
+        >
           <Navbar
             onOpenSidenav={() => setOpen(true)}
             brandText={getActiveRoute(routes)}
@@ -85,7 +108,13 @@ const AdminLayout: React.FC = () => {
         </div>
 
         {/* Page content */}
-        <div className="mx-auto mb-auto h-full min-h-[84vh] w-[calc(100vw-6%)] pt-5 md:w-[calc(100vw-8%)] lg:w-[calc(100vw-6%)] xl:w-[calc(100vw-405px)] 2xl:w-[calc(100vw-405px)]">
+        <div
+          className={`mx-auto mb-auto h-full min-h-[84vh] w-[calc(100vw-6%)] pt-5 transition-all duration-300 md:w-[calc(100vw-8%)] lg:w-[calc(100vw-6%)] ${
+            collapsed
+              ? "xl:w-[calc(100vw-162px)] 2xl:w-[calc(100vw-162px)]"
+              : "xl:w-[calc(100vw-405px)] 2xl:w-[calc(100vw-405px)]"
+          }`}
+        >
           <Routes>
             <Route
               path="email/config"
@@ -133,6 +162,16 @@ const AdminLayout: React.FC = () => {
             <Route path="tasks/list" element={<TasksPage />} />
             <Route path="tasks/create" element={<TaskCreatePage />} />
             <Route path="tasks/view/:id" element={<TaskDetailPage />} />
+            <Route path="documents/list" element={<DocumentListPage />} />
+            <Route path="documents/create" element={<DocumentCreatePage />} />
+            <Route
+              path="documents/metadata/index"
+              element={<MetadataManagementPage />}
+            />
+            <Route
+              path="documents/metadata/create"
+              element={<MetadataTypeCreatePage />}
+            />
             <Route
               path="tasks"
               element={<Navigate to="/admin/tasks/statistics" replace />}
@@ -140,7 +179,10 @@ const AdminLayout: React.FC = () => {
             <Route
               path="class-registration/cancel-reasons"
               element={
-                <Navigate to="/admin/class-registration/cancel-reasons/index" replace />
+                <Navigate
+                  to="/admin/class-registration/cancel-reasons/index"
+                  replace
+                />
               }
             />
             <Route

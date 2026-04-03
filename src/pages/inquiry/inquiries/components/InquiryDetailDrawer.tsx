@@ -5,24 +5,30 @@ import type { MessageStatus } from "@/types/messageStatus";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React from "react";
-import { MdSave } from "react-icons/md";
+import { MdDeleteOutline, MdOutlineRateReview, MdSave } from "react-icons/md";
+import Tooltip from "@/components/tooltip/Tooltip";
 import type ReactQuill from "react-quill-new";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import MessageStatusSelector from "@/components/selector/MessageStatusSelector";
 import InquiryTypeEditor from "@/components/selector/InquiryTypeEditor";
 import RichTextEditor from "@/components/fields/RichTextEditor";
 import { formatDate } from "@/utils/date";
+import { normalizeInquiryContent } from "@/utils/inquiryContent";
 
 interface InquiryDetailDrawerProps {
   inquiryId: number | null;
   onClose: () => void;
   onInquiryChanged: (next: Inquiry) => void;
+  onInquiryDeleted?: (id: number) => void;
+  onPreviewReply?: (id: number) => void;
 }
 
 const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
   inquiryId,
   onClose,
   onInquiryChanged,
+  onInquiryDeleted,
+  onPreviewReply,
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -43,6 +49,11 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
     enabled: inquiryId != null,
     staleTime: 30 * 1000,
   });
+  const sources = detail?.sources ?? [];
+  const normalizedAnswerContent = React.useMemo(
+    () => normalizeInquiryContent(detail?.answer),
+    [detail?.answer],
+  );
 
   // Sync form from query data
   React.useEffect(() => {
@@ -57,9 +68,16 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
     setForm({
       types: detail.types ?? [],
       question: detail.question ?? "",
-      answer: detail.answer ?? "",
+      answer: normalizedAnswerContent,
       messageStatus: detail.messageStatus ?? null,
     });
+  }, [detail, inquiryId, normalizedAnswerContent]);
+
+  React.useEffect(() => {
+    if (inquiryId == null || !detail) {
+      return;
+    }
+
   }, [detail, inquiryId]);
 
   // Focus on editor when focus param is present
@@ -112,7 +130,7 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
     setForm({
       types: detail.types ?? [],
       question: detail.question ?? "",
-      answer: detail.answer ?? "",
+      answer: normalizedAnswerContent,
       messageStatus: detail.messageStatus ?? null,
     });
   };
@@ -151,15 +169,67 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
     return (
       JSON.stringify([...form.types].sort()) !== JSON.stringify([...(detail.types ?? [])].sort()) ||
       form.question !== (detail.question ?? "") ||
-      form.answer !== (detail.answer ?? "") ||
+      form.answer !== normalizedAnswerContent ||
       form.messageStatus !== (detail.messageStatus ?? null)
     );
-  }, [detail, form]);
+  }, [detail, form, normalizedAnswerContent]);
 
   const isOpen = inquiryId != null;
 
+  const footerLeft = detail && (
+    <>
+        <Tooltip label="Xem trước phản hồi">
+          <button
+             onClick={() => {
+              if (detail) onPreviewReply?.(detail.id);
+             }}
+             className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500 text-white transition-colors hover:bg-blue-600 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+          >
+            <MdOutlineRateReview className="h-4 w-4" />
+          </button>
+        </Tooltip>
+
+        <Tooltip label="Xóa">
+          <button
+            onClick={() => {
+              if (detail) {
+                onClose();
+                onInquiryDeleted?.(detail.id);
+              }
+            }}
+            disabled={savingInfo}
+            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600 disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-600"
+          >
+            <MdDeleteOutline className="h-4 w-4" />
+          </button>
+        </Tooltip>
+    </>
+  );
+
+  const footerRight = detail && isDirty && (
+    <>
+          <button
+            type="button"
+            disabled={savingInfo}
+            onClick={handleResetForm}
+            className="rounded-xl px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-white/10"
+          >
+            Hủy
+          </button>
+          <button
+            type="button"
+            disabled={savingInfo}
+            onClick={handleSaveInfo}
+            className="bg-brand-500 hover:bg-brand-600 flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
+          >
+            <MdSave className="h-4 w-4" />
+            {savingInfo ? "Đang lưu..." : "Lưu"}
+          </button>
+    </>
+  );
+
   return (
-    <Drawer isOpen={isOpen} onClose={onClose} title="Chi tiết thắc mắc">
+    <Drawer isOpen={isOpen} onClose={onClose} title="Chi tiết thắc mắc" footerLeft={footerLeft} footerRight={footerRight}>
       {loading || !form ? (
         <div className="flex flex-col gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -240,28 +310,36 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
               </div>
             </div>
 
-            {isDirty && (
-              <div className="mt-2 flex justify-end gap-2">
-                <button
-                  type="button"
-                  disabled={savingInfo}
-                  onClick={handleResetForm}
-                  className="rounded-xl px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-white/10"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="button"
-                  disabled={savingInfo}
-                  onClick={handleSaveInfo}
-                  className="bg-brand-500 hover:bg-brand-600 flex items-center gap-1 rounded-xl px-4 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-50"
-                >
-                  <MdSave className="h-4 w-4" />
-                  {savingInfo ? "Đang lưu..." : "Lưu"}
-                </button>
+            </div>
+
+          {sources.length > 0 && (
+            <div className="mt-4 border-t border-gray-100 pt-4 dark:border-white/10">
+              <p className="text-navy-700 mb-3 text-xs font-semibold tracking-wide uppercase dark:text-white">
+                {"Tài liệu tham khảo"}
+              </p>
+              <div className="flex flex-col gap-2">
+                {sources.map((source, index) => (
+                  <div
+                    key={`${source.fileId}-${index}`}
+                    className="flex items-baseline gap-3 rounded-2xl border border-gray-100 bg-gray-50/60 px-4 py-3 dark:border-white/10 dark:bg-white/5"
+                  >
+                    <span className="shrink-0 text-sm leading-6 font-semibold text-brand-500">
+                      [{index + 1}]
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <Link
+                        to={`/admin/documents/list?id=${encodeURIComponent(source.fileId)}`}
+                        className="text-navy-700 inline leading-6 text-sm font-semibold underline-offset-2 transition-colors hover:text-brand-500 hover:underline dark:text-white dark:hover:text-brand-400"
+                      >
+                        {source.displayName ||
+                          `Tài liệu ${index + 1}`}
+                      </Link>
+                    </div>
+                  </div>
+                ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Technical info section */}
           <div className="mt-4 border-t border-gray-100 pt-4 dark:border-white/10">

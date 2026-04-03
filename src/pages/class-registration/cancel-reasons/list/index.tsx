@@ -11,7 +11,7 @@ import { parseSearchString, stringifySearchQuery } from "@/utils/search";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React from "react";
-import { MdDeleteOutline, MdEdit } from "react-icons/md";
+import { MdDeleteOutline, MdInfoOutline } from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
 import AdvancedFilterModal, {
   type CancelReasonFilters,
@@ -238,8 +238,8 @@ const CancelReasonsPage: React.FC = () => {
     () => [
       {
         key: "edit",
-        icon: <MdEdit className="h-4 w-4" />,
-        label: "Sửa",
+        icon: <MdInfoOutline className="h-4 w-4" />,
+        label: "Chi tiết",
         onClick: handleEdit,
       },
       {

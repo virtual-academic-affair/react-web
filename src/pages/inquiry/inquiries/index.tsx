@@ -16,6 +16,7 @@ import {
   MdOutlineRateReview,
 } from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
+import Tooltip from "@/components/tooltip/Tooltip";
 import AdvancedFilterModal, {
   type InquiryFilters,
 } from "./components/AdvancedFilterModal";
@@ -230,24 +231,34 @@ const InquiriesPage: React.FC = () => {
   const columns: TableColumn<Inquiry>[] = React.useMemo(
     () => [
       {
+        key: "question",
+        header: "Câu hỏi",
+        width: "45%",
+        render: (item) => {
+          const textQuestion = item.question ? item.question.replace(/<[^>]*>?/gm, "") : "";
+          return (
+            <div className="flex w-full min-w-0 items-center gap-2 overflow-hidden">
+              <div className="flex w-full flex-col min-w-0">
+                <Tooltip label={textQuestion} className="block w-full min-w-0">
+                  <div
+                    className="text-navy-700 w-full line-clamp-1 text-sm font-bold dark:text-white"
+                    dangerouslySetInnerHTML={{ __html: item.question || "" }}
+                  />
+                </Tooltip>
+              </div>
+            </div>
+          );
+        },
+      },
+      {
         key: "types",
         header: "Loại thắc mắc",
+        width: "20%",
         render: (item) => (
           <InquiryTypeEditor
             value={item.types ?? []}
             onChange={(next) => handleTypesChange(item, next)}
             disabled={updatingMessageStatusIds.has(item.id)}
-          />
-        ),
-      },
-      {
-        key: "question",
-        header: "Câu hỏi",
-        render: (item) => (
-          <div
-            className="text-navy-700 max-w-xs truncate text-sm dark:text-white"
-            title={item.question.replace(/<[^>]*>?/gm, "")}
-            dangerouslySetInnerHTML={{ __html: item.question }}
           />
         ),
       },
@@ -344,6 +355,11 @@ const InquiriesPage: React.FC = () => {
             items: prev.items.map((x) => (x.id === updated.id ? updated : x)),
           }))
         }
+        onInquiryDeleted={(id) => {
+          const inquiry = result?.items.find(i => i.id === id);
+          if (inquiry) handleDelete(inquiry);
+        }}
+        onPreviewReply={(id) => setPreviewId(id)}
       />
 
       <PreviewReplyModal

@@ -1,33 +1,32 @@
-import React, { useState } from "react";
-import { Calendar, Spin } from "antd";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Dayjs } from "dayjs";
-import dayjs from "dayjs";
-import "dayjs/locale/vi";
-import { tasksService } from "@/services/tasks.service";
+import { tasksService } from "@/services/tasks";
 import type { Task } from "@/types/task";
 import { TaskStatus } from "@/types/task";
-import { useNavigate } from "react-router-dom";
-import {
-  MdChevronLeft,
-  MdChevronRight,
-  MdAdd,
-  MdToday,
-  MdDragIndicator,
-} from "react-icons/md";
 import {
   DndContext,
+  DragOverlay,
+  PointerSensor,
   useDraggable,
   useDroppable,
-  PointerSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
   type DragStartEvent,
-  DragOverlay,
 } from "@dnd-kit/core";
-import { message as toast } from "antd";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Calendar, message as toast } from "antd";
+import type { Dayjs } from "dayjs";
+import dayjs from "dayjs";
+import "dayjs/locale/vi";
+import React, { useState } from "react";
 import { createPortal } from "react-dom";
+import {
+  MdAdd,
+  MdChevronLeft,
+  MdChevronRight,
+  MdDragIndicator,
+  MdToday,
+} from "react-icons/md";
+import { useNavigate } from "react-router-dom";
 
 dayjs.locale("vi");
 
@@ -72,9 +71,9 @@ const TaskChip = ({
   <div
     className={`flex cursor-grabbing flex-col gap-1 rounded-xl px-3 py-2.5 text-xs font-bold shadow-lg ${
       isDone
-        ? "bg-gray-100 text-gray-500 line-through opacity-60 dark:bg-navy-800 dark:text-gray-400"
+        ? "dark:bg-navy-800 bg-gray-100 text-gray-500 line-through opacity-60 dark:text-gray-400"
         : defaultTaskClasses
-    } ${isOverlay ? "rotate-1 scale-105 opacity-90 ring-2 ring-brand-500" : ""}`}
+    } ${isOverlay ? "ring-brand-500 scale-105 rotate-1 opacity-90 ring-2" : ""}`}
   >
     <div className="line-clamp-1 leading-tight font-bold">{task.name}</div>
     {task.assignees && task.assignees.length > 0 && (
@@ -89,7 +88,11 @@ const TaskChip = ({
               title={user.name || user.email}
             >
               {user.picture ? (
-                <img src={user.picture} alt={user.name} className="h-full w-full object-cover" />
+                <img
+                  src={user.picture}
+                  alt={user.name}
+                  className="h-full w-full object-cover"
+                />
               ) : (
                 <div className="bg-brand-500 flex h-full w-full items-center justify-center text-[8px] font-bold text-white uppercase">
                   {(user.name || user.email || "?")[0]}
@@ -177,7 +180,11 @@ const DraggableTask = ({
                 title={user.name || user.email}
               >
                 {user.picture ? (
-                  <img src={user.picture} alt={user.name} className="h-full w-full object-cover" />
+                  <img
+                    src={user.picture}
+                    alt={user.name}
+                    className="h-full w-full object-cover"
+                  />
                 ) : (
                   <div className="bg-brand-500 flex h-full w-full items-center justify-center text-[8px] font-bold text-white uppercase">
                     {(user.name || user.email || "?")[0]}
@@ -209,7 +216,7 @@ const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ onTaskClick }) => {
   const startOfMonth = calendarDate.startOf("month").format("YYYY-MM-DD");
   const endOfMonth = calendarDate.endOf("month").format("YYYY-MM-DD");
 
-  const { data: tasksResult, isLoading: loading } = useQuery({
+  const { data: tasksResult } = useQuery({
     queryKey: ["tasks", "calendar", { startOfMonth, endOfMonth }],
     queryFn: () =>
       tasksService.getList({
@@ -337,13 +344,12 @@ const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ onTaskClick }) => {
   };
 
   return (
-    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
       <div className="shadow-500 dark:bg-navy-800 relative w-full rounded-4xl bg-white p-6 dark:shadow-none">
-        {loading && (
-          <div className="dark:bg-navy-800/50 absolute inset-0 z-100 flex items-center justify-center rounded-4xl bg-white/50">
-            <Spin size="large" />
-          </div>
-        )}
         <Calendar
           value={calendarDate}
           onPanelChange={onPanelChange}
@@ -354,7 +360,8 @@ const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ onTaskClick }) => {
             const currentMonth = value.month() + 1;
             const currentYear = value.year();
             const isDifferentMonth =
-              value.month() !== dayjs().month() || value.year() !== dayjs().year();
+              value.month() !== dayjs().month() ||
+              value.year() !== dayjs().year();
 
             return (
               <div className="relative mb-4 flex items-center justify-between pb-4">
@@ -410,7 +417,7 @@ const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ onTaskClick }) => {
       {createPortal(
         <DragOverlay dropAnimation={null}>
           {activeTask ? (
-            <div className="w-40 pointer-events-none">
+            <div className="pointer-events-none w-40">
               <TaskChip
                 task={activeTask}
                 isDone={activeTask.status === TaskStatus.Done}

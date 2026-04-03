@@ -1,3 +1,5 @@
+import ConfirmModal from "@/components/modal/ConfirmModal";
+import MessageStatusSelector from "@/components/selector/MessageStatusSelector";
 import TableLayout, {
   type TableAction,
   type TableColumn,
@@ -9,6 +11,7 @@ import type {
 } from "@/types/classRegistration";
 import type { PaginatedResponse } from "@/types/common";
 import { formatDate } from "@/utils/date";
+import { parseSearchString, stringifySearchQuery } from "@/utils/search";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React from "react";
@@ -21,12 +24,8 @@ import { useSearchParams } from "react-router-dom";
 import AdvancedFilterModal, {
   type RegistrationFilters,
 } from "./components/AdvancedFilterModal";
-import MessageStatusSelector from "@/components/selector/MessageStatusSelector";
 import PreviewReplyModal from "./components/PreviewReplyModal";
 import RegistrationDetailDrawer from "./components/RegistrationDetailDrawer";
-import ConfirmModal from "@/components/modal/ConfirmModal";
-import { parseSearchString, stringifySearchQuery } from "@/utils/search";
-
 
 const PAGE_SIZE = 10;
 
@@ -69,8 +68,6 @@ const ClassRegistrationsPage: React.FC = () => {
     ),
   );
 
-
-
   const [draftFilters, setDraftFilters] = React.useState(filters);
   const [filterOpen, setFilterOpen] = React.useState(false);
 
@@ -78,7 +75,8 @@ const ClassRegistrationsPage: React.FC = () => {
     ? Number(searchParams.get("id"))
     : null;
   const [previewId, setPreviewId] = React.useState<number | null>(null);
-  const [deleteTarget, setDeleteTarget] = React.useState<ClassRegistration | null>(null);
+  const [deleteTarget, setDeleteTarget] =
+    React.useState<ClassRegistration | null>(null);
   const [deleting, setDeleting] = React.useState(false);
   const [updatingMessageStatusIds, setUpdatingMessageStatusIds] =
     React.useState<Set<number>>(new Set());
@@ -106,10 +104,12 @@ const ClassRegistrationsPage: React.FC = () => {
 
   React.useEffect(() => {
     setSearchValue(
-      stringifySearchQuery(keyword, filters as unknown as Record<string, unknown>),
+      stringifySearchQuery(
+        keyword,
+        filters as unknown as Record<string, unknown>,
+      ),
     );
   }, [keyword, filters]);
-
 
   React.useEffect(() => {
     const next = new URLSearchParams();
@@ -156,7 +156,6 @@ const ClassRegistrationsPage: React.FC = () => {
     setPage(1);
   };
 
-
   const handleDelete = React.useCallback((row: ClassRegistration) => {
     setDeleteTarget(row);
   }, []);
@@ -177,7 +176,6 @@ const ClassRegistrationsPage: React.FC = () => {
     }
   }, [deleteTarget, queryClient]);
 
-
   const handleMessageStatusChange = React.useCallback(
     async (row: ClassRegistration, newStatus: MessageStatus | null) => {
       setUpdatingMessageStatusIds((prev) => new Set(prev).add(row.id));
@@ -185,23 +183,20 @@ const ClassRegistrationsPage: React.FC = () => {
         const updated = await classRegistrationsService.update(row.id, {
           messageStatus: newStatus,
         });
-        
+
         queryClient.setQueryData(
           ["class-registrations", { page, keyword, ...filters }],
           (old: PaginatedResponse<ClassRegistration> | undefined) => {
             if (!old) return old;
             return {
               ...old,
-              items: old.items.map((x) =>
-                x.id === updated.id ? updated : x,
-              ),
+              items: old.items.map((x) => (x.id === updated.id ? updated : x)),
             };
-          }
+          },
         );
         toast.success("Cập nhật thành công.");
       } catch (err: unknown) {
-        const msg =
-          err instanceof Error ? err.message : "Cập nhật thất bại.";
+        const msg = err instanceof Error ? err.message : "Cập nhật thất bại.";
         toast.error(msg);
       } finally {
         setUpdatingMessageStatusIds((prev) => {
@@ -211,27 +206,24 @@ const ClassRegistrationsPage: React.FC = () => {
         });
       }
     },
-    [],
+    [queryClient, page, keyword, filters],
   );
 
   const columns: TableColumn<ClassRegistration>[] = React.useMemo(
     () => [
       {
-        key: "studentCode",
-        header: "MSSV",
+        key: "student",
+        header: "Sinh viên",
+        width: "30%",
         render: (item) => (
-          <p className="text-navy-700 text-sm font-medium dark:text-white">
-            {item.studentCode}
-          </p>
-        ),
-      },
-      {
-        key: "studentName",
-        header: "Họ tên",
-        render: (item) => (
-          <p className="text-navy-700 text-sm dark:text-white">
-            {item.studentName}
-          </p>
+          <div className="flex min-w-0 flex-col">
+            <p className="text-navy-700 truncate text-sm font-bold dark:text-white">
+              {item.studentName}
+            </p>
+            <p className="mt-0.5 truncate text-xs text-gray-500">
+              MSSV: {item.studentCode}
+            </p>
+          </div>
         ),
       },
       {
@@ -294,7 +286,7 @@ const ClassRegistrationsPage: React.FC = () => {
       {
         key: "previewReply",
         icon: <MdOutlineRateReview className="h-4 w-4" />,
-        label: "Preview reply",
+        label: "Xem trước phản hồi",
         onClick: (row) => setPreviewId(row.id),
         className:
           "flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500 text-white transition-colors hover:bg-blue-600",
@@ -313,7 +305,6 @@ const ClassRegistrationsPage: React.FC = () => {
         searchValue={searchValue}
         onSearchChange={setSearchValue}
         onSearch={handleSearch}
-
         searchPlaceholder="Tìm kiếm theo tên SV, MSSV..."
         showFilter={true}
         onFilterClick={() => {
@@ -343,9 +334,14 @@ const ClassRegistrationsPage: React.FC = () => {
                   x.id === updated.id ? updated : x,
                 ),
               };
-            }
+            },
           );
         }}
+        onRegistrationDeleted={(id) => {
+          const reg = result?.items.find((i) => i.id === id);
+          if (reg) handleDelete(reg);
+        }}
+        onPreviewReply={(id) => setPreviewId(id)}
       />
 
       <PreviewReplyModal
@@ -367,7 +363,7 @@ const ClassRegistrationsPage: React.FC = () => {
                     : x,
                 ),
               };
-            }
+            },
           );
         }}
       />

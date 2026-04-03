@@ -1,13 +1,13 @@
-import React from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { message as toast } from "antd";
-import { useQuery } from "@tanstack/react-query";
-import { tasksService } from "@/services/tasks.service";
-import { useAdminUsers } from "@/hooks/useAdminUsers";
-import { TaskPriority, TaskStatus } from "@/types/task";
 import Card from "@/components/card";
-import { MdArrowBack, MdSave, MdDeleteOutline } from "react-icons/md";
 import RichTextEditor from "@/components/fields/RichTextEditor";
+import { useAdminUsers } from "@/hooks/useAdminUsers";
+import { tasksService } from "@/services/tasks";
+import { TaskPriority, TaskStatus } from "@/types/task";
+import { useQuery } from "@tanstack/react-query";
+import { message as toast } from "antd";
+import React from "react";
+import { MdArrowBack, MdDeleteOutline, MdSave } from "react-icons/md";
+import { useNavigate, useParams } from "react-router-dom";
 
 const TaskDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -205,7 +205,7 @@ const TaskDetailPage: React.FC = () => {
                 onChange={(e) =>
                   setForm({ ...form, assigners: e.target.value })
                 }
-                placeholder="Ví dụ: Khoa CNTT, Phòng Đào Tạo (cách nhau bởi dấu phẩy)"
+                placeholder="Khoa CNTT, Phòng Đào Tạo..."
                 className="mt-1 flex h-12 w-full items-center justify-center rounded-xl border border-gray-200 bg-white/0 p-3 text-sm outline-none dark:border-white/10 dark:text-white"
               />
             </div>

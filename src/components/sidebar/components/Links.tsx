@@ -5,11 +5,11 @@ import { MdKeyboardArrowDown } from "react-icons/md";
 import { Link, useLocation } from "react-router-dom";
 // chakra imports
 
-export const SidebarLinks = (props: { routes: RoutesType[] }): JSX.Element => {
+export const SidebarLinks = (props: { routes: RoutesType[]; collapsed?: boolean }): JSX.Element => {
   const location = useLocation();
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
-  const { routes } = props;
+  const { routes, collapsed = false } = props;
 
   const routeHref = (route: RoutesType) =>
     `${route.layout}/${route.path}`.replace(/\/+/g, "/");
@@ -88,10 +88,13 @@ export const SidebarLinks = (props: { routes: RoutesType[] }): JSX.Element => {
               <button
                 type="button"
                 onClick={() => {
+                  if (collapsed) return;
                   if (parentActive && isOpen) return;
                   setOpenGroups((prev) => ({ ...prev, [groupKey]: !isOpen }));
                 }}
-                className="my-0.75 flex w-full items-center px-4 py-0.5 text-left"
+                className={`my-0.75 flex w-full items-center py-0.5 text-left ${
+                  collapsed ? "justify-center px-0" : "px-4"
+                }`}
               >
                 <span
                   className={`inline-flex shrink-0 [&>svg]:h-5 [&>svg]:w-5 ${
@@ -102,27 +105,31 @@ export const SidebarLinks = (props: { routes: RoutesType[] }): JSX.Element => {
                 >
                   {route.icon ? route.icon : <DashIcon />}
                 </span>
-                <p
-                  className={`ml-4 flex text-base leading-1 font-medium ${
-                    parentActive
-                      ? "text-navy-700 dark:text-white"
-                      : "font-medium text-gray-600"
-                  }`}
-                >
-                  {route.name}
-                </p>
-                <span
-                  className={`ml-auto text-gray-500 transition-transform duration-200 ease-in-out dark:text-gray-300 ${
-                    isOpen ? "rotate-180" : "rotate-0"
-                  }`}
-                >
-                  <MdKeyboardArrowDown className="h-5 w-5" />
-                </span>
+                {!collapsed && (
+                  <>
+                    <p
+                      className={`ml-4 flex text-base leading-1 font-medium ${
+                        parentActive
+                          ? "text-navy-700 dark:text-white"
+                          : "font-medium text-gray-600"
+                      }`}
+                    >
+                      {route.name}
+                    </p>
+                    <span
+                      className={`ml-auto text-gray-500 transition-transform duration-200 ease-in-out dark:text-gray-300 ${
+                        isOpen ? "rotate-180" : "rotate-0"
+                      }`}
+                    >
+                      <MdKeyboardArrowDown className="h-5 w-5" />
+                    </span>
+                  </>
+                )}
               </button>
 
               <ul
                 className={`mt-1.5 ml-12 flex flex-col overflow-hidden transition-all duration-200 ease-in-out ${
-                  isOpen
+                  !collapsed && isOpen
                     ? "mt-1 max-h-80 gap-1 opacity-100"
                     : "mt-0 max-h-0 gap-0 opacity-0"
                 }`}
@@ -233,8 +240,12 @@ export const SidebarLinks = (props: { routes: RoutesType[] }): JSX.Element => {
         return (
           <Link key={index} to={routeHref(route)}>
             <div className="relative mb-3 flex hover:cursor-pointer">
-              <li className="my-0.75 flex cursor-pointer items-center px-8">
-
+              <li
+                className={`my-0.75 flex cursor-pointer items-center ${
+                  collapsed ? "w-full justify-center px-0" : "px-8"
+                }`}
+                title={collapsed ? route.name : undefined}
+              >
                 <span
                   className={`inline-flex shrink-0 [&>svg]:h-6 [&>svg]:w-6 ${
                     active
@@ -244,15 +255,17 @@ export const SidebarLinks = (props: { routes: RoutesType[] }): JSX.Element => {
                 >
                   {route.icon ? route.icon : <DashIcon />}{" "}
                 </span>
-                <p
-                  className={`ml-4 flex text-base leading-1 ${
-                    active
-                      ? "text-navy-700 dark:text-white"
-                      : "font-medium text-gray-600"
-                  }`}
-                >
-                  {route.name}
-                </p>
+                {!collapsed && (
+                  <p
+                    className={`ml-4 flex text-base leading-1 ${
+                      active
+                        ? "text-navy-700 dark:text-white"
+                        : "font-medium text-gray-600"
+                    }`}
+                  >
+                    {route.name}
+                  </p>
+                )}
               </li>
               {active ? (
                 <div className="bg-brand-500 dark:bg-brand-400 absolute top-px right-0 h-9 w-1 rounded-lg" />

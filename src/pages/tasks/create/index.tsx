@@ -1,8 +1,8 @@
 import RichTextEditor from "@/components/fields/RichTextEditor";
 import CreatePageLayout from "@/components/layouts/CreatePageLayout";
-import { messagesService } from "@/services/email/messages.service";
-import { tasksService } from "@/services/tasks.service";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
+import { messagesService } from "@/services/email/messages.service";
+import { tasksService } from "@/services/tasks";
 import { TaskPriority, TaskStatus } from "@/types/task";
 import { useQuery } from "@tanstack/react-query";
 import { message as toast } from "antd";
@@ -43,7 +43,9 @@ const TaskCreatePage: React.FC = () => {
       : undefined,
   });
 
-  const mId = searchParams.get("messageId") ? Number(searchParams.get("messageId")) : undefined;
+  const mId = searchParams.get("messageId")
+    ? Number(searchParams.get("messageId"))
+    : undefined;
 
   // Fetch related message if messageId param is present
   const { data: message, isLoading: messageLoading } = useQuery({
@@ -235,7 +237,7 @@ const TaskCreatePage: React.FC = () => {
                   onChange={(e) =>
                     setForm({ ...form, assigners: e.target.value })
                   }
-                  placeholder="Ví dụ: Khoa CNTT, Phòng Đào Tạo..."
+                  placeholder="Khoa CNTT, Phòng Đào Tạo..."
                   className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
                 />
               </div>

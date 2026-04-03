@@ -1,4 +1,5 @@
 import Card from "@/components/card";
+import Tag from "@/components/tag/Tag";
 import { allowedDomainsService } from "@/services/email";
 import type { UpdateAllowedDomainsDto } from "@/types/email";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -13,7 +14,7 @@ const AllowedDomainsCard: React.FC = () => {
   const [draft, setDraft] = React.useState<string[]>([]);
   const [newDomain, setNewDomain] = React.useState("");
 
-  const { data: domains = [], isLoading: loading } = useQuery({
+  const { data: domains, isLoading: loading } = useQuery({
     queryKey: ["email-allowed-domains"],
     queryFn: () => allowedDomainsService.getAllowedDomains(),
     staleTime: 5 * 60 * 1000,
@@ -21,7 +22,7 @@ const AllowedDomainsCard: React.FC = () => {
 
   // ── edit controls ──────────────────────────────────────────────────────────
   const handleEdit = () => {
-    setDraft([...domains]);
+    setDraft([...(domains ?? [])]);
     setNewDomain("");
     setEditing(true);
   };
@@ -73,7 +74,7 @@ const AllowedDomainsCard: React.FC = () => {
   };
 
   // ── render ─────────────────────────────────────────────────────────────────
-  const displayList = editing ? draft : domains;
+  const displayList = editing ? draft : (domains ?? []);
 
   return (
     <Card extra="p-6 flex flex-col gap-4">
@@ -89,8 +90,7 @@ const AllowedDomainsCard: React.FC = () => {
         {!editing ? (
           <button
             onClick={handleEdit}
-            disabled={loading}
-            className="text-brand-500 hover:text-brand-600 flex items-center gap-1 text-sm font-medium transition-colors disabled:opacity-50"
+            className="text-brand-500 hover:text-brand-600 flex items-center gap-1 text-sm font-medium transition-colors"
           >
             <MdEdit className="h-4 w-4" />
             Chỉnh sửa
@@ -136,10 +136,7 @@ const AllowedDomainsCard: React.FC = () => {
       ) : (
         <div className="flex flex-wrap gap-2">
           {displayList.map((domain, i) => (
-            <span
-              key={i}
-              className="bg-brand-50 text-brand-600 dark:bg-navy-700 flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium dark:text-white"
-            >
+            <Tag key={i} className="flex items-center gap-1 px-4 text-sm!">
               {domain}
               {editing && (
                 <button
@@ -150,7 +147,7 @@ const AllowedDomainsCard: React.FC = () => {
                   <MdClose className="h-3.5 w-3.5" />
                 </button>
               )}
-            </span>
+            </Tag>
           ))}
         </div>
       )}

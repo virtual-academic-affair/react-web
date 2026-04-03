@@ -1,13 +1,22 @@
 import ConfirmModal from "@/components/modal/ConfirmModal";
+import Tooltip from "@/components/tooltip/Tooltip";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
-import { tasksService } from "@/services/tasks.service";
+import { tasksService } from "@/services/tasks";
+import { useAuthStore } from "@/stores/auth.store";
 import type { PaginatedResponse } from "@/types/common";
 import { type Task, TaskPriority, TaskStatus } from "@/types/task";
 import { parseSearchString, stringifySearchQuery } from "@/utils/search";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React from "react";
-import { MdFilterList, MdSearch } from "react-icons/md";
+import {
+  MdCalendarToday,
+  MdFilterList,
+  MdFormatListBulleted,
+  MdGridView,
+  MdSearch,
+} from "react-icons/md";
+
 import { useSearchParams } from "react-router-dom";
 import TaskAdvancedFilterModal, {
   type TaskFilters,
@@ -18,20 +27,6 @@ import TaskDetailDrawer from "./components/TaskDetailDrawer";
 import TaskTableView from "./components/TaskTableView";
 
 type ViewMode = "table" | "calendar" | "board";
-
-/** Decode JWT payload (no signature verification — client-side only) */
-function decodeJwtPayload(token: string): Record<string, unknown> {
-  try {
-    const base64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
-    return JSON.parse(atob(base64));
-  } catch {
-    return {};
-  }
-}
-
-const JWT_PAYLOAD = decodeJwtPayload(import.meta.env.VITE_TEMP_TOKEN ?? "");
-const CURRENT_USER_ID: number | null =
-  typeof JWT_PAYLOAD.sub === "number" ? JWT_PAYLOAD.sub : null;
 
 const PAGE_SIZE = 10;
 
@@ -50,6 +45,22 @@ const TasksPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = React.useState(false);
   const { admins } = useAdminUsers();
+
+  // Derive the current user's numeric ID from the JWT in the auth store
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const currentUserId = React.useMemo<number | null>(() => {
+    if (!accessToken) return null;
+    try {
+      const base64 = accessToken
+        .split(".")[1]
+        .replace(/-/g, "+")
+        .replace(/_/g, "/");
+      const payload = JSON.parse(atob(base64));
+      return typeof payload.sub === "number" ? payload.sub : null;
+    } catch {
+      return null;
+    }
+  }, [accessToken]);
 
   const [keyword, setKeyword] = React.useState(
     searchParams.get("keyword") ?? "",
@@ -297,7 +308,7 @@ const TasksPage: React.FC = () => {
         ? ({
             taskId: task.id,
             assigneeId: userId,
-            assignerId: CURRENT_USER_ID || 0,
+            assignerId: currentUserId || 0,
             assignedAt: new Date().toISOString(),
             assignee: userToAdd,
           } as any)
@@ -384,26 +395,39 @@ const TasksPage: React.FC = () => {
           <MdFilterList className="h-5 w-5" />
         </button>
 
-        <div className="dark:bg-navy-900 flex shrink-0 rounded-full bg-gray-100 p-1">
+        <div className="dark:bg-navy-900 relative flex shrink-0 items-center rounded-full border border-gray-200 bg-white p-1 dark:border-[#ffffff33]">
+          {/* Sliding highlight */}
+          <div
+            className="bg-brand-50 dark:bg-brand-500/20 absolute h-[calc(100%-8px)] rounded-full transition-all duration-300 ease-in-out"
+            style={{
+              width: "calc((100% - 8px) / 3)",
+              left: "4px",
+              transform: `translateX(${
+                (view === "table" ? 0 : view === "board" ? 1 : 2) * 100
+              }%)`,
+            }}
+          />
+
           {(
             [
-              { id: "table", label: "BẢNG" },
-              { id: "calendar", label: "LỊCH" },
-              { id: "board", label: "KANBAN" },
+              { id: "table", icon: MdFormatListBulleted, label: "Dạng bảng" },
+              { id: "board", icon: MdGridView, label: "Dạng bảng Kanban" },
+              { id: "calendar", icon: MdCalendarToday, label: "Dạng lịch" },
             ] as const
           ).map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setView(item.id)}
-              className={`flex items-center justify-center rounded-full px-5 py-2 text-xs font-bold tracking-wider transition-all duration-200 ${
-                view === item.id
-                  ? "text-brand-500 dark:bg-navy-700 bg-white shadow-md dark:text-white"
-                  : "hover:text-navy-700 text-gray-500 dark:text-gray-400 dark:hover:text-white"
-              }`}
-            >
-              {item.label}
-            </button>
+            <Tooltip key={item.id} label={item.label} className="flex-1">
+              <button
+                type="button"
+                onClick={() => setView(item.id)}
+                className={`relative z-10 flex w-full items-center justify-center px-4 py-2 transition-colors duration-300 ${
+                  view === item.id
+                    ? "text-brand-500"
+                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white"
+                }`}
+              >
+                <item.icon className="h-5 w-5" />
+              </button>
+            </Tooltip>
           ))}
         </div>
       </div>
@@ -471,7 +495,7 @@ const TasksPage: React.FC = () => {
         open={filterOpen}
         value={draftFilters}
         onChange={setDraftFilters}
-        currentUserId={CURRENT_USER_ID}
+        currentUserId={currentUserId}
         onApply={() => {
           setFilters(draftFilters);
           setPage(1);

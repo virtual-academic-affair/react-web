@@ -51,12 +51,12 @@ const TaskTableView: React.FC<TaskTableViewProps> = ({
         key: "name",
         header: "Tên công việc",
         render: (item) => (
-          <div className="flex flex-col">
-            <p className="text-navy-700 text-sm font-bold dark:text-white">
+          <div className="flex flex-col min-w-0">
+            <p className="text-navy-700 truncate text-sm font-bold dark:text-white">
               {item.name}
             </p>
             {item.assigners && item.assigners.length > 0 && (
-              <p className="text-xs text-gray-500"> 
+              <p className="text-xs text-gray-500 truncate"> 
                 Từ: {item.assigners.join(", ")}
               </p>
             )}

@@ -1,10 +1,7 @@
+import Tag from "@/components/tag/Tag";
 import type { MessageStatus } from "@/types/messageStatus";
-import {
-  MessageStatusColors,
-  MessageStatusLabels,
-} from "@/types/messageStatus";
+import { MessageStatusLabels } from "@/types/messageStatus";
 import React from "react";
-import { MdExpandMore } from "react-icons/md";
 
 interface MessageStatusSelectorProps {
   value: MessageStatus | null;
@@ -13,59 +10,37 @@ interface MessageStatusSelectorProps {
   className?: string;
 }
 
+const ALL_STATUSES: MessageStatus[] = ["opened", "replied", "closed"];
+
+const MessageStatusHexColors: Record<MessageStatus, string> = {
+  opened: "#a3aed0",
+  replied: "#3b82f6",
+  closed: "#10b981",
+};
+
 const MessageStatusSelector: React.FC<MessageStatusSelectorProps> = ({
   value,
   onChange,
   disabled = false,
   className,
 }) => {
-  const statuses: (MessageStatus | null)[] = [
-    null,
-    "opened",
-    "replied",
-    "closed",
-  ];
-  const isFullWidth = className?.includes("w-full");
-
-  const currentColors = value
-    ? MessageStatusColors[value]
-    : { bg: "bg-gray-100", text: "text-gray-600" };
+  const options = ALL_STATUSES.map((s) => ({
+    value: s,
+    label: MessageStatusLabels[s],
+  }));
 
   return (
-    <div className={className ?? "relative inline-flex"}>
-      {/* Visible tag */}
-      <span
-        className={`${
-          isFullWidth ? "flex" : "inline-flex"
-        } items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium ${
-          currentColors.bg
-        } ${currentColors.text} ${
-          disabled ? "cursor-not-allowed opacity-50" : "border-transparent"
-        } ${isFullWidth ? "w-full justify-between" : ""}`}
-      >
-        <span>{value ? MessageStatusLabels[value] : "—"}</span>
-        <MdExpandMore className="h-3.5 w-3.5 text-inherit" />
-      </span>
-
-      {/* Native browser select overlaid on top (fully transparent) */}
-      <select
-        value={value ?? ""}
-        onChange={(e) =>
-          onChange(e.target.value ? (e.target.value as MessageStatus) : null)
-        }
-        disabled={disabled}
-        className="absolute left-0 top-0 h-full w-full cursor-pointer opacity-0"
-        style={{ zIndex: 10 }}
-      >
-        {statuses
-          .filter((s): s is MessageStatus => s !== null)
-          .map((status) => (
-            <option key={status} value={status}>
-              {MessageStatusLabels[status]}
-            </option>
-          ))}
-      </select>
-    </div>
+    <Tag
+      variant="selection"
+      color={value ? MessageStatusHexColors[value] : undefined}
+      value={value ?? ""}
+      options={options}
+      onChange={(v) => onChange(v ? (v as MessageStatus) : null)}
+      disabled={disabled}
+      className={className}
+    >
+      {value ? MessageStatusLabels[value] : "—"}
+    </Tag>
   );
 };
 

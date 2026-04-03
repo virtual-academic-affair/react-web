@@ -1,33 +1,32 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Calendar } from "antd";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Dayjs } from "dayjs";
-import dayjs from "dayjs";
-import "dayjs/locale/vi";
-
-dayjs.locale("vi");
-import { tasksService } from "@/services/tasks.service";
+import { tasksService } from "@/services/tasks";
 import type { Task } from "@/types/task";
 import { TaskStatus } from "@/types/task";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import TaskDetailDrawer from "../list/components/TaskDetailDrawer";
-import {
-  MdChevronLeft,
-  MdChevronRight,
-  MdAdd,
-  MdToday,
-  MdAccessTime,
-  MdArrowForward,
-} from "react-icons/md";
 import {
   DndContext,
+  PointerSensor,
   useDraggable,
   useDroppable,
-  PointerSensor,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { message as toast } from "antd";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Calendar, message as toast } from "antd";
+import type { Dayjs } from "dayjs";
+import dayjs from "dayjs";
+import "dayjs/locale/vi";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  MdAccessTime,
+  MdAdd,
+  MdArrowForward,
+  MdChevronLeft,
+  MdChevronRight,
+  MdToday,
+} from "react-icons/md";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import TaskDetailDrawer from "../list/components/TaskDetailDrawer";
+
+dayjs.locale("vi");
 
 // Droppable wrapper for a calendar date cell
 const DroppableCell = ({
@@ -90,7 +89,7 @@ const DraggableTask = ({
         isDone
           ? "dark:bg-navy-800 bg-gray-100 text-gray-500 line-through opacity-60 dark:text-gray-400"
           : defaultTaskClasses
-      } ${isDragging ? "ring-brand-500 !z-50 !cursor-grabbing opacity-50 shadow-xl ring-2" : ""}`}
+      } ${isDragging ? "ring-brand-500 z-50! cursor-grabbing! opacity-50 shadow-xl ring-2" : ""}`}
       title={task.name}
     >
       <div className="line-clamp-1 leading-tight font-bold">{task.name}</div>
@@ -211,7 +210,9 @@ const TasksCalendarPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const calendarColRef = useRef<HTMLDivElement>(null);
-  const [calendarHeight, setCalendarHeight] = useState<number | undefined>(undefined);
+  const [calendarHeight, setCalendarHeight] = useState<number | undefined>(
+    undefined,
+  );
 
   const startOfMonth = calendarDate.startOf("month").format("YYYY-MM-DD");
   const endOfMonth = calendarDate.endOf("month").format("YYYY-MM-DD");
@@ -397,7 +398,10 @@ const TasksCalendarPage: React.FC = () => {
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <div className="relative grid w-full grid-cols-1 items-start gap-5 font-sans lg:grid-cols-4">
         {/* Calendar Column */}
-        <div ref={calendarColRef} className="shadow-500 dark:bg-navy-800 relative rounded-4xl bg-white p-6 lg:col-span-3 dark:shadow-none">
+        <div
+          ref={calendarColRef}
+          className="shadow-500 dark:bg-navy-800 relative rounded-4xl bg-white p-6 lg:col-span-3 dark:shadow-none"
+        >
           {loading && (
             <div className="dark:bg-navy-800/50 absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/50"></div>
           )}
@@ -512,18 +516,28 @@ const TasksCalendarPage: React.FC = () => {
             setSearchParams(next, { replace: true });
           }}
           onTaskChanged={(updated) => {
-            const queryKey = ["tasks", "calendar", { startOfMonth, endOfMonth }];
+            const queryKey = [
+              "tasks",
+              "calendar",
+              { startOfMonth, endOfMonth },
+            ];
             queryClient.setQueryData(queryKey, (old: any) => {
               if (!old) return old;
               return {
                 ...old,
-                items: old.items.map((x: Task) => (x.id === updated.id ? updated : x)),
+                items: old.items.map((x: Task) =>
+                  x.id === updated.id ? updated : x,
+                ),
               };
             });
             queryClient.invalidateQueries({ queryKey: ["tasks", "timeline"] });
           }}
           onTaskDeleted={(id) => {
-            const queryKey = ["tasks", "calendar", { startOfMonth, endOfMonth }];
+            const queryKey = [
+              "tasks",
+              "calendar",
+              { startOfMonth, endOfMonth },
+            ];
             queryClient.setQueryData(queryKey, (old: any) => {
               if (!old) return old;
               return {

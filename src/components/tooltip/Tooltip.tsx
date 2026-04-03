@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import React from "react";
+import { Tooltip as AntdTooltip } from "antd";
 
 interface TooltipProps {
   label: ReactNode;
@@ -8,19 +9,23 @@ interface TooltipProps {
 }
 
 const Tooltip: React.FC<TooltipProps> = ({ label, children, className }) => {
-  const wrapperClass =
-    "group relative inline-flex " + (className ? className : "");
+  const wrapperClass = className !== undefined ? className : "inline-flex";
 
   return (
-    <div className={wrapperClass}>
-      {children}
-      {/* Tooltip Content Wrapper */}
-      <div className="invisible absolute top-full left-1/2 z-50 -translate-x-1/2 pt-2 opacity-0 transition-opacity group-hover:visible group-hover:opacity-100">
-        <div className="text-navy-700 dark:bg-navy-900 w-max max-w-md rounded-2xl border border-white bg-white px-3 py-2 text-left text-xs whitespace-normal shadow-lg dark:border-transparent dark:text-white">
+    <AntdTooltip
+      title={
+        <div className="w-max max-w-none font-momo rounded-full border border-gray-100 dark:border-white/10 bg-white dark:bg-navy-900 text-navy-700 dark:text-white px-3 py-1.5 text-xs shadow-xl whitespace-nowrap">
           {label}
         </div>
-      </div>
-    </div>
+      }
+      color="transparent"
+      zIndex={99999}
+      arrow={false}
+      overlayStyle={{ maxWidth: "none" }}
+      overlayInnerStyle={{ padding: 0, boxShadow: "none", backgroundColor: "transparent" }}
+    >
+      <span className={wrapperClass}>{children}</span>
+    </AntdTooltip>
   );
 };
 

@@ -27,10 +27,10 @@ export const RoleLabels: Record<Role, string> = {
 /**
  * Role color mapping for badges
  */
-export const RoleColors: Record<Role, { bg: string; text: string }> = {
-  [Role.Student]: { bg: "bg-blue-100", text: "text-blue-800" },
-  [Role.Admin]: { bg: "bg-red-100", text: "text-red-800" },
-  [Role.Lecture]: { bg: "bg-yellow-100", text: "text-yellow-800" },
+export const RoleColors: Record<Role, { bg: string; text: string; hex: string }> = {
+  [Role.Student]: { bg: "bg-blue-100", text: "text-blue-800", hex: "#3b82f6" },
+  [Role.Admin]: { bg: "bg-red-100", text: "text-red-800", hex: "#ef4444" },
+  [Role.Lecture]: { bg: "bg-yellow-100", text: "text-yellow-800", hex: "#eab308" },
 };
 
 /**

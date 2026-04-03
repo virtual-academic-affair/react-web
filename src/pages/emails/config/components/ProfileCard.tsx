@@ -2,6 +2,7 @@ import banner from "@/assets/img/auth/banner.png";
 import Card from "@/components/card";
 import { grantsService } from "@/services/email";
 import type { DynamicDataResponse } from "@/types/shared";
+import { setAuthCallbackFlow } from "@/utils/auth.util";
 import { useEffect, useRef, useState } from "react";
 
 interface ProfileCardProps {
@@ -36,6 +37,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ data, loading }) => {
   const handleGrant = async () => {
     setGranting(true);
     try {
+      setAuthCallbackFlow("gmail_grant");
       const url = await grantsService.getGmailAuthUrl();
       window.location.href = url;
     } catch {
@@ -69,10 +71,34 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ data, loading }) => {
 
   if (!profile) {
     return (
-      <div className="rounded-primary shadow-3xl shadow-shadow-500 dark:bg-navy-800! relative z-5 flex w-full flex-col items-center bg-white bg-clip-border p-6 dark:text-white dark:shadow-none">
-        <p className="text-gray-500 dark:text-gray-400">
-          No profile data available.
-        </p>
+      <div>
+        {/* Banner */}
+        <div
+          className="relative mt-1 mb-20 flex h-82 w-full justify-center rounded-[40px] bg-cover bg-center"
+          style={{
+            backgroundImage: `url(${banner})`,
+          }}
+        >
+          {/* Avatar with dropdown */}
+          <div className="absolute -bottom-20" ref={dropdownRef}>
+            <button
+              onClick={() => setShowDropdown((prev) => !prev)}
+              className="border-lightPrimary! dark:border-navy-900! flex h-40 w-40 cursor-pointer items-center justify-center rounded-full border-8 bg-gray-400 transition-all hover:bg-gray-500"
+            >
+              <span className="text-5xl font-bold text-white">?</span>
+            </button>
+
+            {showDropdown && (
+              <button
+                onClick={handleGrant}
+                disabled={granting}
+                className="text-navy-700 dark:hover:bg-navy-700 dark:border-navy-600 dark:bg-navy-800 absolute top-full left-1/2 z-50 mt-2 flex w-max -translate-x-1/2 cursor-pointer items-center gap-2 rounded-4xl bg-white px-4 py-2.5 text-sm font-medium shadow-xl transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 dark:text-white"
+              >
+                Kết nối tài khoản Gmail
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     );
   }

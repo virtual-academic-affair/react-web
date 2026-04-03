@@ -303,11 +303,11 @@ const UsersPage: React.FC<UsersPageProps> = () => {
                 </div>
               )}
             </div>
-            <div className="flex flex-col">
-              <p className="text-navy-700 text-sm font-medium dark:text-white">
+            <div className="flex flex-col min-w-0">
+              <p className="text-navy-700 truncate text-sm font-medium dark:text-white">
                 {user.name || user.email}
               </p>
-              <p className="text-xs text-gray-400 dark:text-gray-500">
+              <p className="text-xs truncate text-gray-400 dark:text-gray-500">
                 {user.email}
               </p>
             </div>

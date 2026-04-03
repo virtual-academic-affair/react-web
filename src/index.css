@@ -308,6 +308,8 @@
   --font-dm: "Momo Trust Sans", sans-serif;
   --font-poppins: "Poppins", sans-serif;
   --font-momo: "Momo Trust Sans", sans-serif;
+  --font-momo-display: "Momo Trust Display", sans-serif;
+  --font-momo-signature: "Momo Signature", cursive;
   --font-sans: "Momo Trust Sans", ui-sans-serif, system-ui, sans-serif;
 
   --shadow-3xl: 14px 17px 40px 4px;
@@ -471,10 +473,6 @@ body {
   overflow: hidden !important;
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   CUSTOM MODAL STYLING (matching Drawer)
-   ───────────────────────────────────────────────────────────────────────── */
-
 .modal-rounded-30 .ant-modal-content {
   border-radius: 30px !important;
   overflow: hidden;
@@ -511,3 +509,53 @@ body {
   border-top: 1px solid var(--color-white-10, rgba(255, 255, 255, 0.1));
 }
 
+.ant-notification-notice-wrapper {
+  border-radius: 1.5rem !important;
+  font-family: var(--font-momo) !important;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.1) !important;
+  margin-bottom: 16px !important;
+  /* Theme variables for the whole notification */
+  --notif-bg: #ffffff;
+  --notif-title: var(--color-navy-700);
+  --notif-desc: var(--color-gray-600);
+}
+
+body.dark .ant-notification-notice-wrapper,
+.dark .ant-notification-notice-wrapper {
+  --notif-bg: var(--color-navy-800);
+  --notif-title: #ffffff;
+  --notif-desc: var(--color-gray-400);
+  border: 0.1px solid rgba(128, 116, 116, 0.9) !important;
+}
+
+.ant-notification-notice {
+  background-color: var(--notif-bg) !important;
+  border-radius: 1.5rem !important;
+  border: none !important;
+}
+
+.dark .ant-notification-notice,
+body.dark .ant-notification-notice {
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.ant-notification-notice-message,
+.ant-notification-notice-title {
+  color: var(--notif-title) !important;
+  font-size: 16px !important;
+}
+
+.ant-notification-notice-description {
+  color: var(--notif-desc) !important;
+}
+
+/* Close button custom styling */
+.ant-notification-notice-close {
+  top: 16px !important;
+  right: 16px !important;
+  color: var(--color-gray-400) !important;
+}
+
+.dark .ant-notification-notice-close {
+  color: var(--color-gray-500) !important;
+}

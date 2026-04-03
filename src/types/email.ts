@@ -34,6 +34,7 @@ export interface Message {
   tasksCount?: number;
   hasInquiry?: number;
   hasClassRegistration?: number;
+  isProcessing?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -102,4 +103,5 @@ export interface UpdateAllowedDomainsDto {
  */
 export interface CodeDto {
   code: string;
+  redirectUrl?: string;
 }

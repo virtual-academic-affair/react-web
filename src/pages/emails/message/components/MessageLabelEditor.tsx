@@ -1,5 +1,6 @@
 import Checkbox from "@/components/checkbox";
 import StandardModal from "@/components/modal/StandardModal";
+import Tag from "@/components/tag/Tag";
 import { messagesService } from "@/services/email";
 import type { Message, SystemLabel } from "@/types/email";
 import type { SystemLabelEnumData } from "@/types/shared";
@@ -11,19 +12,21 @@ import { createPortal } from "react-dom";
 import { MdExpandMore, MdWarningAmber } from "react-icons/md";
 
 import { useNavigate } from "react-router-dom";
-import { getLabelColor, getLabelVi, labelPillStyle } from "../labelUtils";
+import { getLabelColor, getLabelVi } from "../labelUtils";
 import SystemLabelSelector from "./SystemLabelSelector";
 
 interface MessageLabelEditorProps {
   message: Message;
   systemLabelEnum?: SystemLabelEnumData | null;
   onLabelChanged?: (id: number, labels: SystemLabel[]) => void;
+  isProcessing?: boolean;
 }
 
 const MessageLabelEditor: React.FC<MessageLabelEditorProps> = ({
   message,
   systemLabelEnum,
   onLabelChanged,
+  isProcessing,
 }) => {
   const navigate = useNavigate();
   const [editingId, setEditingId] = React.useState<number | null>(null);
@@ -124,7 +127,29 @@ const MessageLabelEditor: React.FC<MessageLabelEditorProps> = ({
   return (
     <>
       <div className="message-label-column relative z-1 flex flex-wrap items-center gap-1">
-        {message.systemLabels?.length ? (
+        {isProcessing &&
+        (!message.systemLabels || message.systemLabels.length === 0) ? (
+          <Tooltip label="Đang gắn nhãn tự động...">
+            <div className="mr-2 h-4 w-32 overflow-hidden rounded-full bg-purple-600">
+              <div
+                className="h-full w-full bg-gradient-to-br from-purple-600 via-indigo-500 to-pink-500"
+                style={{
+                  backgroundSize: "400% 400%",
+                  animation: "mesh-shuffle 3s ease infinite",
+                }}
+              />
+              <style>{`
+@keyframes mesh-shuffle {
+0%   { background-position: 0% 50%; }
+25%  { background-position: 100% 10%; }
+50%  { background-position: 40% 100%; }
+75%  { background-position: 90% 40%; }
+100% { background-position: 0% 50%; }
+}
+`}</style>
+            </div>
+          </Tooltip>
+        ) : message.systemLabels?.length ? (
           message.systemLabels.map((sl) => {
             let count = 0;
             const isBusinessLabel = [
@@ -142,13 +167,13 @@ const MessageLabelEditor: React.FC<MessageLabelEditorProps> = ({
               count > 0 ? `Xem (${count} bản ghi)` : "Chưa có - Click để tạo";
 
             const pill = (
-              <span
-                style={labelPillStyle(getLabelColor(sl, systemLabelEnum))}
+              <Tag
+                color={getLabelColor(sl, systemLabelEnum)}
                 onClick={() => handleLabelClick(sl)}
-                className={`cursor-pointer rounded-full px-2 py-0.5 text-xs font-medium transition-opacity hover:opacity-80 message-system-label-tag-${sl}`}
+                className={`message-system-label-tag-${sl}`}
               >
                 {getLabelVi(sl, systemLabelEnum)}
-              </span>
+              </Tag>
             );
 
             if (isBusinessLabel) {

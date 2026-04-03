@@ -1,7 +1,8 @@
+import Tag from "@/components/tag/Tag";
 import type { SystemLabel } from "@/types/email";
 import type { SystemLabelEnumData } from "@/types/shared";
 import React from "react";
-import { getLabelColor, getLabelVi, labelPillStyle } from "../labelUtils";
+import { getLabelColor, getLabelVi } from "../labelUtils";
 
 interface SystemLabelSelectorProps {
   value: SystemLabel[];
@@ -29,23 +30,14 @@ const SystemLabelSelector: React.FC<SystemLabelSelectorProps> = ({
       {(Object.keys(systemLabelEnum ?? {}) as SystemLabel[]).map((sl) => {
         const active = value.includes(sl);
         return (
-          <button
+          <Tag
             key={sl}
-            type="button"
+            color={active ? getLabelColor(sl, systemLabelEnum) : "gray"}
             onClick={() => toggle(sl)}
-            style={
-              active
-                ? labelPillStyle(getLabelColor(sl, systemLabelEnum))
-                : undefined
-            }
-            className={`px-2 py-0.5 text-xs font-medium transition-colors system-label-tag-${sl} ${
-              active
-                ? "rounded-full"
-                : "rounded-full text-gray-600 outline outline-gray-200 hover:bg-gray-50 dark:text-gray-300 dark:outline-white/10 dark:hover:bg-white/10"
-            }`}
+            className={`system-label-tag-${sl}`}
           >
             {getLabelVi(sl, systemLabelEnum)}
-          </button>
+          </Tag>
         );
       })}
     </div>
