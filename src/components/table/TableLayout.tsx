@@ -239,7 +239,7 @@ function TableLayout<T extends { id: number | string }>({
                                         e.stopPropagation();
                                         action.onClick(item);
                                       }}
-                                      title={action.label}
+                                      aria-label={action.label}
                                       className={
                                         action.className ||
                                         "bg-brand-500 hover:bg-brand-600 dark:bg-brand-500 dark:hover:bg-brand-400 flex h-10 w-10 items-center justify-center rounded-2xl text-white transition-colors dark:text-white"

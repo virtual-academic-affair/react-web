@@ -465,6 +465,12 @@ body {
   display: flex !important;
   align-items: center !important;
   gap: 4px !important;
+  cursor: pointer !important;
+  transition: opacity 0.2s ease !important;
+}
+
+.apexcharts-legend-series:hover {
+  opacity: 0.8 !important;
 }
 
 .apexcharts-legend-marker {

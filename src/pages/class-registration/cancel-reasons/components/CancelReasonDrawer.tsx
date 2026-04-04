@@ -40,7 +40,7 @@ const CancelReasonDrawer: React.FC<CancelReasonDrawerProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim()) {
-      toast.error("Vui lòng nhập nội dung lý do hủy.");
+      toast.error("Vui lòng nhập nội dung lý do từ chối.");
       return;
     }
 
@@ -59,7 +59,7 @@ const CancelReasonDrawer: React.FC<CancelReasonDrawerProps> = ({
           isActive,
         };
         const created = await cancelReasonsService.create(dto);
-        toast.success("Tạo lý do hủy thành công.");
+        toast.success("Tạo lý do từ chối thành công.");
         onSaved(created, "create");
       }
       onClose();
@@ -67,7 +67,7 @@ const CancelReasonDrawer: React.FC<CancelReasonDrawerProps> = ({
       const msg =
         err instanceof Error
           ? err.message
-          : "Lưu lý do hủy thất bại. Vui lòng thử lại.";
+          : "Lưu lý do từ chối thất bại. Vui lòng thử lại.";
       toast.error(msg);
     } finally {
       setSaving(false);
@@ -88,7 +88,7 @@ const CancelReasonDrawer: React.FC<CancelReasonDrawerProps> = ({
           <Drawer
             isOpen={isOpen}
             onClose={onClose}
-            title={isEdit ? "Chỉnh sửa lý do hủy" : "Thêm lý do hủy"}
+            title={isEdit ? "Chỉnh sửa lý do từ chối" : "Thêm lý do từ chối"}
           >
             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
               {/* Nội dung */}
@@ -104,7 +104,7 @@ const CancelReasonDrawer: React.FC<CancelReasonDrawerProps> = ({
                     onChange={(e) => setContent(e.target.value)}
                     rows={4}
                     className="w-full rounded-2xl border border-gray-200 bg-transparent p-3 outline-none dark:border-white/10 dark:text-white"
-                    placeholder="Nhập nội dung lý do hủy..."
+                    placeholder="Nhập nội dung lý do từ chối..."
                   />
                 </div>
               </div>
