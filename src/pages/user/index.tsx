@@ -17,6 +17,7 @@ const UserDashboard: React.FC = () => {
   const accessToken = useAuthStore((s) => s.accessToken);
   const userRole = useAuthStore((s) => s.userRole);
   const navigate = useNavigate();
+  const [videoLoaded, setVideoLoaded] = React.useState(false);
 
   const handleJoin = () => {
     if (accessToken) {
@@ -53,6 +54,14 @@ const UserDashboard: React.FC = () => {
 
       {/* ── Video + Text overlay ──────────────────────────────── */}
       <div className="relative h-full w-full">
+        {!videoLoaded && (
+          <img
+            src="/banner.png"
+            alt="Giáo vụ số"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        )}
+
         <video
           className="absolute inset-0 h-full w-full object-cover"
           autoPlay
@@ -60,6 +69,7 @@ const UserDashboard: React.FC = () => {
           muted
           playsInline
           src={heroVideo}
+          onLoadedData={() => setVideoLoaded(true)}
           aria-label="Giới thiệu hệ thống Giáo vụ số"
         />
 

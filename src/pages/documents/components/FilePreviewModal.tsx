@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { message as toast } from "antd";
-import mammoth from "mammoth";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import * as docx from "docx-preview";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   MdChevronLeft,
@@ -17,10 +17,7 @@ import { DocumentsService } from "@/services/documents";
 
 import "./FilePreviewModal.css";
 
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.min.mjs",
-  import.meta.url,
-).toString();
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -96,25 +93,80 @@ const PdfPreview: React.FC<{ url: string }> = ({ url }) => {
   const [numPages, setNumPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [scale, setScale] = useState(1.2);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const handleScroll = () => {
+    if (!containerRef.current) return;
+    const { scrollTop, clientHeight } = containerRef.current;
+    
+    // Tìm trang nào đang chiếm phần lớn diện tích nhìn thấy (viewport)
+    // Tọa độ giữa màn hình
+    const middleY = scrollTop + clientHeight / 2;
+
+    let closestPage = 1;
+    let minDistance = Infinity;
+
+    for (let i = 0; i < numPages; i++) {
+       const el = pageRefs.current[i];
+       if (!el) continue;
+       const pageTop = el.offsetTop;
+       const pageMiddle = pageTop + el.offsetHeight / 2;
+       
+       const distance = Math.abs(middleY - pageMiddle);
+       if (distance < minDistance) {
+         minDistance = distance;
+         closestPage = i + 1;
+       }
+    }
+    
+    if (closestPage !== currentPage) {
+      setCurrentPage(closestPage);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage <= 1 || !containerRef.current) return;
+    const prevPageRef = pageRefs.current[currentPage - 2];
+    if (prevPageRef) {
+      containerRef.current.scrollTo({
+        top: prevPageRef.offsetTop - 32, // trừ hao padding
+        behavior: "smooth"
+      });
+      setCurrentPage((prev) => prev - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage >= numPages || !containerRef.current) return;
+    const nextPageRef = pageRefs.current[currentPage];
+    if (nextPageRef) {
+      containerRef.current.scrollTo({
+        top: nextPageRef.offsetTop - 32,
+        behavior: "smooth"
+      });
+      setCurrentPage((prev) => prev + 1);
+    }
+  };
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col overflow-hidden">
       {/* PDF toolbar */}
-      <div className="flex shrink-0 items-center justify-center gap-3 border-b border-white/8 bg-[#202124]/80 px-4 py-2">
+      <div className="flex shrink-0 items-center justify-center gap-3 border-b border-white/8 bg-[#202124]/80 px-4 py-2 z-10">
         <button
           type="button"
-          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+          onClick={handlePrevPage}
           disabled={currentPage <= 1}
           className="rounded-lg p-1.5 text-white/70 transition-colors hover:bg-white/10 disabled:opacity-30"
         >
           <MdChevronLeft className="h-5 w-5" />
         </button>
-        <span className="text-sm text-white/80">
+        <span className="text-sm text-white/80 w-16 text-center">
           {currentPage} / {numPages || "–"}
         </span>
         <button
           type="button"
-          onClick={() => setCurrentPage((p) => Math.min(numPages, p + 1))}
+          onClick={handleNextPage}
           disabled={currentPage >= numPages}
           className="rounded-lg p-1.5 text-white/70 transition-colors hover:bg-white/10 disabled:opacity-30"
         >
@@ -128,7 +180,7 @@ const PdfPreview: React.FC<{ url: string }> = ({ url }) => {
         >
           −
         </button>
-        <span className="text-sm text-white/80">
+        <span className="text-sm text-white/80 w-12 text-center">
           {Math.round(scale * 100)}%
         </span>
         <button
@@ -141,29 +193,50 @@ const PdfPreview: React.FC<{ url: string }> = ({ url }) => {
       </div>
 
       {/* PDF content */}
-      <div className="flex flex-1 justify-center overflow-auto bg-gray-800/50 p-8">
+      <div 
+        ref={containerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-auto bg-gray-800/50 p-8 flex justify-center relative"
+      >
         <Document
           file={url}
-          onLoadSuccess={({ numPages: n }) => setNumPages(n)}
+          onLoadSuccess={({ numPages: n }) => {
+            setNumPages(n);
+            pageRefs.current = new Array(n).fill(null);
+          }}
           loading={
-            <div className="flex items-center justify-center py-20">
+            <div className="flex flex-col items-center justify-center gap-2 py-20 text-white/70 h-full w-full absolute inset-0">
               <div className="fpv-spinner" />
+              <span>Đang tải PDF...</span>
             </div>
           }
           error={
-            <div className="flex flex-col items-center justify-center gap-3 py-20 text-gray-400">
+            <div className="flex flex-col items-center justify-center gap-3 py-20 text-gray-400 h-full w-full absolute inset-0">
               <MdErrorOutline className="h-12 w-12" />
               <p className="text-sm">Không thể hiển thị PDF.</p>
             </div>
           }
         >
-          <Page
-            pageNumber={currentPage}
-            scale={scale}
-            className="shadow-lg"
-            renderTextLayer={true}
-            renderAnnotationLayer={true}
-          />
+          <div className="flex flex-col gap-6 items-center">
+            {Array.from(new Array(numPages), (_, index) => (
+              <div 
+                key={`page_${index + 1}`}
+                ref={(el) => { 
+                  if (pageRefs.current) {
+                    pageRefs.current[index] = el; 
+                  }
+                }}
+              >
+                <Page
+                  pageNumber={index + 1}
+                  scale={scale}
+                  className="shadow-lg bg-white"
+                  renderTextLayer={false}
+                  renderAnnotationLayer={false}
+                />
+              </div>
+            ))}
+          </div>
         </Document>
       </div>
     </div>
@@ -215,48 +288,62 @@ const ImagePreview: React.FC<{ url: string }> = ({ url }) => (
 );
 
 const DocxPreview: React.FC<{ blob: Blob }> = ({ blob }) => {
-  const [html, setHtml] = useState<string>("");
+  const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const convert = async () => {
+    const renderDocx = async () => {
       try {
-        const arrayBuffer = await blob.arrayBuffer();
-        const result = await mammoth.convertToHtml({ arrayBuffer });
-        setHtml(result.value);
-      } catch {
+        if (!containerRef.current) return;
+        setLoading(true);
+        // docx-preview natively renders word document pages with formatting preserved
+        // Tắt inWrapper để không sinh ra lớp nền trắng/xám dư thừa của thư viện
+        await docx.renderAsync(blob, containerRef.current, undefined, {
+          className: "docx-viewer-section",
+          inWrapper: false, 
+          ignoreWidth: false,
+          ignoreHeight: false,
+          ignoreFonts: false,
+          breakPages: true,
+          ignoreLastRenderedPageBreak: true,
+          experimental: false,
+        });
+      } catch (err) {
+        console.error(err);
         setError("Không thể hiển thị tệp DOCX. Vui lòng tải xuống để xem.");
       } finally {
         setLoading(false);
       }
     };
-    convert();
+    renderDocx();
   }, [blob]);
 
-  if (loading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <div className="fpv-spinner" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center gap-3 text-gray-400">
-        <MdErrorOutline className="h-12 w-12" />
-        <p className="text-sm">{error}</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="h-full overflow-auto bg-gray-800/50 p-8">
-      <div
-        className="fpv-docx-content mx-auto min-h-[80vh] max-w-[816px] rounded bg-white px-16 py-12 text-sm leading-relaxed text-gray-800 shadow-lg"
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
+    <div className="flex-1 overflow-auto bg-gray-800/50 p-8">
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-800/50 z-10">
+          <div className="flex flex-col items-center justify-center gap-2 text-white/70">
+            <div className="fpv-spinner" />
+            <span>Đang tải DOCX...</span>
+          </div>
+        </div>
+      )}
+      
+      {error ? (
+        <div className="flex h-full flex-col items-center justify-center gap-3 text-gray-400">
+          <MdErrorOutline className="h-12 w-12" />
+          <p className="text-sm">{error}</p>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center min-h-full">
+          {/* Lớp bọc chính chứa nội dung Word. Thư viện sẽ render <section> vào đây */}
+          <div 
+            ref={containerRef} 
+            className="w-full max-w-[816px] bg-white rounded shadow-lg overflow-hidden [&>section]:!bg-transparent [&>section]:!p-12 [&>section]:!m-0 [&>section]:!shadow-none"
+          />
+        </div>
+      )}
     </div>
   );
 };

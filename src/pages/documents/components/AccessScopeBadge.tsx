@@ -12,9 +12,9 @@ const AccessScopeBadge: React.FC<AccessScopeBadgeProps> = ({
 }) => {
   // lecture → Giảng viên sáng, Sinh viên gray
   // student → Sinh viên sáng, Giảng viên gray
-  // both/private → cả 2 gray
-  const isLectureBright = value === "lecture" || value === "both";
-  const isStudentBright = value === "student" || value === "both";
+  // public/private → cả 2 gray
+  const isLectureBright = value === "lecture" || value === "public";
+  const isStudentBright = value === "student" || value === "public";
 
   return (
     <div className={`flex gap-1.5 ${className}`}>

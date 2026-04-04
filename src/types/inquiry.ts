@@ -19,11 +19,18 @@ export function labelPillStyle(hex: string): React.CSSProperties {
   return { backgroundColor: hex + "20", color: hex };
 }
 
+export interface InquirySource {
+  fileId: string;
+  displayName: string;
+  text: string;
+}
+
 export interface Inquiry {
   id: number;
   types: InquiryType[];
   question: string;
   answer: string | null;
+  sources?: InquirySource[];
   messageId?: number | null;
   messageStatus?: MessageStatus | null;
   createdAt: string;

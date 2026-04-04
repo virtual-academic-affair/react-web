@@ -20,7 +20,11 @@ interface AccessScopeFilterProps {
 
 const ACCESS_SCOPE_OPTIONS = [
   { value: "student", label: "Sinh viên", color: RoleColors[Role.Student].hex },
-  { value: "lecture", label: "Giáo vụ", color: RoleColors[Role.Lecture].hex },
+  {
+    value: "lecture",
+    label: "Giảng viên",
+    color: RoleColors[Role.Lecture].hex,
+  },
   { value: "private", label: "Nội bộ", color: "#6b7280" },
 ] as const;
 

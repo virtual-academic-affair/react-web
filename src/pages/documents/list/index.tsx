@@ -85,7 +85,7 @@ const DocumentListPage = () => {
 
   // File preview (URL-driven: ?id=fileId&preview=true)
   const isPreview = searchParams.get("preview") === "true";
-  const previewFileId = isPreview ? (searchParams.get("id") || null) : null;
+  const previewFileId = isPreview ? searchParams.get("id") || null : null;
   const wasDrawerOpenBeforePreview = useRef(false);
 
   // Detail drawer
@@ -114,11 +114,11 @@ const DocumentListPage = () => {
         const derivedValues: string[] = [];
 
         if (hasStudent && hasLecture) {
-          derivedValues.push("both", "student", "lecture");
+          derivedValues.push("public", "student", "lecture");
         } else if (hasStudent) {
-          derivedValues.push("student", "both");
+          derivedValues.push("student", "public");
         } else if (hasLecture) {
-          derivedValues.push("lecture", "both");
+          derivedValues.push("lecture", "public");
         }
 
         if (hasPrivate) {
@@ -303,7 +303,7 @@ const DocumentListPage = () => {
               setSearchParams(next, { replace: true });
             }}
           >
-            <p className="text-navy-700 truncate text-sm font-bold transition-colors group-hover:text-brand-500 group-hover:underline dark:text-white dark:group-hover:text-brand-400">
+            <p className="text-navy-700 group-hover:text-brand-500 dark:group-hover:text-brand-400 truncate text-sm font-bold transition-colors group-hover:underline dark:text-white">
               {x.displayName || x.originalFilename}
             </p>
             <p className="mt-0.5 truncate text-xs text-gray-500">

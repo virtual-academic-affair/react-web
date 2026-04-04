@@ -15,8 +15,8 @@ import { MdDeleteOutline, MdInfoOutline } from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
 import AdvancedFilterModal, {
   type CancelReasonFilters,
-} from "./components/AdvancedFilterModal";
-import CancelReasonDrawer from "./components/CancelReasonDrawer";
+} from "../components/AdvancedFilterModal";
+import CancelReasonDrawer from "../components/CancelReasonDrawer";
 
 const PAGE_SIZE = 10;
 

@@ -1,11 +1,17 @@
-import Tag from "@/components/tag/Tag";
 import RichTextEditor from "@/components/fields/RichTextEditor";
 import CreatePageLayout from "@/components/layouts/CreatePageLayout";
+import Switch from "@/components/switch";
+import Tag from "@/components/tag/Tag";
 import { classRegistrationsService } from "@/services/class-registration";
 import { messagesService } from "@/services/email/messages.service";
 import type {
   CreateClassRegistrationDto,
   CreateClassRegistrationItemDto,
+} from "@/types/classRegistration";
+import {
+  RegistrationActionColors,
+  RegistrationActionLabels,
+  RegistrationActionOptions,
 } from "@/types/classRegistration";
 import type { Message } from "@/types/email";
 import { message as toast } from "antd";
@@ -41,6 +47,7 @@ const ClassRegistrationCreatePage: React.FC = () => {
   const [note, setNote] = React.useState("");
   const [items, setItems] = React.useState<DraftItem[]>([emptyItem()]);
   const [submitting, setSubmitting] = React.useState(false);
+
   const [message, setMessage] = React.useState<Message | null>(null);
   const [messageLoading, setMessageLoading] = React.useState(false);
 
@@ -207,7 +214,7 @@ const ClassRegistrationCreatePage: React.FC = () => {
               </div>
               <div className="text-navy-700 flex items-center gap-2 text-base dark:text-white">
                 <span>Chọn nhãn</span>
-                                <Tag color="#a855f7">Đăng ký lớp</Tag>
+                <Tag color="#a855f7">Đăng ký lớp</Tag>
                 <span>để bắt đầu tạo hồ sơ.</span>
               </div>
             </div>
@@ -406,21 +413,45 @@ const ClassRegistrationCreatePage: React.FC = () => {
                           className="dark:bg-navy-800 focus:border-brand-500 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none dark:border-white/10"
                         />
                       </div>
-                      <div className="dark:bg-navy-800 flex items-center justify-between gap-4 rounded-xl border border-gray-100 bg-white p-2 dark:border-white/5">
-                        <span className="text-xs font-medium text-gray-500 uppercase">
-                          Trong CTDT?
-                        </span>
-                        <input
-                          type="checkbox"
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-semibold tracking-wider text-gray-400 uppercase">
+                          Loại yêu cầu
+                        </label>
+                        <Tag
+                          variant="selection"
+                          color={
+                            RegistrationActionColors[
+                              item.action as keyof typeof RegistrationActionColors
+                            ].hex
+                          }
+                          value={item.action}
+                          options={RegistrationActionOptions}
+                          onChange={(value) =>
+                            updateItem(item.key, "action", value)
+                          }
+                        >
+                          {
+                            RegistrationActionLabels[
+                              item.action as keyof typeof RegistrationActionLabels
+                            ]
+                          }
+                        </Tag>
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-semibold tracking-wider text-gray-400 uppercase">
+                          Trong CTDT
+                        </label>
+                        <Switch
                           checked={item.isInCurriculum ?? false}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          onChange={() =>
                             updateItem(
                               item.key,
                               "isInCurriculum",
-                              e.target.checked,
+                              !item.isInCurriculum,
                             )
                           }
-                          className="text-brand-500 focus:ring-brand-500 h-4 w-4 rounded border-gray-300"
+                          disabled={false}
                         />
                       </div>
                     </div>
