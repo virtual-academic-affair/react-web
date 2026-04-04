@@ -136,7 +136,7 @@ const AllowedDomainsCard: React.FC = () => {
       ) : (
         <div className="flex flex-wrap gap-2">
           {displayList.map((domain, i) => (
-            <Tag key={i} className="flex items-center gap-1 px-4 text-sm!">
+            <Tag key={i} interactive={false} className="flex items-center gap-1 px-4 text-sm!">
               {domain}
               {editing && (
                 <button

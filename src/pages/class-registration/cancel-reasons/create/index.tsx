@@ -15,7 +15,7 @@ const CancelReasonCreatePage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim()) {
-      toast.error("Vui lòng nhập nội dung lý do hủy.");
+      toast.error("Vui lòng nhập nội dung lý do từ chối.");
       return;
     }
 
@@ -26,13 +26,13 @@ const CancelReasonCreatePage: React.FC = () => {
         isActive,
       };
       await cancelReasonsService.create(dto);
-      toast.success("Tạo lý do hủy thành công.");
+      toast.success("Tạo lý do từ chối thành công.");
       navigate("/admin/class-registration/cancel-reasons");
     } catch (err: unknown) {
       const msg =
         err instanceof Error
           ? err.message
-          : "Tạo lý do hủy thất bại. Vui lòng thử lại.";
+          : "Tạo lý do từ chối thất bại. Vui lòng thử lại.";
       toast.error(msg);
     } finally {
       setSubmitting(false);
@@ -40,7 +40,7 @@ const CancelReasonCreatePage: React.FC = () => {
   };
 
   return (
-    <CreatePageLayout title="Tạo lý do hủy">
+    <CreatePageLayout title="Tạo lý do từ chối">
       <form onSubmit={handleSubmit}>
           {/* Nội dung */}
           <div className="flex items-start gap-6">
@@ -54,7 +54,7 @@ const CancelReasonCreatePage: React.FC = () => {
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 rows={4}
-                placeholder="Nhập nội dung lý do hủy..."
+                placeholder="Nhập nội dung lý do từ chối..."
                 className="w-full rounded-2xl border border-gray-200 bg-transparent p-3 outline-none dark:border-white/10 dark:text-white"
               />
             </div>
@@ -94,7 +94,7 @@ const CancelReasonCreatePage: React.FC = () => {
               disabled={submitting}
               className="bg-brand-500 hover:bg-brand-600 rounded-2xl px-6 py-3.5 text-sm font-semibold text-white transition-colors disabled:opacity-50"
             >
-              {submitting ? "Đang tạo..." : "Tạo lý do hủy"}
+              {submitting ? "Đang tạo..." : "Tạo lý do từ chối"}
             </button>
           </div>
         </form>

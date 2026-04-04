@@ -11,6 +11,8 @@ interface TagProps {
   color?: string;
   /** "selection" shows a native dropdown when clicked */
   variant?: "default" | "selection";
+  /** Disable hover/pointer styling*/
+  interactive?: boolean;
   /** Current value (for selection variant) */
   value?: string;
   /** Options for selection variant */
@@ -28,6 +30,7 @@ interface TagProps {
 const Tag: React.FC<TagProps> = ({
   color,
   variant = "default",
+  interactive = true,
   value,
   options = [],
   onChange,
@@ -47,7 +50,9 @@ const Tag: React.FC<TagProps> = ({
         <span
           style={{ backgroundColor: bgWithOpacity, color, borderColor: color }}
           onClick={onClick}
-          className={`inline-flex cursor-pointer items-center gap-1 rounded-full border px-2 py-0.5 pl-3 text-xs font-medium transition-opacity hover:opacity-80 ${disabled ? "cursor-not-allowed opacity-50" : ""} ${className ?? ""}`}
+          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 pl-3 text-xs font-medium ${
+            interactive ? "cursor-pointer transition-opacity hover:opacity-80" : ""
+          } ${disabled ? "cursor-not-allowed opacity-50" : ""} ${className ?? ""}`}
         >
           {children}
           {!disabled && <MdExpandMore className="h-3.5 w-3.5 text-inherit" />}
@@ -72,7 +77,9 @@ const Tag: React.FC<TagProps> = ({
     <span
       style={{ backgroundColor: bgWithOpacity, color, borderColor: color }}
       onClick={onClick}
-      className={`inline-flex cursor-pointer items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium transition-opacity hover:opacity-80 ${className ?? ""}`}
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${
+        interactive ? "cursor-pointer transition-opacity hover:opacity-80" : ""
+      } ${className ?? ""}`}
     >
       {children}
     </span>

@@ -71,17 +71,17 @@ const routes: RoutesType[] = [
         path: "class-registration/create",
       },
       {
-        name: "Lý do hủy",
+        name: "Lý do từ chối",
         layout: "/admin",
         path: "",
         children: [
           {
-            name: "DS lý do hủy",
+            name: "DS lý do từ chối",
             layout: "/admin",
             path: "class-registration/cancel-reasons/index",
           },
           {
-            name: "Tạo lý do hủy",
+            name: "Tạo lý do từ chối",
             layout: "/admin",
             path: "class-registration/cancel-reasons/create",
           },
