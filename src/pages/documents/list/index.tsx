@@ -435,11 +435,15 @@ const DocumentListPage = () => {
         metadataTypes={metadataTypes}
         onChange={setDraftFilters}
         onApply={() => {
+          const parsed = parseSearchString(searchValue);
+          setKeyword(parsed.keyword);
           setFilters(draftFilters);
           setPage(1);
           setFilterOpen(false);
         }}
         onClear={() => {
+          const parsed = parseSearchString(searchValue);
+          setKeyword(parsed.keyword);
           setDraftFilters(defaultFilters);
           setFilters(defaultFilters);
           setPage(1);

@@ -171,6 +171,7 @@ const CancelReasonsPage: React.FC = () => {
       const updated = await cancelReasonsService.update(item.id, {
         isActive: next,
       });
+      toast.success(next ? "Đã kích hoạt lý do." : "Đã vô hiệu hóa lý do.");
       queryClient.setQueryData(
         ["cancel-reasons", { page, keyword, ...filters }],
         (prev: PaginatedResponse<CancelReason> | null) =>
@@ -286,7 +287,10 @@ const CancelReasonsPage: React.FC = () => {
             setSearchParams(next, { replace: true });
           }
         }}
-        onSaved={(reason, mode) =>
+        onSaved={(reason, mode) => {
+          toast.success(
+            mode === "create" ? "Đã tạo lý do hủy." : "Đã cập nhật lý do hủy."
+          );
           queryClient.setQueryData(
             ["cancel-reasons", { page, keyword, ...filters }],
             (prev: PaginatedResponse<CancelReason> | null) =>
@@ -301,8 +305,8 @@ const CancelReasonsPage: React.FC = () => {
                           ),
                   }
                 : prev,
-          )
-        }
+          );
+        }}
       />
 
       <AdvancedFilterModal
@@ -310,11 +314,15 @@ const CancelReasonsPage: React.FC = () => {
         value={draftFilters}
         onChange={setDraftFilters}
         onApply={() => {
+          const parsed = parseSearchString(searchValue);
+          setKeyword(parsed.keyword);
           setFilters(draftFilters);
           setPage(1);
           setFilterOpen(false);
         }}
         onClear={() => {
+          const parsed = parseSearchString(searchValue);
+          setKeyword(parsed.keyword);
           setDraftFilters(defaultFilters);
           setFilters(defaultFilters);
           setPage(1);
