@@ -142,7 +142,7 @@ const routes: RoutesType[] = [
     icon: <MdDescription className="h-6 w-6" />,
     children: [
       {
-        name: "Quản lý tệp tin",
+        name: "DS tài liệu",
         layout: "/admin",
         path: "documents/list",
       },

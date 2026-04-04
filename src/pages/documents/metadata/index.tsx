@@ -170,6 +170,8 @@ const MetadataManagementPage: React.FC = () => {
   };
 
   const handleApplyFilter = () => {
+    const parsed = parseSearchString(searchValue);
+    setKeyword(parsed.keyword);
     setFilters(draftFilters);
     setPage(1);
     setFilterOpen(false);
@@ -180,6 +182,8 @@ const MetadataManagementPage: React.FC = () => {
   };
 
   const handleClearFilter = () => {
+    const parsed = parseSearchString(searchValue);
+    setKeyword(parsed.keyword);
     setDraftFilters(metadataDefaultFilters);
     setFilters(metadataDefaultFilters);
     setPage(1);

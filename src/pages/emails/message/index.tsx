@@ -217,6 +217,8 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
   };
 
   const handleApplyFilter = () => {
+    const parsed = parseSearchString(searchValue);
+    setKeyword(parsed.keyword);
     setSystemLabelsFilter(draftSystemLabels);
     setPage(1);
     setFilterOpen(false);
@@ -227,6 +229,8 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
   };
 
   const handleClearFilter = () => {
+    const parsed = parseSearchString(searchValue);
+    setKeyword(parsed.keyword);
     setDraftSystemLabels([]);
     setSystemLabelsFilter([]);
     setPage(1);

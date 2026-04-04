@@ -497,12 +497,16 @@ const TasksPage: React.FC = () => {
         onChange={setDraftFilters}
         currentUserId={currentUserId}
         onApply={() => {
+          const parsed = parseSearchString(searchValue);
+          setKeyword(parsed.keyword);
           setFilters(draftFilters);
           setPage(1);
           setFilterOpen(false);
           refetchTasks();
         }}
         onClear={() => {
+          const parsed = parseSearchString(searchValue);
+          setKeyword(parsed.keyword);
           setDraftFilters(defaultFilters);
           setFilters(defaultFilters);
           setPage(1);

@@ -51,7 +51,6 @@ const CancelReasonDrawer: React.FC<CancelReasonDrawerProps> = ({
           content: content.trim(),
           isActive,
         });
-        toast.success("Cập nhật thành công.");
         onSaved(updated, "edit");
       } else {
         const dto: CreateCancelReasonDto = {
@@ -59,7 +58,6 @@ const CancelReasonDrawer: React.FC<CancelReasonDrawerProps> = ({
           isActive,
         };
         const created = await cancelReasonsService.create(dto);
-        toast.success("Tạo lý do từ chối thành công.");
         onSaved(created, "create");
       }
       onClose();

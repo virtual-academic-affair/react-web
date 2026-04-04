@@ -157,6 +157,8 @@ const UsersPage: React.FC<UsersPageProps> = () => {
   };
 
   const handleApplyFilter = () => {
+    const parsed = parseSearchString(searchValue);
+    setKeyword(parsed.keyword);
     setFilters(draftFilters);
     setPage(1);
     setFilterOpen(false);
@@ -235,7 +237,7 @@ const UsersPage: React.FC<UsersPageProps> = () => {
         });
       }
     },
-    [],
+    [queryClient, page, keyword, filters],
   );
 
   const handleStatusChange = React.useCallback(
@@ -277,7 +279,7 @@ const UsersPage: React.FC<UsersPageProps> = () => {
         });
       }
     },
-    [],
+    [queryClient, page, keyword, filters],
   );
 
 
