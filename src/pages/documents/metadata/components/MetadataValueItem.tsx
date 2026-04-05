@@ -20,6 +20,9 @@ interface MetadataValueItemProps {
   form: ValueForm;
   original: ValueForm | undefined;
   saving: boolean;
+  /** Không cho sửa hiển thị + không tính vào thay đổi (nhãn/giá trị hệ thống). */
+  isActiveLocked?: boolean;
+  isActiveLockedReason?: string;
   onFormChange: (updates: Partial<ValueForm>) => void;
   onSave: () => void;
   onDelete: () => void;
@@ -33,6 +36,8 @@ const MetadataValueItem: React.FC<MetadataValueItemProps> = ({
   form,
   original,
   saving,
+  isActiveLocked = false,
+  isActiveLockedReason = "Không thể thay đổi trạng thái hiển thị.",
   onFormChange,
   onSave,
   onDelete,
@@ -42,10 +47,13 @@ const MetadataValueItem: React.FC<MetadataValueItemProps> = ({
   if (valueKey === "all" && (meta === "academic_year" || meta === "cohort")) {
     hasFiles = true;
   }
-  // Track changes for this value
+  const isActiveChanged =
+    !isActiveLocked &&
+    form.isActive !== (original?.isActive ?? true);
+
   const hasChanges =
     form.displayName !== (original?.displayName ?? "") ||
-    form.isActive !== (original?.isActive ?? true) ||
+    isActiveChanged ||
     form.color !== (original?.color ?? "") ||
     JSON.stringify(form.visibleRoles) !==
       JSON.stringify(original?.visibleRoles ?? []);
@@ -154,13 +162,25 @@ const MetadataValueItem: React.FC<MetadataValueItemProps> = ({
             </p>
           </div>
           <div className="flex-1">
-            <Switch
-              checked={form.isActive}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                onFormChange({ isActive: e.target.checked })
-              }
-              disabled={saving}
-            />
+            {isActiveLocked ? (
+              <Tooltip label={isActiveLockedReason}>
+                <span className="inline-flex">
+                  <Switch
+                    checked={form.isActive}
+                    onChange={() => {}}
+                    disabled
+                  />
+                </span>
+              </Tooltip>
+            ) : (
+              <Switch
+                checked={form.isActive}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  onFormChange({ isActive: e.target.checked })
+                }
+                disabled={saving}
+              />
+            )}
           </div>
         </div>
 

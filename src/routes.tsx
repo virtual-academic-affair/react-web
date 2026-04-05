@@ -71,17 +71,17 @@ const routes: RoutesType[] = [
         path: "class-registration/create",
       },
       {
-        name: "Lý do từ chối",
+        name: "Ghi chú nhanh",
         layout: "/admin",
         path: "",
         children: [
           {
-            name: "DS lý do từ chối",
+            name: "DS ghi chú nhanh",
             layout: "/admin",
             path: "class-registration/cancel-reasons/index",
           },
           {
-            name: "Tạo lý do từ chối",
+            name: "Tạo ghi chú nhanh",
             layout: "/admin",
             path: "class-registration/cancel-reasons/create",
           },
@@ -90,7 +90,7 @@ const routes: RoutesType[] = [
     ],
   },
   {
-    name: "Công việc",
+    name: "Công tác",
     layout: "/admin",
     path: "/tasks",
     icon: <MdDashboard className="h-6 w-6" />,
@@ -101,12 +101,12 @@ const routes: RoutesType[] = [
         path: "tasks/statistics",
       },
       {
-        name: "DS công việc",
+        name: "DS công tác",
         layout: "/admin",
         path: "tasks/list",
       },
       {
-        name: "Tạo công việc",
+        name: "Tạo công tác",
         layout: "/admin",
         path: "tasks/create",
       },

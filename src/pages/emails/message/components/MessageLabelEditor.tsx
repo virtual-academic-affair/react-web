@@ -101,22 +101,26 @@ const MessageLabelEditor: React.FC<MessageLabelEditorProps> = ({
       params.set("name", message.subject);
     }
 
+    const taskIds = message.taskIds ?? [];
+
     if (sl === "classRegistration") {
-      if ((message.hasClassRegistration ?? 0) > 0) {
+      if (message.classRegistrationId != null) {
         navigate(
-          `/admin/class-registration/registrations?${params.toString()}`,
+          `/admin/class-registration/registrations?id=${message.classRegistrationId}`,
         );
       } else {
         navigate(`/admin/class-registration/create?${params.toString()}`);
       }
     } else if (sl === "inquiry") {
-      if ((message.hasInquiry ?? 0) > 0) {
-        navigate(`/admin/inquiry/inquiries?${params.toString()}`);
+      if (message.inquiryId != null) {
+        navigate(`/admin/inquiry/inquiries?id=${message.inquiryId}`);
       } else {
         navigate(`/admin/inquiry/create?${params.toString()}`);
       }
     } else if (sl === "task") {
-      if ((message.tasksCount ?? 0) > 0) {
+      if (taskIds.length == 1) {
+        navigate(`/admin/tasks/list?id=${taskIds[0]}`);
+      } else if (taskIds.length > 1) {
         navigate(`/admin/tasks/list?${params.toString()}`);
       } else {
         navigate(`/admin/tasks/create?${params.toString()}`);
@@ -158,10 +162,10 @@ const MessageLabelEditor: React.FC<MessageLabelEditorProps> = ({
               "classRegistration",
             ].includes(sl);
 
-            if (sl === "task") count = message.tasksCount ?? 0;
-            if (sl === "inquiry") count = message.hasInquiry ?? 0;
+            if (sl === "task") count = message.taskIds?.length ?? 0;
+            if (sl === "inquiry") count = message.inquiryId != null ? 1 : 0;
             if (sl === "classRegistration")
-              count = message.hasClassRegistration ?? 0;
+              count = message.classRegistrationId != null ? 1 : 0;
 
             const tooltipText =
               count > 0 ? `Xem (${count} bản ghi)` : "Chưa có - Click để tạo";
@@ -280,7 +284,7 @@ const MessageLabelEditor: React.FC<MessageLabelEditorProps> = ({
                 />
                 <div className="flex flex-col gap-0.5">
                   <span className="text-navy-700 text-sm dark:text-white">
-                    Xóa các công việc được tạo từ email này.
+                    Xóa các công tác được tạo từ email này.
                   </span>
                 </div>
               </label>

@@ -5,7 +5,7 @@ import {
 } from "@/hooks/useDetailLinkedMessagePanel";
 import { DYNAMIC_DATA_QUERY_KEY } from "@/hooks/useDynamicData";
 import EmailDetailDrawer from "@/pages/emails/message/components/EmailDetailDrawer";
-import type { SystemLabelEnumData } from "@/types/shared";
+import type { DynamicDataResponse, SystemLabelEnumData } from "@/types/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import React from "react";
 
@@ -21,7 +21,6 @@ export function DetailLinkedMessageSwitch() {
         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
           setOpen(e.target.checked)
         }
-        color="brand"
       />
     </label>
   );
@@ -41,7 +40,7 @@ export function DetailLinkedEmailDrawer({
   messageId,
 }: DetailLinkedEmailDrawerProps) {
   const queryClient = useQueryClient();
-  const { data: dynamicData } = useQuery({
+  const { data: dynamicData } = useQuery<DynamicDataResponse>({
     queryKey: DYNAMIC_DATA_QUERY_KEY,
     enabled: false,
   });

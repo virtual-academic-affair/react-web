@@ -63,7 +63,7 @@ const MessageDeleteModal: React.FC<MessageDeleteModalProps> = ({
           />
           <div className="flex flex-col gap-0.5">
             <span className="text-navy-700 text-sm dark:text-white">
-              Đồng thời xóa các công việc được tạo từ email này.
+              Đồng thời xóa các công tác được tạo từ email này.
             </span>
           </div>
         </label>

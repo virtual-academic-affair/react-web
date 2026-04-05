@@ -31,9 +31,10 @@ export interface Message {
   labelIds: string[];
   systemLabels: SystemLabel[];
   content?: string;
-  tasksCount?: number;
-  hasInquiry?: number;
-  hasClassRegistration?: number;
+  /** ID các công tác gắn tin nhắn */
+  taskIds?: number[];
+  inquiryId?: number | null;
+  classRegistrationId?: number | null;
   isProcessing?: boolean;
   createdAt: Date;
   updatedAt: Date;

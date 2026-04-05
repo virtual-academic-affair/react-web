@@ -1,8 +1,10 @@
-import RichTextEditor from "@/components/fields/RichTextEditor";
 import CreatePageLayout from "@/components/layouts/CreatePageLayout";
 import Switch from "@/components/switch";
 import Tag from "@/components/tag/Tag";
-import { classRegistrationsService } from "@/services/class-registration";
+import {
+  cancelReasonsService,
+  classRegistrationsService,
+} from "@/services/class-registration";
 import { messagesService } from "@/services/email/messages.service";
 import type {
   CreateClassRegistrationDto,
@@ -14,6 +16,8 @@ import {
   RegistrationActionOptions,
 } from "@/types/classRegistration";
 import type { Message } from "@/types/email";
+import { plainTextFromHtml } from "@/utils/html";
+import { useQuery } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React from "react";
 import { MdAdd, MdDeleteOutline, MdExpandMore } from "react-icons/md";
@@ -21,6 +25,7 @@ import { MdAdd, MdDeleteOutline, MdExpandMore } from "react-icons/md";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import MessageContentSidePanel from "../../emails/message/components/MessageContentSidePanel";
 import RelatedMessageView from "../../emails/message/components/RelatedMessageView";
+import RegistrationNoteRichTextEditor from "../registrations/components/RegistrationNoteRichTextEditor";
 import ProcessSteps from "./components/ProcessSteps";
 
 interface DraftItem extends CreateClassRegistrationItemDto {
@@ -55,6 +60,21 @@ const ClassRegistrationCreatePage: React.FC = () => {
     ? Number(searchParams.get("messageId"))
     : undefined;
 
+  const { data: cancelReasonsData } = useQuery({
+    queryKey: ["cancel-reasons", "suggestion"],
+    queryFn: () => cancelReasonsService.getList({ isActive: true, limit: 100 }),
+    staleTime: 5 * 60 * 1000,
+  });
+  const cancelReasonSuggestionItems = React.useMemo(
+    () =>
+      (cancelReasonsData?.items ?? []).map((r) => ({
+        id: String(r.id),
+        label: plainTextFromHtml(r.content) || `#${r.id}`,
+        insertHtml: r.content,
+      })),
+    [cancelReasonsData],
+  );
+
   React.useEffect(() => {
     if (messageId) {
       setMessageLoading(true);
@@ -62,9 +82,6 @@ const ClassRegistrationCreatePage: React.FC = () => {
         .getMessageById(messageId)
         .then((m) => {
           setMessage(m);
-          if (!note) {
-            setNote(m.subject || "");
-          }
 
           // Check for existing registration
           classRegistrationsService
@@ -82,7 +99,7 @@ const ClassRegistrationCreatePage: React.FC = () => {
         .catch(() => toast.error("Không thể tải thông tin tin nhắn."))
         .finally(() => setMessageLoading(false));
     }
-  }, [messageId, navigate, note]);
+  }, [messageId, navigate]);
 
   const updateItem = (
     key: string,
@@ -243,9 +260,20 @@ const ClassRegistrationCreatePage: React.FC = () => {
     );
   }
 
-  const sideContent = message?.content ? (
-    <MessageContentSidePanel content={message.content} />
-  ) : undefined;
+  const messageBody = message?.content;
+  const hasMessageBody = Boolean(messageBody);
+  const sideContent =
+    messageBody && message ? (
+      <div className="flex flex-col gap-4">
+        <RelatedMessageView
+          message={message}
+          loading={messageLoading}
+          onReselect={() => navigate("/admin/email/message")}
+          stackedInSideColumn
+        />
+        <MessageContentSidePanel content={messageBody} />
+      </div>
+    ) : undefined;
 
   return (
     <CreatePageLayout
@@ -253,11 +281,13 @@ const ClassRegistrationCreatePage: React.FC = () => {
       processSteps={<ProcessSteps currentStep={currentStep} />}
       sideContent={sideContent}
     >
-      <RelatedMessageView
-        message={message}
-        loading={messageLoading}
-        onReselect={() => navigate("/admin/email/message")}
-      />
+      {!hasMessageBody && (
+        <RelatedMessageView
+          message={message}
+          loading={messageLoading}
+          onReselect={() => navigate("/admin/email/message")}
+        />
+      )}
 
       {messageLoading ? (
         <div className="flex h-64 items-center justify-center">
@@ -477,7 +507,12 @@ const ClassRegistrationCreatePage: React.FC = () => {
                 <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                   Ghi chú bổ sung
                 </p>
-                <RichTextEditor value={note} onChange={setNote} />
+                <RegistrationNoteRichTextEditor
+                  value={note}
+                  onChange={setNote}
+                  suggestionItems={cancelReasonSuggestionItems}
+                  placeholder="Gõ @ để chèn ghi chú nhanh"
+                />
               </div>
             </div>
           )}

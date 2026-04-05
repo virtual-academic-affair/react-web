@@ -1,4 +1,5 @@
 import Drawer from "@/components/drawer/Drawer";
+import RichTextEditor from "@/components/fields/RichTextEditor";
 import Switch from "@/components/switch";
 import { cancelReasonsService } from "@/services/class-registration";
 import type {
@@ -6,6 +7,7 @@ import type {
   CreateCancelReasonDto,
 } from "@/types/classRegistration";
 import { formatDate } from "@/utils/date";
+import { plainTextFromHtml } from "@/utils/html";
 import { message as toast } from "antd";
 import React from "react";
 import { MdSave } from "react-icons/md";
@@ -39,22 +41,24 @@ const CancelReasonDrawer: React.FC<CancelReasonDrawerProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim()) {
-      toast.error("Vui lòng nhập nội dung lý do từ chối.");
+    if (!plainTextFromHtml(content)) {
+      toast.error("Vui lòng nhập nội dung ghi chú nhanh.");
       return;
     }
+
+    const payload = content.trim();
 
     setSaving(true);
     try {
       if (isEdit && reasonId != null) {
         const updated = await cancelReasonsService.update(reasonId, {
-          content: content.trim(),
+          content: payload,
           isActive,
         });
         onSaved(updated, "edit");
       } else {
         const dto: CreateCancelReasonDto = {
-          content: content.trim(),
+          content: payload,
           isActive,
         };
         const created = await cancelReasonsService.create(dto);
@@ -63,96 +67,92 @@ const CancelReasonDrawer: React.FC<CancelReasonDrawerProps> = ({
       onClose();
     } catch (err: unknown) {
       const msg =
-        err instanceof Error
-          ? err.message
-          : "Lưu lý do từ chối thất bại. Vui lòng thử lại.";
+        err instanceof Error ? err.message : "Lưu thất bại. Vui lòng thử lại.";
       toast.error(msg);
     } finally {
       setSaving(false);
     }
   };
 
-        const isDirty = React.useMemo(() => {
-          if (!isEdit) {
-            return content.trim() !== "" || isActive !== true;
-          }
-          return (
-            content !== (initialReason?.content ?? "") ||
-            isActive !== (initialReason?.isActive ?? true)
-          );
-        }, [isEdit, content, isActive, initialReason]);
+  const isDirty = React.useMemo(() => {
+    if (!isEdit) {
+      return plainTextFromHtml(content) !== "" || isActive !== true;
+    }
+    return (
+      content !== (initialReason?.content ?? "") ||
+      isActive !== (initialReason?.isActive ?? true)
+    );
+  }, [isEdit, content, isActive, initialReason]);
 
-        return (
-          <Drawer
-            isOpen={isOpen}
-            onClose={onClose}
-            title={isEdit ? "Chỉnh sửa lý do từ chối" : "Thêm lý do từ chối"}
-          >
-            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-              {/* Nội dung */}
-              <div className="flex items-start gap-6">
-                <div className="w-40 shrink-0">
-                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                    Nội dung
-                  </p>
-                </div>
-                <div className="flex-1">
-                  <textarea
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    rows={4}
-                    className="w-full rounded-2xl border border-gray-200 bg-transparent p-3 outline-none dark:border-white/10 dark:text-white"
-                    placeholder="Nhập nội dung lý do từ chối..."
-                  />
-                </div>
-              </div>
+  return (
+    <Drawer
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isEdit ? "Chỉnh sửa ghi chú nhanh" : "Thêm ghi chú nhanh"}
+    >
+      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+        {/* Nội dung */}
+        <div className="flex items-start gap-6">
+          <div className="w-40 shrink-0">
+            <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+              Nội dung
+            </p>
+          </div>
+          <div className="flex-1">
+            <RichTextEditor
+              value={content}
+              onChange={setContent}
+              placeholder="Soạn nội dung ghi chú nhanh…"
+            />
+          </div>
+        </div>
 
-              {/* Trạng thái hiển thị */}
-              <div className="flex items-center gap-6">
-                <div className="w-40 shrink-0">
-                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                    Trạng thái hiển thị
-                  </p>
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-3">
-                    <Switch
-                      checked={isActive}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setIsActive(e.target.checked)
-                      }
-                    />
-                  </div>
-                </div>
-              </div>
+        {/* Trạng thái hiển thị */}
+        <div className="flex items-center gap-6">
+          <div className="w-40 shrink-0">
+            <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+              Trạng thái hiển thị
+            </p>
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-3">
+              <Switch
+                checked={isActive}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setIsActive(e.target.checked)
+                }
+              />
+            </div>
+          </div>
+        </div>
 
-              {isDirty && (
-                <div className="mt-4 flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (isEdit && initialReason) {
-                        setContent(initialReason.content);
-                        setIsActive(initialReason.isActive);
-                      } else {
-                        setContent("");
-                        setIsActive(true);
-                      }
-                    }}
-                    className="rounded-xl px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10"
-                  >
-                    Hủy
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="bg-brand-500 hover:bg-brand-600 flex items-center gap-1 rounded-xl px-4 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-50"
-                  >
-                    <MdSave className="h-4 w-4" />
-                    {saving ? "Đang lưu..." : "Lưu"}
-                  </button>
-                </div>
-              )}
+        {isDirty && (
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (isEdit && initialReason) {
+                  setContent(initialReason.content);
+                  setIsActive(initialReason.isActive);
+                } else {
+                  setContent("");
+                  setIsActive(true);
+                }
+              }}
+              className="rounded-xl px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="bg-brand-500 hover:bg-brand-600 flex items-center gap-1 rounded-xl px-4 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-50"
+            >
+              <MdSave className="h-4 w-4" />
+              {saving ? "Đang lưu..." : "Lưu"}
+            </button>
+          </div>
+        )}
 
         {/* Thông số kỹ thuật (chỉ edit) */}
         {initialReason && (

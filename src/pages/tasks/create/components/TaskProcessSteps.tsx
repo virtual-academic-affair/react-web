@@ -7,7 +7,7 @@ interface TaskProcessStepsProps {
 const TaskProcessSteps: React.FC<TaskProcessStepsProps> = ({ currentStep }) => {
   const steps = [
     { number: 1, label: "Thông tin" },
-    { number: 2, label: "Mô tả công việc" },
+    { number: 2, label: "Mô tả công tác" },
     { number: 3, label: "Phân công" },
   ];
 

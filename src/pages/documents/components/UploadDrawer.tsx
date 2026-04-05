@@ -2,8 +2,9 @@ import { message as toast } from "antd";
 import React, { useCallback, useRef, useState } from "react";
 
 import Drawer from "@/components/drawer/Drawer";
+import Tag from "@/components/tag/Tag";
 import { DocumentsService } from "@/services/documents";
-import { Role, RoleColors } from "@/types/users";
+import { RoleColors } from "@/types/users";
 import { parseError } from "@/utils/parseError";
 import AccessScopeBadge from "./AccessScopeBadge";
 
@@ -94,7 +95,9 @@ export const ProcessSteps: React.FC<{
               className={`flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm font-semibold transition-all ${
                 currentStep >= step.number
                   ? "border-brand-500 bg-brand-500 text-white"
-                  : "border-gray-300 bg-transparent text-gray-400 dark:border-gray-600 dark:text-gray-500"
+                  : variant === "gradient"
+                    ? "border-white/50 bg-white/10 text-white/90"
+                    : "border-gray-300 bg-transparent text-gray-400 dark:border-gray-600 dark:text-gray-500"
               }`}
             >
               {currentStep > step.number ? (
@@ -118,7 +121,13 @@ export const ProcessSteps: React.FC<{
             <span className={labelClass}>{step.label}</span>
           </div>
           {index < steps.length - 1 && (
-            <div className="h-0.5 w-16 bg-gray-300 transition-all dark:bg-gray-600" />
+            <div
+              className={
+                variant === "gradient"
+                  ? "h-0.5 w-16 bg-white/40 transition-all"
+                  : "h-0.5 w-16 bg-gray-300 transition-all dark:bg-gray-600"
+              }
+            />
           )}
         </React.Fragment>
       ))}
@@ -433,63 +442,61 @@ export const UploadForm: React.FC<UploadFormProps> = ({
               {activeMetadataTypes.map((type) => {
                 const currentValue = customMetadata[type.key] || "";
 
-                  // Access scope is special - show as role tags
-                  if (type.key === "access_scope") {
-                    return (
-                      <div key={type.key} className="flex items-start gap-6">
-                        <div className="w-40 shrink-0">
-                          <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                            {info.typeName} *
-                          </p>
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex flex-wrap gap-2">
-                            {type.allowedValues?.map((val) => {
-                              const isSelected = currentValue === val.value;
-                              const colors = val.visibleRoles?.includes(
-                                "student",
-                              )
-                                ? RoleColors.student
-                                : RoleColors.lecture;
-                              return (
-                                <button
-                                  key={val.value}
-                                  type="button"
-                                  onClick={() =>
-                                    handleMetadataChange(type.key, val.value)
-                                  }
-                                  className="cursor-pointer"
-                                >
-                                  <Tag
-                                    color={
-                                      isSelected
-                                        ? colors.text
-                                            .replace("text-", "#")
-                                            .replace("-800", "00")
-                                        : "#6b7280"
-                                    }
-                                  >
-                                    {val.displayName || val.value}
-                                  </Tag>
-                                </button>
-                              );
-                            })}
-                          </div>
-                          <p className="mt-2 text-xs text-gray-500">
-                            Quyền truy cập:{" "}
-                            <span className="font-medium">
-                              {currentValue === "private" &&
-                                "Chỉ giảng viên & sinh viên được chọn"}
-                              {currentValue === "student" && "Chỉ sinh viên"}
-                              {currentValue === "lecture" && "Chỉ giảng viên"}
-                              {currentValue === "public" && "Tất cả mọi người"}
-                              {!currentValue && "—"}
-                            </span>
-                          </p>
-                        </div>
+                // Access scope is special - show as role tags
+                if (type.key === "access_scope") {
+                  return (
+                    <div key={type.key} className="flex items-start gap-6">
+                      <div className="w-40 shrink-0">
+                        <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                          {type.displayName} *
+                        </p>
                       </div>
-                    );
-                  }
+                      <div className="flex-1">
+                        <div className="flex flex-wrap gap-2">
+                          {type.allowedValues?.map((val) => {
+                            const isSelected = currentValue === val.value;
+                            const colors = val.visibleRoles?.includes("student")
+                              ? RoleColors.student
+                              : RoleColors.lecture;
+                            return (
+                              <button
+                                key={val.value}
+                                type="button"
+                                onClick={() =>
+                                  handleMetadataChange(type.key, val.value)
+                                }
+                                className="cursor-pointer"
+                              >
+                                <Tag
+                                  color={
+                                    isSelected
+                                      ? colors.text
+                                          .replace("text-", "#")
+                                          .replace("-800", "00")
+                                      : "#6b7280"
+                                  }
+                                >
+                                  {val.displayName || val.value}
+                                </Tag>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <p className="mt-2 text-xs text-gray-500">
+                          Quyền truy cập:{" "}
+                          <span className="font-medium">
+                            {currentValue === "private" &&
+                              "Chỉ giảng viên & sinh viên được chọn"}
+                            {currentValue === "student" && "Chỉ sinh viên"}
+                            {currentValue === "lecture" && "Chỉ giảng viên"}
+                            {currentValue === "public" && "Tất cả mọi người"}
+                            {!currentValue && "—"}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  );
+                }
 
                 // All other metadata types → select dropdown
                 const isRequired =

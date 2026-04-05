@@ -1,12 +1,17 @@
+import ConfirmModal from "@/components/modal/ConfirmModal";
+import InquiryTypeEditor from "@/components/selector/InquiryTypeEditor";
+import MessageStatusSelector from "@/components/selector/MessageStatusSelector";
 import TableLayout, {
   type TableAction,
   type TableColumn,
 } from "@/components/table/TableLayout";
+import Tooltip from "@/components/tooltip/Tooltip";
 import { inquiriesService } from "@/services/inquiry";
+import type { PaginatedResponse } from "@/types/common";
 import type { Inquiry, InquiryType } from "@/types/inquiry";
 import type { MessageStatus } from "@/types/messageStatus";
-import type { PaginatedResponse } from "@/types/common";
 import { formatDate } from "@/utils/date";
+import { parseSearchString, stringifySearchQuery } from "@/utils/search";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React from "react";
@@ -15,18 +20,12 @@ import {
   MdInfoOutline,
   MdOutlineRateReview,
 } from "react-icons/md";
-import { useSearchParams } from "react-router-dom";
-import Tooltip from "@/components/tooltip/Tooltip";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import AdvancedFilterModal, {
   type InquiryFilters,
 } from "./components/AdvancedFilterModal";
-import MessageStatusSelector from "@/components/selector/MessageStatusSelector";
-import InquiryTypeEditor from "@/components/selector/InquiryTypeEditor";
-import PreviewReplyModal from "./components/PreviewReplyModal";
 import InquiryDetailDrawer from "./components/InquiryDetailDrawer";
-import ConfirmModal from "@/components/modal/ConfirmModal";
-import { parseSearchString, stringifySearchQuery } from "@/utils/search";
-
+import PreviewReplyModal from "./components/PreviewReplyModal";
 
 const PAGE_SIZE = 10;
 
@@ -37,6 +36,7 @@ const defaultFilters: InquiryFilters = {
 };
 
 const InquiriesPage: React.FC = () => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -67,7 +67,6 @@ const InquiriesPage: React.FC = () => {
     ),
   );
 
-
   const [draftFilters, setDraftFilters] = React.useState(filters);
   const [filterOpen, setFilterOpen] = React.useState(false);
 
@@ -81,16 +80,21 @@ const InquiriesPage: React.FC = () => {
     React.useState<Set<number>>(new Set());
 
   // ── Build query params
-  const inquiryQueryParams = React.useMemo(() => ({
-    page,
-    limit: PAGE_SIZE,
-    keyword: keyword || undefined,
-    types: filters.types.length ? filters.types : undefined,
-    messageStatuses: filters.messageStatuses.length ? filters.messageStatuses : undefined,
-    messageId: filters.messageId ? Number(filters.messageId) : undefined,
-    orderCol: "createdAt" as const,
-    orderDir: "DESC" as const,
-  }), [page, keyword, filters]);
+  const inquiryQueryParams = React.useMemo(
+    () => ({
+      page,
+      limit: PAGE_SIZE,
+      keyword: keyword || undefined,
+      types: filters.types.length ? filters.types : undefined,
+      messageStatuses: filters.messageStatuses.length
+        ? filters.messageStatuses
+        : undefined,
+      messageId: filters.messageId ? Number(filters.messageId) : undefined,
+      orderCol: "createdAt" as const,
+      orderDir: "DESC" as const,
+    }),
+    [page, keyword, filters],
+  );
 
   const { data: result, isFetching: loading } = useQuery({
     queryKey: ["inquiries", inquiryQueryParams],
@@ -99,9 +103,12 @@ const InquiriesPage: React.FC = () => {
     placeholderData: (prev) => prev,
   });
 
-  const updateCache = (updater: (prev: PaginatedResponse<Inquiry>) => PaginatedResponse<Inquiry>) => {
-    queryClient.setQueryData<PaginatedResponse<Inquiry>>(["inquiries", inquiryQueryParams], (prev) =>
-      prev ? updater(prev) : prev,
+  const updateCache = (
+    updater: (prev: PaginatedResponse<Inquiry>) => PaginatedResponse<Inquiry>,
+  ) => {
+    queryClient.setQueryData<PaginatedResponse<Inquiry>>(
+      ["inquiries", inquiryQueryParams],
+      (prev) => (prev ? updater(prev) : prev),
     );
   };
 
@@ -110,11 +117,12 @@ const InquiriesPage: React.FC = () => {
 
   React.useEffect(() => {
     setSearchValue(
-      stringifySearchQuery(keyword, filters as unknown as Record<string, unknown>),
+      stringifySearchQuery(
+        keyword,
+        filters as unknown as Record<string, unknown>,
+      ),
     );
   }, [keyword, filters]);
-
-
 
   React.useEffect(() => {
     const next = new URLSearchParams();
@@ -155,7 +163,6 @@ const InquiriesPage: React.FC = () => {
     setPage(1);
   };
 
-
   const handleDelete = React.useCallback((row: Inquiry) => {
     setDeleteTarget(row);
   }, []);
@@ -177,14 +184,16 @@ const InquiriesPage: React.FC = () => {
     } finally {
       setDeleting(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deleteTarget, queryClient, inquiryQueryParams]);
 
   const handleMessageStatusChange = React.useCallback(
     async (row: Inquiry, newStatus: MessageStatus | null) => {
       setUpdatingMessageStatusIds((prev) => new Set(prev).add(row.id));
       try {
-        const updated = await inquiriesService.update(row.id, { messageStatus: newStatus });
+        const updated = await inquiriesService.update(row.id, {
+          messageStatus: newStatus,
+        });
         updateCache((prev) => ({
           ...prev,
           items: prev.items.map((x) => (x.id === updated.id ? updated : x)),
@@ -201,14 +210,17 @@ const InquiriesPage: React.FC = () => {
         });
       }
     },
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  [queryClient, inquiryQueryParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [queryClient, inquiryQueryParams],
+  );
 
   const handleTypesChange = React.useCallback(
     async (row: Inquiry, nextTypes: InquiryType[]) => {
       setUpdatingMessageStatusIds((prev) => new Set(prev).add(row.id));
       try {
-        const updated = await inquiriesService.update(row.id, { types: nextTypes });
+        const updated = await inquiriesService.update(row.id, {
+          types: nextTypes,
+        });
         updateCache((prev) => ({
           ...prev,
           items: prev.items.map((x) => (x.id === updated.id ? updated : x)),
@@ -225,8 +237,9 @@ const InquiriesPage: React.FC = () => {
         });
       }
     },
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  [queryClient, inquiryQueryParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [queryClient, inquiryQueryParams],
+  );
 
   const columns: TableColumn<Inquiry>[] = React.useMemo(
     () => [
@@ -235,13 +248,15 @@ const InquiriesPage: React.FC = () => {
         header: "Câu hỏi",
         width: "45%",
         render: (item) => {
-          const textQuestion = item.question ? item.question.replace(/<[^>]*>?/gm, "") : "";
+          const textQuestion = item.question
+            ? item.question.replace(/<[^>]*>?/gm, "")
+            : "";
           return (
             <div className="flex w-full min-w-0 items-center gap-2 overflow-hidden">
-              <div className="flex w-full flex-col min-w-0">
+              <div className="flex w-full min-w-0 flex-col">
                 <Tooltip label={textQuestion} className="block w-full min-w-0">
                   <div
-                    className="text-navy-700 w-full line-clamp-1 text-sm font-bold dark:text-white"
+                    className="text-navy-700 line-clamp-1 w-full text-sm font-bold dark:text-white"
                     dangerouslySetInnerHTML={{ __html: item.question || "" }}
                   />
                 </Tooltip>
@@ -277,9 +292,7 @@ const InquiriesPage: React.FC = () => {
         render: (item) => (
           <MessageStatusSelector
             value={item.messageStatus ?? null}
-            onChange={(newStatus) =>
-              handleMessageStatusChange(item, newStatus)
-            }
+            onChange={(newStatus) => handleMessageStatusChange(item, newStatus)}
             disabled={updatingMessageStatusIds.has(item.id)}
           />
         ),
@@ -297,7 +310,7 @@ const InquiriesPage: React.FC = () => {
         onClick: (row) => {
           const next = new URLSearchParams(searchParams);
           next.set("id", String(row.id));
-          setSearchParams(next, { replace: true });
+          setSearchParams(next);
         },
       },
       {
@@ -330,7 +343,6 @@ const InquiriesPage: React.FC = () => {
         searchValue={searchValue}
         onSearchChange={setSearchValue}
         onSearch={handleSearch}
-
         searchPlaceholder="Tìm kiếm thắc mắc..."
         showFilter={true}
         onFilterClick={() => {
@@ -344,11 +356,7 @@ const InquiriesPage: React.FC = () => {
 
       <InquiryDetailDrawer
         inquiryId={selectedId}
-        onClose={() => {
-          const next = new URLSearchParams(searchParams);
-          next.delete("id");
-          setSearchParams(next, { replace: true });
-        }}
+        onClose={() => navigate(-1)}
         onInquiryChanged={(updated) =>
           updateCache((prev) => ({
             ...prev,
@@ -356,7 +364,7 @@ const InquiriesPage: React.FC = () => {
           }))
         }
         onInquiryDeleted={(id) => {
-          const inquiry = result?.items.find(i => i.id === id);
+          const inquiry = result?.items.find((i) => i.id === id);
           if (inquiry) handleDelete(inquiry);
         }}
         onPreviewReply={(id) => setPreviewId(id)}

@@ -74,7 +74,7 @@ const TaskCreatePage: React.FC = () => {
 
   const validateStep1 = () => {
     if (!form.name.trim()) {
-      toast.error("Vui lòng nhập tên công việc.");
+      toast.error("Vui lòng nhập tên công tác.");
       return false;
     }
     return true;
@@ -117,32 +117,44 @@ const TaskCreatePage: React.FC = () => {
           : undefined,
         messageId: form.messageId,
       });
-      toast.success("Tạo công việc thành công.");
+      toast.success("Tạo công tác thành công.");
       navigate("/admin/tasks/list");
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Tạo công việc thất bại.";
+      const msg = err instanceof Error ? err.message : "Tạo công tác thất bại.";
       toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
 
-  const sideContent = message?.content ? (
-    <MessageContentSidePanel content={message.content} />
-  ) : undefined;
+  const messageBody = message?.content;
+  const hasMessageBody = Boolean(messageBody);
+  const sideContent =
+    messageBody && message ? (
+      <div className="flex flex-col gap-4">
+        <RelatedMessageView
+          message={message}
+          loading={messageLoading}
+          onReselect={() => navigate("/admin/email/message")}
+          stackedInSideColumn
+        />
+        <MessageContentSidePanel content={messageBody} />
+      </div>
+    ) : undefined;
 
   return (
     <CreatePageLayout
-      title="Tạo công việc mới"
+      title="Tạo công tác mới"
       processSteps={<TaskProcessSteps currentStep={currentStep} />}
       sideContent={sideContent}
     >
-      <RelatedMessageView
-        message={message ?? null}
-        loading={messageLoading}
-        onReselect={() => navigate("/admin/email/message")}
-      />
+      {!hasMessageBody && (
+        <RelatedMessageView
+          message={message ?? null}
+          loading={messageLoading}
+          onReselect={() => navigate("/admin/email/message")}
+        />
+      )}
 
       <form
         onSubmit={(e) => {
@@ -154,14 +166,14 @@ const TaskCreatePage: React.FC = () => {
           }
         }}
       >
-        {/* Step 1: Thông tin công việc */}
+        {/* Step 1: Thông tin công tác */}
         {currentStep === 1 && (
           <div className="flex flex-col gap-3">
-            {/* Tên công việc */}
+            {/* Tên công tác */}
             <div className="flex items-center gap-6">
               <div className="w-40 shrink-0">
                 <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                  Tên công việc
+                  Tên công tác
                 </p>
               </div>
               <div className="flex-1">
@@ -169,7 +181,7 @@ const TaskCreatePage: React.FC = () => {
                   type="text"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="Nhập tên công việc..."
+                  placeholder="Nhập tên công tác..."
                   className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
                   required
                 />
@@ -245,13 +257,13 @@ const TaskCreatePage: React.FC = () => {
           </div>
         )}
 
-        {/* Step 2: Mô tả công việc */}
+        {/* Step 2: Mô tả công tác */}
         {currentStep === 2 && (
           <div className="flex flex-col gap-3">
             <div className="flex items-start gap-6">
               <div className="w-40 shrink-0">
                 <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                  Mô tả công việc
+                  Mô tả công tác
                 </p>
               </div>
               <div className="flex-1">
@@ -310,7 +322,7 @@ const TaskCreatePage: React.FC = () => {
               disabled={loading}
               className="bg-brand-500 hover:bg-brand-600 rounded-2xl px-6 py-3.5 text-sm font-semibold text-white transition-colors disabled:opacity-50"
             >
-              {loading ? "Đang tạo..." : "Tạo công việc mới"}
+              {loading ? "Đang tạo..." : "Tạo công tác mới"}
             </button>
           )}
         </div>

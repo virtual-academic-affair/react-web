@@ -1,7 +1,7 @@
-import Tag from "@/components/tag/Tag";
 import RichTextEditor from "@/components/fields/RichTextEditor";
 import CreatePageLayout from "@/components/layouts/CreatePageLayout";
 import InquiryTypeSelector from "@/components/selector/InquiryTypeSelector";
+import Tag from "@/components/tag/Tag";
 import { messagesService } from "@/services/email/messages.service";
 import { inquiriesService } from "@/services/inquiry";
 import type { CreateInquiryDto, InquiryType } from "@/types/inquiry";
@@ -39,7 +39,8 @@ const InquiryCreatePage: React.FC = () => {
   // Check if the message already has an inquiry attached
   useQuery({
     queryKey: ["inquiries", { messageId }],
-    queryFn: () => inquiriesService.getList({ messageId: message!.id, limit: 1 }),
+    queryFn: () =>
+      inquiriesService.getList({ messageId: message!.id, limit: 1 }),
     enabled: !!message,
     staleTime: 0,
     select: (resp) => {
@@ -182,9 +183,20 @@ const InquiryCreatePage: React.FC = () => {
     );
   }
 
-  const sideContent = message?.content ? (
-    <MessageContentSidePanel content={message.content} />
-  ) : undefined;
+  const messageBody = message?.content;
+  const hasMessageBody = Boolean(messageBody);
+  const sideContent =
+    messageBody && message ? (
+      <div className="flex flex-col gap-4">
+        <RelatedMessageView
+          message={message}
+          loading={messageLoading}
+          onReselect={() => navigate("/admin/email/message")}
+          stackedInSideColumn
+        />
+        <MessageContentSidePanel content={messageBody} />
+      </div>
+    ) : undefined;
 
   return (
     <CreatePageLayout
@@ -192,11 +204,13 @@ const InquiryCreatePage: React.FC = () => {
       processSteps={<ProcessSteps currentStep={currentStep} />}
       sideContent={sideContent}
     >
-      <RelatedMessageView
-        message={message ?? null}
-        loading={messageLoading}
-        onReselect={() => navigate("/admin/email/message")}
-      />
+      {!hasMessageBody && (
+        <RelatedMessageView
+          message={message ?? null}
+          loading={messageLoading}
+          onReselect={() => navigate("/admin/email/message")}
+        />
+      )}
 
       {messageLoading ? (
         <div className="flex h-64 items-center justify-center">

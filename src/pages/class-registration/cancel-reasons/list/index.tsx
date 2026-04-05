@@ -7,6 +7,7 @@ import { cancelReasonsService } from "@/services/class-registration";
 import type { CancelReason } from "@/types/classRegistration";
 import type { PaginatedResponse } from "@/types/common";
 import { formatDate } from "@/utils/date";
+import { plainTextFromHtml } from "@/utils/html";
 import { parseSearchString, stringifySearchQuery } from "@/utils/search";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
@@ -140,7 +141,7 @@ const CancelReasonsPage: React.FC = () => {
   );
 
   const handleDelete = React.useCallback(async (item: CancelReason) => {
-    if (!window.confirm(`Xóa lý do từ chối #${item.id}?`)) {
+    if (!window.confirm(`Xóa ghi chú nhanh #${item.id}?`)) {
       return;
     }
     try {
@@ -171,7 +172,9 @@ const CancelReasonsPage: React.FC = () => {
       const updated = await cancelReasonsService.update(item.id, {
         isActive: next,
       });
-      toast.success(next ? "Đã kích hoạt lý do." : "Đã vô hiệu hóa lý do.");
+      toast.success(
+        next ? "Đã kích hoạt ghi chú nhanh." : "Đã vô hiệu hóa ghi chú nhanh.",
+      );
       queryClient.setQueryData(
         ["cancel-reasons", { page, keyword, ...filters }],
         (prev: PaginatedResponse<CancelReason> | null) =>
@@ -201,11 +204,17 @@ const CancelReasonsPage: React.FC = () => {
       {
         key: "content",
         header: "Nội dung",
-        render: (x) => (
-          <p className="text-navy-700 text-sm font-medium dark:text-white">
-            {x.content}
-          </p>
-        ),
+        render: (x) => {
+          const text = plainTextFromHtml(x.content) || "—";
+          return (
+            <p
+              className="text-navy-700 min-w-0 max-w-full truncate text-sm font-medium dark:text-white"
+              title={text !== "—" ? text : undefined}
+            >
+              {text}
+            </p>
+          );
+        },
       },
       {
         key: "updatedAt",
@@ -289,7 +298,9 @@ const CancelReasonsPage: React.FC = () => {
         }}
         onSaved={(reason, mode) => {
           toast.success(
-            mode === "create" ? "Đã tạo lý do hủy." : "Đã cập nhật lý do hủy."
+            mode === "create"
+              ? "Đã tạo ghi chú nhanh."
+              : "Đã cập nhật ghi chú nhanh."
           );
           queryClient.setQueryData(
             ["cancel-reasons", { page, keyword, ...filters }],

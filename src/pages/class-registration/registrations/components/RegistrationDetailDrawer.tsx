@@ -1,5 +1,9 @@
+import {
+  DetailLinkedEmailDrawer,
+  DetailLinkedMessageSwitch,
+} from "@/components/detail/DetailLinkedEmailDrawer";
 import Drawer from "@/components/drawer/Drawer";
-import RichTextEditor from "@/components/fields/RichTextEditor";
+import { type RichTextEditorHandle } from "@/components/fields/RichTextEditor";
 import MessageStatusSelector from "@/components/selector/MessageStatusSelector";
 import Switch from "@/components/switch";
 import Tag from "@/components/tag/Tag";
@@ -15,6 +19,7 @@ import type {
   CreateClassRegistrationItemDto,
   ItemStatus,
   MessageStatus,
+  UpdateClassRegistrationItemDto,
 } from "@/types/classRegistration";
 import {
   ItemStatusColors,
@@ -25,6 +30,14 @@ import {
   type UpdateClassRegistrationDto,
 } from "@/types/classRegistration";
 import { formatDate } from "@/utils/date";
+import { plainTextFromHtml } from "@/utils/html";
+
+/** Tránh hiện Hủy/Lưu khi Tiptap chuẩn hóa HTML (vd. "" ↔ &lt;p&gt;&lt;/p&gt;) nhưng nội dung không đổi. */
+function isItemNoteDirty(note: string, originalNote: string | undefined): boolean {
+  return (
+    plainTextFromHtml(note) !== plainTextFromHtml(originalNote ?? "")
+  );
+}
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React from "react";
@@ -34,10 +47,13 @@ import {
   MdDeleteOutline,
   MdOutlineRateReview,
   MdSave,
+  MdSend,
   MdUndo,
 } from "react-icons/md";
-import ReactQuill from "react-quill-new";
+import { useClassRegistrationShowOnlyPendingItems } from "@/hooks/useClassRegistrationShowOnlyPendingItems";
+import { resolveLinkedMessageId } from "@/hooks/useDetailLinkedMessagePanel";
 import { useSearchParams } from "react-router-dom";
+import RegistrationNoteRichTextEditor from "./RegistrationNoteRichTextEditor";
 
 interface RegistrationDetailDrawerProps {
   registrationId: number | null;
@@ -56,7 +72,8 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
 }) => {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
-  const noteEditorRef = React.useRef<ReactQuill>(null);
+  const noteEditorRef = React.useRef<RichTextEditorHandle>(null);
+  const initializedIdRef = React.useRef<number | null>(null);
 
   const { data: detail = null, isLoading: loadingDetail } = useQuery({
     queryKey: ["class-registration", registrationId],
@@ -66,11 +83,19 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
   });
 
   const { data: cancelReasonsData } = useQuery({
-    queryKey: ["cancel-reasons"],
+    queryKey: ["cancel-reasons", "suggestion"],
     queryFn: () => cancelReasonsService.getList({ isActive: true, limit: 100 }),
     staleTime: 5 * 60 * 1000,
   });
-  const cancelReasons = cancelReasonsData?.items || [];
+  const cancelReasonSuggestionItems = React.useMemo(
+    () =>
+      (cancelReasonsData?.items ?? []).map((r) => ({
+        id: String(r.id),
+        label: plainTextFromHtml(r.content) || `#${r.id}`,
+        insertHtml: r.content,
+      })),
+    [cancelReasonsData],
+  );
 
   const [updatingItemIds, setUpdatingItemIds] = React.useState<Set<number>>(
     new Set(),
@@ -84,27 +109,45 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
     messageStatus: MessageStatus | null;
   } | null>(null);
   const [itemForms, setItemForms] = React.useState<
-    Record<
-      number,
-      {
-        rejectReasons: string[];
-        isInCurriculum: boolean;
-      }
-    >
+    Record<number, { note: string; isInCurriculum: boolean }>
   >({});
-  const [originalItemRejectReasons, setOriginalItemRejectReasons] =
-    React.useState<Record<number, string[]>>({});
+  const [originalItemNotes, setOriginalItemNotes] = React.useState<
+    Record<number, string>
+  >({});
   const [draftItem, setDraftItem] =
     React.useState<CreateClassRegistrationItemDto | null>(null);
+  const [showOnlyPendingItems, setShowOnlyPendingItems] =
+    useClassRegistrationShowOnlyPendingItems();
+  const [sendingReply, setSendingReply] = React.useState(false);
+
+  const visibleItems = React.useMemo(() => {
+    const items = detail?.items ?? [];
+    if (!showOnlyPendingItems) return items;
+    return items.filter((i) => i.status === "pending");
+  }, [detail?.items, showOnlyPendingItems]);
+
+  const itemPendingStats = React.useMemo(() => {
+    const items = detail?.items ?? [];
+    return {
+      total: items.length,
+      pending: items.filter((i) => i.status === "pending").length,
+    };
+  }, [detail?.items]);
 
   React.useEffect(() => {
     if (!detail) {
       setForm(null);
       setItemForms({});
-      setOriginalItemRejectReasons({});
+      setOriginalItemNotes({});
       setDraftItem(null);
+      initializedIdRef.current = null;
       return;
     }
+
+    // Only do a full reset when opening a new registration, not on every cache update
+    if (initializedIdRef.current === detail.id) return;
+    initializedIdRef.current = detail.id;
+
     setForm({
       studentCode: detail.studentCode,
       studentName: detail.studentName,
@@ -112,33 +155,17 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
       note: detail.note ?? "",
       messageStatus: detail.messageStatus ?? null,
     });
-    // Initialize item forms and original values
-    const forms: Record<
-      number,
-      { rejectReasons: string[]; isInCurriculum: boolean }
-    > = {};
-    const original: Record<number, string[]> = {};
+    const forms: Record<number, { note: string; isInCurriculum: boolean }> = {};
+    const original: Record<number, string> = {};
     (detail.items ?? []).forEach((item) => {
-      const reasons = item.rejectReasons ?? [];
-      // Ensure only one empty input at most (at the end)
-      console.log(reasons);
-      const emptyCount = reasons.filter((r) => r.trim() === "").length;
-      let reasonsWithEmpty: string[];
-      if (emptyCount === 0) {
-        reasonsWithEmpty = [...reasons, ""];
-      } else {
-        // Remove extra empty strings, keep only one at the end
-        const nonEmptyReasons = reasons.filter((r) => r.trim() !== "");
-        reasonsWithEmpty = [...nonEmptyReasons, ""];
-      }
       forms[item.id] = {
-        rejectReasons: reasonsWithEmpty,
+        note: item.note ?? "",
         isInCurriculum: item.isInCurriculum ?? false,
       };
-      original[item.id] = [...reasons];
+      original[item.id] = item.note ?? "";
     });
     setItemForms(forms);
-    setOriginalItemRejectReasons(original);
+    setOriginalItemNotes(original);
   }, [detail]);
 
   // Focus on note editor when focus=note param is present
@@ -152,18 +179,40 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
 
       // Focus on the editor after a short delay to ensure it's rendered
       setTimeout(() => {
-        const editor = noteEditorRef.current?.getEditor();
-        if (editor) {
-          editor.focus();
-        }
+        noteEditorRef.current?.focus();
       }, 100);
     }
   }, [searchParams, form, setSearchParams]);
 
+  const handleSendAndClose = async () => {
+    if (!detail) return;
+    setSendingReply(true);
+    try {
+      await classRegistrationsService.replyWithDefaultPreview(detail.id, true);
+      toast.success("Đã gửi phản hồi và đóng.");
+      queryClient.invalidateQueries({ queryKey: ["class-registrations"] });
+      queryClient.invalidateQueries({
+        queryKey: ["class-registration", detail.id],
+      });
+      onRegistrationChanged({
+        ...detail,
+        messageStatus: "closed",
+      });
+      onClose();
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Gửi phản hồi thất bại. Vui lòng thử lại.";
+      toast.error(msg);
+    } finally {
+      setSendingReply(false);
+    }
+  };
+
   const updateItemStatus = async (
     item: ClassRegistrationItem,
     status: ItemStatus,
-    rejectReasons?: string[],
   ) => {
     if (!detail) {
       return;
@@ -177,7 +226,7 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
         item.id,
         {
           status,
-          rejectReasons: rejectReasons ?? itemForm?.rejectReasons,
+          note: itemForm?.note,
           isInCurriculum: itemForm?.isInCurriculum,
         },
       );
@@ -216,7 +265,7 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
 
   const updateItemField = async (
     item: ClassRegistrationItem,
-    field: "isInCurriculum" | "rejectReasons",
+    field: "isInCurriculum" | "note",
   ) => {
     if (!detail) {
       return;
@@ -225,12 +274,8 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
     setUpdatingItemIds((prev) => new Set(prev).add(item.id));
     try {
       const itemForm = itemForms[item.id];
-      let fieldValue = itemForm?.[field];
-      if (field === "rejectReasons" && Array.isArray(fieldValue)) {
-        fieldValue = fieldValue.filter((r) => r.trim().length > 0);
-      }
-      const dto: any = {
-        [field]: fieldValue,
+      const dto: UpdateClassRegistrationItemDto = {
+        [field]: itemForm?.[field],
       };
       const updated = await classRegistrationItemsService.update(
         detail.id,
@@ -251,6 +296,17 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
             : prev,
       );
 
+      setItemForms((prev) => ({
+        ...prev,
+        [item.id]: {
+          note: updated.note ?? "",
+          isInCurriculum: updated.isInCurriculum ?? false,
+        },
+      }));
+      setOriginalItemNotes((prev) => ({
+        ...prev,
+        [item.id]: updated.note ?? "",
+      }));
       onRegistrationChanged({
         ...detail,
         items: (detail.items ?? []).map((i) =>
@@ -271,14 +327,7 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
   };
 
   const handleReject = async (item: ClassRegistrationItem) => {
-    const reasons = (itemForms[item.id]?.rejectReasons ?? []).filter(
-      (r) => r.trim().length > 0,
-    );
-    if (reasons.length === 0) {
-      toast.error("Vui lòng nhập lý do từ chối.");
-      return;
-    }
-    await updateItemStatus(item, "rejected", reasons);
+    await updateItemStatus(item, "rejected");
   };
 
   const handleRemoveItem = async (item: ClassRegistrationItem) => {
@@ -315,8 +364,8 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
 
   const updateItemForm = (
     itemId: number,
-    field: "rejectReasons" | "isInCurriculum",
-    value: string[] | boolean,
+    field: "note" | "isInCurriculum",
+    value: string | boolean,
   ) => {
     setItemForms((prev) => ({
       ...prev,
@@ -349,14 +398,10 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
       note: detail.note ?? "",
       messageStatus: detail.messageStatus ?? null,
     });
-    // Reset item forms
-    const forms: Record<
-      number,
-      { rejectReasons: string[]; isInCurriculum: boolean }
-    > = {};
+    const forms: Record<number, { note: string; isInCurriculum: boolean }> = {};
     (detail.items ?? []).forEach((item) => {
       forms[item.id] = {
-        rejectReasons: item.rejectReasons ?? [],
+        note: item.note ?? "",
         isInCurriculum: item.isInCurriculum ?? false,
       };
     });
@@ -400,7 +445,8 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
       form.studentCode !== detail.studentCode ||
       form.studentName !== detail.studentName ||
       form.academicYear !== String(detail.academicYear) ||
-      form.note !== (detail.note ?? "") ||
+      plainTextFromHtml(form.note) !==
+        plainTextFromHtml(detail.note ?? "") ||
       form.messageStatus !== (detail.messageStatus ?? null)
     );
   }, [detail, form]);
@@ -411,12 +457,23 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
     <>
       <Tooltip label="Xem trước phản hồi">
         <button
+          type="button"
           onClick={() => {
             if (detail) onPreviewReply?.(detail.id);
           }}
           className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500 text-white transition-colors hover:bg-blue-600 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
         >
           <MdOutlineRateReview className="h-4 w-4" />
+        </button>
+      </Tooltip>
+      <Tooltip label="Gửi và đóng">
+        <button
+          type="button"
+          disabled={sendingReply}
+          onClick={handleSendAndClose}
+          className="flex h-10 w-10 items-center justify-center rounded-2xl bg-teal-500 text-white transition-colors hover:bg-teal-600 disabled:opacity-50 dark:bg-teal-500 dark:hover:bg-teal-600"
+        >
+          <MdSend className="h-4 w-4" />
         </button>
       </Tooltip>
 
@@ -459,15 +516,27 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
     </>
   );
 
+  const linkedMid = detail
+    ? resolveLinkedMessageId(detail.messageId)
+    : null;
+
   return (
-    <Drawer
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Chi tiết đăng kí lớp"
-      footerLeft={footerLeft}
-      footerRight={footerRight}
-      width="max-w-4xl"
-    >
+    <>
+      <DetailLinkedEmailDrawer
+        parentOpen={isOpen}
+        messageId={linkedMid}
+      />
+      <Drawer
+        isOpen={isOpen}
+        onClose={onClose}
+        title="Chi tiết đăng kí lớp"
+        headerExtra={
+          linkedMid != null ? <DetailLinkedMessageSwitch /> : undefined
+        }
+        footerLeft={footerLeft}
+        footerRight={footerRight}
+        width="max-w-4xl"
+      >
       {loadingDetail || !form ? (
         <div className="flex flex-col gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -555,10 +624,12 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                 </p>
               </div>
               <div className="flex-1">
-                <RichTextEditor
+                <RegistrationNoteRichTextEditor
                   ref={noteEditorRef}
                   value={form.note}
                   onChange={(html) => handleFieldChange("note", html)}
+                  suggestionItems={cancelReasonSuggestionItems}
+                  placeholder="Gõ @ để chèn ghi chú nhanh"
                 />
               </div>
             </div>
@@ -566,24 +637,38 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
 
           {/* Child items - kết quả đăng ký */}
           <div className="mt-2 border-t border-gray-100 pt-4 dark:border-white/10">
-            <p className="text-navy-700 mb-3 text-xs font-semibold tracking-wide uppercase dark:text-white">
-              Danh sách đăng ký
-            </p>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-navy-700 text-xs font-semibold tracking-wide uppercase dark:text-white">
+                Danh sách đăng ký
+              </p>
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                <span>{`Chỉ hiện yêu cầu chưa giải quyết (${itemPendingStats.pending}/${itemPendingStats.total})`}</span>
+                <Switch
+                  checked={showOnlyPendingItems}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setShowOnlyPendingItems(e.target.checked)
+                  }
+                />
+              </label>
+            </div>
             <div className="flex flex-col gap-4">
-              {(detail.items ?? []).map((item) => {
+              {visibleItems.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {showOnlyPendingItems
+                    ? "Không có lớp nào đang chờ xử lý."
+                    : "Chưa có dòng đăng ký."}
+                </p>
+              ) : null}
+              {visibleItems.map((item) => {
                 const updating = updatingItemIds.has(item.id);
                 const itemForm = itemForms[item.id] ?? {
-                  rejectReasons: item.rejectReasons ?? [],
+                  note: item.note ?? "",
                   isInCurriculum: item.isInCurriculum ?? false,
                 };
                 return (
                   <div
                     key={item.id}
-                    className={`rounded-2xl bg-gray-50 p-4 outline-4 dark:border-white/10`}
-                    style={{
-                      outlineColor:
-                        ItemStatusColors[item.status ?? "pending"].hex + "40",
-                    }}
+                    className={`rounded-3xl bg-gray-50 p-4 dark:border-white/10`}
                   >
                     {/* Header with remove button */}
                     <div className="mb-3 flex items-center justify-between">
@@ -702,9 +787,8 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                       </div>
                     </div>
 
-                    {/* Status and Ghi chú */}
-                    <div className="mt-3 flex flex-col gap-3">
-                      {/* Ghi chú (rejectReasons) */}
+                    {/* Ghi chú */}
+                    <div className="mt-3">
                       <div className="flex items-start gap-6">
                         <div className="w-32 shrink-0">
                           <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
@@ -712,223 +796,47 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                           </p>
                         </div>
                         <div className="flex-1">
-                          <div className="flex flex-col gap-2">
-                            {/* List of input fields */}
-                            {itemForm.rejectReasons.map((reason, index) => (
-                              <div
-                                key={index}
-                                className="flex items-center gap-2"
-                              >
-                                <div className="relative flex-1">
-                                  <input
-                                    type="text"
-                                    value={reason}
-                                    onChange={(e) => {
-                                      const newReasons = [
-                                        ...itemForm.rejectReasons,
-                                      ];
-                                      newReasons[index] = e.target.value;
-
-                                      const isLastInput =
-                                        index ===
-                                        itemForm.rejectReasons.length - 1;
-
-                                      // If input becomes empty and not the last input, remove it
-                                      if (
-                                        !isLastInput &&
-                                        e.target.value.trim() === ""
-                                      ) {
-                                        newReasons.splice(index, 1);
-                                        updateItemForm(
-                                          item.id,
-                                          "rejectReasons",
-                                          newReasons,
-                                        );
-                                        return;
-                                      }
-
-                                      // If the last input is filled, add a new empty one
-                                      if (
-                                        isLastInput &&
-                                        e.target.value.trim() !== ""
-                                      ) {
-                                        newReasons.push("");
-                                      }
-
-                                      updateItemForm(
-                                        item.id,
-                                        "rejectReasons",
-                                        newReasons,
-                                      );
-                                    }}
-                                    placeholder="Nhập lý do từ chối"
-                                    className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 pr-10 text-sm outline-none dark:border-white/10 dark:text-white"
-                                    disabled={updating}
-                                  />
-                                  {/* Quick select dropdown */}
-                                  {cancelReasons.length > 0 && (
-                                    <div className="absolute top-1/2 right-2 -translate-y-1/2">
-                                      <select
-                                        value=""
-                                        onChange={(e) => {
-                                          if (e.target.value) {
-                                            const newReasons = [
-                                              ...itemForm.rejectReasons,
-                                            ];
-                                            newReasons[index] = e.target.value;
-                                            // If this was the last empty input and now filled, add new empty
-                                            const isLastInput =
-                                              index ===
-                                              itemForm.rejectReasons.length - 1;
-                                            if (isLastInput) {
-                                              newReasons.push("");
-                                            }
-                                            updateItemForm(
-                                              item.id,
-                                              "rejectReasons",
-                                              newReasons,
-                                            );
-                                            e.target.value = "";
-                                          }
-                                        }}
-                                        className="h-6 w-6 cursor-pointer rounded border-0 bg-transparent opacity-0"
-                                        disabled={updating}
-                                      >
-                                        <option value="">Chọn...</option>
-                                        {cancelReasons.map((cancelReason) => (
-                                          <option
-                                            key={cancelReason.id}
-                                            value={cancelReason.content}
-                                          >
-                                            {cancelReason.content}
-                                          </option>
-                                        ))}
-                                      </select>
-                                      <button
-                                        type="button"
-                                        disabled={updating}
-                                        className="pointer-events-none absolute inset-0 flex items-center justify-center text-gray-400"
-                                        tabIndex={-1}
-                                      >
-                                        <MdAdd className="h-3.5 w-3.5" />
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
+                          <RegistrationNoteRichTextEditor
+                            value={itemForm.note}
+                            onChange={(html) =>
+                              updateItemForm(item.id, "note", html)
+                            }
+                            disabled={updating}
+                            suggestionItems={cancelReasonSuggestionItems}
+                            placeholder="Gõ @ để chèn ghi chú nhanh"
+                          />
+                          {isItemNoteDirty(
+                            itemForm.note,
+                            originalItemNotes[item.id],
+                          ) && (
+                            <div className="mt-2 flex items-center gap-2">
+                              <Tooltip label="Hủy thay đổi">
                                 <button
                                   type="button"
                                   disabled={updating}
-                                  onClick={() => {
-                                    const newReasons =
-                                      itemForm.rejectReasons.filter(
-                                        (_, i) => i !== index,
-                                      );
-                                    // Count empty strings after deletion
-                                    const emptyCount = newReasons.filter(
-                                      (r) => r.trim() === "",
-                                    ).length;
-                                    // Add empty input only if no empty string remains
-                                    if (emptyCount === 0) {
-                                      newReasons.push("");
-                                    }
+                                  onClick={() =>
                                     updateItemForm(
                                       item.id,
-                                      "rejectReasons",
-                                      newReasons,
-                                    );
-                                  }}
-                                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-gray-200 bg-transparent text-red-500 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-white/10 dark:hover:bg-red-500/10"
-                                  title="Xóa lý do này"
+                                      "note",
+                                      originalItemNotes[item.id] ?? "",
+                                    )
+                                  }
+                                  className="flex h-8 w-8 items-center justify-center rounded-xl text-amber-600 hover:bg-amber-50 disabled:opacity-50 dark:text-amber-400 dark:hover:bg-amber-500/10"
                                 >
-                                  <MdClose className="h-4 w-4" />
+                                  <MdUndo className="h-4 w-4" />
                                 </button>
-                              </div>
-                            ))}
-
-                            {/* Action buttons */}
-                            <div className="flex items-center gap-2">
-                              {/* Check if content has changed */}
-                              {(() => {
-                                const currentReasons =
-                                  itemForm.rejectReasons.filter(
-                                    (r) => r.trim().length > 0,
-                                  );
-                                const originalReasons = (
-                                  originalItemRejectReasons[item.id] ?? []
-                                ).filter((r) => r.trim().length > 0);
-                                const currentSorted = [...currentReasons]
-                                  .sort()
-                                  .join("\n");
-                                const originalSorted = [...originalReasons]
-                                  .sort()
-                                  .join("\n");
-                                const hasChanged =
-                                  currentSorted !== originalSorted;
-
-                                if (!hasChanged) {
-                                  return null;
-                                }
-
-                                return (
-                                  <>
-                                    {/* Rollback button */}
-                                    <Tooltip label="Hủy">
-                                      <button
-                                        type="button"
-                                        disabled={updating}
-                                        onClick={() => {
-                                          // Rollback to original, ensure only one empty input if needed
-                                          const rolledBackReasons = [
-                                            ...originalReasons,
-                                          ];
-                                          const emptyCount =
-                                            rolledBackReasons.filter(
-                                              (r) => r.trim() === "",
-                                            ).length;
-                                          if (emptyCount === 0) {
-                                            rolledBackReasons.push("");
-                                          }
-                                          updateItemForm(
-                                            item.id,
-                                            "rejectReasons",
-                                            rolledBackReasons,
-                                          );
-                                        }}
-                                        className="flex h-8 w-8 items-center justify-center rounded-xl text-amber-600 hover:bg-amber-50 disabled:opacity-50 dark:text-amber-400 dark:hover:bg-amber-500/10"
-                                      >
-                                        <MdUndo className="h-4 w-4" />
-                                      </button>
-                                    </Tooltip>
-                                    {/* Save button */}
-                                    <button
-                                      type="button"
-                                      disabled={updating}
-                                      onClick={() => {
-                                        updateItemForm(
-                                          item.id,
-                                          "rejectReasons",
-                                          currentReasons,
-                                        );
-                                        updateItemField(item, "rejectReasons");
-                                        // Update original after save
-                                        setOriginalItemRejectReasons(
-                                          (prev) => ({
-                                            ...prev,
-                                            [item.id]: [...currentReasons],
-                                          }),
-                                        );
-                                      }}
-                                      className="flex items-center gap-1 rounded-xl px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 disabled:opacity-50 dark:text-blue-400 dark:hover:bg-blue-500/10"
-                                      title="Lưu các lý do"
-                                    >
-                                      <MdSave className="h-4 w-4" />
-                                      Lưu
-                                    </button>
-                                  </>
-                                );
-                              })()}
+                              </Tooltip>
+                              <button
+                                type="button"
+                                disabled={updating}
+                                onClick={() => updateItemField(item, "note")}
+                                className="flex items-center gap-1 rounded-xl px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 disabled:opacity-50 dark:text-blue-400 dark:hover:bg-blue-500/10"
+                              >
+                                <MdSave className="h-4 w-4" />
+                                Lưu
+                              </button>
                             </div>
-                          </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1327,7 +1235,8 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
           </div>
         </div>
       )}
-    </Drawer>
+      </Drawer>
+    </>
   );
 };
 

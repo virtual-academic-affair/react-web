@@ -17,7 +17,7 @@ import {
   MdSearch,
 } from "react-icons/md";
 
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import TaskAdvancedFilterModal, {
   type TaskFilters,
 } from "./components/TaskAdvancedFilterModal";
@@ -41,6 +41,7 @@ const defaultFilters: TaskFilters = {
 };
 
 const TasksPage: React.FC = () => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = React.useState(false);
@@ -326,10 +327,10 @@ const TasksPage: React.FC = () => {
         ...prev,
         items: prev.items.map((t) => (t.id === updated.id ? finalTask : t)),
       }));
-      toast.success("Đã phân công thêm người.");
+      toast.success("Thêm người thực hiện thành công.");
     } catch (err: unknown) {
       console.error(err);
-      toast.error("Phân công thất bại.");
+      toast.error("Thêm người thực hiện thất bại.");
     }
   };
 
@@ -362,7 +363,7 @@ const TasksPage: React.FC = () => {
   const handleTaskClick = (task: Task) => {
     const next = new URLSearchParams(searchParams);
     next.set("id", String(task.id));
-    setSearchParams(next, { replace: true });
+    setSearchParams(next);
   };
 
   return (
@@ -468,11 +469,7 @@ const TasksPage: React.FC = () => {
 
       <TaskDetailDrawer
         taskId={selectedId}
-        onClose={() => {
-          const next = new URLSearchParams(searchParams);
-          next.delete("id");
-          setSearchParams(next, { replace: true });
-        }}
+        onClose={() => navigate(-1)}
         onTaskChanged={(updated) =>
           updateCache((prev) => ({
             ...prev,

@@ -83,7 +83,7 @@ const DraggableTask = ({
         e.stopPropagation();
         const next = new URLSearchParams(searchParams);
         next.set("id", String(task.id));
-        setSearchParams(next, { replace: true });
+        setSearchParams(next);
       }}
       className={`relative z-10 flex cursor-pointer flex-col gap-1 rounded-xl px-3 py-2.5 text-xs font-bold wrap-break-word shadow-sm transition-all duration-200 hover:opacity-95 ${
         isDone
@@ -156,7 +156,7 @@ const TimelineItem = ({
       onClick={() => {
         const next = new URLSearchParams(searchParams);
         next.set("id", String(task.id));
-        setSearchParams(next, { replace: true });
+        setSearchParams(next);
       }}
       className={`group flex w-full cursor-pointer items-center rounded-3xl p-4 transition-all duration-300 ${
         isFirst
@@ -510,11 +510,7 @@ const TasksCalendarPage: React.FC = () => {
 
         <TaskDetailDrawer
           taskId={selectedId}
-          onClose={() => {
-            const next = new URLSearchParams(searchParams);
-            next.delete("id");
-            setSearchParams(next, { replace: true });
-          }}
+          onClose={() => navigate(-1)}
           onTaskChanged={(updated) => {
             const queryKey = [
               "tasks",

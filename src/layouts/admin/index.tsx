@@ -161,7 +161,7 @@ const AdminLayout: React.FC = () => {
             <Route path="tasks/statistics" element={<TaskStatisticsPage />} />
             <Route path="tasks/list" element={<TasksPage />} />
             <Route path="tasks/create" element={<TaskCreatePage />} />
-            <Route path="tasks/view/:id" element={<TaskDetailPage />} />
+            <Route path="tasks/:id" element={<TaskDetailPage />} />
             <Route path="documents/list" element={<DocumentListPage />} />
             <Route path="documents/create" element={<DocumentCreatePage />} />
             <Route

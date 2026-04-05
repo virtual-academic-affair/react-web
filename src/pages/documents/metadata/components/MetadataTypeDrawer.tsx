@@ -40,6 +40,23 @@ interface DraftValueForm {
 
 const ALL_ROLES = ["student", "lecture"] as const;
 
+/** Khớp python-rag: không gửi `is_active` khi API cấm. */
+function isMetadataValueIsActiveLocked(
+  isSystem: boolean,
+  typeKey: string,
+  valueKey: string,
+): boolean {
+  if (!isSystem) return false;
+  if (typeKey === "access_scope") return true;
+  if (
+    (typeKey === "academic_year" || typeKey === "cohort") &&
+    valueKey === "all"
+  ) {
+    return true;
+  }
+  return false;
+}
+
 const MetadataTypeDrawer: React.FC<MetadataTypeDrawerProps> = ({
   typeCode,
   initialType,
@@ -48,6 +65,7 @@ const MetadataTypeDrawer: React.FC<MetadataTypeDrawerProps> = ({
   onSaved,
 }) => {
   const isEdit = Boolean(typeCode);
+  const isSystemType = Boolean(initialType?.isSystem) && isEdit;
   const [key, setKey] = React.useState(initialType?.key ?? "");
   const [displayName, setDisplayName] = React.useState(
     initialType?.displayName ?? "",
@@ -109,11 +127,14 @@ const MetadataTypeDrawer: React.FC<MetadataTypeDrawerProps> = ({
     setSaving(true);
     try {
       if (isEdit && typeCode) {
-        const updated = await MetadataService.updateType(typeCode, {
+        const payload: Record<string, unknown> = {
           displayName: displayName.trim(),
           description: description.trim(),
-          isActive,
-        });
+        };
+        if (!isSystemType) {
+          payload.isActive = isActive;
+        }
+        const updated = await MetadataService.updateType(typeCode, payload);
         toast.success("Cập nhật thành công.");
         onSaved(updated, "edit");
       } else {
@@ -149,12 +170,16 @@ const MetadataTypeDrawer: React.FC<MetadataTypeDrawerProps> = ({
         isActive !== true
       );
     }
-    return (
+    const baseDirty =
       displayName !== (initialType?.displayName ?? "") ||
-      description !== (initialType?.description ?? "") ||
-      isActive !== (initialType?.isActive ?? true)
+      description !== (initialType?.description ?? "");
+    if (isSystemType) {
+      return baseDirty;
+    }
+    return (
+      baseDirty || isActive !== (initialType?.isActive ?? true)
     );
-  }, [isEdit, key, displayName, description, isActive, initialType]);
+  }, [isEdit, isSystemType, key, displayName, description, isActive, initialType]);
 
   // Value CRUD
   const updateValueField = async (
@@ -173,15 +198,23 @@ const MetadataTypeDrawer: React.FC<MetadataTypeDrawerProps> = ({
     setSavingValues((prev) => new Set(prev).add(originalValue));
 
     try {
+      const valuePayload: Record<string, unknown> = {
+        displayName: next.displayName,
+        color: next.color || undefined,
+        visibleRoles: next.visibleRoles,
+      };
+      const lockValueActive = isMetadataValueIsActiveLocked(
+        Boolean(initialType?.isSystem),
+        typeCode,
+        originalValue,
+      );
+      if (!lockValueActive) {
+        valuePayload.isActive = next.isActive;
+      }
       const updated = await MetadataService.updateValue(
         typeCode,
         originalValue,
-        {
-          displayName: next.displayName,
-          isActive: next.isActive,
-          color: next.color || undefined,
-          visibleRoles: next.visibleRoles,
-        },
+        valuePayload,
       );
 
       // Merge updated values back (backend may have changed something)
@@ -338,7 +371,11 @@ const MetadataTypeDrawer: React.FC<MetadataTypeDrawerProps> = ({
         >
           <button
             type="button"
-            disabled={saving || initialType.totalFiles > 0}
+            disabled={
+              saving ||
+              (initialType.totalFiles ?? 0) > 0 ||
+              Boolean(initialType.isSystem)
+            }
             onClick={() => setDeleteConfirmOpen(true)}
             className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
@@ -480,12 +517,24 @@ const MetadataTypeDrawer: React.FC<MetadataTypeDrawerProps> = ({
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-3">
-              <Switch
-                checked={isActive}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setIsActive(e.target.checked)
-                }
-              />
+              {isSystemType ? (
+                <Tooltip label="Không thể thay đổi trạng thái nhãn hệ thống.">
+                  <span className="inline-flex">
+                    <Switch
+                      checked={isActive}
+                      onChange={() => {}}
+                      disabled
+                    />
+                  </span>
+                </Tooltip>
+              ) : (
+                <Switch
+                  checked={isActive}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setIsActive(e.target.checked)
+                  }
+                />
+              )}
             </div>
           </div>
         </div>
@@ -516,6 +565,12 @@ const MetadataTypeDrawer: React.FC<MetadataTypeDrawerProps> = ({
                   form={form}
                   original={original}
                   saving={saving}
+                  isActiveLocked={isMetadataValueIsActiveLocked(
+                    Boolean(initialType?.isSystem),
+                    typeCode ?? key,
+                    valueKey,
+                  )}
+                  isActiveLockedReason="Không thể thay đổi trạng thái hiển thị giá trị này (quy tắc nhãn hệ thống)."
                   onFormChange={(updates) =>
                     setValueForms((prev) => ({
                       ...prev,

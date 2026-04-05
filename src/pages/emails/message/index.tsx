@@ -241,15 +241,13 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
     (msg: Message) => {
       const next = new URLSearchParams(searchParams);
       next.set("id", String(msg.id));
-      setSearchParams(next, { replace: true });
+      setSearchParams(next);
     },
     [searchParams, setSearchParams],
   );
 
   const handleCloseDetail = () => {
-    const next = new URLSearchParams(searchParams);
-    next.delete("id");
-    setSearchParams(next, { replace: true });
+    navigate(-1);
   };
 
   const handleCreateBusiness = React.useCallback(
@@ -379,7 +377,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
             <MdPostAdd className="h-5 w-5" />
           </div>
         ),
-        label: "Tạo công việc",
+        label: "Tạo công tác",
         onClick: (msg) => {
           handleCreateBusiness(msg, "task");
         },

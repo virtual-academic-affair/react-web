@@ -450,6 +450,21 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Native controls that act as buttons — consistent pointer affordance app-wide */
+button:not(:disabled),
+input[type="button"]:not(:disabled),
+input[type="submit"]:not(:disabled),
+input[type="reset"]:not(:disabled) {
+  cursor: pointer;
+}
+
+button:disabled,
+input[type="button"]:disabled,
+input[type="submit"]:disabled,
+input[type="reset"]:disabled {
+  cursor: not-allowed;
+}
+
 @utility bg-peak-day-gradient {
   background: linear-gradient(
     rgb(244, 247, 254) 0%,

@@ -4,16 +4,16 @@
  */
 
 import { authService } from "@/services/auth";
+import { useAuthStore } from "@/stores/auth.store";
+import { setAuthCallbackFlow } from "@/utils/auth.util";
+import { message as toast } from "antd";
 import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
-import { useAuthStore } from "@/stores/auth.store";
 import { Navigate } from "react-router-dom";
-import { setAuthCallbackFlow } from "@/utils/auth.util";
 
 export default function LoginPage() {
   const accessToken = useAuthStore((state) => state.accessToken);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   if (accessToken) {
     return <Navigate to="/admin" replace />;
@@ -21,13 +21,12 @@ export default function LoginPage() {
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
-    setError(null);
     try {
       setAuthCallbackFlow("signin");
       const url = await authService.getGoogleAuthUrl();
       window.location.href = url;
     } catch {
-      setError("Không thể kết nối tới máy chủ. Vui lòng thử lại.");
+      toast.error("Không thể kết nối tới máy chủ. Vui lòng thử lại.");
       setLoading(false);
     }
   };
@@ -39,12 +38,6 @@ export default function LoginPage() {
           Đăng nhập
         </h4>
         <p className="mb-9 ml-1 text-base text-gray-600"></p>
-
-        {error && (
-          <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-            {error}
-          </div>
-        )}
 
         <button
           onClick={handleGoogleSignIn}

@@ -19,6 +19,11 @@ interface EmailDetailDrawerProps {
   onOpenGmail?: (msg: Message) => void;
   onCreateTask?: (msg: Message) => void;
   onDelete?: (msg: Message) => void;
+  side?: "left" | "right";
+  hideBackdrop?: boolean;
+  showFooterActions?: boolean;
+  width?: string;
+  wrapperClassName?: string;
 }
 
 const EmailDetailDrawer: React.FC<EmailDetailDrawerProps> = ({
@@ -30,6 +35,11 @@ const EmailDetailDrawer: React.FC<EmailDetailDrawerProps> = ({
   onOpenGmail,
   onCreateTask,
   onDelete,
+  side = "right",
+  hideBackdrop = false,
+  showFooterActions = true,
+  width,
+  wrapperClassName,
 }) => {
   const queryClient = useQueryClient();
 
@@ -42,7 +52,7 @@ const EmailDetailDrawer: React.FC<EmailDetailDrawerProps> = ({
 
   const isOpen = messageId != null;
 
-  const footerLeft = detail && (
+  const footerLeft = detail && showFooterActions && (
     <>
       <Tooltip label="Gmail">
         <button
@@ -53,7 +63,7 @@ const EmailDetailDrawer: React.FC<EmailDetailDrawerProps> = ({
         </button>
       </Tooltip>
 
-      <Tooltip label="Tạo công việc">
+      <Tooltip label="Tạo công tác">
         <button
           onClick={() => onCreateTask?.(detail)}
           className="flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500 text-white transition-colors hover:bg-green-600 dark:bg-green-500 dark:hover:bg-green-600"
@@ -82,6 +92,10 @@ const EmailDetailDrawer: React.FC<EmailDetailDrawerProps> = ({
       onClose={onClose}
       title="Chi tiết tin nhắn"
       footerLeft={footerLeft}
+      side={side}
+      hideBackdrop={hideBackdrop}
+      width={width}
+      wrapperClassName={wrapperClassName}
     >
       {loading ? (
         <div className="flex flex-col gap-4">
@@ -196,7 +210,7 @@ const EmailDetailDrawer: React.FC<EmailDetailDrawerProps> = ({
                   Nội dung tin nhắn
                 </p>
               </div>
-              <div className="dark:bg-navy-800 mt-2 overflow-x-auto rounded-4xl bg-gray-50/50 p-4 select-auto dark:border-white/10">
+              <div className="dark:bg-navy-800 mt-2 max-h-[500px] overflow-x-auto overflow-y-auto rounded-4xl bg-gray-50/50 p-4 select-auto dark:border-white/10">
                 <div
                   className="prose prose-sm dark:prose-invert max-w-none leading-relaxed wrap-break-word whitespace-pre-wrap text-gray-700 select-text dark:text-gray-300"
                   dangerouslySetInnerHTML={{ __html: detail.content }}

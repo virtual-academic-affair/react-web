@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React, { useEffect, useState } from "react";
-import { MdDeleteOutline, MdVisibility } from "react-icons/md";
+import { MdDeleteOutline, MdPreview } from "react-icons/md";
 
 import Drawer from "@/components/drawer/Drawer";
 import Tag from "@/components/tag/Tag";
@@ -142,30 +142,32 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
     };
   };
 
-  // Footer - only show delete button
+  // Footer trái: cùng cỡ / gap như drawer chi tiết đăng ký lớp (h-10 w-10, rounded-2xl, icon h-4 w-4, gap-3)
   const footerLeft = isEdit && (
-    <Tooltip label="Xóa tệp tin">
-      <button
-        type="button"
-        disabled={saving}
-        onClick={handleDelete}
-        className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        <MdDeleteOutline className="h-4 w-4" />
-      </button>
-    </Tooltip>
-  );
-
-  const footerRight = isEdit && onPreview && (
-    <Tooltip label="Xem trước tệp">
-      <button
-        type="button"
-        onClick={onPreview}
-        className="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-500 text-white transition-colors hover:bg-brand-600"
-      >
-        <MdVisibility className="h-4 w-4" />
-      </button>
-    </Tooltip>
+    <div className="flex items-center gap-3">
+      {onPreview ? (
+        <Tooltip label="Xem trước tệp">
+          <button
+            type="button"
+            disabled={saving}
+            onClick={onPreview}
+            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500 text-white transition-colors hover:bg-blue-600 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+          >
+            <MdPreview className="h-4 w-4" />
+          </button>
+        </Tooltip>
+      ) : null}
+      <Tooltip label="Xóa tệp tin">
+        <button
+          type="button"
+          disabled={saving}
+          onClick={handleDelete}
+          className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-600"
+        >
+          <MdDeleteOutline className="h-4 w-4" />
+        </button>
+      </Tooltip>
+    </div>
   );
 
   return (
@@ -174,7 +176,6 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
       onClose={onClose}
       title={isEdit ? "Chi tiết tài liệu" : "Tải lên tài liệu mới"}
       footerLeft={footerLeft}
-      footerRight={footerRight}
       width="max-w-2xl"
     >
       {isLoading ? (

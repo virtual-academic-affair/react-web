@@ -71,6 +71,21 @@ class ClassRegistrationsService {
   async reply(id: number, dto: ReplyDto): Promise<void> {
     await http.post(API_ENDPOINTS.classRegistration.registrations.reply(id), dto);
   }
+
+  /**
+   * Lấy nội dung preview mặc định rồi gửi phản hồi (vd. "Gửi và đóng" không mở modal).
+   */
+  async replyWithDefaultPreview(
+    id: number,
+    closeAfterSend: boolean,
+  ): Promise<void> {
+    const { content } = await this.previewReply(id);
+    const trimmed = content?.trim();
+    if (!trimmed) {
+      throw new Error("Không có nội dung phản hồi để gửi.");
+    }
+    await this.reply(id, { content: trimmed, closeAfterSend });
+  }
 }
 
 export const classRegistrationsService = new ClassRegistrationsService();
