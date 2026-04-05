@@ -10,6 +10,14 @@ interface DrawerProps {
   footerLeft?: ReactNode;
   footerRight?: ReactNode;
   width?: string;
+  /** Nội dung bổ sung bên cạnh nút đóng (vd. switch) */
+  headerExtra?: ReactNode;
+  /** Drawer trượt từ phải (mặc định) hoặc từ trái */
+  side?: "left" | "right";
+  /** Không render lớp phủ mờ (dùng khi mở song song drawer khác có backdrop) */
+  hideBackdrop?: boolean;
+  /** z-index lớp bọc (mặc định z-50). Drawer trái thường dùng z-[49] để nằm dưới drawer phải. */
+  wrapperClassName?: string;
 }
 
 const Drawer: React.FC<DrawerProps> = ({
@@ -20,41 +28,53 @@ const Drawer: React.FC<DrawerProps> = ({
   footerLeft,
   footerRight,
   width = "max-w-3xl",
+  headerExtra,
+  side = "right",
+  hideBackdrop = false,
+  wrapperClassName = "z-50",
 }) => {
+  const offTransform =
+    side === "right"
+      ? "translate-x-[calc(100%+48px)]"
+      : "-translate-x-[calc(100%+48px)]";
+  const marginClass = side === "right" ? "mr-6" : "ml-6";
+  const flexJustify = side === "right" ? "justify-end" : "justify-start";
+
   return (
     <>
-      {/* Backdrop */}
-      {isOpen && (
+      {isOpen && !hideBackdrop && (
         <div
           className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
           onClick={onClose}
         />
       )}
 
-      {/* Drawer */}
-      <div className="pointer-events-none fixed inset-0 z-50 flex justify-end">
+      <div
+        className={`pointer-events-none fixed inset-0 flex ${flexJustify} ${wrapperClassName}`}
+      >
         <div
-          className={`dark:bg-navy-800 pointer-events-auto my-6 mr-6 flex h-[calc(100%-48px)] w-full ${width} flex-col rounded-[30px] bg-white shadow-2xl transition-transform duration-300 ${
-            isOpen ? "translate-x-0" : "translate-x-[calc(100%+48px)]"
+          className={`dark:bg-navy-800 pointer-events-auto my-6 flex h-[calc(100%-48px)] w-full ${width} flex-col rounded-[30px] bg-white shadow-2xl transition-transform duration-300 ${marginClass} ${
+            isOpen ? "translate-x-0" : offTransform
           }`}
         >
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 dark:border-white/10">
-            <h2 className="text-navy-700 text-xl font-bold dark:text-white">
+          <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-6 py-4 dark:border-white/10">
+            <h2 className="text-navy-700 min-w-0 flex-1 truncate text-xl font-bold dark:text-white">
               {title}
             </h2>
-            <button
-              onClick={onClose}
-              className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-white/10"
-            >
-              <MdClose className="h-5 w-5" />
-            </button>
+            <div className="flex shrink-0 items-center gap-3">
+              {headerExtra}
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-white/10"
+              >
+                <MdClose className="h-5 w-5" />
+              </button>
+            </div>
           </div>
 
-          {/* Body (scrollable) */}
           <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
 
-          {/* Footer (sticky) */}
           {(footerLeft || footerRight) && (
             <div className="flex items-center justify-between border-t border-gray-100 px-6 py-4 dark:border-white/10">
               <div className="flex items-center gap-3 empty:hidden">

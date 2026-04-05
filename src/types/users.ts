@@ -15,6 +15,14 @@ export const Role = {
 
 export type Role = (typeof Role)[keyof typeof Role];
 
+/** Khớp `User.profile` (jsonb) trên API */
+export interface UserProfile {
+  enrollmentYear?: number;
+  classNo?: string;
+  major?: string;
+  classAdvisor?: string;
+}
+
 /**
  * Role display mapping for UI
  */
@@ -43,6 +51,7 @@ export interface User {
   name?: string;
   role: Role;
   picture?: string;
+  profile?: UserProfile | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -69,6 +78,9 @@ export interface AssignRoleDto {
  * DTO for updating user
  */
 export interface UpdateUserDto {
+  name?: string;
+  picture?: string;
+  profile?: UserProfile;
   role?: Role;
   isActive?: boolean;
 }

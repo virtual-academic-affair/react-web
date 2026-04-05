@@ -10,9 +10,7 @@ const MessageContentSidePanel: React.FC<MessageContentSidePanelProps> = ({
   return (
     <div className="flex flex-col">
       <div className="border-gray-100dark:border-white/5 mb-4 flex items-center justify-between">
-        <h3 className="text-navy-700 text-lg font-bold dark:text-white">
-          Nội dung tin nhắn
-        </h3>
+        <h3 className="text-navy-700 text-lg font-bold dark:text-white"></h3>
       </div>
       <div className="flex-1">
         <div

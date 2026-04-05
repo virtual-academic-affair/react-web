@@ -1,3 +1,7 @@
+import {
+  DetailLinkedEmailDrawer,
+  DetailLinkedMessageSwitch,
+} from "@/components/detail/DetailLinkedEmailDrawer";
 import Drawer from "@/components/drawer/Drawer";
 import { inquiriesService } from "@/services/inquiry";
 import type { Inquiry, InquiryType, UpdateInquiryDto } from "@/types/inquiry";
@@ -7,11 +11,13 @@ import { message as toast } from "antd";
 import React from "react";
 import { MdDeleteOutline, MdOutlineRateReview, MdSave } from "react-icons/md";
 import Tooltip from "@/components/tooltip/Tooltip";
-import type ReactQuill from "react-quill-new";
 import { Link, useSearchParams } from "react-router-dom";
 import MessageStatusSelector from "@/components/selector/MessageStatusSelector";
 import InquiryTypeEditor from "@/components/selector/InquiryTypeEditor";
-import RichTextEditor from "@/components/fields/RichTextEditor";
+import RichTextEditor, {
+  type RichTextEditorHandle,
+} from "@/components/fields/RichTextEditor";
+import { resolveLinkedMessageId } from "@/hooks/useDetailLinkedMessagePanel";
 import { formatDate } from "@/utils/date";
 import { normalizeInquiryContent } from "@/utils/inquiryContent";
 
@@ -32,8 +38,8 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
-  const answerEditorRef = React.useRef<ReactQuill>(null);
-  const questionEditorRef = React.useRef<ReactQuill>(null);
+  const answerEditorRef = React.useRef<RichTextEditorHandle>(null);
+  const questionEditorRef = React.useRef<RichTextEditorHandle>(null);
   const [savingInfo, setSavingInfo] = React.useState(false);
   const [form, setForm] = React.useState<{
     types: InquiryType[];
@@ -89,10 +95,7 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
       setSearchParams(next, { replace: true });
 
       setTimeout(() => {
-        const editor = answerEditorRef.current?.getEditor();
-        if (editor) {
-          editor.focus();
-        }
+        answerEditorRef.current?.focus();
       }, 100);
     } else if (focusParam === "question" && questionEditorRef.current && form) {
       const next = new URLSearchParams(searchParams);
@@ -100,10 +103,7 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
       setSearchParams(next, { replace: true });
 
       setTimeout(() => {
-        const editor = questionEditorRef.current?.getEditor();
-        if (editor) {
-          editor.focus();
-        }
+        questionEditorRef.current?.focus();
       }, 100);
     }
   }, [searchParams, form, setSearchParams]);
@@ -228,8 +228,26 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
     </>
   );
 
+  const linkedMid = detail
+    ? resolveLinkedMessageId(detail.messageId)
+    : null;
+
   return (
-    <Drawer isOpen={isOpen} onClose={onClose} title="Chi tiết thắc mắc" footerLeft={footerLeft} footerRight={footerRight}>
+    <>
+      <DetailLinkedEmailDrawer
+        parentOpen={isOpen}
+        messageId={linkedMid}
+      />
+      <Drawer
+        isOpen={isOpen}
+        onClose={onClose}
+        title="Chi tiết thắc mắc"
+        headerExtra={
+          linkedMid != null ? <DetailLinkedMessageSwitch /> : undefined
+        }
+        footerLeft={footerLeft}
+        footerRight={footerRight}
+      >
       {loading || !form ? (
         <div className="flex flex-col gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -399,7 +417,8 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
           </div>
         </div>
       )}
-    </Drawer>
+      </Drawer>
+    </>
   );
 };
 

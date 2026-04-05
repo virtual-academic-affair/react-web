@@ -1,3 +1,7 @@
+import {
+  DetailLinkedEmailDrawer,
+  DetailLinkedMessageSwitch,
+} from "@/components/detail/DetailLinkedEmailDrawer";
 import Drawer from "@/components/drawer/Drawer";
 import RichTextEditor from "@/components/fields/RichTextEditor";
 import Tooltip from "@/components/tooltip/Tooltip";
@@ -6,6 +10,7 @@ import { tasksService } from "@/services/tasks";
 import type { Task } from "@/types/task";
 import { TaskPriority, TaskStatus } from "@/types/task";
 import { formatDate } from "@/utils/date";
+import { resolveLinkedMessageId } from "@/hooks/useDetailLinkedMessagePanel";
 import { useQuery } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React from "react";
@@ -218,14 +223,26 @@ const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
     </>
   );
 
+  const linkedMid = detail
+    ? resolveLinkedMessageId(detail.messageId)
+    : null;
+
   return (
-    <Drawer
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Chi tiết công việc"
-      footerLeft={footerLeft}
-      footerRight={footerRight}
-    >
+    <>
+      <DetailLinkedEmailDrawer
+        parentOpen={isOpen}
+        messageId={linkedMid}
+      />
+      <Drawer
+        isOpen={isOpen}
+        onClose={onClose}
+        title="Chi tiết công việc"
+        headerExtra={
+          linkedMid != null ? <DetailLinkedMessageSwitch /> : undefined
+        }
+        footerLeft={footerLeft}
+        footerRight={footerRight}
+      >
       {loading || !form || !detail ? (
         <div className="flex flex-col gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -409,7 +426,8 @@ const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
           </div>
         </div>
       )}
-    </Drawer>
+      </Drawer>
+    </>
   );
 };
 

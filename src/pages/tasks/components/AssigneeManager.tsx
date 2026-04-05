@@ -27,6 +27,8 @@ const AssigneeManager: React.FC<AssigneeManagerProps> = ({
   onRemove,
   disabled,
 }) => {
+  const [pickerOpen, setPickerOpen] = React.useState(false);
+
   const handleToggle = (userId: number) => {
     if (disabled) {
       return;
@@ -53,7 +55,7 @@ const AssigneeManager: React.FC<AssigneeManagerProps> = ({
   };
 
   return (
-    <div className="flex items-center px-1">
+    <div className="flex items-center px-1 py-[2px] pl-2">
       <div className="flex -space-x-2">
         {/* Render current selection */}
         {selectedIds.map((userId) => {
@@ -65,6 +67,7 @@ const AssigneeManager: React.FC<AssigneeManagerProps> = ({
           return (
             <Tooltip
               key={user.id}
+              parentClassName="rounded-2xl!"
               label={
                 <div className="flex flex-col gap-1">
                   <p className="text-navy-700 text-base font-bold dark:text-white">
@@ -79,7 +82,7 @@ const AssigneeManager: React.FC<AssigneeManagerProps> = ({
                         "_blank",
                       );
                     }}
-                    className="dark:bg-navy-700 dark:hover:bg-navy-600 mt-2 rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-semibold hover:bg-gray-200"
+                    className="dark:bg-navy-700 dark:hover:bg-navy-600 mt-2 rounded-2xl bg-gray-100 px-3 py-1.5 text-xs font-semibold hover:bg-gray-200"
                   >
                     Xem chi tiết
                   </button>
@@ -121,11 +124,12 @@ const AssigneeManager: React.FC<AssigneeManagerProps> = ({
         {!disabled && (
           <Tooltip label="Thêm người thực hiện">
             <Popover
+              open={pickerOpen}
+              onOpenChange={setPickerOpen}
               trigger="click"
-              overlayClassName="rounded-xl"
-              overlayInnerStyle={{ borderRadius: "12px" }}
+              styles={{ container: { borderRadius: "1.5rem" } }}
               content={
-                <div className="flex max-h-60 w-64 flex-col overflow-y-auto p-1">
+                <div className="flex max-h-60 w-64 flex-col overflow-y-auto rounded-3xl p-1">
                   <p className="mb-3 text-xs font-bold text-gray-400 uppercase">
                     Người thực hiện
                   </p>
@@ -141,7 +145,11 @@ const AssigneeManager: React.FC<AssigneeManagerProps> = ({
                       <button
                         key={u.id}
                         type="button"
-                        onClick={() => !isAdded && handleToggle(u.id)}
+                        onClick={() => {
+                          if (isAdded) return;
+                          handleToggle(u.id);
+                          setPickerOpen(false);
+                        }}
                         disabled={isAdded}
                         className={`dark:hover:bg-navy-700 flex items-center gap-1 rounded-lg p-2 text-left transition-colors ${
                           isAdded

@@ -51,7 +51,7 @@ export interface ClassRegistrationItem {
   slotInfo?: string;
   isInCurriculum?: boolean;
   status: ItemStatus;
-  rejectReasons?: string[] | null;
+  note?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -131,7 +131,7 @@ export interface UpdateClassRegistrationDto {
 
 export interface UpdateClassRegistrationItemDto {
   status?: ItemStatus;
-  rejectReasons?: string[];
+  note?: string;
   isInCurriculum?: boolean;
 }
 

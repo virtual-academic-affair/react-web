@@ -75,24 +75,6 @@ export default function AuthLayout() {
                   <h2 className="mt-2 text-center text-3xl font-extrabold tracking-wide text-white xl:text-4xl">
                     Academic Affair
                   </h2>
-
-                  {/* Footer links in decorative panel */}
-                  <div className="absolute bottom-12 flex items-center justify-center">
-                    <ul className="flex flex-wrap items-center gap-15">
-                      {["Support", "License", "Terms of Use", "Blog"].map(
-                        (link) => (
-                          <li key={link}>
-                            <a
-                              href="#"
-                              className="text-base font-medium text-white transition-colors hover:text-white/70"
-                            >
-                              {link}
-                            </a>
-                          </li>
-                        ),
-                      )}
-                    </ul>
-                  </div>
                 </div>
               </div>
             </div>

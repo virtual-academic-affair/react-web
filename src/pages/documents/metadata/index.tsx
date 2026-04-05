@@ -232,6 +232,9 @@ const MetadataManagementPage: React.FC = () => {
 
   const handleToggleActive = React.useCallback(
     async (item: MetadataType, next: boolean) => {
+      if (item.isSystem) {
+        return;
+      }
       if (item.isActive === next) {
         return;
       }
@@ -425,9 +428,7 @@ const MetadataManagementPage: React.FC = () => {
           }
         }}
         onSaved={(_type, mode) => {
-          toast.success(
-            mode === "create" ? "Đã tạo nhãn mới." : "Đã cập nhật nhãn.",
-          );
+          // Thông báo do MetadataTypeDrawer xử lý (tránh toast trùng)
           queryClient.invalidateQueries({ queryKey: ["metadata-types-all"] });
           if (mode === "create") {
             const next = new URLSearchParams(searchParams);

@@ -1,9 +1,10 @@
-import { message as toast, Tag } from "antd";
+import { message as toast } from "antd";
 import React, { useCallback, useRef, useState } from "react";
 
 import Drawer from "@/components/drawer/Drawer";
+import Tag from "@/components/tag/Tag";
 import { DocumentsService } from "@/services/documents";
-import { Role, RoleColors } from "@/types/users";
+import { RoleColors } from "@/types/users";
 import { parseError } from "@/utils/parseError";
 import AccessScopeBadge from "./AccessScopeBadge";
 
@@ -64,16 +65,29 @@ export const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
 
 // ── Step indicator ────────────────────────────────────────────────────────────
 
-export const ProcessSteps: React.FC<{ currentStep: number }> = ({
-  currentStep,
-}) => {
+/** Giống layout bước tạo đăng ký lớp: `gradient` đặt ngoài card trên nền brand; `plain` trong drawer. */
+export const ProcessSteps: React.FC<{
+  currentStep: number;
+  variant?: "gradient" | "plain";
+}> = ({ currentStep, variant = "plain" }) => {
   const steps = [
     { number: 1, label: "Chọn tệp tin" },
     { number: 2, label: "Nhãn tài liệu" },
   ];
 
+  const labelClass =
+    variant === "gradient"
+      ? "text-xs font-medium text-white dark:text-white"
+      : "text-xs font-medium text-gray-600 dark:text-gray-400";
+
   return (
-    <div className="mb-6 flex items-center justify-center gap-4">
+    <div
+      className={
+        variant === "gradient"
+          ? "mb-8 flex items-center justify-center gap-4"
+          : "mb-6 flex items-center justify-center gap-4"
+      }
+    >
       {steps.map((step, index) => (
         <React.Fragment key={step.number}>
           <div className="flex flex-col items-center gap-2">
@@ -81,7 +95,9 @@ export const ProcessSteps: React.FC<{ currentStep: number }> = ({
               className={`flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm font-semibold transition-all ${
                 currentStep >= step.number
                   ? "border-brand-500 bg-brand-500 text-white"
-                  : "border-gray-300 bg-transparent text-gray-400 dark:border-gray-600 dark:text-gray-500"
+                  : variant === "gradient"
+                    ? "border-white/50 bg-white/10 text-white/90"
+                    : "border-gray-300 bg-transparent text-gray-400 dark:border-gray-600 dark:text-gray-500"
               }`}
             >
               {currentStep > step.number ? (
@@ -102,12 +118,16 @@ export const ProcessSteps: React.FC<{ currentStep: number }> = ({
                 step.number
               )}
             </div>
-            <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
-              {step.label}
-            </span>
+            <span className={labelClass}>{step.label}</span>
           </div>
           {index < steps.length - 1 && (
-            <div className="h-0.5 w-16 bg-gray-300 transition-all dark:bg-gray-600" />
+            <div
+              className={
+                variant === "gradient"
+                  ? "h-0.5 w-16 bg-white/40 transition-all"
+                  : "h-0.5 w-16 bg-gray-300 transition-all dark:bg-gray-600"
+              }
+            />
           )}
         </React.Fragment>
       ))}
@@ -130,6 +150,11 @@ interface UploadFormProps {
   onCancel?: () => void;
   /** Wrapper for the action buttons row (allows the page vs drawer to style differently) */
   actionsClassName?: string;
+  /** Bước hiện tại (điều khiển từ ngoài, vd. gắn với CreatePageLayout.processSteps) */
+  currentStep?: number;
+  onStepChange?: (step: number) => void;
+  /** Ẩn stepper trong form — dùng khi đã render ProcessSteps ở layout */
+  hideProcessSteps?: boolean;
 }
 
 export const UploadForm: React.FC<UploadFormProps> = ({
@@ -137,8 +162,24 @@ export const UploadForm: React.FC<UploadFormProps> = ({
   onSuccess,
   onCancel,
   actionsClassName = "flex justify-end gap-2",
+  currentStep: controlledStep,
+  onStepChange,
+  hideProcessSteps = false,
 }) => {
-  const [currentStep, setCurrentStep] = useState(1);
+  const [internalStep, setInternalStep] = useState(1);
+  const isControlled = controlledStep !== undefined;
+  const currentStep = isControlled ? controlledStep! : internalStep;
+
+  const goToStep = useCallback(
+    (next: number) => {
+      if (isControlled) {
+        onStepChange?.(next);
+      } else {
+        setInternalStep(next);
+      }
+    },
+    [isControlled, onStepChange],
+  );
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [displayName, setDisplayName] = useState("");
   const [customMetadata, setCustomMetadata] = useState<Record<string, string>>(
@@ -166,12 +207,12 @@ export const UploadForm: React.FC<UploadFormProps> = ({
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   const reset = useCallback(() => {
-    setCurrentStep(1);
+    goToStep(1);
     setSelectedFile(null);
     setDisplayName("");
     setCustomMetadata({});
     setUploading(false);
-  }, []);
+  }, [goToStep]);
 
   const handleFileSelect = useCallback(
     (file: File) => {
@@ -212,10 +253,10 @@ export const UploadForm: React.FC<UploadFormProps> = ({
       toast.error("Vui lòng chọn file.");
       return;
     }
-    setCurrentStep(2);
+    goToStep(2);
   };
 
-  const handlePrev = () => setCurrentStep((s) => Math.max(1, s - 1));
+  const handlePrev = () => goToStep(Math.max(1, currentStep - 1));
 
   const handleUpload = async () => {
     const hasAccessScope = customMetadata["access_scope"];
@@ -253,7 +294,9 @@ export const UploadForm: React.FC<UploadFormProps> = ({
 
   return (
     <div className="flex flex-col gap-5">
-      <ProcessSteps currentStep={currentStep} />
+      {!hideProcessSteps && (
+        <ProcessSteps currentStep={currentStep} variant="plain" />
+      )}
 
       {/* ── Step 1: Chọn tệp tin ─────────────────────────────────────── */}
       {currentStep === 1 && (
@@ -399,59 +442,61 @@ export const UploadForm: React.FC<UploadFormProps> = ({
               {activeMetadataTypes.map((type) => {
                 const currentValue = customMetadata[type.key] || "";
 
-                  // Access scope is special - show as role tags
-                  if (type.key === "access_scope") {
-                    return (
-                      <div key={type.key} className="flex items-start gap-6">
-                        <div className="w-40 shrink-0">
-                          <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                            {type.displayName} *
-                          </p>
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex flex-wrap gap-2">
-                            {type.allowedValues?.map((val) => {
-                              const isSelected = currentValue === val.value;
-                              const colors = val.visibleRoles?.includes(
-                                "student",
-                              )
-                                ? RoleColors[Role.Student]
-                                : RoleColors[Role.Lecture];
-                              return (
-                                <button
-                                  key={val.value}
-                                  type="button"
-                                  onClick={() =>
-                                    handleMetadataChange(type.key, val.value)
-                                  }
-                                  className="cursor-pointer"
-                                >
-                                  <Tag
-                                    color={
-                                      isSelected ? colors.hex : "#6b7280"
-                                    }
-                                  >
-                                    {val.displayName || val.value}
-                                  </Tag>
-                                </button>
-                              );
-                            })}
-                          </div>
-                          <p className="mt-2 text-xs text-gray-500">
-                            Quyền truy cập:{" "}
-                            <span className="font-medium">
-                              {currentValue === "private" &&
-                                "Chỉ giảng viên & sinh viên được chọn"}
-                              {currentValue === "student" && "Chỉ sinh viên"}
-                              {currentValue === "lecture" && "Chỉ giảng viên"}
-                              {currentValue === "public" && "Tất cả mọi người"}
-                              {!currentValue && "—"}
-                            </span>
-                          </p>
-                        </div>
+                // Access scope is special - show as role tags
+                if (type.key === "access_scope") {
+                  return (
+                    <div key={type.key} className="flex items-start gap-6">
+                      <div className="w-40 shrink-0">
+                        <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                          {type.displayName} *
+                        </p>
                       </div>
-                    );
-                  }
+                      <div className="flex-1">
+                        <div className="flex flex-wrap gap-2">
+                          {type.allowedValues?.map((val) => {
+                            const isSelected = currentValue === val.value;
+                            const colors = val.visibleRoles?.includes("student")
+                              ? RoleColors.student
+                              : RoleColors.lecture;
+                            return (
+                              <button
+                                key={val.value}
+                                type="button"
+                                onClick={() =>
+                                  handleMetadataChange(type.key, val.value)
+                                }
+                                className="cursor-pointer"
+                              >
+                                <Tag
+                                  color={
+                                    isSelected
+                                      ? colors.text
+                                          .replace("text-", "#")
+                                          .replace("-800", "00")
+                                      : "#6b7280"
+                                  }
+                                >
+                                  {val.displayName || val.value}
+                                </Tag>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <p className="mt-2 text-xs text-gray-500">
+                          Quyền truy cập:{" "}
+                          <span className="font-medium">
+                            {currentValue === "private" &&
+                              "Chỉ giảng viên & sinh viên được chọn"}
+                            {currentValue === "student" && "Chỉ sinh viên"}
+                            {currentValue === "lecture" && "Chỉ giảng viên"}
+                            {currentValue === "public" && "Tất cả mọi người"}
+                            {!currentValue && "—"}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  );
+                }
 
                 // All other metadata types → select dropdown
                 const isRequired =

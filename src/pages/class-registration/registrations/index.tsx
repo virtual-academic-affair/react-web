@@ -19,8 +19,9 @@ import {
   MdDeleteOutline,
   MdInfoOutline,
   MdOutlineRateReview,
+  MdSend,
 } from "react-icons/md";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import AdvancedFilterModal, {
   type RegistrationFilters,
 } from "./components/AdvancedFilterModal";
@@ -38,6 +39,7 @@ const defaultFilters: RegistrationFilters = {
 };
 
 const ClassRegistrationsPage: React.FC = () => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -80,6 +82,9 @@ const ClassRegistrationsPage: React.FC = () => {
   const [deleting, setDeleting] = React.useState(false);
   const [updatingMessageStatusIds, setUpdatingMessageStatusIds] =
     React.useState<Set<number>>(new Set());
+  const [sendingReplyId, setSendingReplyId] = React.useState<number | null>(
+    null,
+  );
 
   // Fetch paginated registrations
   const { data: result = null, isLoading: loading } = useQuery({
@@ -209,6 +214,44 @@ const ClassRegistrationsPage: React.FC = () => {
     [queryClient, page, keyword, filters],
   );
 
+  const handleSendAndClose = React.useCallback(
+    async (id: number) => {
+      setSendingReplyId(id);
+      try {
+        await classRegistrationsService.replyWithDefaultPreview(id, true);
+        toast.success("Đã gửi phản hồi và đóng.");
+        queryClient.invalidateQueries({ queryKey: ["class-registrations"] });
+        queryClient.invalidateQueries({ queryKey: ["class-registration", id] });
+        queryClient.setQueryData(
+          ["class-registrations", { page, keyword, ...filters }],
+          (old: PaginatedResponse<ClassRegistration> | undefined) =>
+            old
+              ? {
+                  ...old,
+                  items: old.items.map((x) =>
+                    x.id === id
+                      ? { ...x, messageStatus: "closed" as const }
+                      : x,
+                  ),
+                }
+              : old,
+        );
+        if (searchParams.get("id") === String(id)) {
+          navigate(-1);
+        }
+      } catch (err: unknown) {
+        const msg =
+          err instanceof Error
+            ? err.message
+            : "Gửi phản hồi thất bại. Vui lòng thử lại.";
+        toast.error(msg);
+      } finally {
+        setSendingReplyId(null);
+      }
+    },
+    [queryClient, page, keyword, filters, searchParams, navigate],
+  );
+
   const columns: TableColumn<ClassRegistration>[] = React.useMemo(
     () => [
       {
@@ -272,16 +315,8 @@ const ClassRegistrationsPage: React.FC = () => {
         onClick: (row) => {
           const next = new URLSearchParams(searchParams);
           next.set("id", String(row.id));
-          setSearchParams(next, { replace: true });
+          setSearchParams(next);
         },
-      },
-      {
-        key: "delete",
-        icon: <MdDeleteOutline className="h-4 w-4" />,
-        label: "Xóa",
-        onClick: handleDelete,
-        className:
-          "flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600",
       },
       {
         key: "previewReply",
@@ -291,8 +326,42 @@ const ClassRegistrationsPage: React.FC = () => {
         className:
           "flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500 text-white transition-colors hover:bg-blue-600",
       },
+      {
+        key: "sendAndClose",
+        icon: <MdSend className="h-4 w-4" />,
+        label: "Gửi và đóng",
+        onClick: (row) => handleSendAndClose(row.id),
+        render: (row) => (
+          <button
+            type="button"
+            disabled={sendingReplyId === row.id}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSendAndClose(row.id);
+            }}
+            aria-label="Gửi và đóng"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-teal-500 text-white transition-colors hover:bg-teal-600 disabled:opacity-50 dark:bg-teal-500 dark:hover:bg-teal-600"
+          >
+            <MdSend className="h-4 w-4" />
+          </button>
+        ),
+      },
+      {
+        key: "delete",
+        icon: <MdDeleteOutline className="h-4 w-4" />,
+        label: "Xóa",
+        onClick: handleDelete,
+        className:
+          "flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600",
+      },
     ],
-    [handleDelete, searchParams, setSearchParams],
+    [
+      handleDelete,
+      handleSendAndClose,
+      searchParams,
+      sendingReplyId,
+      setSearchParams,
+    ],
   );
 
   return (
@@ -318,11 +387,7 @@ const ClassRegistrationsPage: React.FC = () => {
 
       <RegistrationDetailDrawer
         registrationId={selectedId}
-        onClose={() => {
-          const next = new URLSearchParams(searchParams);
-          next.delete("id");
-          setSearchParams(next, { replace: true });
-        }}
+        onClose={() => navigate(-1)}
         onRegistrationChanged={(updated) => {
           queryClient.setQueryData(
             ["class-registrations", { page, keyword, ...filters }],

@@ -208,7 +208,7 @@ const PreviewReplyModal: React.FC<PreviewReplyModalProps> = ({
                   (!showEditor && !content) ||
                   (showEditor && !customContent)
                 }
-                className="bg-brand-500 hover:bg-brand-600 flex items-center gap-1 rounded-xl px-4 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-50"
+                className="flex items-center gap-1 rounded-xl bg-teal-500 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-teal-600 disabled:opacity-50 dark:bg-teal-500 dark:hover:bg-teal-600"
               >
                 <MdSend className="h-4 w-4" />
                 {sending ? "Đang gửi..." : "Gửi và đóng"}
