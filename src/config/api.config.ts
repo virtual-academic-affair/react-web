@@ -75,6 +75,7 @@ export const API_ENDPOINTS = {
   // Shared
   shared: {
     dynamicData: "/shared/dynamic-data",
+    dashboardTodaySummary: "/shared/dashboard/today-summary",
   },
 
   // Inquiry

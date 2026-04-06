@@ -5,7 +5,10 @@ import { MdKeyboardArrowDown } from "react-icons/md";
 import { Link, useLocation } from "react-router-dom";
 // chakra imports
 
-export const SidebarLinks = (props: { routes: RoutesType[]; collapsed?: boolean }): JSX.Element => {
+export const SidebarLinks = (props: {
+  routes: RoutesType[];
+  collapsed?: boolean;
+}): JSX.Element => {
   const location = useLocation();
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
@@ -68,7 +71,6 @@ export const SidebarLinks = (props: { routes: RoutesType[]; collapsed?: boolean 
       });
       return next;
     });
-
   }, [location.pathname, routes]);
 
   const createLinks = (routes: RoutesType[]) => {
@@ -239,37 +241,32 @@ export const SidebarLinks = (props: { routes: RoutesType[]; collapsed?: boolean 
         const active = isRouteActive(route);
         return (
           <Link key={index} to={routeHref(route)}>
-            <div className="relative mb-3 flex hover:cursor-pointer">
+            <div className="mb-4 flex hover:cursor-pointer">
               <li
-                className={`my-0.75 flex cursor-pointer items-center ${
-                  collapsed ? "w-full justify-center px-0" : "px-8"
+                className={`my-0.75 flex cursor-pointer items-center py-0.5 ${
+                  collapsed ? "w-full justify-center px-0" : "px-4"
                 }`}
                 title={collapsed ? route.name : undefined}
               >
                 <span
-                  className={`inline-flex shrink-0 [&>svg]:h-6 [&>svg]:w-6 ${
+                  className={`inline-flex shrink-0 [&>svg]:h-5 [&>svg]:w-5 ${
                     active
                       ? "text-brand-500 dark:text-white"
                       : "font-medium text-gray-600"
                   }`}
                 >
-                  {route.icon ? route.icon : <DashIcon />}{" "}
+                  {route.icon ? route.icon : <DashIcon />}
                 </span>
                 {!collapsed && (
                   <p
-                    className={`ml-4 flex text-base leading-1 ${
-                      active
-                        ? "text-navy-700 dark:text-white"
-                        : "font-medium text-gray-600"
+                    className={`ml-4 flex text-base leading-1 font-medium ${
+                      active ? "text-navy-700 dark:text-white" : "text-gray-600"
                     }`}
                   >
                     {route.name}
                   </p>
                 )}
               </li>
-              {active ? (
-                <div className="bg-brand-500 dark:bg-brand-400 absolute top-px right-0 h-9 w-1 rounded-lg" />
-              ) : null}
             </div>
           </Link>
         );

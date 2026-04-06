@@ -1,9 +1,6 @@
 import Card from "@/components/card";
 import Tag from "@/components/tag/Tag";
-import {
-  getLabelColor,
-  getLabelVi,
-} from "@/pages/emails/message/labelUtils";
+import { getLabelColor, getLabelVi } from "@/pages/emails/message/labelUtils";
 import { labelsService } from "@/services/email";
 import type {
   GmailLabel,
@@ -14,12 +11,7 @@ import type { SystemLabelEnumData } from "@/types/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React, { useMemo, useState } from "react";
-import {
-  MdAutoAwesome,
-  MdEdit,
-  MdLabel,
-  MdSave,
-} from "react-icons/md";
+import { MdAutoAwesome, MdEdit, MdLabel, MdSave } from "react-icons/md";
 
 interface LabelsCardProps {
   systemLabelEnum?: SystemLabelEnumData | null;
@@ -32,13 +24,19 @@ const LabelsCard: React.FC<LabelsCardProps> = ({ systemLabelEnum }) => {
   const [saving, setSaving] = useState(false);
   const [autoCreating, setAutoCreating] = useState(false);
 
-  const { data: mapping = null, isLoading: loadingMapping, refetch: refetchLabels } = useQuery<LabelMappingDto>({
+  const {
+    data: mapping = null,
+    isLoading: loadingMapping,
+    refetch: refetchLabels,
+  } = useQuery<LabelMappingDto>({
     queryKey: ["email-labels"],
     queryFn: () => labelsService.getLabels(),
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: gmailLabels = [], isLoading: loadingGmail } = useQuery<GmailLabel[]>({
+  const { data: gmailLabels = [], isLoading: loadingGmail } = useQuery<
+    GmailLabel[]
+  >({
     queryKey: ["email-gmail-labels"],
     queryFn: () => labelsService.getGmailLabels(),
     staleTime: 60 * 1000,
@@ -104,7 +102,8 @@ const LabelsCard: React.FC<LabelsCardProps> = ({ systemLabelEnum }) => {
       queryClient.setQueryData(["email-labels"], result);
       toast.success("Tự động tạo nhãn thành công.");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Tự động tạo nhãn thất bại.";
+      const msg =
+        err instanceof Error ? err.message : "Tự động tạo nhãn thất bại.";
       toast.error(msg);
     } finally {
       setAutoCreating(false);
@@ -187,7 +186,10 @@ const LabelsCard: React.FC<LabelsCardProps> = ({ systemLabelEnum }) => {
                 className="flex items-center gap-3 rounded-xl px-4 py-2.5"
               >
                 <span className="w-40 shrink-0">
-                  <Tag color={getLabelColor(key, systemLabelEnum)} interactive={false}>
+                  <Tag
+                    color={getLabelColor(key, systemLabelEnum)}
+                    interactive={false}
+                  >
                     {getLabelVi(key, systemLabelEnum)}
                   </Tag>
                 </span>
@@ -201,9 +203,7 @@ const LabelsCard: React.FC<LabelsCardProps> = ({ systemLabelEnum }) => {
                     }))}
                     onChange={(v) =>
                       setDraft((prev) =>
-                        prev
-                          ? { ...prev, [key]: v || null }
-                          : prev,
+                        prev ? { ...prev, [key]: v || null } : prev,
                       )
                     }
                     className="flex-1"

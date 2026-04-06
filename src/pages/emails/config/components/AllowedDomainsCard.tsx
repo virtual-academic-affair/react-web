@@ -77,7 +77,7 @@ const AllowedDomainsCard: React.FC = () => {
   const displayList = editing ? draft : (domains ?? []);
 
   return (
-    <Card extra="p-6 flex flex-col gap-4">
+    <Card extra="p-6 flex flex-col gap-4 col-span-1">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -136,7 +136,11 @@ const AllowedDomainsCard: React.FC = () => {
       ) : (
         <div className="flex flex-wrap gap-2">
           {displayList.map((domain, i) => (
-            <Tag key={i} interactive={false} className="flex items-center gap-1 px-4 text-sm!">
+            <Tag
+              key={i}
+              interactive={false}
+              className="flex items-center gap-1 px-4 text-sm!"
+            >
               {domain}
               {editing && (
                 <button
