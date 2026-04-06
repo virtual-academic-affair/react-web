@@ -15,6 +15,9 @@ import { useNavigate } from "react-router-dom";
 import { getLabelColor, getLabelVi } from "../labelUtils";
 import SystemLabelSelector from "./SystemLabelSelector";
 
+/** Must match `label-bar-expand` duration on the processing skeleton bar. */
+const LABEL_BAR_EXPAND_DURATION_S = 0.55;
+
 interface MessageLabelEditorProps {
   message: Message;
   systemLabelEnum?: SystemLabelEnumData | null;
@@ -40,6 +43,27 @@ const MessageLabelEditor: React.FC<MessageLabelEditorProps> = ({
     React.useState(false);
   const [removedTask, setRemovedTask] = React.useState(false);
   const [deleteTasks, setDeleteTasks] = React.useState(false);
+
+  const showProcessingSkeleton =
+    Boolean(isProcessing) &&
+    (!message.systemLabels || message.systemLabels.length === 0);
+
+  const [labelBarExpandDone, setLabelBarExpandDone] = React.useState(
+    !showProcessingSkeleton,
+  );
+
+  React.useEffect(() => {
+    if (!showProcessingSkeleton) {
+      setLabelBarExpandDone(true);
+      return;
+    }
+    setLabelBarExpandDone(false);
+    const t = window.setTimeout(
+      () => setLabelBarExpandDone(true),
+      LABEL_BAR_EXPAND_DURATION_S * 1000,
+    );
+    return () => clearTimeout(t);
+  }, [showProcessingSkeleton, message.id]);
 
   const openEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -131,10 +155,15 @@ const MessageLabelEditor: React.FC<MessageLabelEditorProps> = ({
   return (
     <>
       <div className="message-label-column relative z-1 flex flex-wrap items-center gap-1">
-        {isProcessing &&
-        (!message.systemLabels || message.systemLabels.length === 0) ? (
+        {showProcessingSkeleton ? (
           <Tooltip label="Đang gắn nhãn tự động...">
-            <div className="mr-2 h-4 w-32 overflow-hidden rounded-full bg-purple-600">
+            <div
+              className="mr-2 h-4 overflow-hidden rounded-full bg-purple-600"
+              style={{
+                width: 0,
+                animation: `label-bar-expand ${LABEL_BAR_EXPAND_DURATION_S}s cubic-bezier(0.22, 1, 0.36, 1) forwards`,
+              }}
+            >
               <div
                 className="h-full w-full bg-gradient-to-br from-purple-600 via-indigo-500 to-pink-500"
                 style={{
@@ -143,6 +172,10 @@ const MessageLabelEditor: React.FC<MessageLabelEditorProps> = ({
                 }}
               />
               <style>{`
+@keyframes label-bar-expand {
+  from { width: 0; }
+  to { width: 8rem; }
+}
 @keyframes mesh-shuffle {
 0%   { background-position: 0% 50%; }
 25%  { background-position: 100% 10%; }
@@ -193,15 +226,17 @@ const MessageLabelEditor: React.FC<MessageLabelEditorProps> = ({
         ) : (
           <span className="text-xs text-gray-400 italic">—</span>
         )}
-        <button
-          type="button"
-          onClick={openEdit}
-          title="Chỉnh sửa nhãn"
-          className="dark:bg-navy-800 message-actions-trigger ml-0.5 inline-flex aspect-square h-5 items-center rounded-lg border border-gray-200 bg-white pr-1.5 pl-1 text-gray-500 transition-colors hover:border-gray-300 hover:text-gray-700 dark:border-white/10 dark:text-gray-300 dark:hover:border-white/20 dark:hover:text-white"
-        >
-          <span className="sr-only">Chỉnh sửa nhãn</span>
-          <MdExpandMore className="h-3.5 w-3.5" />
-        </button>
+        {(!showProcessingSkeleton || labelBarExpandDone) && (
+          <button
+            type="button"
+            onClick={openEdit}
+            title="Chỉnh sửa nhãn"
+            className="dark:bg-navy-800 message-actions-trigger ml-0.5 inline-flex aspect-square h-5 items-center rounded-lg border border-gray-200 bg-white pr-1.5 pl-1 text-gray-500 transition-colors hover:border-gray-300 hover:text-gray-700 dark:border-white/10 dark:text-gray-300 dark:hover:border-white/20 dark:hover:text-white"
+          >
+            <span className="sr-only">Chỉnh sửa nhãn</span>
+            <MdExpandMore className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
 
       {editingId === message.id &&
