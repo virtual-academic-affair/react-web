@@ -122,7 +122,7 @@ export function SidebarLinks(props: { routes: RoutesType[] }) {
         const active = isRouteActive(route);
         return (
           <Link key={index} to={routeHref(route)}>
-            <div className="relative mb-3 flex hover:cursor-pointer">
+            <div className="mb-3 flex hover:cursor-pointer">
               <li className="my-[3px] flex cursor-pointer items-center px-8">
                 <span
                   className={`inline-flex shrink-0 [&>svg]:h-4 [&>svg]:w-4 ${
@@ -143,9 +143,6 @@ export function SidebarLinks(props: { routes: RoutesType[] }) {
                   {route.name}
                 </p>
               </li>
-              {active ? (
-                <div className="bg-brand-500 dark:bg-brand-400 absolute inset-e-0 top-px h-9 w-1 rounded-lg" />
-              ) : null}
             </div>
           </Link>
         );
