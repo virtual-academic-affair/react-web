@@ -17,7 +17,7 @@ const MessageStatusTagSelector: React.FC<MessageStatusTagSelectorProps> = ({
   className,
   multiple = true,
 }) => {
-  const options: MessageStatus[] = ["opened", "replied", "closed"];
+  const options: MessageStatus[] = ["new", "opened", "replied", "closed"];
 
   const handleToggle = (status: MessageStatus) => {
     if (multiple) {

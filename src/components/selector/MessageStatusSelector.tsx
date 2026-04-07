@@ -10,9 +10,10 @@ interface MessageStatusSelectorProps {
   className?: string;
 }
 
-const ALL_STATUSES: MessageStatus[] = ["opened", "replied", "closed"];
+const ALL_STATUSES: MessageStatus[] = ["new", "opened", "replied", "closed"];
 
 const MessageStatusHexColors: Record<MessageStatus, string> = {
+  new: "#f59e0b",
   opened: "#a3aed0",
   replied: "#3b82f6",
   closed: "#10b981",
