@@ -30,7 +30,7 @@ class MessagesService {
    * @requires ADMIN role
    */
   async getMessages(
-    params?: GetMessagesParams & { gmailMessageId?: string },
+    params?: GetMessagesParams & { gmailMessageId?: string; threadId?: string },
   ): Promise<PaginatedResponse<Message>> {
     const res = await http.get<PaginatedResponse<Message>>(
       API_ENDPOINTS.email.messages.base,
@@ -47,6 +47,19 @@ class MessagesService {
   ): Promise<Message | null> {
     const result = await this.getMessages({
       gmailMessageId,
+      page: 1,
+      limit: 1,
+    });
+    if (!result.items.length) return null;
+    return result.items[0]!;
+  }
+
+  /**
+   * Convenience helper: find first message by threadId (if any)
+   */
+  async findFirstByThreadId(threadId: string): Promise<Message | null> {
+    const result = await this.getMessages({
+      threadId,
       page: 1,
       limit: 1,
     });
