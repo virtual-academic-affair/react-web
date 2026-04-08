@@ -1,4 +1,5 @@
 import Card from "@/components/card";
+import { DocumentsService } from "@/services/documents";
 import { inquiriesService } from "@/services/inquiry";
 import type { InquiryReplyDto } from "@/types/inquiry";
 import { useQuery } from "@tanstack/react-query";
@@ -6,7 +7,8 @@ import { message as toast } from "antd";
 import React from "react";
 import { MdClose, MdEdit, MdSend } from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
-import RichTextEditor from "@/components/fields/RichTextEditor";
+import FilePreviewModal from "@/pages/documents/components/FilePreviewModal";
+import InquiryReplyRichTextEditor from "./InquiryReplyRichTextEditor";
 
 interface PreviewReplyModalProps {
   inquiryId: number | null;
@@ -23,7 +25,22 @@ const PreviewReplyModal: React.FC<PreviewReplyModalProps> = ({
   const [sending, setSending] = React.useState(false);
   const [customContent, setCustomContent] = React.useState("");
   const [showEditor, setShowEditor] = React.useState(false);
+  const [previewDoc, setPreviewDoc] = React.useState<{
+    fileId: string;
+    heading?: string;
+  } | null>(null);
   const contentRef = React.useRef<HTMLDivElement>(null);
+
+  const { data: previewDocFileName } = useQuery({
+    queryKey: ["inquiry-reply-preview-doc-file", previewDoc?.fileId],
+    queryFn: async () => {
+      if (!previewDoc?.fileId) return "";
+      const detail = await DocumentsService.getFileDetail(previewDoc.fileId);
+      return detail?.displayName || detail?.originalName || "Tài liệu";
+    },
+    enabled: Boolean(previewDoc?.fileId),
+    staleTime: 5 * 60 * 1000,
+  });
 
   // Fetch the AI-generated preview — staleTime: 0 so it always refetches per inquiry
   const { data: previewData, isLoading: loading } = useQuery({
@@ -42,22 +59,40 @@ const PreviewReplyModal: React.FC<PreviewReplyModalProps> = ({
     }
   }, [inquiryId]);
 
-  // Handle all clicks in content to open in new tab
+  // Handle click references (inserted by @mention) to open inline Markdown preview instead of navigating.
   React.useEffect(() => {
-    if (!content || !contentRef.current) {
+    if (!contentRef.current) {
       return;
     }
 
     const handleContentClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       const link = target.closest("a");
-      if (link) {
-        e.preventDefault();
-        e.stopPropagation();
-        const href = link.getAttribute("href");
-        if (href) {
-          window.open(href, "_blank", "noopener,noreferrer");
+      if (!link) return;
+
+      const href = link.getAttribute("href") || "";
+      const isLocalReference = href.startsWith("/admin/documents/list?id=");
+      if (!isLocalReference) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      const hashIndex = href.indexOf("#");
+      const withoutHash = hashIndex >= 0 ? href.slice(0, hashIndex) : href;
+      const heading =
+        hashIndex >= 0 ? decodeURIComponent(href.slice(hashIndex + 1)) : "";
+
+      try {
+        const url = new URL(withoutHash, window.location.origin);
+        const fileId = url.searchParams.get("id");
+        if (fileId) {
+          setPreviewDoc({
+            fileId,
+            heading: heading || undefined,
+          });
         }
+      } catch {
+        // ignore malformed URL
       }
     };
 
@@ -66,7 +101,7 @@ const PreviewReplyModal: React.FC<PreviewReplyModalProps> = ({
     return () => {
       contentDiv.removeEventListener("click", handleContentClick);
     };
-  }, [content]);
+  }, [content, customContent, showEditor]);
 
   const handleUpdateNote = () => {
     if (!inquiryId) {
@@ -147,9 +182,10 @@ const PreviewReplyModal: React.FC<PreviewReplyModalProps> = ({
           <div className="flex-1 overflow-y-auto px-5 pt-4">
             {showEditor ? (
               <div className="mx-auto max-w-3xl">
-                <RichTextEditor
+                <InquiryReplyRichTextEditor
                   value={customContent}
                   onChange={setCustomContent}
+                  placeholder="Gõ @ để chèn tham chiếu tài liệu"
                 />
               </div>
             ) : loading ? (
@@ -216,6 +252,13 @@ const PreviewReplyModal: React.FC<PreviewReplyModalProps> = ({
           </div>
         </Card>
       </div>
+
+      <FilePreviewModal
+        fileId={previewDoc?.fileId ?? null}
+        fileName={previewDocFileName || "Tài liệu"}
+        isOpen={Boolean(previewDoc?.fileId)}
+        onClose={() => setPreviewDoc(null)}
+      />
     </>
   );
 };
