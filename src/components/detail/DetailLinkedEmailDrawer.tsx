@@ -39,6 +39,21 @@ export function DetailLinkedEmailDrawer({
   parentOpen,
   messageId,
 }: DetailLinkedEmailDrawerProps) {
+  const [isMobile, setIsMobile] = React.useState(() =>
+    typeof window !== "undefined"
+      ? window.matchMedia("(max-width: 767px)").matches
+      : false,
+  );
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const media = window.matchMedia("(max-width: 767px)");
+    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    setIsMobile(media.matches);
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, []);
+
   const queryClient = useQueryClient();
   const { data: dynamicData } = useQuery<DynamicDataResponse>({
     queryKey: DYNAMIC_DATA_QUERY_KEY,
@@ -49,7 +64,7 @@ export function DetailLinkedEmailDrawer({
 
   const [linkedOpen] = useDetailLinkedMessagePanel();
   const visible =
-    parentOpen && linkedOpen && messageId != null && messageId > 0;
+    !isMobile && parentOpen && linkedOpen && messageId != null && messageId > 0;
 
   if (!visible || messageId == null) {
     return null;

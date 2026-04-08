@@ -8,6 +8,8 @@ import MessageStatusSelector from "@/components/selector/MessageStatusSelector";
 import Switch from "@/components/switch";
 import Tag from "@/components/tag/Tag";
 import Tooltip from "@/components/tooltip/Tooltip.tsx";
+import { useClassRegistrationShowOnlyPendingItems } from "@/hooks/useClassRegistrationShowOnlyPendingItems";
+import { resolveLinkedMessageId } from "@/hooks/useDetailLinkedMessagePanel";
 import {
   cancelReasonsService,
   classRegistrationItemsService,
@@ -31,13 +33,6 @@ import {
 } from "@/types/classRegistration";
 import { formatDate } from "@/utils/date";
 import { plainTextFromHtml } from "@/utils/html";
-
-/** Tránh hiện Hủy/Lưu khi Tiptap chuẩn hóa HTML (vd. "" ↔ &lt;p&gt;&lt;/p&gt;) nhưng nội dung không đổi. */
-function isItemNoteDirty(note: string, originalNote: string | undefined): boolean {
-  return (
-    plainTextFromHtml(note) !== plainTextFromHtml(originalNote ?? "")
-  );
-}
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React from "react";
@@ -50,10 +45,16 @@ import {
   MdSend,
   MdUndo,
 } from "react-icons/md";
-import { useClassRegistrationShowOnlyPendingItems } from "@/hooks/useClassRegistrationShowOnlyPendingItems";
-import { resolveLinkedMessageId } from "@/hooks/useDetailLinkedMessagePanel";
 import { useSearchParams } from "react-router-dom";
 import RegistrationNoteRichTextEditor from "./RegistrationNoteRichTextEditor";
+
+/** Tránh hiện Hủy/Lưu khi Tiptap chuẩn hóa HTML (vd. "" ↔ &lt;p&gt;&lt;/p&gt;) nhưng nội dung không đổi. */
+function isItemNoteDirty(
+  note: string,
+  originalNote: string | undefined,
+): boolean {
+  return plainTextFromHtml(note) !== plainTextFromHtml(originalNote ?? "");
+}
 
 interface RegistrationDetailDrawerProps {
   registrationId: number | null;
@@ -445,8 +446,7 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
       form.studentCode !== detail.studentCode ||
       form.studentName !== detail.studentName ||
       form.academicYear !== String(detail.academicYear) ||
-      plainTextFromHtml(form.note) !==
-        plainTextFromHtml(detail.note ?? "") ||
+      plainTextFromHtml(form.note) !== plainTextFromHtml(detail.note ?? "") ||
       form.messageStatus !== (detail.messageStatus ?? null)
     );
   }, [detail, form]);
@@ -516,16 +516,11 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
     </>
   );
 
-  const linkedMid = detail
-    ? resolveLinkedMessageId(detail.messageId)
-    : null;
+  const linkedMid = detail ? resolveLinkedMessageId(detail.messageId) : null;
 
   return (
     <>
-      <DetailLinkedEmailDrawer
-        parentOpen={isOpen}
-        messageId={linkedMid}
-      />
+      <DetailLinkedEmailDrawer parentOpen={isOpen} messageId={linkedMid} />
       <Drawer
         isOpen={isOpen}
         onClose={onClose}
@@ -537,152 +532,386 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
         footerRight={footerRight}
         width="max-w-4xl"
       >
-      {loadingDetail || !form ? (
-        <div className="flex flex-col gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="dark:bg-navy-700 h-5 animate-pulse rounded bg-gray-200"
-            />
-          ))}
-        </div>
-      ) : !detail ? (
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          Không có dữ liệu.
-        </p>
-      ) : (
-        <div className="flex flex-col gap-4">
-          {/* Student info */}
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-6">
-              <div className="w-40 shrink-0">
-                <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                  MSSV
-                </p>
-              </div>
-              <div className="flex-1">
-                <input
-                  value={form.studentCode}
-                  onChange={(e) =>
-                    handleFieldChange("studentCode", e.target.value)
-                  }
-                  className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
-                />
-              </div>
-            </div>
-            <div className="flex items-center gap-6">
-              <div className="w-40 shrink-0">
-                <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                  Họ tên
-                </p>
-              </div>
-              <div className="flex-1">
-                <input
-                  value={form.studentName}
-                  onChange={(e) =>
-                    handleFieldChange("studentName", e.target.value)
-                  }
-                  className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
-                />
-              </div>
-            </div>
-            <div className="flex items-center gap-6">
-              <div className="w-40 shrink-0">
-                <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                  Năm học
-                </p>
-              </div>
-              <div className="flex-1">
-                <input
-                  type="number"
-                  value={form.academicYear}
-                  onChange={(e) =>
-                    handleFieldChange("academicYear", e.target.value)
-                  }
-                  className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
-                />
-              </div>
-            </div>
-            <div className="flex items-center gap-6">
-              <div className="w-40 shrink-0">
-                <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                  Trạng thái xử lý
-                </p>
-              </div>
-              <div className="flex-1">
-                <MessageStatusSelector
-                  value={form.messageStatus}
-                  onChange={handleMessageStatusChange}
-                  disabled={savingInfo}
-                />
-              </div>
-            </div>
-            <div className="flex items-start gap-6">
-              <div className="w-40 shrink-0">
-                <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                  Ghi chú
-                </p>
-              </div>
-              <div className="flex-1">
-                <RegistrationNoteRichTextEditor
-                  ref={noteEditorRef}
-                  value={form.note}
-                  onChange={(html) => handleFieldChange("note", html)}
-                  suggestionItems={cancelReasonSuggestionItems}
-                  placeholder="Gõ @ để chèn ghi chú nhanh"
-                />
-              </div>
-            </div>
+        {loadingDetail || !form ? (
+          <div className="flex flex-col gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="dark:bg-navy-700 h-5 animate-pulse rounded bg-gray-200"
+              />
+            ))}
           </div>
-
-          {/* Child items - kết quả đăng ký */}
-          <div className="mt-2 border-t border-gray-100 pt-4 dark:border-white/10">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-              <p className="text-navy-700 text-xs font-semibold tracking-wide uppercase dark:text-white">
-                Danh sách đăng ký
-              </p>
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                <span>{`Chỉ hiện yêu cầu chưa giải quyết (${itemPendingStats.pending}/${itemPendingStats.total})`}</span>
-                <Switch
-                  checked={showOnlyPendingItems}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setShowOnlyPendingItems(e.target.checked)
-                  }
-                />
-              </label>
+        ) : !detail ? (
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Không có dữ liệu.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {/* Student info */}
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    MSSV
+                  </p>
+                </div>
+                <div className="w-full flex-1">
+                  <input
+                    value={form.studentCode}
+                    onChange={(e) =>
+                      handleFieldChange("studentCode", e.target.value)
+                    }
+                    className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    Họ tên
+                  </p>
+                </div>
+                <div className="w-full flex-1">
+                  <input
+                    value={form.studentName}
+                    onChange={(e) =>
+                      handleFieldChange("studentName", e.target.value)
+                    }
+                    className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    Năm học
+                  </p>
+                </div>
+                <div className="w-full flex-1">
+                  <input
+                    type="number"
+                    value={form.academicYear}
+                    onChange={(e) =>
+                      handleFieldChange("academicYear", e.target.value)
+                    }
+                    className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    Trạng thái xử lý
+                  </p>
+                </div>
+                <div className="w-full flex-1">
+                  <MessageStatusSelector
+                    value={form.messageStatus}
+                    onChange={handleMessageStatusChange}
+                    disabled={savingInfo}
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-start md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    Ghi chú
+                  </p>
+                </div>
+                <div className="w-full flex-1">
+                  <RegistrationNoteRichTextEditor
+                    ref={noteEditorRef}
+                    value={form.note}
+                    onChange={(html) => handleFieldChange("note", html)}
+                    suggestionItems={cancelReasonSuggestionItems}
+                    placeholder="Gõ @ để chèn ghi chú nhanh"
+                  />
+                </div>
+              </div>
             </div>
-            <div className="flex flex-col gap-4">
-              {visibleItems.length === 0 ? (
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {showOnlyPendingItems
-                    ? "Không có lớp nào đang chờ xử lý."
-                    : "Chưa có dòng đăng ký."}
+
+            {/* Child items - kết quả đăng ký */}
+            <div className="mt-2 border-t border-gray-100 pt-4 dark:border-white/10">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                <p className="text-navy-700 text-xs font-semibold tracking-wide uppercase dark:text-white">
+                  Danh sách đăng ký
                 </p>
-              ) : null}
-              {visibleItems.map((item) => {
-                const updating = updatingItemIds.has(item.id);
-                const itemForm = itemForms[item.id] ?? {
-                  note: item.note ?? "",
-                  isInCurriculum: item.isInCurriculum ?? false,
-                };
-                return (
-                  <div
-                    key={item.id}
-                    className={`rounded-3xl bg-gray-50 p-4 dark:border-white/10`}
+                <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                  <span>{`Chỉ hiện yêu cầu chưa giải quyết (${itemPendingStats.pending}/${itemPendingStats.total})`}</span>
+                  <Switch
+                    checked={showOnlyPendingItems}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setShowOnlyPendingItems(e.target.checked)
+                    }
+                  />
+                </label>
+              </div>
+              <div className="flex flex-col gap-4">
+                {visibleItems.length === 0 ? (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {showOnlyPendingItems
+                      ? "Không có lớp nào đang chờ xử lý."
+                      : "Chưa có dòng đăng ký."}
+                  </p>
+                ) : null}
+                {visibleItems.map((item) => {
+                  const updating = updatingItemIds.has(item.id);
+                  const itemForm = itemForms[item.id] ?? {
+                    note: item.note ?? "",
+                    isInCurriculum: item.isInCurriculum ?? false,
+                  };
+                  return (
+                    <div
+                      key={item.id}
+                      className={`rounded-3xl bg-gray-50 p-4 dark:border-white/10`}
+                    >
+                      {/* Header with remove button */}
+                      <div className="mb-3 flex items-center justify-between">
+                        <p className="text-navy-700 text-base font-medium dark:text-white">
+                          #{item.id}
+                        </p>
+                        <button
+                          type="button"
+                          disabled={updating}
+                          onClick={() => handleRemoveItem(item)}
+                          className="flex items-center gap-1 rounded-xl px-2 py-1 text-xs font-medium text-red-500 transition-colors hover:text-red-600 disabled:opacity-50"
+                        >
+                          <MdDeleteOutline className="h-4 w-4" />
+                          Xóa
+                        </button>
+                      </div>
+
+                      {/* Item details */}
+                      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                        {/* Lớp HP */}
+                        <div className="flex items-center gap-6">
+                          <div className="w-32 shrink-0">
+                            <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                              Lớp HP
+                            </p>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-navy-700 text-sm dark:text-white">
+                              {item.className || "—"}
+                            </p>
+                          </div>
+                        </div>
+                        {/* Thông tin lớp */}
+                        <div className="flex items-center gap-6">
+                          <div className="w-32 shrink-0">
+                            <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                              Thông tin lớp
+                            </p>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-navy-700 text-sm dark:text-white">
+                              {item.slotInfo || "—"}
+                            </p>
+                          </div>
+                        </div>
+                        {/* Tên MH */}
+                        <div className="flex items-center gap-6">
+                          <div className="w-32 shrink-0">
+                            <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                              Tên MH
+                            </p>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-navy-700 text-sm dark:text-white">
+                              {item.subjectName}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Mã MH */}
+                        <div className="flex items-center gap-6">
+                          <div className="w-32 shrink-0">
+                            <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                              Mã MH
+                            </p>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-navy-700 text-sm dark:text-white">
+                              {item.subjectCode || "—"}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Trong CTDT */}
+                        <div className="flex items-center gap-6">
+                          <div className="w-32 shrink-0">
+                            <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                              Trong CTDT
+                            </p>
+                          </div>
+                          <div className="flex-1">
+                            <Switch
+                              checked={itemForm.isInCurriculum}
+                              onChange={() => {}}
+                              disabled={true}
+                            />
+                          </div>
+                        </div>
+                        {/* Loại yêu cầu */}
+                        <div className="flex items-center gap-6">
+                          <div className="w-32 shrink-0">
+                            <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                              Loại yêu cầu
+                            </p>
+                          </div>
+                          <div className="flex-1">
+                            <Tag
+                              color={RegistrationActionColors[item.action].hex}
+                            >
+                              {RegistrationActionLabels[item.action]}
+                            </Tag>
+                          </div>
+                        </div>
+                        {/* Status */}
+                        <div className="flex items-center gap-6">
+                          <div className="w-32 shrink-0">
+                            <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                              Trạng thái
+                            </p>
+                          </div>
+                          <div className="flex-1">
+                            <Tag color={ItemStatusColors[item.status].hex}>
+                              {ItemStatusLabels[item.status]}
+                            </Tag>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Ghi chú */}
+                      <div className="mt-3">
+                        <div className="flex flex-col items-start gap-6 md:flex-row">
+                          <div className="w-32 shrink-0">
+                            <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                              Ghi chú
+                            </p>
+                          </div>
+                          <div className="flex-1">
+                            <RegistrationNoteRichTextEditor
+                              value={itemForm.note}
+                              onChange={(html) =>
+                                updateItemForm(item.id, "note", html)
+                              }
+                              disabled={updating}
+                              suggestionItems={cancelReasonSuggestionItems}
+                              placeholder="Gõ @ để chèn ghi chú nhanh"
+                            />
+                            {isItemNoteDirty(
+                              itemForm.note,
+                              originalItemNotes[item.id],
+                            ) && (
+                              <div className="mt-2 flex items-center gap-2">
+                                <Tooltip label="Hủy thay đổi">
+                                  <button
+                                    type="button"
+                                    disabled={updating}
+                                    onClick={() =>
+                                      updateItemForm(
+                                        item.id,
+                                        "note",
+                                        originalItemNotes[item.id] ?? "",
+                                      )
+                                    }
+                                    className="flex h-8 w-8 items-center justify-center rounded-xl text-amber-600 hover:bg-amber-50 disabled:opacity-50 dark:text-amber-400 dark:hover:bg-amber-500/10"
+                                  >
+                                    <MdUndo className="h-4 w-4" />
+                                  </button>
+                                </Tooltip>
+                                <button
+                                  type="button"
+                                  disabled={updating}
+                                  onClick={() => updateItemField(item, "note")}
+                                  className="flex items-center gap-1 rounded-xl px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 disabled:opacity-50 dark:text-blue-400 dark:hover:bg-blue-500/10"
+                                >
+                                  <MdSave className="h-4 w-4" />
+                                  Lưu
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="mt-4 flex justify-end gap-2 border-t border-gray-100 pt-3 dark:border-white/10">
+                        {item.status === "pending" ? (
+                          <>
+                            <button
+                              type="button"
+                              disabled={updating}
+                              onClick={() => handleReject(item)}
+                              className="rounded-xl px-3 py-1.5 text-sm text-red-600 hover:bg-gray-100 disabled:opacity-50 dark:text-red-400 dark:hover:bg-white/10"
+                            >
+                              Từ chối
+                            </button>
+                            <button
+                              type="button"
+                              disabled={updating}
+                              onClick={() => updateItemStatus(item, "approved")}
+                              className="bg-brand-500 hover:bg-brand-600 flex items-center gap-1 rounded-xl px-4 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-50"
+                            >
+                              <MdSave className="h-4 w-4" />
+                              Duyệt
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={updating}
+                            onClick={() => updateItemStatus(item, "pending")}
+                            className="rounded-xl px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-white/10"
+                          >
+                            Đưa về chờ
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Add new button */}
+                {!draftItem && (
+                  <button
+                    type="button"
+                    disabled={loadingDetail || !detail}
+                    onClick={() => {
+                      setDraftItem({
+                        action: "register",
+                        subjectName: "",
+                        subjectCode: "",
+                        className: "",
+                        slotInfo: "",
+                        isInCurriculum: false,
+                      });
+                    }}
+                    className="flex items-center justify-center gap-1 rounded-xl bg-gray-500 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-gray-600 disabled:opacity-50"
+                    title="Thêm lớp mới"
                   >
-                    {/* Header with remove button */}
+                    <MdAdd className="h-4 w-4" />
+                    Thêm mới
+                  </button>
+                )}
+
+                {/* Draft item form */}
+                {draftItem && (
+                  <div className="rounded-2xl border-2 border-dashed border-gray-300 bg-transparent p-4 dark:border-gray-600">
                     <div className="mb-3 flex items-center justify-between">
                       <p className="text-navy-700 text-base font-medium dark:text-white">
-                        #{item.id}
+                        Thêm mới
                       </p>
                       <button
                         type="button"
-                        disabled={updating}
-                        onClick={() => handleRemoveItem(item)}
-                        className="flex items-center gap-1 rounded-xl px-2 py-1 text-xs font-medium text-red-500 transition-colors hover:text-red-600 disabled:opacity-50"
+                        disabled={updatingItemIds.has(-1)}
+                        onClick={() => setDraftItem(null)}
+                        className="flex items-center gap-1 rounded-xl px-2 py-1 text-xs font-medium text-gray-500 transition-colors hover:text-gray-700 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-200"
+                        title="Hủy"
                       >
-                        <MdDeleteOutline className="h-4 w-4" />
-                        Xóa
+                        <MdClose className="h-4 w-4" />
+                        Hủy
                       </button>
                     </div>
 
@@ -696,11 +925,22 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                           </p>
                         </div>
                         <div className="flex-1">
-                          <p className="text-navy-700 text-sm dark:text-white">
-                            {item.className || "—"}
-                          </p>
+                          <input
+                            type="text"
+                            value={draftItem.className ?? ""}
+                            onChange={(e) =>
+                              setDraftItem({
+                                ...draftItem,
+                                className: e.target.value,
+                              })
+                            }
+                            placeholder="Nhập lớp HP"
+                            className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+                            disabled={updatingItemIds.has(-1)}
+                          />
                         </div>
                       </div>
+
                       {/* Thông tin lớp */}
                       <div className="flex items-center gap-6">
                         <div className="w-32 shrink-0">
@@ -709,11 +949,22 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                           </p>
                         </div>
                         <div className="flex-1">
-                          <p className="text-navy-700 text-sm dark:text-white">
-                            {item.slotInfo || "—"}
-                          </p>
+                          <input
+                            type="text"
+                            value={draftItem.slotInfo ?? ""}
+                            onChange={(e) =>
+                              setDraftItem({
+                                ...draftItem,
+                                slotInfo: e.target.value,
+                              })
+                            }
+                            placeholder="Nhập thông tin lớp"
+                            className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+                            disabled={updatingItemIds.has(-1)}
+                          />
                         </div>
                       </div>
+
                       {/* Tên MH */}
                       <div className="flex items-center gap-6">
                         <div className="w-32 shrink-0">
@@ -722,9 +973,19 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                           </p>
                         </div>
                         <div className="flex-1">
-                          <p className="text-navy-700 text-sm dark:text-white">
-                            {item.subjectName}
-                          </p>
+                          <input
+                            type="text"
+                            value={draftItem.subjectName}
+                            onChange={(e) =>
+                              setDraftItem({
+                                ...draftItem,
+                                subjectName: e.target.value,
+                              })
+                            }
+                            placeholder="Nhập tên môn học"
+                            className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+                            disabled={updatingItemIds.has(-1)}
+                          />
                         </div>
                       </div>
 
@@ -736,9 +997,19 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                           </p>
                         </div>
                         <div className="flex-1">
-                          <p className="text-navy-700 text-sm dark:text-white">
-                            {item.subjectCode || "—"}
-                          </p>
+                          <input
+                            type="text"
+                            value={draftItem.subjectCode ?? ""}
+                            onChange={(e) =>
+                              setDraftItem({
+                                ...draftItem,
+                                subjectCode: e.target.value,
+                              })
+                            }
+                            placeholder="Nhập mã môn học"
+                            className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+                            disabled={updatingItemIds.has(-1)}
+                          />
                         </div>
                       </div>
 
@@ -751,13 +1022,22 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                         </div>
                         <div className="flex-1">
                           <Switch
-                            checked={itemForm.isInCurriculum}
-                            onChange={() => {}}
-                            disabled={true}
+                            checked={draftItem.isInCurriculum ?? false}
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>,
+                            ) =>
+                              setDraftItem({
+                                ...draftItem,
+                                isInCurriculum: e.target.checked,
+                              })
+                            }
+                            disabled={updatingItemIds.has(-1)}
                           />
                         </div>
                       </div>
+
                       {/* Loại yêu cầu */}
+
                       <div className="flex items-center gap-6">
                         <div className="w-32 shrink-0">
                           <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
@@ -766,475 +1046,196 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                         </div>
                         <div className="flex-1">
                           <Tag
-                            color={RegistrationActionColors[item.action].hex}
-                          >
-                            {RegistrationActionLabels[item.action]}
-                          </Tag>
-                        </div>
-                      </div>
-                      {/* Status */}
-                      <div className="flex items-center gap-6">
-                        <div className="w-32 shrink-0">
-                          <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                            Trạng thái
-                          </p>
-                        </div>
-                        <div className="flex-1">
-                          <Tag color={ItemStatusColors[item.status].hex}>
-                            {ItemStatusLabels[item.status]}
-                          </Tag>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Ghi chú */}
-                    <div className="mt-3">
-                      <div className="flex items-start gap-6">
-                        <div className="w-32 shrink-0">
-                          <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                            Ghi chú
-                          </p>
-                        </div>
-                        <div className="flex-1">
-                          <RegistrationNoteRichTextEditor
-                            value={itemForm.note}
-                            onChange={(html) =>
-                              updateItemForm(item.id, "note", html)
+                            variant="selection"
+                            color={
+                              RegistrationActionColors[draftItem.action].hex
                             }
-                            disabled={updating}
-                            suggestionItems={cancelReasonSuggestionItems}
-                            placeholder="Gõ @ để chèn ghi chú nhanh"
-                          />
-                          {isItemNoteDirty(
-                            itemForm.note,
-                            originalItemNotes[item.id],
-                          ) && (
-                            <div className="mt-2 flex items-center gap-2">
-                              <Tooltip label="Hủy thay đổi">
-                                <button
-                                  type="button"
-                                  disabled={updating}
-                                  onClick={() =>
-                                    updateItemForm(
-                                      item.id,
-                                      "note",
-                                      originalItemNotes[item.id] ?? "",
-                                    )
-                                  }
-                                  className="flex h-8 w-8 items-center justify-center rounded-xl text-amber-600 hover:bg-amber-50 disabled:opacity-50 dark:text-amber-400 dark:hover:bg-amber-500/10"
-                                >
-                                  <MdUndo className="h-4 w-4" />
-                                </button>
-                              </Tooltip>
-                              <button
-                                type="button"
-                                disabled={updating}
-                                onClick={() => updateItemField(item, "note")}
-                                className="flex items-center gap-1 rounded-xl px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 disabled:opacity-50 dark:text-blue-400 dark:hover:bg-blue-500/10"
-                              >
-                                <MdSave className="h-4 w-4" />
-                                Lưu
-                              </button>
-                            </div>
-                          )}
+                            value={draftItem.action}
+                            options={RegistrationActionOptions}
+                            disabled={updatingItemIds.has(-1)}
+                            onChange={(value) =>
+                              setDraftItem({
+                                ...draftItem,
+                                action: value as typeof draftItem.action,
+                              })
+                            }
+                          >
+                            {RegistrationActionLabels[draftItem.action]}
+                          </Tag>
                         </div>
                       </div>
                     </div>
 
-                    {/* Actions */}
+                    {/* Action buttons */}
                     <div className="mt-4 flex justify-end gap-2 border-t border-gray-100 pt-3 dark:border-white/10">
-                      {item.status === "pending" ? (
-                        <>
-                          <button
-                            type="button"
-                            disabled={updating}
-                            onClick={() => handleReject(item)}
-                            className="rounded-xl px-3 py-1.5 text-sm text-red-600 hover:bg-gray-100 disabled:opacity-50 dark:text-red-400 dark:hover:bg-white/10"
-                          >
-                            Từ chối
-                          </button>
-                          <button
-                            type="button"
-                            disabled={updating}
-                            onClick={() => updateItemStatus(item, "approved")}
-                            className="bg-brand-500 hover:bg-brand-600 flex items-center gap-1 rounded-xl px-4 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-50"
-                          >
-                            <MdSave className="h-4 w-4" />
-                            Duyệt
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled={updating}
-                          onClick={() => updateItemStatus(item, "pending")}
-                          className="rounded-xl px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-white/10"
-                        >
-                          Đưa về chờ
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        disabled={
+                          updatingItemIds.has(-1) ||
+                          !draftItem.subjectName.trim()
+                        }
+                        onClick={async () => {
+                          if (!detail || !draftItem.subjectName.trim()) {
+                            return;
+                          }
+                          setUpdatingItemIds((prev) => new Set(prev).add(-1));
+                          try {
+                            const newItem =
+                              await classRegistrationItemsService.create(
+                                detail.id,
+                                draftItem,
+                              );
+                            const updated = {
+                              ...detail,
+                              items: [...(detail.items ?? []), newItem],
+                            };
+                            queryClient.setQueryData(
+                              ["class-registration", registrationId],
+                              updated,
+                            );
+                            onRegistrationChanged(updated);
+                            // Reset form và giữ lại để thêm tiếp
+                            setDraftItem({
+                              action: "register",
+                              subjectName: "",
+                              subjectCode: "",
+                              className: "",
+                              slotInfo: "",
+                              isInCurriculum: false,
+                            });
+                            toast.success("Đã thêm lớp mới.");
+                          } catch (err: unknown) {
+                            const msg =
+                              err instanceof Error
+                                ? err.message
+                                : "Thêm lớp thất bại.";
+                            toast.error(msg);
+                          } finally {
+                            setUpdatingItemIds((prev) => {
+                              const next = new Set(prev);
+                              next.delete(-1);
+                              return next;
+                            });
+                          }
+                        }}
+                        className="flex items-center gap-1 rounded-xl px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-white/10"
+                        title="Lưu và thêm mới"
+                      >
+                        <MdSave className="h-4 w-4" />
+                        Lưu và thêm mới
+                      </button>
+                      <button
+                        type="button"
+                        disabled={
+                          updatingItemIds.has(-1) ||
+                          !draftItem.subjectName.trim()
+                        }
+                        onClick={async () => {
+                          if (!detail || !draftItem.subjectName.trim()) {
+                            return;
+                          }
+                          setUpdatingItemIds((prev) => new Set(prev).add(-1));
+                          try {
+                            const newItem =
+                              await classRegistrationItemsService.create(
+                                detail.id,
+                                draftItem,
+                              );
+                            const updated = {
+                              ...detail,
+                              items: [...(detail.items ?? []), newItem],
+                            };
+                            queryClient.setQueryData(
+                              ["class-registration", registrationId],
+                              updated,
+                            );
+                            onRegistrationChanged(updated);
+                            setDraftItem(null);
+                            toast.success("Đã thêm lớp mới.");
+                          } catch (err: unknown) {
+                            const msg =
+                              err instanceof Error
+                                ? err.message
+                                : "Thêm lớp thất bại.";
+                            toast.error(msg);
+                          } finally {
+                            setUpdatingItemIds((prev) => {
+                              const next = new Set(prev);
+                              next.delete(-1);
+                              return next;
+                            });
+                          }
+                        }}
+                        className="bg-brand-500 hover:bg-brand-600 flex items-center gap-1 rounded-xl px-4 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-50"
+                        title="Lưu"
+                      >
+                        <MdSave className="h-4 w-4" />
+                        Lưu
+                      </button>
                     </div>
                   </div>
-                );
-              })}
+                )}
+              </div>
+            </div>
 
-              {/* Add new button */}
-              {!draftItem && (
-                <button
-                  type="button"
-                  disabled={loadingDetail || !detail}
-                  onClick={() => {
-                    setDraftItem({
-                      action: "register",
-                      subjectName: "",
-                      subjectCode: "",
-                      className: "",
-                      slotInfo: "",
-                      isInCurriculum: false,
-                    });
-                  }}
-                  className="flex items-center justify-center gap-1 rounded-xl bg-gray-500 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-gray-600 disabled:opacity-50"
-                  title="Thêm lớp mới"
-                >
-                  <MdAdd className="h-4 w-4" />
-                  Thêm mới
-                </button>
-              )}
-
-              {/* Draft item form */}
-              {draftItem && (
-                <div className="rounded-2xl border-2 border-dashed border-gray-300 bg-transparent p-4 dark:border-gray-600">
-                  <div className="mb-3 flex items-center justify-between">
-                    <p className="text-navy-700 text-base font-medium dark:text-white">
-                      Thêm mới
+            {/* Technical info */}
+            <div className="mt-4 border-t border-gray-100 pt-4 dark:border-white/10">
+              <p className="text-navy-700 mb-3 text-xs font-semibold tracking-wide uppercase dark:text-white">
+                Thông số kỹ thuật
+              </p>
+              <div className="flex flex-col gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <div className="flex items-center gap-6">
+                  <div className="w-40 shrink-0">
+                    <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                      ID
                     </p>
-                    <button
-                      type="button"
-                      disabled={updatingItemIds.has(-1)}
-                      onClick={() => setDraftItem(null)}
-                      className="flex items-center gap-1 rounded-xl px-2 py-1 text-xs font-medium text-gray-500 transition-colors hover:text-gray-700 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-200"
-                      title="Hủy"
-                    >
-                      <MdClose className="h-4 w-4" />
-                      Hủy
-                    </button>
                   </div>
-
-                  {/* Item details */}
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    {/* Lớp HP */}
-                    <div className="flex items-center gap-6">
-                      <div className="w-32 shrink-0">
-                        <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                          Lớp HP
-                        </p>
-                      </div>
-                      <div className="flex-1">
-                        <input
-                          type="text"
-                          value={draftItem.className ?? ""}
-                          onChange={(e) =>
-                            setDraftItem({
-                              ...draftItem,
-                              className: e.target.value,
-                            })
-                          }
-                          placeholder="Nhập lớp HP"
-                          className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
-                          disabled={updatingItemIds.has(-1)}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Thông tin lớp */}
-                    <div className="flex items-center gap-6">
-                      <div className="w-32 shrink-0">
-                        <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                          Thông tin lớp
-                        </p>
-                      </div>
-                      <div className="flex-1">
-                        <input
-                          type="text"
-                          value={draftItem.slotInfo ?? ""}
-                          onChange={(e) =>
-                            setDraftItem({
-                              ...draftItem,
-                              slotInfo: e.target.value,
-                            })
-                          }
-                          placeholder="Nhập thông tin lớp"
-                          className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
-                          disabled={updatingItemIds.has(-1)}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Tên MH */}
-                    <div className="flex items-center gap-6">
-                      <div className="w-32 shrink-0">
-                        <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                          Tên MH
-                        </p>
-                      </div>
-                      <div className="flex-1">
-                        <input
-                          type="text"
-                          value={draftItem.subjectName}
-                          onChange={(e) =>
-                            setDraftItem({
-                              ...draftItem,
-                              subjectName: e.target.value,
-                            })
-                          }
-                          placeholder="Nhập tên môn học"
-                          className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
-                          disabled={updatingItemIds.has(-1)}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Mã MH */}
-                    <div className="flex items-center gap-6">
-                      <div className="w-32 shrink-0">
-                        <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                          Mã MH
-                        </p>
-                      </div>
-                      <div className="flex-1">
-                        <input
-                          type="text"
-                          value={draftItem.subjectCode ?? ""}
-                          onChange={(e) =>
-                            setDraftItem({
-                              ...draftItem,
-                              subjectCode: e.target.value,
-                            })
-                          }
-                          placeholder="Nhập mã môn học"
-                          className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
-                          disabled={updatingItemIds.has(-1)}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Trong CTDT */}
-                    <div className="flex items-center gap-6">
-                      <div className="w-32 shrink-0">
-                        <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                          Trong CTDT
-                        </p>
-                      </div>
-                      <div className="flex-1">
-                        <Switch
-                          checked={draftItem.isInCurriculum ?? false}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                            setDraftItem({
-                              ...draftItem,
-                              isInCurriculum: e.target.checked,
-                            })
-                          }
-                          disabled={updatingItemIds.has(-1)}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Loại yêu cầu */}
-
-                    <div className="flex items-center gap-6">
-                      <div className="w-32 shrink-0">
-                        <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                          Loại yêu cầu
-                        </p>
-                      </div>
-                      <div className="flex-1">
-                        <Tag
-                          variant="selection"
-                          color={RegistrationActionColors[draftItem.action].hex}
-                          value={draftItem.action}
-                          options={RegistrationActionOptions}
-                          disabled={updatingItemIds.has(-1)}
-                          onChange={(value) =>
-                            setDraftItem({
-                              ...draftItem,
-                              action: value as typeof draftItem.action,
-                            })
-                          }
-                        >
-                          {RegistrationActionLabels[draftItem.action]}
-                        </Tag>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Action buttons */}
-                  <div className="mt-4 flex justify-end gap-2 border-t border-gray-100 pt-3 dark:border-white/10">
-                    <button
-                      type="button"
-                      disabled={
-                        updatingItemIds.has(-1) || !draftItem.subjectName.trim()
-                      }
-                      onClick={async () => {
-                        if (!detail || !draftItem.subjectName.trim()) {
-                          return;
-                        }
-                        setUpdatingItemIds((prev) => new Set(prev).add(-1));
-                        try {
-                          const newItem =
-                            await classRegistrationItemsService.create(
-                              detail.id,
-                              draftItem,
-                            );
-                          const updated = {
-                            ...detail,
-                            items: [...(detail.items ?? []), newItem],
-                          };
-                          queryClient.setQueryData(
-                            ["class-registration", registrationId],
-                            updated,
-                          );
-                          onRegistrationChanged(updated);
-                          // Reset form và giữ lại để thêm tiếp
-                          setDraftItem({
-                            action: "register",
-                            subjectName: "",
-                            subjectCode: "",
-                            className: "",
-                            slotInfo: "",
-                            isInCurriculum: false,
-                          });
-                          toast.success("Đã thêm lớp mới.");
-                        } catch (err: unknown) {
-                          const msg =
-                            err instanceof Error
-                              ? err.message
-                              : "Thêm lớp thất bại.";
-                          toast.error(msg);
-                        } finally {
-                          setUpdatingItemIds((prev) => {
-                            const next = new Set(prev);
-                            next.delete(-1);
-                            return next;
-                          });
-                        }
-                      }}
-                      className="flex items-center gap-1 rounded-xl px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-white/10"
-                      title="Lưu và thêm mới"
-                    >
-                      <MdSave className="h-4 w-4" />
-                      Lưu và thêm mới
-                    </button>
-                    <button
-                      type="button"
-                      disabled={
-                        updatingItemIds.has(-1) || !draftItem.subjectName.trim()
-                      }
-                      onClick={async () => {
-                        if (!detail || !draftItem.subjectName.trim()) {
-                          return;
-                        }
-                        setUpdatingItemIds((prev) => new Set(prev).add(-1));
-                        try {
-                          const newItem =
-                            await classRegistrationItemsService.create(
-                              detail.id,
-                              draftItem,
-                            );
-                          const updated = {
-                            ...detail,
-                            items: [...(detail.items ?? []), newItem],
-                          };
-                          queryClient.setQueryData(
-                            ["class-registration", registrationId],
-                            updated,
-                          );
-                          onRegistrationChanged(updated);
-                          setDraftItem(null);
-                          toast.success("Đã thêm lớp mới.");
-                        } catch (err: unknown) {
-                          const msg =
-                            err instanceof Error
-                              ? err.message
-                              : "Thêm lớp thất bại.";
-                          toast.error(msg);
-                        } finally {
-                          setUpdatingItemIds((prev) => {
-                            const next = new Set(prev);
-                            next.delete(-1);
-                            return next;
-                          });
-                        }
-                      }}
-                      className="bg-brand-500 hover:bg-brand-600 flex items-center gap-1 rounded-xl px-4 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-50"
-                      title="Lưu"
-                    >
-                      <MdSave className="h-4 w-4" />
-                      Lưu
-                    </button>
+                  <div className="flex-1">
+                    <p className="text-navy-700 text-base dark:text-white">
+                      {detail.id}
+                    </p>
                   </div>
                 </div>
-              )}
-            </div>
-          </div>
-
-          {/* Technical info */}
-          <div className="mt-4 border-t border-gray-100 pt-4 dark:border-white/10">
-            <p className="text-navy-700 mb-3 text-xs font-semibold tracking-wide uppercase dark:text-white">
-              Thông số kỹ thuật
-            </p>
-            <div className="flex flex-col gap-2 text-sm text-gray-600 dark:text-gray-400">
-              <div className="flex items-center gap-6">
-                <div className="w-40 shrink-0">
-                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                    ID
-                  </p>
+                <div className="flex items-center gap-6">
+                  <div className="w-40 shrink-0">
+                    <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                      Message ID
+                    </p>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-navy-700 text-base dark:text-white">
+                      {detail.messageId ?? "—"}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className="text-navy-700 text-base dark:text-white">
-                    {detail.id}
-                  </p>
+                <div className="flex items-center gap-6">
+                  <div className="w-40 shrink-0">
+                    <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                      Ngày tạo
+                    </p>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-navy-700 text-base dark:text-white">
+                      {formatDate(detail.createdAt)}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-6">
-                <div className="w-40 shrink-0">
-                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                    Message ID
-                  </p>
-                </div>
-                <div className="flex-1">
-                  <p className="text-navy-700 text-base dark:text-white">
-                    {detail.messageId ?? "—"}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-6">
-                <div className="w-40 shrink-0">
-                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                    Ngày tạo
-                  </p>
-                </div>
-                <div className="flex-1">
-                  <p className="text-navy-700 text-base dark:text-white">
-                    {formatDate(detail.createdAt)}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-6">
-                <div className="w-40 shrink-0">
-                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                    Cập nhật lần cuối
-                  </p>
-                </div>
-                <div className="flex-1">
-                  <p className="text-navy-700 text-base dark:text-white">
-                    {formatDate(detail.updatedAt)}
-                  </p>
+                <div className="flex items-center gap-6">
+                  <div className="w-40 shrink-0">
+                    <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                      Cập nhật lần cuối
+                    </p>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-navy-700 text-base dark:text-white">
+                      {formatDate(detail.updatedAt)}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
       </Drawer>
     </>
   );
