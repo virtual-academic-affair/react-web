@@ -6,11 +6,11 @@ import Drawer from "@/components/drawer/Drawer";
 import RichTextEditor from "@/components/fields/RichTextEditor";
 import Tooltip from "@/components/tooltip/Tooltip";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
+import { resolveLinkedMessageId } from "@/hooks/useDetailLinkedMessagePanel";
 import { tasksService } from "@/services/tasks";
 import type { Task } from "@/types/task";
 import { TaskPriority, TaskStatus } from "@/types/task";
 import { formatDate } from "@/utils/date";
-import { resolveLinkedMessageId } from "@/hooks/useDetailLinkedMessagePanel";
 import { useQuery } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React from "react";
@@ -223,209 +223,204 @@ const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
     </>
   );
 
-  const linkedMid = detail
-    ? resolveLinkedMessageId(detail.messageId)
-    : null;
+  const linkedMid = detail ? resolveLinkedMessageId(detail.messageId) : null;
 
   return (
     <>
-      <DetailLinkedEmailDrawer
-        parentOpen={isOpen}
-        messageId={linkedMid}
-      />
+      <DetailLinkedEmailDrawer parentOpen={isOpen} messageId={linkedMid} />
       <Drawer
         isOpen={isOpen}
         onClose={onClose}
-        title="Chi tiết công việc"
+        title="Chi tiết công tác"
         headerExtra={
           linkedMid != null ? <DetailLinkedMessageSwitch /> : undefined
         }
         footerLeft={footerLeft}
         footerRight={footerRight}
       >
-      {loading || !form || !detail ? (
-        <div className="flex flex-col gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="dark:bg-navy-700 h-5 animate-pulse rounded bg-gray-200"
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-3">
-            {/* Tên công việc */}
-            <div className="flex items-center gap-6">
-              <div className="w-40 shrink-0">
-                <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                  Tên công việc
-                </p>
-              </div>
-              <div className="flex-1">
-                <input
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
-                />
-              </div>
-            </div>
-
-            {/* Hạn chót */}
-            <div className="flex items-center gap-6">
-              <div className="w-40 shrink-0">
-                <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                  Hạn chót
-                </p>
-              </div>
-              <div className="flex-1">
-                <input
-                  type="datetime-local"
-                  value={form.due}
-                  onChange={(e) => setForm({ ...form, due: e.target.value })}
-                  className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
-                />
-              </div>
-            </div>
-
-            {/* Trạng thái */}
-            <div className="flex items-center gap-6">
-              <div className="w-40 shrink-0">
-                <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                  Trạng thái
-                </p>
-              </div>
-              <div className="flex-1">
-                <TaskStatusSelector
-                  value={form.status}
-                  onChange={(s) => setForm({ ...form, status: s })}
-                />
-              </div>
-            </div>
-
-            {/* Độ ưu tiên */}
-            <div className="flex items-center gap-6">
-              <div className="w-40 shrink-0">
-                <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                  Độ ưu tiên
-                </p>
-              </div>
-              <div className="flex-1">
-                <TaskPrioritySelector
-                  value={form.priority}
-                  onChange={(p) => setForm({ ...form, priority: p })}
-                />
-              </div>
-            </div>
-
-            {/* Người giao */}
-            <div className="flex items-center gap-6">
-              <div className="w-40 shrink-0">
-                <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                  Người giao
-                </p>
-              </div>
-              <div className="flex-1">
-                <input
-                  value={form.assigners}
-                  onChange={(e) =>
-                    setForm({ ...form, assigners: e.target.value })
-                  }
-                  className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
-                />
-              </div>
-            </div>
-
-            {/* Người thực hiện (Assignees) */}
-            <div className="flex items-center gap-6">
-              <div className="w-40 shrink-0">
-                <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                  Người thực hiện
-                </p>
-              </div>
-              <div className="flex-1">
-                <AssigneeManager
-                  selectedIds={form.assigneeIds}
-                  allUsers={users}
-                  onChange={(ids) => setForm({ ...form, assigneeIds: ids })}
-                />
-              </div>
-            </div>
-
-            {/* Mô tả công việc */}
-            <div className="flex items-start gap-6">
-              <div className="w-40 shrink-0">
-                <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                  Mô tả công việc
-                </p>
-              </div>
-              <div className="text-editor-container flex-1">
-                <RichTextEditor
-                  value={form.description}
-                  onChange={(val) => setForm({ ...form, description: val })}
-                />
-              </div>
-            </div>
+        {loading || !form || !detail ? (
+          <div className="flex flex-col gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="dark:bg-navy-700 h-5 animate-pulse rounded bg-gray-200"
+              />
+            ))}
           </div>
-
-          {/* Metadata / Technical Info Section */}
-          <div className="mt-4 border-t border-gray-100 pt-4 dark:border-white/10">
-            <p className="text-navy-700 mb-3 text-xs font-semibold tracking-wide uppercase dark:text-white">
-              Thông số kỹ thuật
-            </p>
+        ) : (
+          <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-6">
-                <div className="w-40 shrink-0">
+              {/* Tên công việc */}
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
                   <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                    ID
+                    Tên công việc
                   </p>
                 </div>
-                <div className="flex-1">
-                  <p className="text-navy-700 text-base dark:text-white">
-                    {detail.id}
-                  </p>
+                <div className="w-full flex-1">
+                  <input
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
+                  />
                 </div>
               </div>
-              <div className="flex items-center gap-6">
-                <div className="w-40 shrink-0">
+
+              {/* Hạn chót */}
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
                   <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                    Message ID
+                    Hạn chót
                   </p>
                 </div>
-                <div className="flex-1">
-                  <p className="text-navy-700 text-base dark:text-white">
-                    {detail.messageId ?? "—"}
-                  </p>
+                <div className="w-full flex-1">
+                  <input
+                    type="datetime-local"
+                    value={form.due}
+                    onChange={(e) => setForm({ ...form, due: e.target.value })}
+                    className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
+                  />
                 </div>
               </div>
-              <div className="flex items-center gap-6">
-                <div className="w-40 shrink-0">
+
+              {/* Trạng thái */}
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
                   <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                    Ngày tạo
+                    Trạng thái
                   </p>
                 </div>
-                <div className="flex-1">
-                  <p className="text-navy-700 text-base dark:text-white">
-                    {formatDate(detail.createdAt)}
-                  </p>
+                <div className="w-full flex-1">
+                  <TaskStatusSelector
+                    value={form.status}
+                    onChange={(s) => setForm({ ...form, status: s })}
+                  />
                 </div>
               </div>
-              <div className="flex items-center gap-6">
-                <div className="w-40 shrink-0">
+
+              {/* Độ ưu tiên */}
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
                   <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                    Cập nhật lần cuối
+                    Độ ưu tiên
                   </p>
                 </div>
-                <div className="flex-1">
-                  <p className="text-navy-700 text-base dark:text-white">
-                    {formatDate(detail.updatedAt)}
+                <div className="w-full flex-1">
+                  <TaskPrioritySelector
+                    value={form.priority}
+                    onChange={(p) => setForm({ ...form, priority: p })}
+                  />
+                </div>
+              </div>
+
+              {/* Người giao */}
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
+                  <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    Người giao
                   </p>
+                </div>
+                <div className="w-full flex-1">
+                  <input
+                    value={form.assigners}
+                    onChange={(e) =>
+                      setForm({ ...form, assigners: e.target.value })
+                    }
+                    className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              {/* Người thực hiện (Assignees) */}
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
+                  <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    Người thực hiện
+                  </p>
+                </div>
+                <div className="w-full flex-1">
+                  <AssigneeManager
+                    selectedIds={form.assigneeIds}
+                    allUsers={users}
+                    onChange={(ids) => setForm({ ...form, assigneeIds: ids })}
+                  />
+                </div>
+              </div>
+
+              {/* Mô tả công việc */}
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-start md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
+                  <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    Mô tả công việc
+                  </p>
+                </div>
+                <div className="text-editor-container w-full flex-1">
+                  <RichTextEditor
+                    value={form.description}
+                    onChange={(val) => setForm({ ...form, description: val })}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Metadata / Technical Info Section */}
+            <div className="mt-4 border-t border-gray-100 pt-4 dark:border-white/10">
+              <p className="text-navy-700 mb-3 text-xs font-semibold tracking-wide uppercase dark:text-white">
+                Thông số kỹ thuật
+              </p>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-6">
+                  <div className="w-40 shrink-0">
+                    <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                      ID
+                    </p>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-navy-700 text-base dark:text-white">
+                      {detail.id}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-6">
+                  <div className="w-40 shrink-0">
+                    <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                      Message ID
+                    </p>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-navy-700 text-base dark:text-white">
+                      {detail.messageId ?? "—"}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-6">
+                  <div className="w-40 shrink-0">
+                    <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                      Ngày tạo
+                    </p>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-navy-700 text-base dark:text-white">
+                      {formatDate(detail.createdAt)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-6">
+                  <div className="w-40 shrink-0">
+                    <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                      Cập nhật lần cuối
+                    </p>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-navy-700 text-base dark:text-white">
+                      {formatDate(detail.updatedAt)}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
       </Drawer>
     </>
   );

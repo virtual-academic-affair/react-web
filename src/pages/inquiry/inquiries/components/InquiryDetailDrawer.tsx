@@ -3,23 +3,23 @@ import {
   DetailLinkedMessageSwitch,
 } from "@/components/detail/DetailLinkedEmailDrawer";
 import Drawer from "@/components/drawer/Drawer";
+import RichTextEditor, {
+  type RichTextEditorHandle,
+} from "@/components/fields/RichTextEditor";
+import InquiryTypeEditor from "@/components/selector/InquiryTypeEditor";
+import MessageStatusSelector from "@/components/selector/MessageStatusSelector";
+import Tooltip from "@/components/tooltip/Tooltip";
+import { resolveLinkedMessageId } from "@/hooks/useDetailLinkedMessagePanel";
 import { inquiriesService } from "@/services/inquiry";
 import type { Inquiry, InquiryType, UpdateInquiryDto } from "@/types/inquiry";
 import type { MessageStatus } from "@/types/messageStatus";
+import { formatDate } from "@/utils/date";
+import { normalizeInquiryContent } from "@/utils/inquiryContent";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React from "react";
 import { MdDeleteOutline, MdOutlineRateReview, MdSave } from "react-icons/md";
-import Tooltip from "@/components/tooltip/Tooltip";
 import { Link, useSearchParams } from "react-router-dom";
-import MessageStatusSelector from "@/components/selector/MessageStatusSelector";
-import InquiryTypeEditor from "@/components/selector/InquiryTypeEditor";
-import RichTextEditor, {
-  type RichTextEditorHandle,
-} from "@/components/fields/RichTextEditor";
-import { resolveLinkedMessageId } from "@/hooks/useDetailLinkedMessagePanel";
-import { formatDate } from "@/utils/date";
-import { normalizeInquiryContent } from "@/utils/inquiryContent";
 
 interface InquiryDetailDrawerProps {
   inquiryId: number | null;
@@ -83,7 +83,6 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
     if (inquiryId == null || !detail) {
       return;
     }
-
   }, [detail, inquiryId]);
 
   // Focus on editor when focus param is present
@@ -108,10 +107,7 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
     }
   }, [searchParams, form, setSearchParams]);
 
-  const handleFieldChange = (
-    field: "question" | "answer",
-    value: string,
-  ) => {
+  const handleFieldChange = (field: "question" | "answer", value: string) => {
     setForm((prev) => (prev ? { ...prev, [field]: value } : prev));
   };
 
@@ -167,7 +163,8 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
       return false;
     }
     return (
-      JSON.stringify([...form.types].sort()) !== JSON.stringify([...(detail.types ?? [])].sort()) ||
+      JSON.stringify([...form.types].sort()) !==
+        JSON.stringify([...(detail.types ?? [])].sort()) ||
       form.question !== (detail.question ?? "") ||
       form.answer !== normalizedAnswerContent ||
       form.messageStatus !== (detail.messageStatus ?? null)
@@ -178,66 +175,61 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
 
   const footerLeft = detail && (
     <>
-        <Tooltip label="Xem trước phản hồi">
-          <button
-             onClick={() => {
-              if (detail) onPreviewReply?.(detail.id);
-             }}
-             className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500 text-white transition-colors hover:bg-blue-600 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
-          >
-            <MdOutlineRateReview className="h-4 w-4" />
-          </button>
-        </Tooltip>
+      <Tooltip label="Xem trước phản hồi">
+        <button
+          onClick={() => {
+            if (detail) onPreviewReply?.(detail.id);
+          }}
+          className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500 text-white transition-colors hover:bg-blue-600 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+        >
+          <MdOutlineRateReview className="h-4 w-4" />
+        </button>
+      </Tooltip>
 
-        <Tooltip label="Xóa">
-          <button
-            onClick={() => {
-              if (detail) {
-                onClose();
-                onInquiryDeleted?.(detail.id);
-              }
-            }}
-            disabled={savingInfo}
-            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600 disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-600"
-          >
-            <MdDeleteOutline className="h-4 w-4" />
-          </button>
-        </Tooltip>
+      <Tooltip label="Xóa">
+        <button
+          onClick={() => {
+            if (detail) {
+              onClose();
+              onInquiryDeleted?.(detail.id);
+            }
+          }}
+          disabled={savingInfo}
+          className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600 disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-600"
+        >
+          <MdDeleteOutline className="h-4 w-4" />
+        </button>
+      </Tooltip>
     </>
   );
 
   const footerRight = detail && isDirty && (
     <>
-          <button
-            type="button"
-            disabled={savingInfo}
-            onClick={handleResetForm}
-            className="rounded-xl px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-white/10"
-          >
-            Hủy
-          </button>
-          <button
-            type="button"
-            disabled={savingInfo}
-            onClick={handleSaveInfo}
-            className="bg-brand-500 hover:bg-brand-600 flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
-          >
-            <MdSave className="h-4 w-4" />
-            {savingInfo ? "Đang lưu..." : "Lưu"}
-          </button>
+      <button
+        type="button"
+        disabled={savingInfo}
+        onClick={handleResetForm}
+        className="rounded-xl px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-white/10"
+      >
+        Hủy
+      </button>
+      <button
+        type="button"
+        disabled={savingInfo}
+        onClick={handleSaveInfo}
+        className="bg-brand-500 hover:bg-brand-600 flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
+      >
+        <MdSave className="h-4 w-4" />
+        {savingInfo ? "Đang lưu..." : "Lưu"}
+      </button>
     </>
   );
 
-  const linkedMid = detail
-    ? resolveLinkedMessageId(detail.messageId)
-    : null;
+  const linkedMid = detail ? resolveLinkedMessageId(detail.messageId) : null;
 
   return (
     <>
-      <DetailLinkedEmailDrawer
-        parentOpen={isOpen}
-        messageId={linkedMid}
-      />
+      <DetailLinkedEmailDrawer parentOpen={isOpen} messageId={linkedMid} />
       <Drawer
         isOpen={isOpen}
         onClose={onClose}
@@ -248,175 +240,173 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
         footerLeft={footerLeft}
         footerRight={footerRight}
       >
-      {loading || !form ? (
-        <div className="flex flex-col gap-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div
-              key={i}
-              className="dark:bg-navy-700 h-5 animate-pulse rounded bg-gray-200"
-            />
-          ))}
-        </div>
-      ) : !detail ? (
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          Không có dữ liệu.
-        </p>
-      ) : (
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-3">
-            {/* Types */}
-            <div className="flex items-start gap-6">
-              <div className="w-40 shrink-0">
-                <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                  Loại thắc mắc
+        {loading || !form ? (
+          <div className="flex flex-col gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="dark:bg-navy-700 h-5 animate-pulse rounded bg-gray-200"
+              />
+            ))}
+          </div>
+        ) : !detail ? (
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Không có dữ liệu.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3">
+              {/* Types */}
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-start md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    Loại thắc mắc
+                  </p>
+                </div>
+                <div className="w-full flex-1">
+                  <InquiryTypeEditor
+                    value={form.types}
+                    onChange={handleTypesChange}
+                    disabled={savingInfo}
+                  />
+                </div>
+              </div>
+
+              {/* Trạng thái xử lý */}
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    Trạng thái xử lý
+                  </p>
+                </div>
+                <div className="w-full flex-1">
+                  <MessageStatusSelector
+                    value={form.messageStatus}
+                    onChange={handleMessageStatusChange}
+                    disabled={savingInfo}
+                  />
+                </div>
+              </div>
+
+              {/* Câu hỏi */}
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-start md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    Nội dung thắc mắc
+                  </p>
+                </div>
+                <div className="w-full flex-1">
+                  <RichTextEditor
+                    ref={questionEditorRef}
+                    value={form.question}
+                    onChange={(html) => handleFieldChange("question", html)}
+                  />
+                </div>
+              </div>
+
+              {/* Câu trả lời */}
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-start md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    Câu trả lời
+                  </p>
+                </div>
+                <div className="w-full flex-1">
+                  <RichTextEditor
+                    ref={answerEditorRef}
+                    value={form.answer}
+                    onChange={(html) => handleFieldChange("answer", html)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {sources.length > 0 && (
+              <div className="mt-4 border-t border-gray-100 pt-4 dark:border-white/10">
+                <p className="text-navy-700 mb-3 text-xs font-semibold tracking-wide uppercase dark:text-white">
+                  {"Tài liệu tham khảo"}
                 </p>
+                <div className="flex flex-col gap-2">
+                  {sources.map((source, index) => (
+                    <div
+                      key={`${source.fileId}-${index}`}
+                      className="flex items-baseline gap-3 rounded-2xl border border-gray-100 bg-gray-50/60 px-4 py-3 dark:border-white/10 dark:bg-white/5"
+                    >
+                      <span className="text-brand-500 shrink-0 text-sm leading-6 font-semibold">
+                        [{index + 1}]
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <Link
+                          to={`/admin/documents/list?id=${encodeURIComponent(source.fileId)}`}
+                          className="text-navy-700 hover:text-brand-500 dark:hover:text-brand-400 inline text-sm leading-6 font-semibold underline-offset-2 transition-colors hover:underline dark:text-white"
+                        >
+                          {source.displayName || `Tài liệu ${index + 1}`}
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="flex-1">
-                <InquiryTypeEditor
-                  value={form.types}
-                  onChange={handleTypesChange}
-                  disabled={savingInfo}
-                />
-              </div>
-            </div>
+            )}
 
-            {/* Trạng thái xử lý */}
-            <div className="flex items-center gap-6">
-              <div className="w-40 shrink-0">
-                <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                  Trạng thái xử lý
-                </p>
-              </div>
-              <div className="flex-1">
-                <MessageStatusSelector
-                  value={form.messageStatus}
-                  onChange={handleMessageStatusChange}
-                  disabled={savingInfo}
-                />
-              </div>
-            </div>
-
-            {/* Câu hỏi */}
-            <div className="flex items-start gap-6">
-              <div className="w-40 shrink-0">
-                <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                  Nội dung thắc mắc
-                </p>
-              </div>
-              <div className="flex-1">
-                <RichTextEditor
-                  ref={questionEditorRef}
-                  value={form.question}
-                  onChange={(html) => handleFieldChange("question", html)}
-                />
-              </div>
-            </div>
-
-            {/* Câu trả lời */}
-            <div className="flex items-start gap-6">
-              <div className="w-40 shrink-0">
-                <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                  Câu trả lời
-                </p>
-              </div>
-              <div className="flex-1">
-                <RichTextEditor
-                  ref={answerEditorRef}
-                  value={form.answer}
-                  onChange={(html) => handleFieldChange("answer", html)}
-                />
-              </div>
-            </div>
-
-            </div>
-
-          {sources.length > 0 && (
+            {/* Technical info section */}
             <div className="mt-4 border-t border-gray-100 pt-4 dark:border-white/10">
               <p className="text-navy-700 mb-3 text-xs font-semibold tracking-wide uppercase dark:text-white">
-                {"Tài liệu tham khảo"}
+                Thông số kỹ thuật
               </p>
-              <div className="flex flex-col gap-2">
-                {sources.map((source, index) => (
-                  <div
-                    key={`${source.fileId}-${index}`}
-                    className="flex items-baseline gap-3 rounded-2xl border border-gray-100 bg-gray-50/60 px-4 py-3 dark:border-white/10 dark:bg-white/5"
-                  >
-                    <span className="shrink-0 text-sm leading-6 font-semibold text-brand-500">
-                      [{index + 1}]
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <Link
-                        to={`/admin/documents/list?id=${encodeURIComponent(source.fileId)}`}
-                        className="text-navy-700 inline leading-6 text-sm font-semibold underline-offset-2 transition-colors hover:text-brand-500 hover:underline dark:text-white dark:hover:text-brand-400"
-                      >
-                        {source.displayName ||
-                          `Tài liệu ${index + 1}`}
-                      </Link>
-                    </div>
+              <div className="flex flex-col gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <div className="flex items-center gap-6">
+                  <div className="w-40 shrink-0">
+                    <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                      ID
+                    </p>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Technical info section */}
-          <div className="mt-4 border-t border-gray-100 pt-4 dark:border-white/10">
-            <p className="text-navy-700 mb-3 text-xs font-semibold tracking-wide uppercase dark:text-white">
-              Thông số kỹ thuật
-            </p>
-            <div className="flex flex-col gap-2 text-sm text-gray-600 dark:text-gray-400">
-              <div className="flex items-center gap-6">
-                <div className="w-40 shrink-0">
-                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                    ID
-                  </p>
+                  <div className="flex-1">
+                    <p className="text-navy-700 text-base dark:text-white">
+                      {detail.id}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className="text-navy-700 text-base dark:text-white">
-                    {detail.id}
-                  </p>
+                <div className="flex items-center gap-6">
+                  <div className="w-40 shrink-0">
+                    <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                      Message ID
+                    </p>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-navy-700 text-base dark:text-white">
+                      {detail.messageId ?? "—"}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-6">
-                <div className="w-40 shrink-0">
-                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                    Message ID
-                  </p>
+                <div className="flex items-center gap-6">
+                  <div className="w-40 shrink-0">
+                    <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                      Ngày tạo
+                    </p>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-navy-700 text-base dark:text-white">
+                      {formatDate(detail.createdAt)}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className="text-navy-700 text-base dark:text-white">
-                    {detail.messageId ?? "—"}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-6">
-                <div className="w-40 shrink-0">
-                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                    Ngày tạo
-                  </p>
-                </div>
-                <div className="flex-1">
-                  <p className="text-navy-700 text-base dark:text-white">
-                    {formatDate(detail.createdAt)}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-6">
-                <div className="w-40 shrink-0">
-                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                    Cập nhật lần cuối
-                  </p>
-                </div>
-                <div className="flex-1">
-                  <p className="text-navy-700 text-base dark:text-white">
-                    {formatDate(detail.updatedAt)}
-                  </p>
+                <div className="flex items-center gap-6">
+                  <div className="w-40 shrink-0">
+                    <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                      Cập nhật lần cuối
+                    </p>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-navy-700 text-base dark:text-white">
+                      {formatDate(detail.updatedAt)}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
       </Drawer>
     </>
   );
