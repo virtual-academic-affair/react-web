@@ -102,7 +102,6 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
     if (inquiryId == null || !detail) {
       return;
     }
-
   }, [detail, inquiryId]);
 
   // Focus on editor when focus param is present
@@ -127,10 +126,7 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
     }
   }, [searchParams, form, setSearchParams]);
 
-  const handleFieldChange = (
-    field: "question" | "answer",
-    value: string,
-  ) => {
+  const handleFieldChange = (field: "question" | "answer", value: string) => {
     setForm((prev) => (prev ? { ...prev, [field]: value } : prev));
   };
 
@@ -186,7 +182,8 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
       return false;
     }
     return (
-      JSON.stringify([...form.types].sort()) !== JSON.stringify([...(detail.types ?? [])].sort()) ||
+      JSON.stringify([...form.types].sort()) !==
+        JSON.stringify([...(detail.types ?? [])].sort()) ||
       form.question !== (detail.question ?? "") ||
       form.answer !== normalizedAnswerContent ||
       form.messageStatus !== (detail.messageStatus ?? null)
@@ -197,66 +194,61 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
 
   const footerLeft = detail && (
     <>
-        <Tooltip label="Xem trước phản hồi">
-          <button
-             onClick={() => {
-              if (detail) onPreviewReply?.(detail.id);
-             }}
-             className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500 text-white transition-colors hover:bg-blue-600 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
-          >
-            <MdOutlineRateReview className="h-4 w-4" />
-          </button>
-        </Tooltip>
+      <Tooltip label="Xem trước phản hồi">
+        <button
+          onClick={() => {
+            if (detail) onPreviewReply?.(detail.id);
+          }}
+          className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500 text-white transition-colors hover:bg-blue-600 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+        >
+          <MdOutlineRateReview className="h-4 w-4" />
+        </button>
+      </Tooltip>
 
-        <Tooltip label="Xóa">
-          <button
-            onClick={() => {
-              if (detail) {
-                onClose();
-                onInquiryDeleted?.(detail.id);
-              }
-            }}
-            disabled={savingInfo}
-            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600 disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-600"
-          >
-            <MdDeleteOutline className="h-4 w-4" />
-          </button>
-        </Tooltip>
+      <Tooltip label="Xóa">
+        <button
+          onClick={() => {
+            if (detail) {
+              onClose();
+              onInquiryDeleted?.(detail.id);
+            }
+          }}
+          disabled={savingInfo}
+          className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600 disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-600"
+        >
+          <MdDeleteOutline className="h-4 w-4" />
+        </button>
+      </Tooltip>
     </>
   );
 
   const footerRight = detail && isDirty && (
     <>
-          <button
-            type="button"
-            disabled={savingInfo}
-            onClick={handleResetForm}
-            className="rounded-xl px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-white/10"
-          >
-            Hủy
-          </button>
-          <button
-            type="button"
-            disabled={savingInfo}
-            onClick={handleSaveInfo}
-            className="bg-brand-500 hover:bg-brand-600 flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
-          >
-            <MdSave className="h-4 w-4" />
-            {savingInfo ? "Đang lưu..." : "Lưu"}
-          </button>
+      <button
+        type="button"
+        disabled={savingInfo}
+        onClick={handleResetForm}
+        className="rounded-xl px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-white/10"
+      >
+        Hủy
+      </button>
+      <button
+        type="button"
+        disabled={savingInfo}
+        onClick={handleSaveInfo}
+        className="bg-brand-500 hover:bg-brand-600 flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
+      >
+        <MdSave className="h-4 w-4" />
+        {savingInfo ? "Đang lưu..." : "Lưu"}
+      </button>
     </>
   );
 
-  const linkedMid = detail
-    ? resolveLinkedMessageId(detail.messageId)
-    : null;
+  const linkedMid = detail ? resolveLinkedMessageId(detail.messageId) : null;
 
   return (
     <>
-      <DetailLinkedEmailDrawer
-        parentOpen={isOpen}
-        messageId={linkedMid}
-      />
+      <DetailLinkedEmailDrawer parentOpen={isOpen} messageId={linkedMid} />
       <Drawer
         isOpen={isOpen}
         onClose={onClose}
@@ -267,88 +259,87 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
         footerLeft={footerLeft}
         footerRight={footerRight}
       >
-      {loading || !form ? (
-        <div className="flex flex-col gap-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div
-              key={i}
-              className="dark:bg-navy-700 h-5 animate-pulse rounded bg-gray-200"
-            />
-          ))}
-        </div>
-      ) : !detail ? (
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          Không có dữ liệu.
-        </p>
-      ) : (
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-3">
-            {/* Types */}
-            <div className="flex items-start gap-6">
-              <div className="w-40 shrink-0">
-                <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                  Loại thắc mắc
-                </p>
+        {loading || !form ? (
+          <div className="flex flex-col gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="dark:bg-navy-700 h-5 animate-pulse rounded bg-gray-200"
+              />
+            ))}
+          </div>
+        ) : !detail ? (
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Không có dữ liệu.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3">
+              {/* Types */}
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-start md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    Loại thắc mắc
+                  </p>
+                </div>
+                <div className="w-full flex-1">
+                  <InquiryTypeEditor
+                    value={form.types}
+                    onChange={handleTypesChange}
+                    disabled={savingInfo}
+                  />
+                </div>
               </div>
-              <div className="flex-1">
-                <InquiryTypeEditor
-                  value={form.types}
-                  onChange={handleTypesChange}
-                  disabled={savingInfo}
-                />
-              </div>
-            </div>
 
-            {/* Trạng thái xử lý */}
-            <div className="flex items-center gap-6">
-              <div className="w-40 shrink-0">
-                <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                  Trạng thái xử lý
-                </p>
+              {/* Trạng thái xử lý */}
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    Trạng thái xử lý
+                  </p>
+                </div>
+                <div className="w-full flex-1">
+                  <MessageStatusSelector
+                    value={form.messageStatus}
+                    onChange={handleMessageStatusChange}
+                    disabled={savingInfo}
+                  />
+                </div>
               </div>
-              <div className="flex-1">
-                <MessageStatusSelector
-                  value={form.messageStatus}
-                  onChange={handleMessageStatusChange}
-                  disabled={savingInfo}
-                />
-              </div>
-            </div>
 
-            {/* Câu hỏi */}
-            <div className="flex items-start gap-6">
-              <div className="w-40 shrink-0">
-                <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                  Nội dung thắc mắc
-                </p>
-              </div>
-              <div className="flex-1">
-                <InquiryReplyRichTextEditor
-                  ref={questionEditorRef}
-                  value={form.question}
-                  onChange={(html) => handleFieldChange("question", html)}
+              {/* Câu hỏi */}
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-start md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    Nội dung thắc mắc
+                  </p>
+                </div>
+                <div className="w-full flex-1">
+                  <InquiryReplyRichTextEditor
+                    ref={questionEditorRef}
+                    value={form.question}
+                    onChange={(html) => handleFieldChange("question", html)}
                   placeholder="Gõ @ để chèn tham chiếu tài liệu"
-                />
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* Câu trả lời */}
-            <div className="flex items-start gap-6">
-              <div className="w-40 shrink-0">
-                <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                  Câu trả lời
-                </p>
-              </div>
-              <div className="flex-1">
-                <InquiryReplyRichTextEditor
-                  ref={answerEditorRef}
-                  value={form.answer}
-                  onChange={(html) => handleFieldChange("answer", html)}
+              {/* Câu trả lời */}
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-start md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                    Câu trả lời
+                  </p>
+                </div>
+                <div className="w-full flex-1">
+                  <InquiryReplyRichTextEditor
+                    ref={answerEditorRef}
+                    value={form.answer}
+                    onChange={(html) => handleFieldChange("answer", html)}
                   placeholder="Gõ @ để chèn tham chiếu tài liệu"
-                />
+                  />
+                </div>
               </div>
-            </div>
-
             </div>
 
           {sources.length > 0 && (
@@ -385,64 +376,64 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
             </div>
           )}
 
-          {/* Technical info section */}
-          <div className="mt-4 border-t border-gray-100 pt-4 dark:border-white/10">
-            <p className="text-navy-700 mb-3 text-xs font-semibold tracking-wide uppercase dark:text-white">
-              Thông số kỹ thuật
-            </p>
-            <div className="flex flex-col gap-2 text-sm text-gray-600 dark:text-gray-400">
-              <div className="flex items-center gap-6">
-                <div className="w-40 shrink-0">
-                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                    ID
-                  </p>
+            {/* Technical info section */}
+            <div className="mt-4 border-t border-gray-100 pt-4 dark:border-white/10">
+              <p className="text-navy-700 mb-3 text-xs font-semibold tracking-wide uppercase dark:text-white">
+                Thông số kỹ thuật
+              </p>
+              <div className="flex flex-col gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <div className="flex items-center gap-6">
+                  <div className="w-40 shrink-0">
+                    <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                      ID
+                    </p>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-navy-700 text-base dark:text-white">
+                      {detail.id}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className="text-navy-700 text-base dark:text-white">
-                    {detail.id}
-                  </p>
+                <div className="flex items-center gap-6">
+                  <div className="w-40 shrink-0">
+                    <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                      Message ID
+                    </p>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-navy-700 text-base dark:text-white">
+                      {detail.messageId ?? "—"}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-6">
-                <div className="w-40 shrink-0">
-                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                    Message ID
-                  </p>
+                <div className="flex items-center gap-6">
+                  <div className="w-40 shrink-0">
+                    <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                      Ngày tạo
+                    </p>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-navy-700 text-base dark:text-white">
+                      {formatDate(detail.createdAt)}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className="text-navy-700 text-base dark:text-white">
-                    {detail.messageId ?? "—"}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-6">
-                <div className="w-40 shrink-0">
-                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                    Ngày tạo
-                  </p>
-                </div>
-                <div className="flex-1">
-                  <p className="text-navy-700 text-base dark:text-white">
-                    {formatDate(detail.createdAt)}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-6">
-                <div className="w-40 shrink-0">
-                  <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                    Cập nhật lần cuối
-                  </p>
-                </div>
-                <div className="flex-1">
-                  <p className="text-navy-700 text-base dark:text-white">
-                    {formatDate(detail.updatedAt)}
-                  </p>
+                <div className="flex items-center gap-6">
+                  <div className="w-40 shrink-0">
+                    <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                      Cập nhật lần cuối
+                    </p>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-navy-700 text-base dark:text-white">
+                      {formatDate(detail.updatedAt)}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
       </Drawer>
     </>
   );

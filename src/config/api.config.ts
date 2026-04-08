@@ -12,11 +12,12 @@ export const API_CONFIG = {
 export const API_ENDPOINTS = {
   // Authentication
   auth: {
-    googleUrl: "/authentication/google",       
-    googleCallback: "/authentication/google", 
+    googleUrl: "/authentication/google",
+    googleCallback: "/authentication/google",
     refresh: "/authentication/auth/refresh",
     logout: "/authentication/auth/logout",
     me: "/authentication/auth/me",
+    superToken: "/authentication/auth/super-token",
   },
 
   // Authentication - Users
@@ -36,7 +37,8 @@ export const API_ENDPOINTS = {
       stats: "/classRegistration/classRegistrations/stats",
       previewReply: (id: number) =>
         `/classRegistration/classRegistrations/${id}/reply`,
-      reply: (id: number) => `/classRegistration/classRegistrations/${id}/reply`,
+      reply: (id: number) =>
+        `/classRegistration/classRegistrations/${id}/reply`,
       items: (parentId: number) =>
         `/classRegistration/classRegistrations/${parentId}/items`,
       itemById: (parentId: number, id: number) =>
@@ -97,7 +99,7 @@ export const API_ENDPOINTS = {
       stats: "/task/tasks/stats",
     },
   },
-  
+
   // Documents (Nest API)
   document: {
     accesses: {
@@ -122,7 +124,8 @@ export const API_ENDPOINTS = {
       base: "/api/metadata",
       byId: (key: string) => `/api/metadata/${key}`,
       values: (key: string) => `/api/metadata/${key}/values`,
-      valueById: (key: string, value: string) => `/api/metadata/${key}/values/${value}`,
+      valueById: (key: string, value: string) =>
+        `/api/metadata/${key}/values/${value}`,
     },
   },
 } as const;

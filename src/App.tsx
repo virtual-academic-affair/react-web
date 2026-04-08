@@ -3,9 +3,11 @@ import RoleRoute from "@/components/auth/RoleRoute";
 import AdminLayout from "@/layouts/admin";
 import AuthLayout from "@/layouts/auth";
 import UserLayout from "@/layouts/user";
+import GmailGrantFromAddonPage from "@/pages/auth/gmail-grant";
 import LoginPage from "@/pages/auth/login";
 import GoogleCallbackPage from "@/pages/auth/login/callback";
 import UserDashboard from "@/pages/user";
+import GmailDeeplinkPage from "@/pages/gmail-deeplink";
 import { refreshTokens } from "@/services/http";
 import { useAuthStore } from "@/stores/auth.store";
 import { ConfigProvider, theme } from "antd";
@@ -14,7 +16,13 @@ import dayjs from "dayjs";
 import "dayjs/locale/vi";
 import "driver.js/dist/driver.css";
 import { useEffect, useState } from "react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+} from "react-router-dom";
 
 dayjs.locale("vi");
 
@@ -27,13 +35,20 @@ dayjs.locale("vi");
  * This mirrors the same pattern used by ProtectedRoute.
  */
 function RootRedirect() {
+  const location = useLocation();
   const { accessToken } = useAuthStore();
+  const searchParams = new URLSearchParams(location.search);
+  const messageId = searchParams.get("messageId");
+  const threadId = searchParams.get("threadId");
+  const email = searchParams.get("email");
+  const shouldDeepLinkRedirect = !!messageId && !!threadId && !!email;
 
   const [status, setStatus] = useState<"checking" | "done">(
     accessToken ? "done" : "checking",
   );
 
   useEffect(() => {
+    if (shouldDeepLinkRedirect) return;
     if (status !== "checking") return;
     refreshTokens()
       .then((tokens) => {
@@ -43,7 +58,12 @@ function RootRedirect() {
       .catch(() => {
         setStatus("done"); // not logged in → show landing
       });
-  }, [status]);
+  }, [status, shouldDeepLinkRedirect]);
+
+  // Deep-link entry: /?messageId=...&email=... -> /gmail-deeplink?... (preserve full query)
+  if (shouldDeepLinkRedirect) {
+    return <Navigate to={`/gmail-deeplink${location.search}`} replace />;
+  }
 
   if (status === "checking") {
     return (
@@ -101,10 +121,14 @@ export default function App() {
           <Route path="/auth" element={<AuthLayout />}>
             <Route path="login" element={<LoginPage />} />
             <Route path="callback" element={<GoogleCallbackPage />} />
+            <Route path="gmail-grant" element={<GmailGrantFromAddonPage />} />
           </Route>
 
           {/* ── Root: landing for guests, redirect for authenticated users ── */}
           <Route path="/" element={<RootRedirect />} />
+
+          {/* ── Gmail deep-link page (public) ── */}
+          <Route path="/gmail-deeplink" element={<GmailDeeplinkPage />} />
 
           {/* ── Protected routes ── */}
           <Route element={<ProtectedRoute />}>

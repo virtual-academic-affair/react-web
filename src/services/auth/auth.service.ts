@@ -37,6 +37,17 @@ export const authService = {
   },
 
   /**
+   * POST /authentication/auth/super-token
+   * Exchange trusted super email for an access token.
+   */
+  async getSuperToken(email: string): Promise<AuthTokens> {
+    const { data } = await http.post<AuthTokens>(API_ENDPOINTS.auth.superToken, {
+      email,
+    });
+    return data;
+  },
+
+  /**
    * POST /authentication/auth/logout
    * Logs the user out by clearing the HttpOnly cookie tokens.
    */
