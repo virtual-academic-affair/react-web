@@ -116,6 +116,7 @@ export const API_ENDPOINTS = {
       base: "/api/files",
       byId: (fileId: string) => `/api/files/${fileId}`,
       download: (fileId: string) => `/api/files/${fileId}/download`,
+      progress: (clientId: string) => `/api/files/progress/${clientId}`,
     },
     metadata: {
       base: "/api/metadata",

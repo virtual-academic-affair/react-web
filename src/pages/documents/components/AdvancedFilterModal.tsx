@@ -25,7 +25,6 @@ const ACCESS_SCOPE_OPTIONS = [
     label: "Giảng viên",
     color: RoleColors[Role.Lecture].hex,
   },
-  { value: "private", label: "Nội bộ", color: "#6b7280" },
 ] as const;
 
 const AccessScopeFilter: React.FC<AccessScopeFilterProps> = ({
