@@ -1,9 +1,12 @@
 import { message as toast } from "antd";
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import Drawer from "@/components/drawer/Drawer";
 import Tag from "@/components/tag/Tag";
-import { DocumentsService } from "@/services/documents";
+import {
+  DocumentsService,
+  type UploadProgressEvent,
+} from "@/services/documents";
 import { RoleColors } from "@/types/users";
 import { parseError } from "@/utils/parseError";
 import AccessScopeBadge from "./AccessScopeBadge";
@@ -185,6 +188,36 @@ export const UploadForm: React.FC<UploadFormProps> = ({
   const [customMetadata, setCustomMetadata] = useState<Record<string, string>>(
     {},
   );
+  const [uploadProgress, setUploadProgress] =
+    useState<UploadProgressEvent | null>(null);
+  const [wsConnected, setWsConnected] = useState(false);
+  const wsRef = useRef<WebSocket | null>(null);
+
+  const stageLabelMap = useMemo<Record<string, string>>(
+    () => ({
+      db_creating: "Khởi tạo bản ghi",
+      uploading_original: "Upload file gốc",
+      parsing_markdown: "OCR/Parse markdown",
+      uploading_gemini: "Upload vào Gemini",
+      saving_vector_db: "Lưu vào Vector DB",
+      completed: "Hoàn tất",
+    }),
+    [],
+  );
+
+  const closeProgressSocket = useCallback(() => {
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+    setWsConnected(false);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      closeProgressSocket();
+    };
+  }, [closeProgressSocket]);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -211,8 +244,10 @@ export const UploadForm: React.FC<UploadFormProps> = ({
     setSelectedFile(null);
     setDisplayName("");
     setCustomMetadata({});
+    setUploadProgress(null);
     setUploading(false);
-  }, [goToStep]);
+    closeProgressSocket();
+  }, [closeProgressSocket, goToStep]);
 
   const handleFileSelect = useCallback(
     (file: File) => {
@@ -259,32 +294,59 @@ export const UploadForm: React.FC<UploadFormProps> = ({
   const handlePrev = () => goToStep(Math.max(1, currentStep - 1));
 
   const handleUpload = async () => {
-    const hasAccessScope = customMetadata["access_scope"];
     const hasAcademicYear = customMetadata["academic_year"];
     const hasCohort = customMetadata["cohort"];
 
-    if (!hasAccessScope) {
-      toast.error("Vui lòng chọn phạm vi truy cập.");
-      return;
-    }
     if (!hasAcademicYear && !hasCohort) {
       toast.error("Vui lòng chọn năm học hoặc khóa.");
       return;
     }
 
     setUploading(true);
+    setUploadProgress(null);
+
     try {
+      const normalizedMetadata = Object.entries(customMetadata).reduce(
+        (acc, [key, value]) => {
+          if (!value) return acc;
+          acc[key] = [value];
+          return acc;
+        },
+        {} as Record<string, string[]>,
+      );
+
+      // access_scope is required key in backend; empty array = nội bộ
+      if (!normalizedMetadata.access_scope) {
+        normalizedMetadata.access_scope = [];
+      }
+
+      const clientId =
+        (globalThis.crypto?.randomUUID && globalThis.crypto.randomUUID()) ||
+        `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+      closeProgressSocket();
+      wsRef.current = DocumentsService.createUploadProgressSocket(clientId, {
+        onOpen: () => setWsConnected(true),
+        onMessage: (event) => setUploadProgress(event),
+        onError: () => setWsConnected(false),
+        onClose: () => setWsConnected(false),
+      });
+
       const formData = new FormData();
       formData.append("file", selectedFile!);
-      if (displayName.trim())
+      if (displayName.trim()) {
         formData.append("displayName", displayName.trim());
-      formData.append("customMetadata", JSON.stringify(customMetadata));
+      }
+      formData.append("clientId", clientId);
+      formData.append("customMetadata", JSON.stringify(normalizedMetadata));
+
       await DocumentsService.uploadFile(formData);
       toast.success("Tải lên thành công.");
       reset();
       onSuccess();
     } catch (err) {
       toast.error(parseError(err));
+      closeProgressSocket();
     } finally {
       setUploading(false);
     }
@@ -302,6 +364,28 @@ export const UploadForm: React.FC<UploadFormProps> = ({
       {currentStep === 1 && (
         <>
           <div>
+            {uploading && (
+              <div className="dark:bg-navy-800 mb-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-white/10">
+                <div className="mb-1 flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                    Đang xử lý tải lên
+                  </p>
+                  <span
+                    className={`text-xs font-medium ${
+                      wsConnected ? "text-green-600" : "text-amber-600"
+                    }`}
+                  >
+                    {wsConnected ? "Realtime connected" : "Connecting..."}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  {uploadProgress?.message || "Đang khởi tạo upload..."}
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Bước: {stageLabelMap[uploadProgress?.step || ""] || "—"}
+                </p>
+              </div>
+            )}
             {!selectedFile ? (
               <div
                 className={`flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 transition-colors ${
@@ -485,12 +569,9 @@ export const UploadForm: React.FC<UploadFormProps> = ({
                         <p className="mt-2 text-xs text-gray-500">
                           Quyền truy cập:{" "}
                           <span className="font-medium">
-                            {currentValue === "private" &&
-                              "Chỉ giảng viên & sinh viên được chọn"}
                             {currentValue === "student" && "Chỉ sinh viên"}
                             {currentValue === "lecture" && "Chỉ giảng viên"}
-                            {currentValue === "public" && "Tất cả mọi người"}
-                            {!currentValue && "—"}
+                            {!currentValue && "Để trống = file nội bộ"}
                           </span>
                         </p>
                       </div>

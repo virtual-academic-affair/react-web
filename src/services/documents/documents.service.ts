@@ -1,4 +1,4 @@
-import { API_ENDPOINTS } from "@/config/api.config";
+import { API_CONFIG, API_ENDPOINTS } from "@/config/api.config";
 import http from "../http";
 import ragHttp from "../rag-http";
 
@@ -6,6 +6,19 @@ import ragHttp from "../rag-http";
  * Service for document management.
  * Combines calls to Nest API (accesses, bookmarks) and Python RAG (file details, list, upload).
  */
+export type UploadProgressEvent = {
+  step: string;
+  message: string;
+  file_id?: string;
+};
+
+const getRagWsBaseUrl = () => {
+  const raw = API_CONFIG.ragBaseURL;
+  if (raw.startsWith("https://")) return raw.replace("https://", "wss://");
+  if (raw.startsWith("http://")) return raw.replace("http://", "ws://");
+  return raw;
+};
+
 export const DocumentsService = {
   // ── Nest API Endpoints ─────────────────────────────────────────────────────
 
@@ -74,6 +87,34 @@ export const DocumentsService = {
     }
     const { data } = await ragHttp.get(API_ENDPOINTS.rag.files.byId(fileId));
     return data;
+  },
+
+
+  createUploadProgressSocket(
+    clientId: string,
+    handlers: {
+      onOpen?: () => void;
+      onMessage?: (event: UploadProgressEvent) => void;
+      onError?: (event: Event) => void;
+      onClose?: (event: CloseEvent) => void;
+    },
+  ): WebSocket {
+    const wsUrl = `${getRagWsBaseUrl()}${API_ENDPOINTS.rag.files.progress(clientId)}`;
+    const socket = new WebSocket(wsUrl);
+
+    socket.onopen = () => handlers.onOpen?.();
+    socket.onmessage = (evt) => {
+      try {
+        const payload = JSON.parse(evt.data) as UploadProgressEvent;
+        handlers.onMessage?.(payload);
+      } catch {
+        // ignore malformed messages
+      }
+    };
+    socket.onerror = (evt) => handlers.onError?.(evt);
+    socket.onclose = (evt) => handlers.onClose?.(evt);
+
+    return socket;
   },
 
   /**

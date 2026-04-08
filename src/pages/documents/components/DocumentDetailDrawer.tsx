@@ -217,7 +217,10 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
             </div>
             <div className="flex-1">
               <AccessScopeBadge
-                value={fileDetail?.customMetadata?.accessScope}
+                value={
+                  fileDetail?.customMetadata?.access_scope ??
+                  fileDetail?.customMetadata?.accessScope
+                }
               />
             </div>
           </div>
@@ -237,6 +240,82 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
                   ? "Đang hoạt động"
                   : "Thất bại"}
               </Tag>
+            </div>
+          </div>
+
+          {/* Tóm tắt */}
+          <div className="flex items-start gap-6">
+            <div className="w-40 shrink-0">
+              <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                Tóm tắt
+              </p>
+            </div>
+            <div className="flex-1">
+              <p className="text-navy-700 text-sm whitespace-pre-wrap dark:text-white">
+                {fileDetail?.summary || "—"}
+              </p>
+            </div>
+          </div>
+
+          {/* Mục lục */}
+          <div className="flex items-start gap-6">
+            <div className="w-40 shrink-0">
+              <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                Mục lục
+              </p>
+            </div>
+            <div className="flex-1">
+              {Array.isArray(fileDetail?.tableOfContents) &&
+              fileDetail.tableOfContents.length > 0 ? (
+                <ul className="list-disc space-y-1 pl-5 text-sm text-gray-700 dark:text-gray-300">
+                  {fileDetail.tableOfContents.map((item: string, idx: number) => (
+                    <li key={`${idx}-${item}`}>{item}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-gray-500">—</p>
+              )}
+            </div>
+          </div>
+
+          {/* Liên kết file */}
+          <div className="flex items-start gap-6">
+            <div className="w-40 shrink-0">
+              <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+                Liên kết file
+              </p>
+            </div>
+            <div className="flex-1 space-y-1 text-sm">
+              <div>
+                <span className="mr-2 text-gray-500">Gốc:</span>
+                {fileDetail?.fileUrl ? (
+                  <a
+                    href={fileDetail.fileUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-brand-500 hover:text-brand-600 underline"
+                  >
+                    Mở file gốc
+                  </a>
+                ) : (
+                  <span className="text-gray-500">—</span>
+                )}
+              </div>
+              <div>
+                <span className="mr-2 text-gray-500">Markdown:</span>
+                {fileDetail?.markdownFileUrl ? (
+                  <a
+                    href={fileDetail.markdownFileUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-brand-500 hover:text-brand-600 underline"
+                  >
+                    Mở file markdown
+                  </a>
+                ) : (
+                  <span className="text-gray-500">—</span>
+                )}
+              </div>
             </div>
           </div>
 

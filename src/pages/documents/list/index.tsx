@@ -107,26 +107,12 @@ const DocumentListPage = () => {
 
       // Special handling for accessScope
       if (key === "accessScope") {
-        const hasStudent = values.includes("student");
-        const hasLecture = values.includes("lecture");
-        const hasPrivate = values.includes("private");
-
-        const derivedValues: string[] = [];
-
-        if (hasStudent && hasLecture) {
-          derivedValues.push("public", "student", "lecture");
-        } else if (hasStudent) {
-          derivedValues.push("student", "public");
-        } else if (hasLecture) {
-          derivedValues.push("lecture", "public");
-        }
-
-        if (hasPrivate) {
-          derivedValues.push("private");
-        }
-
-        if (derivedValues.length > 0) {
-          result[key] = derivedValues;
+        // Backend now only accepts: student, lecture
+        const normalized = values.filter((v) =>
+          ["student", "lecture"].includes(v),
+        );
+        if (normalized.length > 0) {
+          result[key] = normalized;
         }
         return;
       }
@@ -159,6 +145,11 @@ const DocumentListPage = () => {
       };
     },
     staleTime: 30 * 1000,
+    refetchInterval: (query) => {
+      const items = (query.state.data as any)?.items || [];
+      const hasPending = items.some((item: any) => item?.status === "pending");
+      return hasPending ? 3000 : false;
+    },
   });
 
   const previewFileName = useMemo(() => {
@@ -318,7 +309,9 @@ const DocumentListPage = () => {
         width: "20%",
         render: (x) => {
           const meta = x.customMetadata || {};
-          return <AccessScopeBadge value={meta.accessScope} />;
+          return (
+            <AccessScopeBadge value={meta.access_scope ?? meta.accessScope} />
+          );
         },
       },
       {
@@ -336,11 +329,21 @@ const DocumentListPage = () => {
         header: "Trạng thái xử lý",
         width: "15%",
         render: (x) => {
-          return (
-            <Tag color={x?.status === "active" ? "#22c55e" : "#b2161e"}>
-              {x?.status === "active" ? "Đang hoạt động" : "Thất bại"}
-            </Tag>
-          );
+          const status = String(x?.status || "").toLowerCase();
+
+          if (status === "active") {
+            return <Tag color="#22c55e">Thành công</Tag>;
+          }
+
+          if (["pending", "processing", "uploading"].includes(status)) {
+            return <Tag color="#f59e0b">Đang xử lý</Tag>;
+          }
+
+          if (status === "failed") {
+            return <Tag color="#b2161e">Thất bại</Tag>;
+          }
+
+          return <Tag color="#94a3b8">Đang xử lý</Tag>;
         },
       },
     ],
