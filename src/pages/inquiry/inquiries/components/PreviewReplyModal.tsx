@@ -5,7 +5,7 @@ import type { InquiryReplyDto } from "@/types/inquiry";
 import { useQuery } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React from "react";
-import { MdClose, MdDescription, MdEdit, MdSend } from "react-icons/md";
+import { MdClose, MdEdit, MdSend } from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
 import FilePreviewModal from "@/pages/documents/components/FilePreviewModal";
 import InquiryReplyRichTextEditor from "./InquiryReplyRichTextEditor";
