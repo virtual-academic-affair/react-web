@@ -84,14 +84,18 @@ interface FilePreviewModalProps {
   fileId: string | null;
   fileName: string;
   isOpen: boolean;
+  initialPage?: number;
   onClose: () => void;
 }
 
 // ── Sub-components ───────────────────────────────────────────────────────────
 
-const PdfPreview: React.FC<{ url: string }> = ({ url }) => {
+const PdfPreview: React.FC<{ url: string; initialPage?: number }> = ({
+  url,
+  initialPage = 1,
+}) => {
   const [numPages, setNumPages] = useState<number>(0);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(initialPage);
   const [scale, setScale] = useState(1.2);
   const containerRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -201,8 +205,21 @@ const PdfPreview: React.FC<{ url: string }> = ({ url }) => {
         <Document
           file={url}
           onLoadSuccess={({ numPages: n }) => {
+            const safeInitialPage = Math.min(Math.max(initialPage, 1), n || 1);
             setNumPages(n);
+            setCurrentPage(safeInitialPage);
             pageRefs.current = new Array(n).fill(null);
+
+            // Wait refs mounted, then jump to requested page (for deep-link from inquiry TOC)
+            setTimeout(() => {
+              const container = containerRef.current;
+              const target = pageRefs.current[safeInitialPage - 1];
+              if (!container || !target) return;
+              container.scrollTo({
+                top: Math.max(target.offsetTop - 32, 0),
+                behavior: "auto",
+              });
+            }, 0);
           }}
           loading={
             <div className="flex flex-col items-center justify-center gap-2 py-20 text-white/70 h-full w-full absolute inset-0">
@@ -379,6 +396,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
   fileId,
   fileName,
   isOpen,
+  initialPage = 1,
   onClose,
 }) => {
   const category = useMemo(() => categorizeFile(fileName), [fileName]);
@@ -473,7 +491,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
 
     switch (category) {
       case "pdf":
-        return objectUrl ? <PdfPreview url={objectUrl} /> : null;
+        return objectUrl ? <PdfPreview url={objectUrl} initialPage={initialPage} /> : null;
       case "text":
         return <TextPreview blob={blob} />;
       case "image":

@@ -83,9 +83,13 @@ const DocumentListPage = () => {
     useState<DocumentFilters>(defaultFilters);
   const [filterOpen, setFilterOpen] = useState(false);
 
-  // File preview (URL-driven: ?id=fileId&preview=true)
+  // File preview (URL-driven: ?id=fileId&preview=true[&previewPage=n])
   const isPreview = searchParams.get("preview") === "true";
   const previewFileId = isPreview ? searchParams.get("id") || null : null;
+  const previewPageParam = Number(searchParams.get("previewPage") ?? "1");
+  const previewPage = Number.isFinite(previewPageParam) && previewPageParam > 0
+    ? Math.floor(previewPageParam)
+    : 1;
   const wasDrawerOpenBeforePreview = useRef(false);
 
   // Detail drawer
@@ -459,9 +463,11 @@ const DocumentListPage = () => {
         fileId={previewFileId}
         fileName={previewFileName}
         isOpen={previewFileId !== null}
+        initialPage={previewPage}
         onClose={() => {
           const next = new URLSearchParams(searchParams);
           next.delete("preview");
+          next.delete("previewPage");
           if (!wasDrawerOpenBeforePreview.current) {
             next.delete("id");
           }

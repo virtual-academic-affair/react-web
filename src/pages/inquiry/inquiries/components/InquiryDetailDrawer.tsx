@@ -3,20 +3,20 @@ import {
   DetailLinkedMessageSwitch,
 } from "@/components/detail/DetailLinkedEmailDrawer";
 import Drawer from "@/components/drawer/Drawer";
+import { DocumentsService } from "@/services/documents";
 import { inquiriesService } from "@/services/inquiry";
 import type { Inquiry, InquiryType, UpdateInquiryDto } from "@/types/inquiry";
 import type { MessageStatus } from "@/types/messageStatus";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React from "react";
 import { MdDeleteOutline, MdOutlineRateReview, MdSave } from "react-icons/md";
 import Tooltip from "@/components/tooltip/Tooltip";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import MessageStatusSelector from "@/components/selector/MessageStatusSelector";
 import InquiryTypeEditor from "@/components/selector/InquiryTypeEditor";
-import RichTextEditor, {
-  type RichTextEditorHandle,
-} from "@/components/fields/RichTextEditor";
+import { type RichTextEditorHandle } from "@/components/fields/RichTextEditor";
+import InquiryReplyRichTextEditor from "./InquiryReplyRichTextEditor";
 import { resolveLinkedMessageId } from "@/hooks/useDetailLinkedMessagePanel";
 import { formatDate } from "@/utils/date";
 import { normalizeInquiryContent } from "@/utils/inquiryContent";
@@ -56,6 +56,25 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
     staleTime: 30 * 1000,
   });
   const sources = detail?.sources ?? [];
+  const sourceFileDetails = useQueries({
+    queries: sources.map((source) => ({
+      queryKey: ["documents", source.fileId],
+      queryFn: () => DocumentsService.getFileDetail(source.fileId),
+      enabled: Boolean(source.fileId),
+      staleTime: 60 * 1000,
+    })),
+  });
+  const sourceFileUrlMap = React.useMemo(() => {
+    const map = new Map<string, string>();
+    sources.forEach((source, index) => {
+      const fileUrl = sourceFileDetails[index]?.data?.fileUrl;
+      if (fileUrl) {
+        map.set(source.fileId, fileUrl);
+      }
+    });
+    return map;
+  }, [sources, sourceFileDetails]);
+
   const normalizedAnswerContent = React.useMemo(
     () => normalizeInquiryContent(detail?.answer),
     [detail?.answer],
@@ -304,10 +323,11 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
                 </p>
               </div>
               <div className="flex-1">
-                <RichTextEditor
+                <InquiryReplyRichTextEditor
                   ref={questionEditorRef}
                   value={form.question}
                   onChange={(html) => handleFieldChange("question", html)}
+                  placeholder="Gõ @ để chèn tham chiếu tài liệu"
                 />
               </div>
             </div>
@@ -320,10 +340,11 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
                 </p>
               </div>
               <div className="flex-1">
-                <RichTextEditor
+                <InquiryReplyRichTextEditor
                   ref={answerEditorRef}
                   value={form.answer}
                   onChange={(html) => handleFieldChange("answer", html)}
+                  placeholder="Gõ @ để chèn tham chiếu tài liệu"
                 />
               </div>
             </div>
@@ -345,13 +366,18 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
                       [{index + 1}]
                     </span>
                     <div className="min-w-0 flex-1">
-                      <Link
-                        to={`/admin/documents/list?id=${encodeURIComponent(source.fileId)}`}
-                        className="text-navy-700 inline leading-6 text-sm font-semibold underline-offset-2 transition-colors hover:text-brand-500 hover:underline dark:text-white dark:hover:text-brand-400"
-                      >
-                        {source.displayName ||
-                          `Tài liệu ${index + 1}`}
-                      </Link>
+                      {sourceFileUrlMap.get(source.fileId) ? (
+                        <a
+                          href={sourceFileUrlMap.get(source.fileId)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-navy-700 inline leading-6 text-sm font-semibold underline-offset-2 transition-colors hover:text-brand-500 hover:underline dark:text-white dark:hover:text-brand-400"
+                        >
+                          {source.displayName || `Tài liệu ${index + 1}`}
+                        </a>
+                      ) : (
+                        <span className="text-sm text-gray-500">—</span>
+                      )}
                     </div>
                   </div>
                 ))}

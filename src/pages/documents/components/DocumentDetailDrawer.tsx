@@ -301,21 +301,7 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
                   <span className="text-gray-500">—</span>
                 )}
               </div>
-              <div>
-                <span className="mr-2 text-gray-500">Markdown:</span>
-                {fileDetail?.markdownFileUrl ? (
-                  <a
-                    href={fileDetail.markdownFileUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-brand-500 hover:text-brand-600 underline"
-                  >
-                    Mở file markdown
-                  </a>
-                ) : (
-                  <span className="text-gray-500">—</span>
-                )}
-              </div>
+
             </div>
           </div>
 
