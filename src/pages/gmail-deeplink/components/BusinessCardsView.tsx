@@ -140,11 +140,30 @@ const BusinessCardsView: React.FC<Props> = ({ message }) => {
         : "task";
 
   return (
-    <div className="bg-lightPrimary dark:bg-navy-900 min-h-screen p-3 px-4">
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
+    <div className="min-h-screen bg-white p-3 px-4">
+      <div className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-4">
         {baseItems.length === 0 ? (
-          <div className="dark:bg-navy-800 mt-4 rounded-3xl bg-white p-4 text-center text-sm text-gray-500 shadow-md dark:text-gray-300">
-            Không có nghiệp vụ nào được gắn với email này.
+          <div className="flex min-h-screen flex-col items-center justify-center px-4">
+            <img
+              src="/nothing.png"
+              alt="Không có dữ liệu"
+              className="mb-4 w-72"
+            />
+            <p className="mb-4 text-center text-base text-gray-500">
+              Chưa có hồ sơ nào.
+            </p>
+            <button
+              onClick={() =>
+                window.open(
+                  "https://vaa.hcmus.app",
+                  "_blank",
+                  "noopener,noreferrer",
+                )
+              }
+              className="bg-brand-500 hover:bg-brand-600 rounded-xl px-5 py-3 text-xs font-semibold text-white"
+            >
+              Quản lý Giáo vụ số
+            </button>
           </div>
         ) : (
           <div className="mt-2 grid gap-4 md:grid-cols-2">
@@ -152,7 +171,7 @@ const BusinessCardsView: React.FC<Props> = ({ message }) => {
               <button
                 key={`${item.type}-${item.id}`}
                 onClick={() => handleOpen(item)}
-                className="dark:bg-navy-800 group relative flex flex-col rounded-[20px] bg-white p-5 pb-7 text-left text-sm shadow-md transition"
+                className="dark:bg-navy-800 group relative flex flex-col rounded-[20px] bg-white p-5 pb-7 text-left text-sm shadow-lg transition"
               >
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <Tag
@@ -164,7 +183,8 @@ const BusinessCardsView: React.FC<Props> = ({ message }) => {
                   >
                     {getLabelVi(getSystemLabelKey(item.type), systemLabelEnum)}
                   </Tag>
-                  {(item.type === "class-registration" || item.type === "inquiry") &&
+                  {(item.type === "class-registration" ||
+                    item.type === "inquiry") &&
                   ((item.type === "class-registration"
                     ? classRegMap.get(item.id)?.messageStatus
                     : inquiryMap.get(item.id)?.messageStatus) as
@@ -175,7 +195,8 @@ const BusinessCardsView: React.FC<Props> = ({ message }) => {
                         MessageStatusColors[
                           (item.type === "class-registration"
                             ? classRegMap.get(item.id)!.messageStatus
-                            : inquiryMap.get(item.id)!.messageStatus) as MessageStatus
+                            : inquiryMap.get(item.id)!
+                                .messageStatus) as MessageStatus
                         ].hex
                       }
                       interactive={false}
@@ -185,7 +206,8 @@ const BusinessCardsView: React.FC<Props> = ({ message }) => {
                         MessageStatusLabels[
                           (item.type === "class-registration"
                             ? classRegMap.get(item.id)!.messageStatus
-                            : inquiryMap.get(item.id)!.messageStatus) as MessageStatus
+                            : inquiryMap.get(item.id)!
+                                .messageStatus) as MessageStatus
                         ]
                       }
                     </Tag>
