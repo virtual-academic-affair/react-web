@@ -1,11 +1,11 @@
-import { useMemo } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { messagesService } from "@/services/email";
 import { authService } from "@/services/auth/auth.service";
+import { messagesService } from "@/services/email";
 import { useAuthStore } from "@/stores/auth.store";
 import type { Message } from "@/types/email";
+import { useQuery } from "@tanstack/react-query";
 import { message as toast } from "antd";
+import { useMemo } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import BusinessCardsView from "./components/BusinessCardsView";
 
 function useQueryParams() {
@@ -24,8 +24,8 @@ const GmailDeeplinkPage = () => {
 
   const { setAccessToken } = useAuthStore();
 
-  const { isLoading: isSuperTokenLoading, isError: isSuperTokenError } = useQuery(
-    {
+  const { isLoading: isSuperTokenLoading, isError: isSuperTokenError } =
+    useQuery({
       queryKey: ["gmail-deeplink-super-token", email],
       enabled: hasFullParams,
       queryFn: async () => {
@@ -34,24 +34,21 @@ const GmailDeeplinkPage = () => {
         return tokens;
       },
       retry: false,
-    },
-  );
+    });
 
   const {
     data: message,
     isLoading: isMessageLoading,
     isError: isMessageError,
   } = useQuery<Message | null>({
-    queryKey: ["gmail-deeplink-message", gmailMessageId],
+    queryKey: ["gmail-deeplink-message", threadId],
     enabled: hasFullParams && !isSuperTokenLoading && !isSuperTokenError,
     queryFn: async () => {
       try {
-        const msg = await messagesService.findFirstByGmailMessageId(
-          gmailMessageId,
-        );
-        if (!msg) {
-          toast.warning("Không tìm thấy email tương ứng với messageId.");
-        }
+        const msg = await messagesService.findFirstByThreadId(threadId);
+        // if (!msg) {
+        //   toast.warning("Không tìm thấy email tương ứng với threadId.");
+        // }
         return msg;
       } catch {
         toast.error("Không thể tải thông tin email.");
@@ -69,7 +66,7 @@ const GmailDeeplinkPage = () => {
         </p>
         <button
           onClick={() => navigate("/")}
-          className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600"
+          className="bg-brand-500 hover:bg-brand-600 rounded-xl px-4 py-2 text-sm font-semibold text-white"
         >
           Về trang chính
         </button>
@@ -93,7 +90,7 @@ const GmailDeeplinkPage = () => {
         </p>
         <button
           onClick={() => navigate("/")}
-          className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600"
+          className="bg-brand-500 hover:bg-brand-600 rounded-xl px-4 py-2 text-sm font-semibold text-white"
         >
           Về trang chính
         </button>
@@ -109,7 +106,7 @@ const GmailDeeplinkPage = () => {
         </p>
         <button
           onClick={() => navigate("/")}
-          className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600"
+          className="bg-brand-500 hover:bg-brand-600 rounded-xl px-4 py-2 text-sm font-semibold text-white"
         >
           Về trang chính
         </button>
@@ -120,14 +117,21 @@ const GmailDeeplinkPage = () => {
   if (!message) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-4">
-        <p className="mb-2 text-center text-base text-gray-500">
-          Không tìm thấy email tương ứng với messageId đã cung cấp.
+        <img src="/nothing.png" alt="Không có dữ liệu" className="mb-4 w-72" />
+        <p className="mb-4 text-center text-base text-gray-500">
+          Chưa có hồ sơ nào.
         </p>
         <button
-          onClick={() => navigate("/")}
-          className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600"
+          onClick={() =>
+            window.open(
+              "https://vaa.hcmus.app",
+              "_blank",
+              "noopener,noreferrer",
+            )
+          }
+          className="bg-brand-500 hover:bg-brand-600 rounded-xl px-5 py-3 text-xs font-semibold text-white"
         >
-          Về trang chính
+          Quản lý Giáo vụ số
         </button>
       </div>
     );
@@ -143,4 +147,3 @@ const GmailDeeplinkPage = () => {
 };
 
 export default GmailDeeplinkPage;
-
