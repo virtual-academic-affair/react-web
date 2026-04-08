@@ -17,6 +17,11 @@ import {
   type Inquiry,
   type InquiryType,
 } from "@/types/inquiry";
+import {
+  MessageStatusColors,
+  MessageStatusLabels,
+  type MessageStatus,
+} from "@/types/messageStatus";
 import type {
   DynamicDataParams,
   DynamicDataResponse,
@@ -135,7 +140,7 @@ const BusinessCardsView: React.FC<Props> = ({ message }) => {
         : "task";
 
   return (
-    <div className="bg-lightPrimary dark:bg-navy-900 min-h-screen px-4 py-6">
+    <div className="bg-lightPrimary dark:bg-navy-900 min-h-screen p-3 px-4">
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
         {baseItems.length === 0 ? (
           <div className="dark:bg-navy-800 mt-4 rounded-3xl bg-white p-4 text-center text-sm text-gray-500 shadow-md dark:text-gray-300">
@@ -147,9 +152,9 @@ const BusinessCardsView: React.FC<Props> = ({ message }) => {
               <button
                 key={`${item.type}-${item.id}`}
                 onClick={() => handleOpen(item)}
-                className="dark:bg-navy-800 group relative flex flex-col rounded-4xl bg-white p-5 pb-7 text-left text-sm shadow-md transition"
+                className="dark:bg-navy-800 group relative flex flex-col rounded-[20px] bg-white p-5 pb-7 text-left text-sm shadow-md transition"
               >
-                <div className="mb-2">
+                <div className="mb-2 flex items-center justify-between gap-2">
                   <Tag
                     color={getLabelColor(
                       getSystemLabelKey(item.type),
@@ -159,6 +164,32 @@ const BusinessCardsView: React.FC<Props> = ({ message }) => {
                   >
                     {getLabelVi(getSystemLabelKey(item.type), systemLabelEnum)}
                   </Tag>
+                  {(item.type === "class-registration" || item.type === "inquiry") &&
+                  ((item.type === "class-registration"
+                    ? classRegMap.get(item.id)?.messageStatus
+                    : inquiryMap.get(item.id)?.messageStatus) as
+                    | MessageStatus
+                    | undefined) ? (
+                    <Tag
+                      color={
+                        MessageStatusColors[
+                          (item.type === "class-registration"
+                            ? classRegMap.get(item.id)!.messageStatus
+                            : inquiryMap.get(item.id)!.messageStatus) as MessageStatus
+                        ].hex
+                      }
+                      interactive={false}
+                      className="w-fit"
+                    >
+                      {
+                        MessageStatusLabels[
+                          (item.type === "class-registration"
+                            ? classRegMap.get(item.id)!.messageStatus
+                            : inquiryMap.get(item.id)!.messageStatus) as MessageStatus
+                        ]
+                      }
+                    </Tag>
+                  ) : null}
                 </div>
                 <p className="text-navy-700 mt-1 text-sm font-bold dark:text-white">
                   {item.title}
