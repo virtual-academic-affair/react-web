@@ -257,13 +257,13 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-3">
               {/* Types */}
-            <div className="flex flex-col items-start gap-2 md:flex-row md:items-start md:gap-6">
-              <div className="w-full shrink-0 md:w-40">
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-start md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
                   <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                     Loại thắc mắc
                   </p>
                 </div>
-              <div className="w-full flex-1">
+                <div className="w-full flex-1">
                   <InquiryTypeEditor
                     value={form.types}
                     onChange={handleTypesChange}
@@ -273,13 +273,13 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
               </div>
 
               {/* Trạng thái xử lý */}
-            <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-6">
-              <div className="w-full shrink-0 md:w-40">
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
                   <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                     Trạng thái xử lý
                   </p>
                 </div>
-              <div className="w-full flex-1">
+                <div className="w-full flex-1">
                   <MessageStatusSelector
                     value={form.messageStatus}
                     onChange={handleMessageStatusChange}
@@ -289,13 +289,13 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
               </div>
 
               {/* Câu hỏi */}
-            <div className="flex flex-col items-start gap-2 md:flex-row md:items-start md:gap-6">
-              <div className="w-full shrink-0 md:w-40">
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-start md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
                   <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                     Nội dung thắc mắc
                   </p>
                 </div>
-              <div className="w-full flex-1">
+                <div className="w-full flex-1">
                   <RichTextEditor
                     ref={questionEditorRef}
                     value={form.question}
@@ -305,13 +305,13 @@ const InquiryDetailDrawer: React.FC<InquiryDetailDrawerProps> = ({
               </div>
 
               {/* Câu trả lời */}
-            <div className="flex flex-col items-start gap-2 md:flex-row md:items-start md:gap-6">
-              <div className="w-full shrink-0 md:w-40">
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-start md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
                   <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                     Câu trả lời
                   </p>
                 </div>
-              <div className="w-full flex-1">
+                <div className="w-full flex-1">
                   <RichTextEditor
                     ref={answerEditorRef}
                     value={form.answer}

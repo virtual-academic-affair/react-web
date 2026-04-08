@@ -251,13 +251,13 @@ const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-3">
               {/* Tên công việc */}
-            <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-6">
-              <div className="w-full shrink-0 md:w-40">
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
                   <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                     Tên công việc
                   </p>
                 </div>
-              <div className="w-full flex-1">
+                <div className="w-full flex-1">
                   <input
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -267,13 +267,13 @@ const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
               </div>
 
               {/* Hạn chót */}
-            <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-6">
-              <div className="w-full shrink-0 md:w-40">
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
                   <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                     Hạn chót
                   </p>
                 </div>
-              <div className="w-full flex-1">
+                <div className="w-full flex-1">
                   <input
                     type="datetime-local"
                     value={form.due}
@@ -284,13 +284,13 @@ const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
               </div>
 
               {/* Trạng thái */}
-            <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-6">
-              <div className="w-full shrink-0 md:w-40">
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
                   <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                     Trạng thái
                   </p>
                 </div>
-              <div className="w-full flex-1">
+                <div className="w-full flex-1">
                   <TaskStatusSelector
                     value={form.status}
                     onChange={(s) => setForm({ ...form, status: s })}
@@ -299,13 +299,13 @@ const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
               </div>
 
               {/* Độ ưu tiên */}
-            <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-6">
-              <div className="w-full shrink-0 md:w-40">
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
                   <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                     Độ ưu tiên
                   </p>
                 </div>
-              <div className="w-full flex-1">
+                <div className="w-full flex-1">
                   <TaskPrioritySelector
                     value={form.priority}
                     onChange={(p) => setForm({ ...form, priority: p })}
@@ -314,13 +314,13 @@ const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
               </div>
 
               {/* Người giao */}
-            <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-6">
-              <div className="w-full shrink-0 md:w-40">
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
                   <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                     Người giao
                   </p>
                 </div>
-              <div className="w-full flex-1">
+                <div className="w-full flex-1">
                   <input
                     value={form.assigners}
                     onChange={(e) =>
@@ -332,13 +332,13 @@ const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
               </div>
 
               {/* Người thực hiện (Assignees) */}
-            <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-6">
-              <div className="w-full shrink-0 md:w-40">
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
                   <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                     Người thực hiện
                   </p>
                 </div>
-              <div className="w-full flex-1">
+                <div className="w-full flex-1">
                   <AssigneeManager
                     selectedIds={form.assigneeIds}
                     allUsers={users}
@@ -348,13 +348,13 @@ const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
               </div>
 
               {/* Mô tả công việc */}
-            <div className="flex flex-col items-start gap-2 md:flex-row md:items-start md:gap-6">
-              <div className="w-full shrink-0 md:w-40">
+              <div className="flex flex-col items-start gap-2 md:flex-row md:items-start md:gap-6">
+                <div className="w-full shrink-0 md:w-40">
                   <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                     Mô tả công việc
                   </p>
                 </div>
-              <div className="text-editor-container w-full flex-1">
+                <div className="text-editor-container w-full flex-1">
                   <RichTextEditor
                     value={form.description}
                     onChange={(val) => setForm({ ...form, description: val })}
