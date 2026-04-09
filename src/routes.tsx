@@ -26,14 +26,14 @@ const routes: RoutesType[] = [
     icon: <MdSchool className="h-6 w-6" />,
     children: [
       {
-        name: "Thống kê",
-        layout: "/admin",
-        path: "class-registration/statistics",
-      },
-      {
         name: "DS đăng kí lớp",
         layout: "/admin",
         path: "class-registration/registrations",
+      },
+      {
+        name: "Thống kê",
+        layout: "/admin",
+        path: "class-registration/statistics",
       },
       {
         name: "Tạo đăng ký lớp",
@@ -66,14 +66,14 @@ const routes: RoutesType[] = [
     icon: <MdDashboard className="h-6 w-6" />,
     children: [
       {
-        name: "Thống kê",
-        layout: "/admin",
-        path: "tasks/statistics",
-      },
-      {
         name: "DS công tác",
         layout: "/admin",
         path: "tasks/list",
+      },
+      {
+        name: "Thống kê",
+        layout: "/admin",
+        path: "tasks/statistics",
       },
       {
         name: "Tạo công tác",
@@ -89,14 +89,14 @@ const routes: RoutesType[] = [
     icon: <MdQuestionAnswer className="h-6 w-6" />,
     children: [
       {
-        name: "Thống kê",
-        layout: "/admin",
-        path: "inquiry/statistics",
-      },
-      {
         name: "DS thắc mắc",
         layout: "/admin",
         path: "inquiry/inquiries",
+      },
+      {
+        name: "Thống kê",
+        layout: "/admin",
+        path: "inquiry/statistics",
       },
       {
         name: "Tạo thắc mắc",

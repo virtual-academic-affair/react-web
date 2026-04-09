@@ -246,21 +246,20 @@ const InquiriesPage: React.FC = () => {
       {
         key: "question",
         header: "Câu hỏi",
-        width: "45%",
         render: (item) => {
           const textQuestion = item.question
             ? item.question.replace(/<[^>]*>?/gm, "")
             : "";
           return (
-            <div className="flex w-full min-w-0 items-center gap-2 overflow-hidden">
-              <div className="flex w-full min-w-0 flex-col">
-                <Tooltip label={textQuestion} className="block w-full min-w-0">
-                  <div
-                    className="text-navy-700 line-clamp-1 w-full text-sm font-bold dark:text-white"
-                    dangerouslySetInnerHTML={{ __html: item.question || "" }}
-                  />
-                </Tooltip>
-              </div>
+            <div className="min-w-0 flex-col">
+              <Tooltip label={textQuestion} className="block min-w-0">
+                <p
+                  className="text-navy-700 truncate text-sm font-bold dark:text-white"
+                  title={textQuestion}
+                >
+                  {textQuestion}
+                </p>
+              </Tooltip>
             </div>
           );
         },
@@ -268,7 +267,6 @@ const InquiriesPage: React.FC = () => {
       {
         key: "types",
         header: "Loại thắc mắc",
-        width: "20%",
         render: (item) => (
           <InquiryTypeEditor
             value={item.types ?? []}
