@@ -1,13 +1,16 @@
-import React from "react";
-import TableLayout, { type TableAction, type TableColumn } from "@/components/table/TableLayout";
+import TableLayout, {
+  type TableAction,
+  type TableColumn,
+} from "@/components/table/TableLayout";
+import type { PaginatedResponse } from "@/types/common";
 import { type Task, TaskPriority, TaskStatus } from "@/types/task";
 import type { User } from "@/types/users";
-import type { PaginatedResponse } from "@/types/common";
 import { formatDate } from "@/utils/date";
+import React from "react";
 import { MdDeleteOutline, MdInfoOutline } from "react-icons/md";
-import TaskStatusSelector from "./TaskStatusSelector";
-import TaskPrioritySelector from "./TaskPrioritySelector";
 import AssigneeManager from "../../components/AssigneeManager";
+import TaskPrioritySelector from "./TaskPrioritySelector";
+import TaskStatusSelector from "./TaskStatusSelector";
 
 interface TaskTableViewProps {
   result: PaginatedResponse<Task> | null;
@@ -44,19 +47,21 @@ const TaskTableView: React.FC<TaskTableViewProps> = ({
   onDeleteClick,
   admins,
 }) => {
-
   const columns: TableColumn<Task>[] = React.useMemo(
     () => [
       {
         key: "name",
         header: "Tên công việc",
         render: (item) => (
-          <div className="flex flex-col min-w-0">
+          <div className="flex min-w-0 flex-col">
             <p className="text-navy-700 truncate text-sm font-bold dark:text-white">
               {item.name}
             </p>
             {item.assigners && item.assigners.length > 0 && (
-              <p className="text-xs text-gray-500 truncate"> 
+              <p
+                className="truncate text-xs text-gray-500"
+                title={item.assigners.join(", ")}
+              >
                 Từ: {item.assigners.join(", ")}
               </p>
             )}
@@ -147,4 +152,3 @@ const TaskTableView: React.FC<TaskTableViewProps> = ({
 };
 
 export default TaskTableView;
-

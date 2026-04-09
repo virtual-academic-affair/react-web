@@ -14,7 +14,6 @@ import React from "react";
 import { MdDeleteOutline, MdInfoOutline, MdPostAdd } from "react-icons/md";
 import { SiGmail } from "react-icons/si";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import Tooltip from "../../../components/tooltip/Tooltip.tsx";
 import AdvancedFilterModal from "./components/AdvancedFilterModal";
 import EmailDetailDrawer from "./components/EmailDetailDrawer";
 import MessageDeleteModal from "./components/MessageDeleteModal";
@@ -275,29 +274,21 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
       {
         key: "subject",
         header: "Tiêu đề",
-        width: "45%",
         render: (msg) => {
           return (
-            <div className="flex w-full min-w-0 items-center gap-2 overflow-hidden">
-              <div className="flex w-full min-w-0 flex-col">
-                <Tooltip
-                  label={msg.subject || "(Không có tiêu đề)"}
-                  className="block w-full min-w-0"
-                >
-                  <p className="text-navy-700 truncate text-sm font-bold dark:text-white">
-                    {msg.subject || "(Không có tiêu đề)"}
-                  </p>
-                </Tooltip>
-
-                <Tooltip
-                  label={msg.senderName}
-                  className="block w-full min-w-0"
-                >
-                  <p className="mt-0.5 truncate text-xs text-gray-500">
-                    Từ: {msg.senderName}
-                  </p>
-                </Tooltip>
-              </div>
+            <div className="flex min-w-0 flex-col">
+              <p
+                className="text-navy-700 truncate text-sm font-bold dark:text-white"
+                title={msg.subject || "(Không có tiêu đề)"}
+              >
+                {msg.subject || "(Không có tiêu đề)"}
+              </p>
+              <p
+                className="mt-0.5 truncate text-xs text-gray-500"
+                title={msg.senderName}
+              >
+                Từ: {msg.senderName}
+              </p>
             </div>
           );
         },
@@ -305,7 +296,6 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
       {
         key: "systemLabels",
         header: "Nhãn hệ thống",
-        width: "20%",
         render: (msg) => (
           <MessageLabelEditor
             message={msg}

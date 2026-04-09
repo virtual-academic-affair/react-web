@@ -87,9 +87,10 @@ const DocumentListPage = () => {
   const isPreview = searchParams.get("preview") === "true";
   const previewFileId = isPreview ? searchParams.get("id") || null : null;
   const previewPageParam = Number(searchParams.get("previewPage") ?? "1");
-  const previewPage = Number.isFinite(previewPageParam) && previewPageParam > 0
-    ? Math.floor(previewPageParam)
-    : 1;
+  const previewPage =
+    Number.isFinite(previewPageParam) && previewPageParam > 0
+      ? Math.floor(previewPageParam)
+      : 1;
   const wasDrawerOpenBeforePreview = useRef(false);
 
   // Detail drawer
@@ -284,11 +285,10 @@ const DocumentListPage = () => {
       {
         key: "displayName",
         header: "Tài liệu",
-        width: "50%",
         render: (x) => (
           <button
             type="button"
-            className="group flex flex-col text-left"
+            className="group flex w-full min-w-0 flex-col text-left"
             onClick={(e) => {
               e.stopPropagation();
               wasDrawerOpenBeforePreview.current = false;
@@ -301,7 +301,10 @@ const DocumentListPage = () => {
             <p className="text-navy-700 group-hover:text-brand-500 dark:group-hover:text-brand-400 truncate text-sm font-bold transition-colors group-hover:underline dark:text-white">
               {x.displayName || x.originalFilename}
             </p>
-            <p className="mt-0.5 truncate text-xs text-gray-500">
+            <p
+              className="mt-0.5 truncate text-xs text-gray-500"
+              title={x.originalFilename}
+            >
               {x.originalFilename}
             </p>
           </button>
@@ -310,7 +313,6 @@ const DocumentListPage = () => {
       {
         key: "accessScope",
         header: "Phạm vi truy cập",
-        width: "20%",
         render: (x) => {
           const meta = x.customMetadata || {};
           return (
@@ -321,7 +323,6 @@ const DocumentListPage = () => {
       {
         key: "createdAt",
         header: "Ngày tải lên",
-        width: "15%",
         render: (x) => (
           <p className="text-navy-700 text-sm dark:text-white">
             {formatDate(x.createdAt)}
@@ -331,7 +332,6 @@ const DocumentListPage = () => {
       {
         key: "isActive",
         header: "Trạng thái xử lý",
-        width: "15%",
         render: (x) => {
           const status = String(x?.status || "").toLowerCase();
 
