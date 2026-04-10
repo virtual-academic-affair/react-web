@@ -111,7 +111,7 @@ function TableLayout<T extends { id: number | string }>({
             <button
               type="button"
               onClick={onFilterClick}
-              className="bg-brand-500 hover:bg-brand-600 dark:bg-brand-500 dark:hover:bg-brand-400 flex h-10 w-10 items-center justify-center rounded-2xl text-white transition-colors dark:text-white"
+              className="bg-brand-500 hover:bg-brand-600 dark:bg-brand-500 dark:hover:bg-brand-400 flex h-10 w-10 items-center justify-center rounded-2xl text-white  dark:text-white"
             >
               <MdFilterList className="h-5 w-5" />
             </button>
@@ -197,7 +197,7 @@ function TableLayout<T extends { id: number | string }>({
                   items.map((item, index) => (
                     <tr
                       key={String(item.id)}
-                      className={`group hover:bg-lightPrimary dark:hover:bg-navy-700 border-b border-gray-50 transition-colors dark:border-white/5 ${
+                        className={`group hover:bg-lightPrimary dark:hover:bg-navy-700 border-b border-gray-50 dark:border-white/5 ${
                         onRowClick ? "cursor-pointer" : ""
                       }`}
                       onClick={() => onRowClick?.(item)}
@@ -218,7 +218,7 @@ function TableLayout<T extends { id: number | string }>({
                       ))}
                       {actions.length > 0 && (
                         <td
-                          className="group-hover:bg-lightPrimary dark:bg-navy-800 dark:group-hover:bg-navy-700 sticky right-0 z-10 bg-white py-3 pr-2 whitespace-nowrap transition-colors"
+                            className="group-hover:bg-lightPrimary dark:bg-navy-800 dark:group-hover:bg-navy-700 sticky right-0 z-10 bg-white py-3 pr-2 whitespace-nowrap"
                           style={{
                             boxShadow: "-10px 0 10px -10px rgba(0,0,0,0.15)",
                           }}
@@ -242,7 +242,7 @@ function TableLayout<T extends { id: number | string }>({
                                       aria-label={action.label}
                                       className={
                                         action.className ||
-                                        "bg-brand-500 hover:bg-brand-600 dark:bg-brand-500 dark:hover:bg-brand-400 flex h-10 w-10 items-center justify-center rounded-2xl text-white transition-colors dark:text-white"
+                                        "bg-brand-500 hover:bg-brand-600 dark:bg-brand-500 dark:hover:bg-brand-400 flex h-10 w-10 items-center justify-center rounded-2xl text-white dark:text-white"
                                       }
                                     >
                                       {action.icon}
@@ -272,7 +272,7 @@ function TableLayout<T extends { id: number | string }>({
                 <button
                   onClick={() => onPageChange(page - 1)}
                   disabled={page <= 1}
-                  className="flex items-center rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 disabled:opacity-40 dark:text-gray-400 dark:hover:bg-white/10"
+                  className="flex items-center rounded-lg p-1.5 text-gray-500  hover:bg-gray-100 disabled:opacity-40 dark:text-gray-400 dark:hover:bg-white/10"
                 >
                   <MdChevronLeft className="h-5 w-5" />
                 </button>
@@ -319,7 +319,7 @@ function TableLayout<T extends { id: number | string }>({
                       <button
                         key={p}
                         onClick={() => onPageChange(p)}
-                        className={`flex h-8 w-8 items-center justify-center rounded-2xl text-sm font-medium transition-colors ${
+                        className={`flex h-8 w-8 items-center justify-center rounded-2xl text-sm font-medium  ${
                           p === current
                             ? "bg-brand-500 text-white"
                             : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/10"
@@ -334,7 +334,7 @@ function TableLayout<T extends { id: number | string }>({
                 <button
                   onClick={() => onPageChange(page + 1)}
                   disabled={page >= pagination.totalPages}
-                  className="flex items-center rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 disabled:opacity-40 dark:text-gray-400 dark:hover:bg-white/10"
+                  className="flex items-center rounded-lg p-1.5 text-gray-500  hover:bg-gray-100 disabled:opacity-40 dark:text-gray-400 dark:hover:bg-white/10"
                 >
                   <MdChevronRight className="h-5 w-5" />
                 </button>

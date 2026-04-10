@@ -1,4 +1,4 @@
-import Switch from "@/components/switch";
+﻿import Switch from "@/components/switch";
 import Tag from "@/components/tag/Tag";
 import Tooltip from "@/components/tooltip/Tooltip";
 import { RoleColors, RoleLabels } from "@/types/users";
@@ -101,7 +101,7 @@ const MetadataValueItem: React.FC<MetadataValueItemProps> = ({
               value={form.displayName}
               onChange={(e) => onFormChange({ displayName: e.target.value })}
               disabled={saving}
-              className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+              className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30"
               placeholder="Tên hiển thị"
             />
           </div>

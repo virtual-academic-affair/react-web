@@ -1,4 +1,4 @@
-import RichTextEditor from "@/components/fields/RichTextEditor";
+﻿import RichTextEditor from "@/components/fields/RichTextEditor";
 import CreatePageLayout from "@/components/layouts/CreatePageLayout";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { messagesService } from "@/services/email/messages.service";
@@ -182,7 +182,7 @@ const TaskCreatePage: React.FC = () => {
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   placeholder="Nhập tên công tác..."
-                  className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
+                  className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30"
                   required
                 />
               </div>
@@ -200,7 +200,7 @@ const TaskCreatePage: React.FC = () => {
                   type="datetime-local"
                   value={form.due}
                   onChange={(e) => setForm({ ...form, due: e.target.value })}
-                  className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
+                  className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30"
                 />
               </div>
             </div>
@@ -250,7 +250,7 @@ const TaskCreatePage: React.FC = () => {
                     setForm({ ...form, assigners: e.target.value })
                   }
                   placeholder="Khoa CNTT, Phòng Đào Tạo..."
-                  className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
+                  className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30"
                 />
               </div>
             </div>

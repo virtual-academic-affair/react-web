@@ -1,4 +1,4 @@
-import Drawer from "@/components/drawer/Drawer";
+﻿import Drawer from "@/components/drawer/Drawer";
 import ConfirmModal from "@/components/modal/ConfirmModal";
 import Switch from "@/components/switch";
 import Tag from "@/components/tag/Tag";
@@ -447,7 +447,7 @@ const MetadataTypeDrawer: React.FC<MetadataTypeDrawerProps> = ({
                   type="text"
                   value={key}
                   onChange={(e) => setKey(toSnakeCase(e.target.value))}
-                  className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+                  className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30"
                   placeholder="Nhập code"
                 />
                 <p className="absolute mt-1 text-xs text-red-500 dark:text-gray-400">
@@ -470,7 +470,7 @@ const MetadataTypeDrawer: React.FC<MetadataTypeDrawerProps> = ({
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+              className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30"
               placeholder="Nhập tên hiển thị"
             />
           </div>
@@ -488,7 +488,7 @@ const MetadataTypeDrawer: React.FC<MetadataTypeDrawerProps> = ({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
-              className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+              className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30"
               placeholder="Thông tin thêm..."
             />
           </div>
@@ -681,7 +681,7 @@ const MetadataTypeDrawer: React.FC<MetadataTypeDrawerProps> = ({
                           })
                         }
                         disabled={savingValues.has("__new__")}
-                        className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+                        className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30"
                         placeholder="Nhập tên hiển thị"
                       />
                     </div>

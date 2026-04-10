@@ -219,7 +219,7 @@ const ClassRegistrationCreatePage: React.FC = () => {
               </div>
               <div className="text-navy-700 flex items-center gap-2 text-base dark:text-white">
                 <span>Tại tin nhắn muốn xử lý, gắn nhãn bằng nút</span>
-                <span className="dark:bg-navy-800 inline-flex aspect-square h-6 items-center rounded-lg border border-gray-200 bg-white pr-1.5 pl-1 text-gray-500 shadow-sm dark:border-white/10 dark:text-gray-300">
+                <span className="bg-transparent inline-flex aspect-square h-6 items-center rounded-lg border border-gray-200 pr-1.5 pl-1 text-gray-500 shadow-sm dark:border-white/10 dark:text-gray-300">
                   <MdExpandMore className="h-4 w-4" />
                 </span>
               </div>
@@ -244,13 +244,13 @@ const ClassRegistrationCreatePage: React.FC = () => {
                   "/admin/email/messages?page=1&limit=10&startTour=class-registration",
                 )
               }
-              className="dark:bg-navy-800 dark:hover:bg-navy-700 rounded-2xl bg-white px-8 py-4 text-sm font-bold text-gray-700 transition-all hover:bg-gray-50 active:scale-95 dark:border-white/10 dark:text-white"
+              className="rounded-2xl px-8 py-4 text-sm font-bold bg-transparent text-gray-700 transition-transform hover:bg-gray-100 active:scale-95 dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white"
             >
               Hướng dẫn
             </button>
             <button
               onClick={() => navigate("/admin/email/messages?page=1&limit=10")}
-              className="bg-brand-500 hover:bg-brand-600 shadow-brand-500/20 rounded-2xl px-8 py-4 text-sm font-bold text-white shadow-lg transition-all active:scale-95"
+              className="bg-brand-500 hover:bg-brand-600 shadow-brand-500/20 rounded-2xl px-8 py-4 text-sm font-bold text-white shadow-lg transition-transform active:scale-95"
             >
               DS tin nhắn
             </button>

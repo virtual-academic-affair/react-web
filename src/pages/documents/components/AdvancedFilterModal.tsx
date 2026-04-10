@@ -78,7 +78,7 @@ const AccessScopeFilter: React.FC<AccessScopeFilterProps> = ({
           type="button"
           title="Chọn phạm vi truy cập"
           onClick={() => setPickerOpen((prev) => !prev)}
-          className="dark:bg-navy-800 ml-0.5 inline-flex h-6 w-6 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 transition-colors hover:border-gray-300 hover:text-gray-700 dark:border-white/10 dark:text-gray-300 dark:hover:border-white/20 dark:hover:text-white"
+          className="bg-transparent ml-0.5 inline-flex h-6 w-6 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:border-white/10 dark:text-gray-300 dark:hover:border-white/20 dark:hover:bg-white/10 dark:hover:text-white"
         >
           <MdExpandMore className="h-3.5 w-3.5" />
         </button>
@@ -159,7 +159,7 @@ const FilterRow: React.FC<{
           type="button"
           title={`Chọn ${label}`}
           onClick={() => setPickerOpen((prev) => !prev)}
-          className="dark:bg-navy-800 ml-0.5 inline-flex h-6 w-6 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 transition-colors hover:border-gray-300 hover:text-gray-700 dark:border-white/10 dark:text-gray-300 dark:hover:border-white/20 dark:hover:text-white"
+          className="bg-transparent ml-0.5 inline-flex h-6 w-6 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:border-white/10 dark:text-gray-300 dark:hover:border-white/20 dark:hover:bg-white/10 dark:hover:text-white"
         >
           <MdExpandMore className="h-3.5 w-3.5" />
         </button>
