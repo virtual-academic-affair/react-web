@@ -20,13 +20,13 @@ const routes: RoutesType[] = [
     icon: <SiGmail className="h-6 w-6" />,
   },
   {
-    name: "Đăng kí lớp",
+    name: "Đăng ký lớp",
     layout: "/admin",
     path: "/class-registration",
     icon: <MdSchool className="h-6 w-6" />,
     children: [
       {
-        name: "DS đăng kí lớp",
+        name: "DS đăng ký lớp",
         layout: "/admin",
         path: "class-registration/registrations",
       },

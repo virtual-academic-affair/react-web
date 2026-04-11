@@ -4,6 +4,7 @@ import TableLayout, {
   type TableAction,
   type TableColumn,
 } from "@/components/table/TableLayout";
+import Tooltip from "@/components/tooltip/Tooltip";
 import { classRegistrationsService } from "@/services/class-registration";
 import type {
   ClassRegistration,
@@ -260,12 +261,26 @@ const ClassRegistrationsPage: React.FC = () => {
         width: "30%",
         render: (item) => (
           <div className="flex min-w-0 flex-col">
-            <p className="text-navy-700 truncate text-sm font-bold dark:text-white">
-              {item.studentName}
-            </p>
-            <p className="mt-0.5 truncate text-xs text-gray-500">
-              MSSV: {item.studentCode}
-            </p>
+            <Tooltip
+              label={item.studentName}
+              className="block min-w-0"
+              placement="topLeft"
+              wrap
+            >
+              <p className="text-navy-700 truncate text-sm font-bold dark:text-white">
+                {item.studentName}
+              </p>
+            </Tooltip>
+            <Tooltip
+              label={item.studentCode}
+              className="block min-w-0"
+              placement="topLeft"
+              wrap
+            >
+              <p className="mt-0.5 truncate text-xs text-gray-500">
+                MSSV: {item.studentCode}
+              </p>
+            </Tooltip>
           </div>
         ),
       },

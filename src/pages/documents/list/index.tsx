@@ -14,6 +14,7 @@ import { formatDate } from "@/utils/date";
 import { parseError } from "@/utils/parseError";
 import { parseSearchString, stringifySearchQuery } from "@/utils/search";
 
+import Tooltip from "@/components/tooltip/Tooltip";
 import AccessScopeBadge from "../components/AccessScopeBadge";
 import AdvancedFilterModal, {
   type DocumentFilters,
@@ -298,15 +299,20 @@ const DocumentListPage = () => {
               setSearchParams(next, { replace: true });
             }}
           >
-            <p className="text-navy-700 group-hover:text-brand-500 dark:group-hover:text-brand-400 truncate text-sm font-bold transition-colors group-hover:underline dark:text-white">
-              {x.displayName || x.originalFilename}
-            </p>
-            <p
-              className="mt-0.5 truncate text-xs text-gray-500"
-              title={x.originalFilename}
+            <Tooltip
+              label={x.displayName || x.originalFilename}
+              className="block w-full"
+              placement="topLeft"
             >
-              {x.originalFilename}
-            </p>
+              <p className="text-navy-700 group-hover:text-brand-500 dark:group-hover:text-brand-400 truncate text-sm font-bold transition-colors group-hover:underline dark:text-white">
+                {x.displayName || x.originalFilename}
+              </p>
+            </Tooltip>
+            <Tooltip label={x.originalFilename} placement="topLeft" wrap>
+              <p className="mt-0.5 truncate text-xs text-gray-500">
+                {x.originalFilename}
+              </p>
+            </Tooltip>
           </button>
         ),
       },
