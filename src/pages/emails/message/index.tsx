@@ -2,6 +2,7 @@ import TableLayout, {
   type TableAction,
   type TableColumn,
 } from "@/components/table/TableLayout";
+import Tooltip from "@/components/tooltip/Tooltip";
 import { messagesService } from "@/services/email";
 import type { PaginatedResponse } from "@/types/common";
 import type { Message, SystemLabel } from "@/types/email";
@@ -277,18 +278,26 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
         render: (msg) => {
           return (
             <div className="flex min-w-0 flex-col">
-              <p
-                className="text-navy-700 truncate text-sm font-bold dark:text-white"
-                title={msg.subject || "(Không có tiêu đề)"}
+              <Tooltip
+                label={msg.subject || "(Không có tiêu đề)"}
+                className="block min-w-0"
+                placement="topLeft"
+                wrap
               >
-                {msg.subject || "(Không có tiêu đề)"}
-              </p>
-              <p
-                className="mt-0.5 truncate text-xs text-gray-500"
-                title={msg.senderName}
+                <p className="text-navy-700 truncate text-sm font-bold dark:text-white">
+                  {msg.subject || "(Không có tiêu đề)"}
+                </p>
+              </Tooltip>
+              <Tooltip
+                label={msg.senderName}
+                className="block min-w-0"
+                placement="topLeft"
+                wrap
               >
-                Từ: {msg.senderName}
-              </p>
+                <p className="mt-0.5 truncate text-xs text-gray-500">
+                  Từ: {msg.senderName}
+                </p>
+              </Tooltip>
             </div>
           );
         },

@@ -3,6 +3,7 @@ import TableLayout, {
   type TableAction,
   type TableColumn,
 } from "@/components/table/TableLayout";
+import Tooltip from "@/components/tooltip/Tooltip";
 import { cancelReasonsService } from "@/services/class-registration";
 import type { CancelReason } from "@/types/classRegistration";
 import type { PaginatedResponse } from "@/types/common";
@@ -207,12 +208,16 @@ const CancelReasonsPage: React.FC = () => {
         render: (x) => {
           const text = plainTextFromHtml(x.content) || "—";
           return (
-            <p
-              className="text-navy-700 min-w-0 max-w-full truncate text-sm font-medium dark:text-white"
-              title={text !== "—" ? text : undefined}
+            <Tooltip
+              label={text}
+              className="block min-w-0"
+              placement="topLeft"
+              wrap
             >
-              {text}
-            </p>
+              <p className="text-navy-700 max-w-full min-w-0 truncate text-sm font-medium dark:text-white">
+                {text}
+              </p>
+            </Tooltip>
           );
         },
       },
@@ -300,7 +305,7 @@ const CancelReasonsPage: React.FC = () => {
           toast.success(
             mode === "create"
               ? "Đã tạo ghi chú nhanh."
-              : "Đã cập nhật ghi chú nhanh."
+              : "Đã cập nhật ghi chú nhanh.",
           );
           queryClient.setQueryData(
             ["cancel-reasons", { page, keyword, ...filters }],

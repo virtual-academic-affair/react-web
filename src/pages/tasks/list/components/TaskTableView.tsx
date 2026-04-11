@@ -2,6 +2,7 @@ import TableLayout, {
   type TableAction,
   type TableColumn,
 } from "@/components/table/TableLayout";
+import Tooltip from "@/components/tooltip/Tooltip";
 import type { PaginatedResponse } from "@/types/common";
 import { type Task, TaskPriority, TaskStatus } from "@/types/task";
 import type { User } from "@/types/users";
@@ -54,16 +55,17 @@ const TaskTableView: React.FC<TaskTableViewProps> = ({
         header: "Tên công việc",
         render: (item) => (
           <div className="flex min-w-0 flex-col">
-            <p className="text-navy-700 truncate text-sm font-bold dark:text-white">
-              {item.name}
-            </p>
-            {item.assigners && item.assigners.length > 0 && (
-              <p
-                className="truncate text-xs text-gray-500"
-                title={item.assigners.join(", ")}
-              >
-                Từ: {item.assigners.join(", ")}
+            <Tooltip label={item.name}>
+              <p className="text-navy-700 truncate text-sm font-bold dark:text-white">
+                {item.name}
               </p>
+            </Tooltip>
+            {item.assigners && item.assigners.length > 0 && (
+              <Tooltip label={`Từ: ${item.assigners.join(", ")}`}>
+                <p className="truncate text-xs text-gray-500">
+                  Từ: {item.assigners.join(", ")}
+                </p>
+              </Tooltip>
             )}
           </div>
         ),

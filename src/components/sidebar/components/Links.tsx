@@ -132,7 +132,7 @@ export const SidebarLinks = (props: {
                     if (parentActive && isOpen) return;
                     setOpenGroups((prev) => ({ ...prev, [groupKey]: !isOpen }));
                   }}
-                  className="my-0.75 flex w-full items-center py-0.5 px-4 text-left"
+                  className="my-0.75 flex w-full items-center px-4 py-0.5 text-left"
                 >
                   <span
                     className={`inline-flex shrink-0 [&>svg]:h-5 [&>svg]:w-5 ${

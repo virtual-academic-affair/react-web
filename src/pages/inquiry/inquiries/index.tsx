@@ -253,10 +253,7 @@ const InquiriesPage: React.FC = () => {
           return (
             <div className="min-w-0 flex-col">
               <Tooltip label={textQuestion} className="block min-w-0">
-                <p
-                  className="text-navy-700 truncate text-sm font-bold dark:text-white"
-                  title={textQuestion}
-                >
+                <p className="text-navy-700 truncate text-sm font-bold dark:text-white">
                   {textQuestion}
                 </p>
               </Tooltip>

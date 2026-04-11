@@ -264,13 +264,27 @@ const MetadataManagementPage: React.FC = () => {
         width: "30%",
         render: (x) => (
           <div className="flex flex-col">
-            <div className="flex items-center gap-2">
+            <Tooltip
+              label={x.displayName || "-"}
+              placement="topLeft"
+              wrap
+              className="flex items-center gap-2"
+            >
               <p className="text-navy-700 text-sm font-medium dark:text-white">
                 {x.displayName || "-"}
               </p>
               {x.isSystem && <Tag>Hệ thống</Tag>}
-            </div>
-            <p className="text-xs text-gray-400 dark:text-gray-500">#{x.key}</p>
+            </Tooltip>
+            <Tooltip
+              label={`#${x.key}`}
+              placement="topLeft"
+              wrap
+              className="flex items-center gap-2"
+            >
+              <p className="text-xs text-gray-400 dark:text-gray-500">
+                #{x.key}
+              </p>
+            </Tooltip>
           </div>
         ),
       },
