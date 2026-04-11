@@ -1,7 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import * as docx from "docx-preview";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 import {
   MdChevronLeft,
@@ -103,7 +109,7 @@ const PdfPreview: React.FC<{ url: string; initialPage?: number }> = ({
   const handleScroll = () => {
     if (!containerRef.current) return;
     const { scrollTop, clientHeight } = containerRef.current;
-    
+
     // Tìm trang nào đang chiếm phần lớn diện tích nhìn thấy (viewport)
     // Tọa độ giữa màn hình
     const middleY = scrollTop + clientHeight / 2;
@@ -112,18 +118,18 @@ const PdfPreview: React.FC<{ url: string; initialPage?: number }> = ({
     let minDistance = Infinity;
 
     for (let i = 0; i < numPages; i++) {
-       const el = pageRefs.current[i];
-       if (!el) continue;
-       const pageTop = el.offsetTop;
-       const pageMiddle = pageTop + el.offsetHeight / 2;
-       
-       const distance = Math.abs(middleY - pageMiddle);
-       if (distance < minDistance) {
-         minDistance = distance;
-         closestPage = i + 1;
-       }
+      const el = pageRefs.current[i];
+      if (!el) continue;
+      const pageTop = el.offsetTop;
+      const pageMiddle = pageTop + el.offsetHeight / 2;
+
+      const distance = Math.abs(middleY - pageMiddle);
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestPage = i + 1;
+      }
     }
-    
+
     if (closestPage !== currentPage) {
       setCurrentPage(closestPage);
     }
@@ -135,7 +141,7 @@ const PdfPreview: React.FC<{ url: string; initialPage?: number }> = ({
     if (prevPageRef) {
       containerRef.current.scrollTo({
         top: prevPageRef.offsetTop - 32, // trừ hao padding
-        behavior: "smooth"
+        behavior: "smooth",
       });
       setCurrentPage((prev) => prev - 1);
     }
@@ -147,7 +153,7 @@ const PdfPreview: React.FC<{ url: string; initialPage?: number }> = ({
     if (nextPageRef) {
       containerRef.current.scrollTo({
         top: nextPageRef.offsetTop - 32,
-        behavior: "smooth"
+        behavior: "smooth",
       });
       setCurrentPage((prev) => prev + 1);
     }
@@ -156,7 +162,7 @@ const PdfPreview: React.FC<{ url: string; initialPage?: number }> = ({
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* PDF toolbar */}
-      <div className="flex shrink-0 items-center justify-center gap-3 border-b border-white/8 bg-[#202124]/80 px-4 py-2 z-10">
+      <div className="z-10 flex shrink-0 items-center justify-center gap-3 border-b border-white/8 bg-[#202124]/80 px-4 py-2">
         <button
           type="button"
           onClick={handlePrevPage}
@@ -165,7 +171,7 @@ const PdfPreview: React.FC<{ url: string; initialPage?: number }> = ({
         >
           <MdChevronLeft className="h-5 w-5" />
         </button>
-        <span className="text-sm text-white/80 w-16 text-center">
+        <span className="w-16 text-center text-sm text-white/80">
           {currentPage} / {numPages || "–"}
         </span>
         <button
@@ -184,7 +190,7 @@ const PdfPreview: React.FC<{ url: string; initialPage?: number }> = ({
         >
           −
         </button>
-        <span className="text-sm text-white/80 w-12 text-center">
+        <span className="w-12 text-center text-sm text-white/80">
           {Math.round(scale * 100)}%
         </span>
         <button
@@ -197,10 +203,10 @@ const PdfPreview: React.FC<{ url: string; initialPage?: number }> = ({
       </div>
 
       {/* PDF content */}
-      <div 
+      <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-auto bg-gray-800/50 p-8 flex justify-center relative"
+        className="relative flex flex-1 justify-center overflow-auto bg-gray-800/50 p-8"
       >
         <Document
           file={url}
@@ -222,32 +228,32 @@ const PdfPreview: React.FC<{ url: string; initialPage?: number }> = ({
             }, 0);
           }}
           loading={
-            <div className="flex flex-col items-center justify-center gap-2 py-20 text-white/70 h-full w-full absolute inset-0">
+            <div className="absolute inset-0 flex h-full w-full flex-col items-center justify-center gap-2 py-20 text-white/70">
               <div className="fpv-spinner" />
               <span>Đang tải PDF...</span>
             </div>
           }
           error={
-            <div className="flex flex-col items-center justify-center gap-3 py-20 text-gray-400 h-full w-full absolute inset-0">
+            <div className="absolute inset-0 flex h-full w-full flex-col items-center justify-center gap-3 py-20 text-gray-400">
               <MdErrorOutline className="h-12 w-12" />
               <p className="text-sm">Không thể hiển thị PDF.</p>
             </div>
           }
         >
-          <div className="flex flex-col gap-6 items-center">
+          <div className="flex flex-col items-center gap-6">
             {Array.from(new Array(numPages), (_, index) => (
-              <div 
+              <div
                 key={`page_${index + 1}`}
-                ref={(el) => { 
+                ref={(el) => {
                   if (pageRefs.current) {
-                    pageRefs.current[index] = el; 
+                    pageRefs.current[index] = el;
                   }
                 }}
               >
                 <Page
                   pageNumber={index + 1}
                   scale={scale}
-                  className="shadow-lg bg-white"
+                  className="bg-white shadow-lg"
                   renderTextLayer={false}
                   renderAnnotationLayer={false}
                 />
@@ -318,7 +324,7 @@ const DocxPreview: React.FC<{ blob: Blob }> = ({ blob }) => {
         // Tắt inWrapper để không sinh ra lớp nền trắng/xám dư thừa của thư viện
         await docx.renderAsync(blob, containerRef.current, undefined, {
           className: "docx-viewer-section",
-          inWrapper: false, 
+          inWrapper: false,
           ignoreWidth: false,
           ignoreHeight: false,
           ignoreFonts: false,
@@ -339,25 +345,25 @@ const DocxPreview: React.FC<{ blob: Blob }> = ({ blob }) => {
   return (
     <div className="flex-1 overflow-auto bg-gray-800/50 p-8">
       {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-800/50 z-10">
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-800/50">
           <div className="flex flex-col items-center justify-center gap-2 text-white/70">
             <div className="fpv-spinner" />
             <span>Đang tải DOCX...</span>
           </div>
         </div>
       )}
-      
+
       {error ? (
         <div className="flex h-full flex-col items-center justify-center gap-3 text-gray-400">
           <MdErrorOutline className="h-12 w-12" />
           <p className="text-sm">{error}</p>
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center min-h-full">
+        <div className="flex min-h-full flex-col items-center justify-center">
           {/* Lớp bọc chính chứa nội dung Word. Thư viện sẽ render <section> vào đây */}
-          <div 
-            ref={containerRef} 
-            className="w-full max-w-[816px] bg-white rounded shadow-lg overflow-hidden [&>section]:!bg-transparent [&>section]:!p-12 [&>section]:!m-0 [&>section]:!shadow-none"
+          <div
+            ref={containerRef}
+            className="w-full max-w-[816px] overflow-hidden rounded bg-white shadow-lg [&>section]:m-0! [&>section]:bg-transparent! [&>section]:p-12! [&>section]:shadow-none!"
           />
         </div>
       )}
@@ -491,7 +497,9 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
 
     switch (category) {
       case "pdf":
-        return objectUrl ? <PdfPreview url={objectUrl} initialPage={initialPage} /> : null;
+        return objectUrl ? (
+          <PdfPreview url={objectUrl} initialPage={initialPage} />
+        ) : null;
       case "text":
         return <TextPreview blob={blob} />;
       case "image":

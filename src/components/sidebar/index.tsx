@@ -86,13 +86,13 @@ const Sidebar = (props: {
               <div className="flex items-center gap-3">
                 {avatarUrl ? (
                   <img
-                    className="h-10 w-10 flex-shrink-0 rounded-full object-cover"
+                    className="h-10 w-10 shrink-0 rounded-full object-cover"
                     src={avatarUrl}
                     alt={userName ?? "profile"}
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <div className="bg-brand-500 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold text-white">
+                  <div className="bg-brand-500 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white">
                     {userName?.charAt(0)?.toUpperCase() ?? "?"}
                   </div>
                 )}
