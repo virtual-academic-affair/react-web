@@ -30,12 +30,17 @@ const TaskStatusSelector: React.FC<TaskStatusSelectorProps> = ({
     label: TaskStatusLabels[s],
   }));
 
+  const optionColors = Object.fromEntries(
+    ALL_STATUSES.map((s) => [s, TaskStatusHexColors[s]]),
+  );
+
   return (
     <Tag
       variant="selection"
       color={TaskStatusHexColors[value]}
       value={value}
       options={options}
+      optionColors={optionColors}
       onChange={(v) => onChange(v as TaskStatus)}
       disabled={disabled}
       className={className}

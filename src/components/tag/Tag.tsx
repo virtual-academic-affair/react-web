@@ -1,4 +1,12 @@
-import React from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FC,
+  type MouseEvent as ReactMouseEvent,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 import { MdCheck, MdExpandMore } from "react-icons/md";
 
@@ -26,11 +34,11 @@ interface TagProps {
   disabled?: boolean;
   /** Click handler */
   onClick?: () => void;
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 }
 
-const Tag: React.FC<TagProps> = ({
+const Tag: FC<TagProps> = ({
   color,
   variant = "default",
   interactive = true,
@@ -48,15 +56,35 @@ const Tag: React.FC<TagProps> = ({
   }
   const bgWithOpacity = `${color}20`;
 
-  const [open, setOpen] = React.useState(false);
-  const [dropdownPos, setDropdownPos] = React.useState({ top: 0, left: 0 });
-  const triggerRef = React.useRef<HTMLSpanElement>(null);
+  const [open, setOpen] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
+  const triggerRef = useRef<HTMLSpanElement>(null);
 
-  const handleOpen = (e: React.MouseEvent) => {
+  const updatePos = useCallback(() => {
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (rect) {
+      setDropdownPos({ top: rect.bottom + 4, left: rect.left });
+    }
+  }, []);
+
+  // Re-anchor the dropdown on every scroll / resize while it is open
+  useEffect(() => {
+    if (!open) return;
+    window.addEventListener("scroll", updatePos, {
+      capture: true,
+      passive: true,
+    });
+    window.addEventListener("resize", updatePos);
+    return () => {
+      window.removeEventListener("scroll", updatePos, { capture: true });
+      window.removeEventListener("resize", updatePos);
+    };
+  }, [open, updatePos]);
+
+  const handleOpen = (e: ReactMouseEvent<HTMLSpanElement>) => {
     e.stopPropagation();
     if (disabled) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    setDropdownPos({ top: rect.bottom + 4, left: rect.left });
+    updatePos();
     setOpen(true);
   };
 
@@ -70,7 +98,11 @@ const Tag: React.FC<TagProps> = ({
       <>
         <span ref={triggerRef} className="relative inline-flex">
           <span
-            style={{ backgroundColor: bgWithOpacity, color, borderColor: color }}
+            style={{
+              backgroundColor: bgWithOpacity,
+              color,
+              borderColor: color,
+            }}
             onClick={(e) => {
               onClick?.();
               handleOpen(e);
@@ -144,9 +176,7 @@ const Tag: React.FC<TagProps> = ({
 
                       <span
                         className={`flex-1 ${
-                          isActive
-                            ? ""
-                            : "text-navy-700 dark:text-gray-200"
+                          isActive ? "" : "text-navy-700 dark:text-gray-200"
                         }`}
                         style={isActive ? { color: itemColor } : undefined}
                       >

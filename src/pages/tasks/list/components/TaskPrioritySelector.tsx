@@ -32,6 +32,10 @@ const TaskPrioritySelector: React.FC<TaskPrioritySelectorProps> = ({
     label: TaskPriorityLabels[p],
   }));
 
+  const optionColors = Object.fromEntries(
+    ALL_PRIORITIES.map((p) => [p, TaskPriorityHexColors[p]]),
+  );
+
   if (readonly || !onChange) {
     return (
       <Tag color={TaskPriorityHexColors[value]} className={className}>
@@ -46,6 +50,7 @@ const TaskPrioritySelector: React.FC<TaskPrioritySelectorProps> = ({
       color={TaskPriorityHexColors[value]}
       value={value}
       options={options}
+      optionColors={optionColors}
       onChange={(v) => onChange(v as TaskPriority)}
       disabled={disabled}
       className={className}

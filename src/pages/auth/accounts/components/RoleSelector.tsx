@@ -29,12 +29,17 @@ const RoleSelector: React.FC<RoleSelectorProps> = ({
     label: RoleLabels[role],
   }));
 
+  const optionColors = Object.fromEntries(
+    ALL_ROLES.map((r) => [r, RoleHexColors[r]]),
+  );
+
   return (
     <Tag
       variant="selection"
       color={RoleHexColors[value]}
       value={value}
       options={options}
+      optionColors={optionColors}
       onChange={(v) => onChange(v as Role)}
       disabled={disabled}
       className={className}
