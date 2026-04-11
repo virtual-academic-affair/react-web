@@ -30,12 +30,17 @@ const MessageStatusSelector: React.FC<MessageStatusSelectorProps> = ({
     label: MessageStatusLabels[s],
   }));
 
+  const optionColors = Object.fromEntries(
+    ALL_STATUSES.map((s) => [s, MessageStatusHexColors[s]]),
+  );
+
   return (
     <Tag
       variant="selection"
       color={value ? MessageStatusHexColors[value] : undefined}
       value={value ?? ""}
       options={options}
+      optionColors={optionColors}
       onChange={(v) => onChange(v ? (v as MessageStatus) : null)}
       disabled={disabled}
       className={className}
