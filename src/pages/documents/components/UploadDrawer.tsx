@@ -1,4 +1,4 @@
-import { message as toast } from "antd";
+﻿import { message as toast } from "antd";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import Drawer from "@/components/drawer/Drawer";
@@ -492,7 +492,7 @@ export const UploadForm: React.FC<UploadFormProps> = ({
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                className="dark:bg-navy-800 w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+                className="dark:bg-navy-800 w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30"
                 placeholder="Tên hiển thị (tùy chọn)"
               />
             </div>
@@ -595,7 +595,7 @@ export const UploadForm: React.FC<UploadFormProps> = ({
                         onChange={(e) =>
                           handleMetadataChange(type.key, e.target.value)
                         }
-                        className="dark:bg-navy-800 w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+                        className="dark:bg-navy-800 w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30"
                       >
                         <option value="">— Chọn —</option>
                         {type.allowedValues?.map((val) => (

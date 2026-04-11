@@ -1,4 +1,4 @@
-import Switch from "@/components/switch";
+﻿import Switch from "@/components/switch";
 import Tooltip from "@/components/tooltip/Tooltip";
 import { RoleColors, RoleLabels } from "@/types/users";
 import { toSnakeCase } from "@/utils/snakeCase";
@@ -115,7 +115,7 @@ const MetadataValueEditor: React.FC<MetadataValueEditorProps> = ({
                     })
                   }
                   disabled={saving}
-                  className="dark:bg-navy-800 flex-1 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm outline-none dark:border-white/10 dark:text-white"
+                  className="dark:bg-navy-800 flex-1 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm outline-none dark:border-white/10 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30"
                   placeholder="Tên hiển thị"
                 />
               </div>
@@ -278,7 +278,7 @@ const MetadataValueEditor: React.FC<MetadataValueEditorProps> = ({
                     displayName: e.target.value,
                   })
                 }
-                className="dark:bg-navy-800 flex-1 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm outline-none dark:border-white/10 dark:text-white"
+                className="dark:bg-navy-800 flex-1 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm outline-none dark:border-white/10 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30"
                 placeholder="Tên hiển thị"
               />
             </div>

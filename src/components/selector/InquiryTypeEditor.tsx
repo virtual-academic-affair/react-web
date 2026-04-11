@@ -67,7 +67,7 @@ const InquiryTypeEditor: React.FC<InquiryTypeEditorProps> = ({
           onClick={handleOpen}
           disabled={disabled}
           title="Chỉnh sửa loại thắc mắc"
-          className="dark:bg-navy-800 ml-0.5 inline-flex aspect-square h-5 items-center rounded-lg border border-gray-200 bg-white pr-1.5 pl-1 text-gray-500 transition-colors hover:border-gray-300 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:text-gray-300 dark:hover:border-white/20 dark:hover:text-white"
+          className="bg-transparent ml-0.5 inline-flex aspect-square h-5 items-center rounded-lg border border-gray-200 pr-1.5 pl-1 text-gray-500 hover:border-gray-300 hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:text-gray-300 dark:hover:border-white/20 dark:hover:bg-white/10 dark:hover:text-white"
         >
           <MdExpandMore className="h-3.5 w-3.5" />
         </button>

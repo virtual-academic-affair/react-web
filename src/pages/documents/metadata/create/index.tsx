@@ -1,4 +1,4 @@
-import CreatePageLayout from "@/components/layouts/CreatePageLayout";
+﻿import CreatePageLayout from "@/components/layouts/CreatePageLayout";
 import Switch from "@/components/switch";
 import Tag from "@/components/tag/Tag";
 import Tooltip from "@/components/tooltip/Tooltip";
@@ -197,7 +197,7 @@ const MetadataTypeCreatePage: React.FC = () => {
                   checkKeyExists(newVal);
                 }}
                 placeholder="Nhập code"
-                className={`w-full rounded-2xl border bg-transparent px-3 py-2.5 text-sm outline-none dark:text-white ${
+                className={`w-full rounded-2xl border bg-transparent px-3 py-2.5 text-sm outline-none dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30 \${
                   keyError
                     ? "border-red-500 dark:border-red-500"
                     : "border-gray-200 dark:border-white/10"
@@ -225,7 +225,7 @@ const MetadataTypeCreatePage: React.FC = () => {
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="Nhập tên hiển thị"
-                className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2.5 text-sm outline-none dark:border-white/10 dark:text-white"
+                className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2.5 text-sm outline-none dark:border-white/10 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30"
               />
             </div>
           </div>
@@ -242,7 +242,7 @@ const MetadataTypeCreatePage: React.FC = () => {
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
                 placeholder="Mô tả thông tin thêm..."
-                className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2.5 text-sm outline-none dark:border-white/10 dark:text-white"
+                className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2.5 text-sm outline-none dark:border-white/10 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30"
               />
             </div>
           </div>

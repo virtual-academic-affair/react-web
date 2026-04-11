@@ -58,7 +58,7 @@ const AssignRolePage: React.FC = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Nhập email người dùng..."
                 disabled={submitting}
-                className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
+                className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30"
                 required
               />
             </div>

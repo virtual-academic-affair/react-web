@@ -93,7 +93,7 @@ const FilterGroup: React.FC<FilterGroupProps> = ({
         type="button"
         id={`filter-group-${typeKey}`}
         onClick={handleToggle}
-        className={`flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium transition-all ${
+        className={`flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium transition-transform ${
           hasActive
             ? "border-brand-500 bg-brand-500/10 text-brand-600 dark:text-brand-400"
             : "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50 dark:border-white/10 dark:bg-navy-800 dark:text-gray-300 dark:hover:border-white/20 dark:hover:bg-white/5"
