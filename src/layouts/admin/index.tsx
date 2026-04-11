@@ -23,7 +23,7 @@ import TasksPage from "@/pages/tasks/list";
 import TaskStatisticsPage from "@/pages/tasks/statistics";
 import TaskDetailPage from "@/pages/tasks/view";
 import routes from "@/routes";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 const DYNAMIC_DATA_PARAMS = {
@@ -39,6 +39,15 @@ const DYNAMIC_DATA_PARAMS = {
 const AdminLayout: React.FC = () => {
   const [open, setOpen] = useState(() => window.innerWidth >= 1024);
   const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setOpen(window.innerWidth >= 1024);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const {
     data: rawData,
     isLoading: dataLoading,
@@ -94,9 +103,7 @@ const AdminLayout: React.FC = () => {
         {/* Navbar */}
         <div
           className={`mx-auto w-[calc(100vw-6%)] transition-all duration-300 md:w-[calc(100vw-8%)] ${
-            collapsed
-              ? "lg:w-[calc(100vw-162px)]"
-              : "lg:w-[calc(100vw-405px)]"
+            collapsed ? "lg:w-[calc(100vw-162px)]" : "lg:w-[calc(100vw-405px)]"
           }`}
         >
           <Navbar
@@ -110,9 +117,7 @@ const AdminLayout: React.FC = () => {
         {/* Page content */}
         <div
           className={`mx-auto mb-auto h-full min-h-[84vh] w-[calc(100vw-6%)] pt-5 transition-all duration-300 md:w-[calc(100vw-8%)] ${
-            collapsed
-              ? "lg:w-[calc(100vw-162px)]"
-              : "lg:w-[calc(100vw-405px)]"
+            collapsed ? "lg:w-[calc(100vw-162px)]" : "lg:w-[calc(100vw-405px)]"
           }`}
         >
           <Routes>
