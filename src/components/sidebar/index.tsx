@@ -49,8 +49,8 @@ const Sidebar = (props: {
   };
   return (
     <div
-      className={`sm:none fixed top-5 bottom-5 left-5 z-50! flex flex-col gap-4 transition-all duration-300 md:z-0! lg:z-0! xl:z-0! ${
-        open ? "translate-x-0" : "-translate-x-[120%]"
+      className={`sm:none fixed top-5 bottom-5 left-5 z-50! flex flex-col gap-4 transition-all duration-300 lg:z-0! ${
+        open ? "translate-x-0" : "-translate-x-[120%] lg:translate-x-0"
       } ${collapsed ? "w-[70px]" : "w-78.25"}`}
     >
       {/* Collapse toggle button — visible on xl+ */}
