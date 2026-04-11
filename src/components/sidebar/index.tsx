@@ -49,8 +49,8 @@ const Sidebar = (props: {
   };
   return (
     <div
-      className={`sm:none fixed top-5 bottom-5 left-5 z-50! flex flex-col gap-4 transition-all duration-300 md:z-0! lg:z-0! xl:z-0! ${
-        open ? "translate-x-0" : "-translate-x-[120%]"
+      className={`sm:none fixed top-5 bottom-5 left-5 z-50! flex flex-col gap-4 transition-all duration-300 lg:z-0! ${
+        open ? "translate-x-0" : "-translate-x-[120%] lg:translate-x-0"
       } ${collapsed ? "w-[70px]" : "w-78.25"}`}
     >
       {/* Collapse toggle button — visible on xl+ */}
@@ -86,13 +86,13 @@ const Sidebar = (props: {
               <div className="flex items-center gap-3">
                 {avatarUrl ? (
                   <img
-                    className="h-10 w-10 flex-shrink-0 rounded-full object-cover"
+                    className="h-10 w-10 shrink-0 rounded-full object-cover"
                     src={avatarUrl}
                     alt={userName ?? "profile"}
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <div className="bg-brand-500 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold text-white">
+                  <div className="bg-brand-500 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white">
                     {userName?.charAt(0)?.toUpperCase() ?? "?"}
                   </div>
                 )}

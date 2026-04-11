@@ -37,7 +37,7 @@ const DYNAMIC_DATA_PARAMS = {
 } as const;
 
 const AdminLayout: React.FC = () => {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(() => window.innerWidth >= 1024);
   const [collapsed, setCollapsed] = useState(false);
   const {
     data: rawData,
@@ -88,15 +88,15 @@ const AdminLayout: React.FC = () => {
       {/* Main content */}
       <div
         className={`relative flex min-h-screen w-full flex-col transition-all duration-300 ${
-          collapsed ? "xl:ml-[100px]" : "xl:ml-[343px]"
+          collapsed ? "lg:ml-[100px]" : "lg:ml-[343px]"
         }`}
       >
         {/* Navbar */}
         <div
-          className={`mx-auto w-[calc(100vw-6%)] transition-all duration-300 md:w-[calc(100vw-8%)] lg:w-[calc(100vw-6%)] ${
+          className={`mx-auto w-[calc(100vw-6%)] transition-all duration-300 md:w-[calc(100vw-8%)] ${
             collapsed
-              ? "xl:w-[calc(100vw-162px)] 2xl:w-[calc(100vw-162px)]"
-              : "xl:w-[calc(100vw-405px)] 2xl:w-[calc(100vw-405px)]"
+              ? "lg:w-[calc(100vw-162px)]"
+              : "lg:w-[calc(100vw-405px)]"
           }`}
         >
           <Navbar
@@ -109,10 +109,10 @@ const AdminLayout: React.FC = () => {
 
         {/* Page content */}
         <div
-          className={`mx-auto mb-auto h-full min-h-[84vh] w-[calc(100vw-6%)] pt-5 transition-all duration-300 md:w-[calc(100vw-8%)] lg:w-[calc(100vw-6%)] ${
+          className={`mx-auto mb-auto h-full min-h-[84vh] w-[calc(100vw-6%)] pt-5 transition-all duration-300 md:w-[calc(100vw-8%)] ${
             collapsed
-              ? "xl:w-[calc(100vw-162px)] 2xl:w-[calc(100vw-162px)]"
-              : "xl:w-[calc(100vw-405px)] 2xl:w-[calc(100vw-405px)]"
+              ? "lg:w-[calc(100vw-162px)]"
+              : "lg:w-[calc(100vw-405px)]"
           }`}
         >
           <Routes>
