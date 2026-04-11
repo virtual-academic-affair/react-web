@@ -9,7 +9,10 @@ import Switch from "@/components/switch";
 import Tag from "@/components/tag/Tag";
 import Tooltip from "@/components/tooltip/Tooltip.tsx";
 import { useClassRegistrationShowOnlyPendingItems } from "@/hooks/useClassRegistrationShowOnlyPendingItems";
-import { resolveLinkedMessageId } from "@/hooks/useDetailLinkedMessagePanel";
+import {
+  resolveLinkedMessageId,
+  useDetailLinkedMessagePanel,
+} from "@/hooks/useDetailLinkedMessagePanel";
 import {
   cancelReasonsService,
   classRegistrationItemsService,
@@ -517,6 +520,8 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
   );
 
   const linkedMid = detail ? resolveLinkedMessageId(detail.messageId) : null;
+  const [linkedPanelOpen] = useDetailLinkedMessagePanel();
+  const bothDrawersOpen = linkedMid != null && linkedPanelOpen;
 
   return (
     <>
@@ -524,13 +529,13 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
       <Drawer
         isOpen={isOpen}
         onClose={onClose}
-        title="Chi tiết đăng kí lớp"
+        title="Chi tiết đăng ký lớp"
         headerExtra={
           linkedMid != null ? <DetailLinkedMessageSwitch /> : undefined
         }
         footerLeft={footerLeft}
         footerRight={footerRight}
-        width="max-w-4xl"
+        width={bothDrawersOpen ? "max-w-[calc(50vw-36px)]" : "max-w-4xl"}
       >
         {loadingDetail || !form ? (
           <div className="flex flex-col gap-4">
@@ -663,7 +668,7 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                   return (
                     <div
                       key={item.id}
-                      className={`rounded-3xl bg-gray-50 p-4 dark:border-white/10`}
+                      className={`rounded-3xl bg-gray-50 p-4 dark:border-white/10 dark:bg-white/5`}
                     >
                       {/* Header with remove button */}
                       <div className="mb-3 flex items-center justify-between">
@@ -888,7 +893,7 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                         isInCurriculum: false,
                       });
                     }}
-                    className="flex items-center justify-center gap-1 rounded-xl bg-gray-500 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-gray-600 disabled:opacity-50"
+                    className="bg-brand-500 hover:bg-brand-600 flex items-center justify-center gap-1 rounded-xl px-3 py-1.5 text-xs font-medium text-white transition-colors disabled:opacity-50 dark:bg-white/5"
                     title="Thêm lớp mới"
                   >
                     <MdAdd className="h-4 w-4" />

@@ -49,14 +49,14 @@ const Sidebar = (props: {
   };
   return (
     <div
-      className={`sm:none fixed top-5 bottom-5 left-5 z-50! flex flex-col gap-4 transition-all duration-300 md:z-50! lg:z-50! xl:z-0! ${
+      className={`sm:none fixed top-5 bottom-5 left-5 z-50! flex flex-col gap-4 transition-all duration-300 md:z-0! lg:z-0! xl:z-0! ${
         open ? "translate-x-0" : "-translate-x-[120%]"
       } ${collapsed ? "w-[70px]" : "w-78.25"}`}
     >
       {/* Collapse toggle button — visible on xl+ */}
       <button
         onClick={onToggleCollapse}
-        title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        title={collapsed ? "Mở rộng" : "Thu gọn"}
         className="hover:text-brand-500 dark:border-navy-600 dark:bg-navy-800 dark:hover:bg-navy-700 absolute top-8 -right-3.5 z-10 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-md hover:bg-gray-50 dark:text-gray-300"
       >
         {collapsed ? (

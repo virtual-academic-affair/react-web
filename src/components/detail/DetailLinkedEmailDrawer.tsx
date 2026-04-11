@@ -77,7 +77,7 @@ export function DetailLinkedEmailDrawer({
       side="left"
       hideBackdrop
       showFooterActions={false}
-      width="max-w-2xl"
+      width="max-w-[calc(50vw-36px)]"
       wrapperClassName="z-[49]"
       onClose={() => setLinkedMessagePanelOpen(false)}
       onLabelChanged={() => {
