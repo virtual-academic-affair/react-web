@@ -42,12 +42,20 @@ export function createInquiryReferenceSuggestionExtension(
             ed.chain().focus().deleteRange(range).insertContent(`${item.insertHtml} `).run();
           },
           items: ({ query }) => filterItems(itemsRef.current, query),
-          // Always show popup when user types '@' so they can see loading/empty states.
-          shouldShow: () => true,
           allowedPrefixes: null,
+          shouldShow: ({ editor: activeEditor }) => activeEditor.isFocused,
           render: () => {
             let renderer: ReactRenderer<InquiryReferenceSuggestionListHandle> | null =
               null;
+
+            const POPUP_TOP_OFFSET_PX = 6;
+            const POPUP_DATA_ATTR = "data-inquiry-reference-suggestion-popup";
+
+            const cleanupExistingPopups = () => {
+              document
+                .querySelectorAll<HTMLElement>(`[${POPUP_DATA_ATTR}="true"]`)
+                .forEach((el) => el.remove());
+            };
 
             const place = (
               el: HTMLElement,
@@ -57,16 +65,21 @@ export function createInquiryReferenceSuggestionExtension(
               if (!rect) return;
               el.style.position = "fixed";
               el.style.left = `${rect.left}px`;
-              el.style.top = `${rect.bottom + 6}px`;
+              el.style.top = `${rect.bottom + POPUP_TOP_OFFSET_PX}px`;
               el.style.zIndex = "10000";
             };
 
             return {
               onStart: (props) => {
+                renderer?.element.remove();
+                renderer?.destroy();
+                cleanupExistingPopups();
+
                 renderer = new ReactRenderer(InquiryReferenceSuggestionList, {
                   editor: props.editor,
                   props,
                 });
+                renderer.element.setAttribute(POPUP_DATA_ATTR, "true");
                 document.body.appendChild(renderer.element);
                 place(renderer.element, props.clientRect);
               },
