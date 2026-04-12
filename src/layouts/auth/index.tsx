@@ -6,20 +6,59 @@
 
 import authImg from "@/assets/img/auth/auth.png";
 import LogoBgWhite from "@/assets/img/logo/logo-bg-white-circle.svg";
-import { useAuthStore } from "@/stores/auth.store";
-import { getRolePath } from "@/utils/auth.util";
-import React from "react";
+import { refreshTokens } from "@/services/http";
+import { isMarkedAuthenticated, useAuthStore } from "@/stores/auth.store";
+import React, { useEffect, useState } from "react";
 import { RiMoonFill, RiSunFill } from "react-icons/ri";
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 export default function AuthLayout() {
   const accessToken = useAuthStore((s) => s.accessToken);
-  const userRole = useAuthStore((s) => s.userRole);
   const [darkmode, setDarkmode] = React.useState(
     document.body.classList.contains("dark"),
   );
 
-  if (accessToken) return <Navigate to={getRolePath(userRole)} replace />;
+  const location = useLocation();
+  const isCallback = location.pathname.includes("/callback");
+
+  // Only block auth pages if:
+  // (a) we already have a token in memory (SPA navigation), OR
+  // (b) localStorage says the user has authenticated before (hard navigation)
+  //     In case (b) we verify via refreshTokens() — which is safe because
+  //     clearAuth() already removed the localStorage flag on logout.
+  const needsCheck = !accessToken && isMarkedAuthenticated() && !isCallback;
+
+  const [status, setStatus] = useState<"checking" | "done">(
+    needsCheck ? "checking" : "done",
+  );
+
+  useEffect(() => {
+    if (status !== "checking") return;
+
+    refreshTokens()
+      .then((tokens) => {
+        useAuthStore.getState().setAccessToken(tokens.accessToken);
+        setStatus("done");
+      })
+      .catch(() => {
+        // Session expired — clear the stale flag so we don't re-check
+        useAuthStore.getState().clearAuth();
+        setStatus("done");
+      });
+  }, [status]);
+
+  // Show spinner only while verifying a previous session
+  if (status === "checking") {
+    return (
+      <div className="dark:bg-navy-900 flex min-h-screen items-center justify-center bg-white">
+        <div className="border-t-brand-500 h-10 w-10 animate-spin rounded-full border-4 border-gray-200" />
+      </div>
+    );
+  }
+
+  // Re-read from store after potential refresh
+  const { accessToken: token } = useAuthStore.getState();
+  if (token) return <Navigate to="/" replace />;
 
   const toggleDark = () => {
     if (darkmode) {

@@ -15,8 +15,9 @@ export default function LoginPage() {
   const accessToken = useAuthStore((state) => state.accessToken);
   const [loading, setLoading] = useState(false);
 
+  // SPA navigation (not hard navigation) guard: token is in memory → redirect to their dashboard
   if (accessToken) {
-    return <Navigate to="/admin" replace />;
+    return <Navigate to="/" replace />;
   }
 
   const handleGoogleSignIn = async () => {

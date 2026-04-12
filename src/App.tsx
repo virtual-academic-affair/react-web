@@ -3,11 +3,12 @@ import RoleRoute from "@/components/auth/RoleRoute";
 import AdminLayout from "@/layouts/admin";
 import AuthLayout from "@/layouts/auth";
 import UserLayout from "@/layouts/user";
+import BannedPage from "@/pages/auth/banned";
 import GmailGrantFromAddonPage from "@/pages/auth/gmail-grant";
 import LoginPage from "@/pages/auth/login";
 import GoogleCallbackPage from "@/pages/auth/login/callback";
-import UserDashboard from "@/pages/user";
 import GmailDeeplinkPage from "@/pages/gmail-deeplink";
+import UserDashboard from "@/pages/user";
 import { refreshTokens } from "@/services/http";
 import { useAuthStore } from "@/stores/auth.store";
 import { ConfigProvider, theme } from "antd";
@@ -77,7 +78,7 @@ function RootRedirect() {
   const { accessToken: token, userRole: role } = useAuthStore.getState();
   if (token) {
     if (role === "admin") return <Navigate to="/admin" replace />;
-    return <Navigate to="/user/documents" replace />;
+    return <Navigate to="/user" replace />;
   }
 
   return <UserDashboard />;
@@ -122,6 +123,7 @@ export default function App() {
             <Route path="login" element={<LoginPage />} />
             <Route path="callback" element={<GoogleCallbackPage />} />
             <Route path="gmail-grant" element={<GmailGrantFromAddonPage />} />
+            <Route path="banned" element={<BannedPage />} />
           </Route>
 
           {/* ── Root: landing for guests, redirect for authenticated users ── */}
