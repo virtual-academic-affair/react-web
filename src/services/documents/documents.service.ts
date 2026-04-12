@@ -19,6 +19,8 @@ const getRagWsBaseUrl = () => {
   return raw;
 };
 
+export type DownloadFileFormat = "original" | "markdown";
+
 export const DocumentsService = {
   // ── Nest API Endpoints ─────────────────────────────────────────────────────
 
@@ -155,24 +157,30 @@ export const DocumentsService = {
     fileId: string,
     updates: {
       displayName?: string;
-      customMetadata?: Record<string, string>;
+      customMetadata?: Record<string, string[]>;
     },
   ): Promise<any> {
-    const { data } = await ragHttp.patch(API_ENDPOINTS.rag.files.byId(fileId), {
-      displayName: updates.displayName,
-      customMetadata: updates.customMetadata,
-    });
+    const { data } = await ragHttp.patch(
+      `${API_ENDPOINTS.rag.files.byId(fileId)}/metadata`,
+      {
+        displayName: updates.displayName,
+        customMetadata: updates.customMetadata,
+      },
+    );
     return data;
   },
 
   /**
    * Download file.
    */
-  async downloadFile(fileId: string): Promise<Blob> {
-    const response = await ragHttp.get(
-      API_ENDPOINTS.rag.files.download(fileId),
-      { responseType: "blob" },
-    );
+  async downloadFile(
+    fileId: string,
+    format: DownloadFileFormat = "original",
+  ): Promise<Blob> {
+    const response = await ragHttp.get(API_ENDPOINTS.rag.files.download(fileId), {
+      params: { format },
+      responseType: "blob",
+    });
     return response.data;
   },
 };

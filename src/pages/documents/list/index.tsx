@@ -15,7 +15,7 @@ import { parseError } from "@/utils/parseError";
 import { parseSearchString, stringifySearchQuery } from "@/utils/search";
 
 import Tooltip from "@/components/tooltip/Tooltip";
-import AccessScopeBadge from "../components/AccessScopeBadge";
+import AccessScopeEditor from "../components/AccessScopeEditor";
 import AdvancedFilterModal, {
   type DocumentFilters,
 } from "../components/AdvancedFilterModal";
@@ -23,6 +23,9 @@ import DocumentDetailDrawer from "../components/DocumentDetailDrawer";
 import FilePreviewModal from "../components/FilePreviewModal";
 
 const PAGE_SIZE = 10;
+const PREVIEW_TARGET_MARKDOWN = "markdown";
+const DOWNLOAD_FORMAT_ORIGINAL = "original" as const;
+const DOWNLOAD_FORMAT_MARKDOWN = "markdown" as const;
 
 const defaultFilters: DocumentFilters = {};
 
@@ -83,9 +86,14 @@ const DocumentListPage = () => {
   const [draftFilters, setDraftFilters] =
     useState<DocumentFilters>(defaultFilters);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [updatingAccessScopeIds, setUpdatingAccessScopeIds] = useState<
+    Set<string>
+  >(new Set());
 
   // File preview (URL-driven: ?id=fileId&preview=true[&previewPage=n])
   const isPreview = searchParams.get("preview") === "true";
+  const previewTarget = searchParams.get("previewTarget") || "";
+  const isMarkdownPreview = previewTarget === PREVIEW_TARGET_MARKDOWN;
   const previewFileId = isPreview ? searchParams.get("id") || null : null;
   const previewPageParam = Number(searchParams.get("previewPage") ?? "1");
   const previewPage =
@@ -158,11 +166,28 @@ const DocumentListPage = () => {
     },
   });
 
-  const previewFileName = useMemo(() => {
-    if (!previewFileId || !result?.items) return "";
-    const file = result.items.find((f: any) => f.fileId === previewFileId);
-    return file?.originalFilename || file?.displayName || "";
+  const previewFile = useMemo(() => {
+    if (!previewFileId || !result?.items) return null;
+    return result.items.find((f: any) => f.fileId === previewFileId) || null;
   }, [previewFileId, result]);
+
+  const previewFileName = useMemo(() => {
+    if (!previewFile) return "";
+
+    if (isMarkdownPreview) {
+      const markdownUrl = String(previewFile.markdownFileUrl || "");
+      const fromUrl = markdownUrl.split("?")[0].split("/").pop() || "";
+      if (fromUrl) return fromUrl;
+      const baseName = previewFile.displayName || previewFile.originalFilename || "";
+      return baseName ? `${baseName}.md` : "markdown.md";
+    }
+
+    return previewFile.originalFilename || previewFile.displayName || "";
+  }, [previewFile, isMarkdownPreview]);
+
+  const previewDownloadFormat = isMarkdownPreview
+    ? DOWNLOAD_FORMAT_MARKDOWN
+    : DOWNLOAD_FORMAT_ORIGINAL;
 
   // ── Effects ────────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -190,8 +215,17 @@ const DocumentListPage = () => {
     }
     if (selectedFileId) next.set("id", selectedFileId);
     if (isPreview) next.set("preview", "true");
+    if (previewTarget) next.set("previewTarget", previewTarget);
     setSearchParams(next, { replace: true });
-  }, [keyword, page, filters, selectedFileId, isPreview, setSearchParams]);
+  }, [
+    keyword,
+    page,
+    filters,
+    selectedFileId,
+    isPreview,
+    previewTarget,
+    setSearchParams,
+  ]);
 
   // Sync searchValue when keyword or filters change (from filter modal or URL)
   useEffect(() => {
@@ -280,6 +314,40 @@ const DocumentListPage = () => {
     [queryClient, handleCloseDetail],
   );
 
+  const handleAccessScopeChange = useCallback(
+    async (item: any, nextScopes: ("lecture" | "student")[]) => {
+      setUpdatingAccessScopeIds((prev) => new Set(prev).add(item.fileId));
+      try {
+        const current = item.customMetadata || {};
+        const nextMetadata = { ...current } as Record<string, unknown>;
+
+        delete (nextMetadata as Record<string, unknown>).access_scope;
+
+        if (nextScopes.length > 0) {
+          nextMetadata.accessScope = nextScopes;
+        } else {
+          delete (nextMetadata as Record<string, unknown>).accessScope;
+        }
+
+        await DocumentsService.updateFileMetadata(item.fileId, {
+          customMetadata: nextMetadata as Record<string, string[]>,
+        });
+
+        toast.success("Đã cập nhật phạm vi truy cập.");
+        queryClient.invalidateQueries({ queryKey: ["documents"] });
+      } catch (err: unknown) {
+        toast.error(parseError(err));
+      } finally {
+        setUpdatingAccessScopeIds((prev) => {
+          const next = new Set(prev);
+          next.delete(item.fileId);
+          return next;
+        });
+      }
+    },
+    [queryClient],
+  );
+
   // ── Columns ────────────────────────────────────────────────────────────────────
   const columns: TableColumn<any>[] = useMemo(
     () => [
@@ -321,8 +389,20 @@ const DocumentListPage = () => {
         header: "Phạm vi truy cập",
         render: (x) => {
           const meta = x.customMetadata || {};
+          const currentScopes = (
+            Array.isArray(meta.accessScope)
+              ? meta.accessScope
+              : Array.isArray(meta.access_scope)
+                ? meta.access_scope
+                : []
+          ).filter((v: string) => ["lecture", "student"].includes(v));
+
           return (
-            <AccessScopeBadge value={meta.access_scope ?? meta.accessScope} />
+            <AccessScopeEditor
+              value={currentScopes}
+              onChange={(next) => handleAccessScopeChange(x, next)}
+              disabled={updatingAccessScopeIds.has(x.fileId)}
+            />
           );
         },
       },
@@ -357,7 +437,12 @@ const DocumentListPage = () => {
         },
       },
     ],
-    [],
+    [
+      handleAccessScopeChange,
+      searchParams,
+      setSearchParams,
+      updatingAccessScopeIds,
+    ],
   );
 
   const actions: TableAction<any>[] = useMemo(
@@ -376,7 +461,10 @@ const DocumentListPage = () => {
         label: "Tải xuống",
         onClick: async (x) => {
           try {
-            const blob = await DocumentsService.downloadFile(x.fileId);
+            const blob = await DocumentsService.downloadFile(
+              x.fileId,
+              DOWNLOAD_FORMAT_ORIGINAL,
+            );
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
@@ -427,17 +515,29 @@ const DocumentListPage = () => {
         fileId={selectedFileId}
         metadataTypes={metadataTypes}
         isOpen={selectedFileId !== null && !isPreview}
-        isReadOnly={true}
+        isReadOnly={false}
         onClose={handleCloseDetail}
         onDeleted={() => {
           queryClient.invalidateQueries({ queryKey: ["documents"] });
           handleCloseDetail();
+        }}
+        onUpdated={() => {
+          queryClient.invalidateQueries({ queryKey: ["documents"] });
         }}
         onPreview={() => {
           if (!selectedFileId) return;
           wasDrawerOpenBeforePreview.current = true;
           const next = new URLSearchParams(searchParams);
           next.set("preview", "true");
+          next.delete("previewTarget");
+          setSearchParams(next, { replace: true });
+        }}
+        onPreviewMarkdown={() => {
+          if (!selectedFileId) return;
+          wasDrawerOpenBeforePreview.current = true;
+          const next = new URLSearchParams(searchParams);
+          next.set("preview", "true");
+          next.set("previewTarget", PREVIEW_TARGET_MARKDOWN);
           setSearchParams(next, { replace: true });
         }}
       />
@@ -468,12 +568,14 @@ const DocumentListPage = () => {
       <FilePreviewModal
         fileId={previewFileId}
         fileName={previewFileName}
+        downloadFormat={previewDownloadFormat}
         isOpen={previewFileId !== null}
         initialPage={previewPage}
         onClose={() => {
           const next = new URLSearchParams(searchParams);
           next.delete("preview");
           next.delete("previewPage");
+          next.delete("previewTarget");
           if (!wasDrawerOpenBeforePreview.current) {
             next.delete("id");
           }

@@ -19,7 +19,10 @@ import {
 } from "react-icons/md";
 import { Document, Page, pdfjs } from "react-pdf";
 
-import { DocumentsService } from "@/services/documents";
+import {
+  type DownloadFileFormat,
+  DocumentsService,
+} from "@/services/documents";
 
 import "./FilePreviewModal.css";
 
@@ -73,6 +76,69 @@ function getExtension(filename: string): string {
   return (filename.split(".").pop() || "").toLowerCase();
 }
 
+function escapeHtml(input: string): string {
+  return input
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function renderInlineMarkdown(input: string): string {
+  let out = escapeHtml(input);
+  out = out.replace(/`([^`]+)`/g, "<code>$1</code>");
+  out = out.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  out = out.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+  out = out.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>');
+  return out;
+}
+
+function markdownToHtml(markdown: string): string {
+  const lines = markdown.replaceAll("\r\n", "\n").split("\n");
+  const html: string[] = [];
+  let inList = false;
+
+  const closeListIfNeeded = () => {
+    if (inList) {
+      html.push("</ul>");
+      inList = false;
+    }
+  };
+
+  lines.forEach((line) => {
+    const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+    const listMatch = line.match(/^[-*]\s+(.+)$/);
+
+    if (!line.trim()) {
+      closeListIfNeeded();
+      return;
+    }
+
+    if (headingMatch) {
+      closeListIfNeeded();
+      const level = headingMatch[1].length;
+      html.push(`<h${level}>${renderInlineMarkdown(headingMatch[2])}</h${level}>`);
+      return;
+    }
+
+    if (listMatch) {
+      if (!inList) {
+        html.push("<ul>");
+        inList = true;
+      }
+      html.push(`<li>${renderInlineMarkdown(listMatch[1])}</li>`);
+      return;
+    }
+
+    closeListIfNeeded();
+    html.push(`<p>${renderInlineMarkdown(line)}</p>`);
+  });
+
+  closeListIfNeeded();
+  return html.join("\n");
+}
+
 type FileCategory = "pdf" | "text" | "image" | "docx" | "unsupported";
 
 function categorizeFile(filename: string): FileCategory {
@@ -89,6 +155,7 @@ function categorizeFile(filename: string): FileCategory {
 interface FilePreviewModalProps {
   fileId: string | null;
   fileName: string;
+  downloadFormat?: DownloadFileFormat;
   isOpen: boolean;
   initialPage?: number;
   onClose: () => void;
@@ -266,7 +333,10 @@ const PdfPreview: React.FC<{ url: string; initialPage?: number }> = ({
   );
 };
 
-const TextPreview: React.FC<{ blob: Blob }> = ({ blob }) => {
+const TextPreview: React.FC<{ blob: Blob; fileName: string }> = ({
+  blob,
+  fileName,
+}) => {
   const [content, setContent] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
@@ -291,11 +361,20 @@ const TextPreview: React.FC<{ blob: Blob }> = ({ blob }) => {
     );
   }
 
+  const isMarkdown = getExtension(fileName) === "md";
+
   return (
     <div className="h-full overflow-auto bg-gray-800/50 p-8">
-      <pre className="mx-auto min-h-[80vh] max-w-[816px] rounded bg-white p-12 font-mono text-[13px] leading-relaxed break-all whitespace-pre-wrap text-gray-800 shadow-lg">
-        {content}
-      </pre>
+      {isMarkdown ? (
+        <article
+          className="mx-auto min-h-[80vh] max-w-[816px] rounded bg-white p-12 text-gray-800 shadow-lg [&_a]:text-blue-600 [&_a]:underline [&_code]:rounded [&_code]:bg-gray-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_h1]:mb-4 [&_h1]:text-3xl [&_h1]:font-bold [&_h2]:mb-3 [&_h2]:text-2xl [&_h2]:font-semibold [&_h3]:mb-2 [&_h3]:text-xl [&_h3]:font-semibold [&_li]:mb-1 [&_p]:mb-3 [&_ul]:mb-3 [&_ul]:list-disc [&_ul]:pl-6"
+          dangerouslySetInnerHTML={{ __html: markdownToHtml(content) }}
+        />
+      ) : (
+        <pre className="mx-auto min-h-[80vh] max-w-[816px] rounded bg-white p-12 font-mono text-[13px] leading-relaxed break-all whitespace-pre-wrap text-gray-800 shadow-lg">
+          {content}
+        </pre>
+      )}
     </div>
   );
 };
@@ -401,6 +480,7 @@ const UnsupportedPreview: React.FC<{
 const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
   fileId,
   fileName,
+  downloadFormat = "original",
   isOpen,
   initialPage = 1,
   onClose,
@@ -413,8 +493,8 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["file-preview", fileId],
-    queryFn: () => DocumentsService.downloadFile(fileId!),
+    queryKey: ["file-preview", fileId, downloadFormat],
+    queryFn: () => DocumentsService.downloadFile(fileId!, downloadFormat),
     enabled: isOpen && Boolean(fileId),
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -455,7 +535,8 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
   const handleDownload = useCallback(async () => {
     try {
       const downloadBlob =
-        blob || (await DocumentsService.downloadFile(fileId!));
+        blob || (await DocumentsService.downloadFile(fileId!, downloadFormat));
+
       const url = URL.createObjectURL(downloadBlob);
       const a = document.createElement("a");
       a.href = url;
@@ -465,7 +546,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
     } catch {
       toast.error("Không thể tải xuống tệp.");
     }
-  }, [blob, fileId, fileName]);
+  }, [blob, fileId, fileName, downloadFormat]);
 
   if (!isOpen) return null;
 
@@ -501,7 +582,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
           <PdfPreview url={objectUrl} initialPage={initialPage} />
         ) : null;
       case "text":
-        return <TextPreview blob={blob} />;
+        return <TextPreview blob={blob} fileName={fileName} />;
       case "image":
         return objectUrl ? <ImagePreview url={objectUrl} /> : null;
       case "docx":
