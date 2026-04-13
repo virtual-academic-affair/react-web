@@ -456,6 +456,11 @@ const ClassRegistrationCreatePage: React.FC = () => {
                           }
                           value={item.action}
                           options={RegistrationActionOptions}
+                          optionColors={Object.fromEntries(
+                            Object.entries(RegistrationActionColors).map(
+                              ([k, v]) => [k, v.hex],
+                            ),
+                          )}
                           onChange={(value) =>
                             updateItem(item.key, "action", value)
                           }

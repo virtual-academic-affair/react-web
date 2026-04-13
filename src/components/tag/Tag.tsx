@@ -56,16 +56,32 @@ const Tag: FC<TagProps> = ({
   }
   const bgWithOpacity = `${color}20`;
 
+  const DROPDOWN_MAX_H = 280; // px — must match max-h below
+
   const [open, setOpen] = useState(false);
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
+  const [dropdownPos, setDropdownPos] = useState<{
+    top?: number;
+    bottom?: number;
+    left: number;
+  }>({ left: 0 });
   const triggerRef = useRef<HTMLSpanElement>(null);
 
   const updatePos = useCallback(() => {
     const rect = triggerRef.current?.getBoundingClientRect();
-    if (rect) {
+    if (!rect) return;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    if (spaceBelow < DROPDOWN_MAX_H && spaceAbove > spaceBelow) {
+      // Flip upward
+      setDropdownPos({
+        bottom: window.innerHeight - rect.top + 4,
+        left: rect.left,
+      });
+    } else {
+      // Default: open downward
       setDropdownPos({ top: rect.bottom + 4, left: rect.left });
     }
-  }, []);
+  }, [DROPDOWN_MAX_H]);
 
   // Re-anchor the dropdown on every scroll / resize while it is open
   useEffect(() => {
@@ -133,8 +149,12 @@ const Tag: FC<TagProps> = ({
               />
               {/* Dropdown Menu */}
               <div
-                style={{ top: dropdownPos.top, left: dropdownPos.left }}
-                className="dark:bg-navy-900 fixed z-210 min-w-[140px] rounded-2xl border border-gray-100 bg-white py-1.5 shadow-xl dark:border-white/10 dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
+                style={{
+                  top: dropdownPos.top,
+                  bottom: dropdownPos.bottom,
+                  left: dropdownPos.left,
+                }}
+                className="dark:bg-navy-900 fixed z-210 min-w-[140px] max-h-[280px] overflow-y-auto rounded-2xl border border-gray-100 bg-white py-1.5 shadow-xl dark:border-white/10 dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
               >
                 {options.map((opt) => {
                   const isActive = opt.value === value;

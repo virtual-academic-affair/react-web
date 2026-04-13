@@ -1057,6 +1057,11 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                             }
                             value={draftItem.action}
                             options={RegistrationActionOptions}
+                            optionColors={Object.fromEntries(
+                              Object.entries(RegistrationActionColors).map(
+                                ([k, v]) => [k, v.hex],
+                              ),
+                            )}
                             disabled={updatingItemIds.has(-1)}
                             onChange={(value) =>
                               setDraftItem({
