@@ -362,7 +362,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
         label: "Gmail",
         onClick: (msg) => {
           const url = superEmail?.email
-            ? `https://mail.google.com/mail/u/${superEmail.email}/#inbox/${msg.threadId}`
+            ? `https://mail.google.com/mail/u/?authuser=${encodeURIComponent(superEmail.email)}#inbox/${msg.threadId}`
             : `https://mail.google.com/mail/u/0/#inbox/${msg.threadId}`;
           window.open(url, "_blank", "noopener,noreferrer");
         },
@@ -423,7 +423,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
             processingIds={processingIds}
             onOpenGmail={(msg) => {
               const url = superEmail?.email
-                ? `https://mail.google.com/mail/u/${superEmail.email}/#inbox/${msg.threadId}`
+                ? `https://mail.google.com/mail/u/?authuser=${encodeURIComponent(superEmail.email)}#inbox/${msg.threadId}`
                 : `https://mail.google.com/mail/u/0/#inbox/${msg.threadId}`;
               window.open(url, "_blank", "noopener,noreferrer");
             }}
