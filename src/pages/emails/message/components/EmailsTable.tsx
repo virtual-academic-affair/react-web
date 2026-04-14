@@ -192,7 +192,7 @@ const EmailsTable: React.FC<EmailsTableProps> = ({
                         <a
                           href={
                             gmailAccount
-                              ? `https://mail.google.com/mail/u/${gmailAccount}/#inbox/${msg.threadId}`
+                              ? `https://mail.google.com/mail/u/?authuser=${encodeURIComponent(gmailAccount)}#inbox/${msg.threadId}`
                               : `https://mail.google.com/mail/u/0/#inbox/${msg.threadId}`
                           }
                           target="_blank"
