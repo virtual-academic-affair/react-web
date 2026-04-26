@@ -1,8 +1,10 @@
 import AdvancedFilterModalBase from "@/components/filter/AdvancedFilterModal";
+import { FormRow } from "@/components/layouts/DetailFormLayout.tsx";
+import Tag from "@/components/tag/Tag";
 import type { Role } from "@/types/users.ts";
+import { RoleColors, RoleLabels } from "@/types/users.ts";
 import Switch from "@/components/switch";
 import React from "react";
-import RoleFilterSelector from "./RoleFilterSelector.tsx";
 
 export interface AccountFilters {
   roles: Role[];
@@ -17,6 +19,7 @@ interface AdvancedFilterModalProps {
   onClear: () => void;
   onApply: () => void;
   onRequestClose: () => void;
+  anchorRef?: React.RefObject<HTMLElement | null>;
 }
 
 const AdvancedFilterModal: React.FC<AdvancedFilterModalProps> = ({
@@ -26,7 +29,17 @@ const AdvancedFilterModal: React.FC<AdvancedFilterModalProps> = ({
   onClear,
   onApply,
   onRequestClose,
+  anchorRef,
 }) => {
+  const roles: Role[] = ["student", "admin", "lecture"];
+
+  const handleToggleRole = (role: Role) => {
+    const nextRoles = value.roles.includes(role)
+      ? value.roles.filter((item) => item !== role)
+      : [...value.roles, role];
+    onChange({ ...value, roles: nextRoles });
+  };
+
   const handleToggleEnableFilter = (checked: boolean) => {
     onChange({ ...value, enableIsActiveFilter: checked });
   };
@@ -41,24 +54,29 @@ const AdvancedFilterModal: React.FC<AdvancedFilterModalProps> = ({
       onClear={onClear}
       onApply={onApply}
       onRequestClose={onRequestClose}
+      anchorRef={anchorRef}
     >
-      <div>
-        <p className="text-navy-700 font-medium dark:text-white">Vai trò</p>
-      </div>
-      <div className="col-span-3">
-        <RoleFilterSelector
-          value={value.roles}
-          onChange={(roles) => onChange({ ...value, roles })}
-        />
-      </div>
+      <FormRow label="Vai trò" className="md:col-span-4">
+        <div className="flex flex-wrap gap-2">
+          {roles.map((role) => {
+            const active = value.roles.includes(role);
+            const colors = RoleColors[role];
+            return (
+              <Tag
+                key={role}
+                color={active ? colors.hex : "#6b7280"}
+                onClick={() => handleToggleRole(role)}
+                className={active ? "" : "opacity-80"}
+              >
+                {RoleLabels[role]}
+              </Tag>
+            );
+          })}
+        </div>
+      </FormRow>
 
-      <div className="mt-4">
-        <p className="text-navy-700 font-medium dark:text-white">
-          Trạng thái hoạt động
-        </p>
-      </div>
-      <div className="col-span-3 mt-4">
-        <div className="flex items-center gap-3">
+      <FormRow label="Trạng thái hoạt động" className="md:col-span-4">
+        <div className="flex flex-wrap items-center gap-3">
           <label className="flex cursor-pointer items-center gap-2">
             <input
               type="checkbox"
@@ -84,7 +102,7 @@ const AdvancedFilterModal: React.FC<AdvancedFilterModalProps> = ({
             </div>
           )}
         </div>
-      </div>
+      </FormRow>
     </AdvancedFilterModalBase>
   );
 };

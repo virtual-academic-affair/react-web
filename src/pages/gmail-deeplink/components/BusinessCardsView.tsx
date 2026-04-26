@@ -7,7 +7,6 @@ import AssigneeManager from "@/pages/tasks/components/AssigneeManager";
 import TaskDetailDrawer from "@/pages/tasks/list/components/TaskDetailDrawer";
 import { classRegistrationsService } from "@/services/class-registration";
 import { inquiriesService } from "@/services/inquiry";
-import { dynamicDataService } from "@/services/shared";
 import { tasksService } from "@/services/tasks";
 import type { ClassRegistration } from "@/types/classRegistration";
 import type { Message } from "@/types/email";
@@ -22,13 +21,8 @@ import {
   MessageStatusLabels,
   type MessageStatus,
 } from "@/types/messageStatus";
-import type {
-  DynamicDataParams,
-  DynamicDataResponse,
-  SystemLabelEnumData,
-} from "@/types/shared";
 import type { Task } from "@/types/task";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import { useState } from "react";
 import { MdArrowOutward } from "react-icons/md";
 
@@ -48,16 +42,7 @@ interface BusinessItem {
 
 const BusinessCardsView: React.FC<Props> = ({ message }) => {
   const { admins } = useAdminUsers();
-  const { data: dynamicData } = useQuery<DynamicDataResponse>({
-    queryKey: ["dynamicData", "deeplink-systemLabel"],
-    queryFn: () =>
-      dynamicDataService.get({
-        enums: ["shared.systemLabel"],
-      } as DynamicDataParams),
-    staleTime: 10 * 60 * 1000,
-  });
-  const systemLabelEnum = (dynamicData?.enums?.["shared.systemLabel"] ??
-    undefined) as SystemLabelEnumData | null | undefined;
+  const systemLabelEnum = undefined;
 
   const baseItems: BusinessItem[] = [
     ...(message.classRegistrationId

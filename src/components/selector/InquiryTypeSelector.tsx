@@ -17,7 +17,7 @@ const InquiryTypeSelector: React.FC<InquiryTypeSelectorProps> = ({
   className,
   multiple = true,
 }) => {
-  const options: InquiryType[] = ["graduation", "training", "procedure"];
+  const options: InquiryType[] = ["graduation", "training"];
 
   const handleToggle = (type: InquiryType) => {
     if (multiple) {

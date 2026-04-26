@@ -1,3 +1,5 @@
+import Drawer from "@/components/drawer/Drawer";
+import DetailFormLayout, { FormRow } from "@/components/layouts/DetailFormLayout";
 import Switch from "@/components/switch";
 import TableLayout, {
   type TableAction,
@@ -7,7 +9,6 @@ import { usersService } from "@/services/users";
 import type { PaginatedResponse } from "@/types/common.ts";
 import type { DynamicDataResponse } from "@/types/shared.ts";
 import type { Role, UpdateUserDto, User } from "@/types/users.ts";
-import { formatDate } from "@/utils/date";
 import { message as toast } from "antd";
 import React from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -77,6 +78,11 @@ const UsersPage: React.FC<UsersPageProps> = () => {
   const [updatingUsers, setUpdatingUsers] = React.useState<Set<number>>(
     new Set(),
   );
+  const [createOpen, setCreateOpen] = React.useState(false);
+  const [creating, setCreating] = React.useState(false);
+  const [newEmail, setNewEmail] = React.useState("");
+  const [newRole, setNewRole] = React.useState<Role>("student");
+  const filterButtonRef = React.useRef<HTMLButtonElement | null>(null);
 
   const idParam = searchParams.get("id");
   const selectedId = idParam ? Number(idParam) : null;
@@ -282,14 +288,40 @@ const UsersPage: React.FC<UsersPageProps> = () => {
     [queryClient, page, keyword, filters],
   );
 
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newEmail.trim()) {
+      toast.error("Vui lòng nhập email.");
+      return;
+    }
+
+    setCreating(true);
+    try {
+      await usersService.assignRole({
+        email: newEmail.trim(),
+        role: newRole,
+      });
+      toast.success("Thêm tài khoản thành công.");
+      setCreateOpen(false);
+      setNewEmail("");
+      setNewRole("student");
+      await queryClient.invalidateQueries({ queryKey: ["users"] });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Thêm tài khoản thất bại.";
+      toast.error(msg);
+    } finally {
+      setCreating(false);
+    }
+  };
+
 
   // Define table columns
   const columns: TableColumn<User>[] = React.useMemo(
     () => [
       {
         key: "name",
-        header: "Tên",
-        width: "300px",
+        header: "Thông tin",
+        width: "350px",
         render: (user) => (
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full">
@@ -314,15 +346,6 @@ const UsersPage: React.FC<UsersPageProps> = () => {
               </p>
             </div>
           </div>
-        ),
-      },
-      {
-        key: "createdAt",
-        header: "Ngày tham gia",
-        render: (user) => (
-          <p className="text-navy-700 text-sm dark:text-white">
-            {formatDate(user.createdAt)}
-          </p>
         ),
       },
       {
@@ -376,10 +399,22 @@ const UsersPage: React.FC<UsersPageProps> = () => {
         searchValue={searchValue}
         onSearchChange={handleKeywordChange}
         onSearch={handleSearch}
+        middleSlot={
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setCreateOpen(true)}
+              className="bg-brand-500 hover:bg-brand-600 rounded-2xl px-5 py-2.5 text-sm font-semibold text-white transition-colors"
+            >
+              Thêm
+            </button>
+          </div>
+        }
 
         searchPlaceholder="Tìm kiếm theo tên, email..."
         showFilter={true}
         onFilterClick={handleOpenFilter}
+        filterButtonRef={filterButtonRef}
         columns={columns}
         actions={actions}
         onPageChange={handlePageChange}
@@ -413,7 +448,55 @@ const UsersPage: React.FC<UsersPageProps> = () => {
         onClear={handleClearFilter}
         onApply={handleApplyFilter}
         onRequestClose={handleCloseFilter}
+        anchorRef={filterButtonRef}
       />
+
+      <Drawer
+        isOpen={createOpen}
+        onClose={() => setCreateOpen(false)}
+        title="Thêm tài khoản"
+      >
+        <form onSubmit={handleCreateUser} className="flex flex-col gap-4">
+          <DetailFormLayout>
+            <FormRow label="Email" required={true}>
+              <input
+                type="email"
+                value={newEmail}
+                onChange={(ev) => setNewEmail(ev.target.value)}
+                disabled={creating}
+                className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
+              />
+            </FormRow>
+            <FormRow label="Vai trò" required={true}>
+              <div className="flex w-fit items-center">
+                <RoleSelector
+                  value={newRole}
+                  onChange={setNewRole}
+                  disabled={creating}
+                  className="relative! top-0! translate-y-0!"
+                />
+              </div>
+            </FormRow>
+          </DetailFormLayout>
+
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setCreateOpen(false)}
+              className="rounded-xl px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              disabled={creating}
+              className="bg-brand-500 hover:bg-brand-600 rounded-xl px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+            >
+              {creating ? "Đang xử lý..." : "Thêm"}
+            </button>
+          </div>
+        </form>
+      </Drawer>
     </>
   );
 };

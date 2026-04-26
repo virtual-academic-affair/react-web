@@ -5,7 +5,6 @@
 
 import { authService } from "@/services/auth";
 import { useAuthStore } from "@/stores/auth.store";
-import { setAuthCallbackFlow } from "@/utils/auth.util";
 import { message as toast } from "antd";
 import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
@@ -23,9 +22,7 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
-      setAuthCallbackFlow("signin");
-      const url = await authService.getGoogleAuthUrl();
-      window.location.href = url;
+      window.location.href = authService.getGoogleAuthRedirectUrl();
     } catch {
       toast.error("Không thể kết nối tới máy chủ. Vui lòng thử lại.");
       setLoading(false);

@@ -3,10 +3,8 @@ import {
   setLinkedMessagePanelOpen,
   useDetailLinkedMessagePanel,
 } from "@/hooks/useDetailLinkedMessagePanel";
-import { DYNAMIC_DATA_QUERY_KEY } from "@/hooks/useDynamicData";
 import EmailDetailDrawer from "@/pages/emails/message/components/EmailDetailDrawer";
-import type { DynamicDataResponse, SystemLabelEnumData } from "@/types/shared";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import React from "react";
 
 export function DetailLinkedMessageSwitch() {
@@ -55,12 +53,6 @@ export function DetailLinkedEmailDrawer({
   }, []);
 
   const queryClient = useQueryClient();
-  const { data: dynamicData } = useQuery<DynamicDataResponse>({
-    queryKey: DYNAMIC_DATA_QUERY_KEY,
-    enabled: false,
-  });
-  const systemLabelEnum = (dynamicData?.enums?.["shared.systemLabel"] ??
-    undefined) as SystemLabelEnumData | null | undefined;
 
   const [linkedOpen] = useDetailLinkedMessagePanel();
   const visible =
@@ -73,7 +65,7 @@ export function DetailLinkedEmailDrawer({
   return (
     <EmailDetailDrawer
       messageId={messageId}
-      systemLabelEnum={systemLabelEnum}
+      systemLabelEnum={undefined}
       side="left"
       hideBackdrop
       showFooterActions={false}

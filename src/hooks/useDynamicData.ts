@@ -1,18 +1,18 @@
 /**
  * useDynamicData
- * Shared query hook for the global dynamic-data fetch (settings + enums).
+ * Shared query hook for loading app settings.
  * Used by AdminLayout and passed down to pages that need it.
  *
- * staleTime: 10 minutes — settings/enums almost never change during a session.
+ * staleTime: 10 minutes — settings almost never change during a session.
  */
 
-import { dynamicDataService } from "@/services/shared";
-import type { DynamicDataParams, DynamicDataResponse } from "@/types/shared";
+import { settingsService } from "@/services/shared";
+import type { DynamicDataResponse, SettingKey } from "@/types/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export const DYNAMIC_DATA_QUERY_KEY = ["dynamicData"] as const;
 
-export function useDynamicData(params?: DynamicDataParams): {
+export function useDynamicData(keys: readonly SettingKey[] | SettingKey[]): {
   data: DynamicDataResponse | undefined;
   isLoading: boolean;
   refetch: () => Promise<void>;
@@ -20,8 +20,8 @@ export function useDynamicData(params?: DynamicDataParams): {
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: DYNAMIC_DATA_QUERY_KEY,
-    queryFn: () => dynamicDataService.get(params),
+    queryKey: [...DYNAMIC_DATA_QUERY_KEY, keys],
+    queryFn: async () => ({ settings: await settingsService.getMany(keys) }),
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
 
