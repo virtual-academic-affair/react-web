@@ -76,10 +76,9 @@ export interface GmailLabel {
  * Label mapping between system labels and Gmail label IDs
  */
 export interface LabelMappingDto {
-  task: string | null;
-  other: string | null;
-  inquiry: string | null;
   classRegistration: string | null;
+  training: string | null;
+  graduation: string | null;
 }
 
 /**
@@ -87,9 +86,8 @@ export interface LabelMappingDto {
  */
 export interface UpdateLabelsDto {
   classRegistration?: string | null;
-  task?: string | null;
-  inquiry?: string | null;
-  other?: string | null;
+  training?: string | null;
+  graduation?: string | null;
 }
 
 /**
@@ -104,5 +102,5 @@ export interface UpdateAllowedDomainsDto {
  */
 export interface CodeDto {
   code: string;
-  redirectUrl?: string;
+  redirectUrl: string;
 }

@@ -13,16 +13,24 @@ interface GmailConfigPageProps {
 const GmailConfigPage: React.FC<GmailConfigPageProps> = ({
   data,
   dataLoading,
+  onRefresh,
 }) => {
-  const systemLabelEnum = data?.enums?.["shared.systemLabel"];
+  const roleDomainsByRole = data?.settings?.["auth.roleDomains"] ?? null;
+  const labelMapping = data?.settings?.["email.labels"] ?? null;
 
   return (
     <div className="flex flex-col gap-6 pb-10">
       <ProfileCard data={data} loading={dataLoading} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <AllowedDomainsCard />
-        <LabelsCard systemLabelEnum={systemLabelEnum} />
+        <AllowedDomainsCard
+          domainsByRole={roleDomainsByRole}
+          onRefresh={onRefresh}
+        />
+        <LabelsCard
+          mapping={labelMapping}
+          onRefresh={onRefresh}
+        />
       </div>
     </div>
   );

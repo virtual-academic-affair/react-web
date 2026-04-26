@@ -7,7 +7,6 @@ import { API_ENDPOINTS } from "@/config/api.config";
 import type {
   GmailLabel,
   LabelMappingDto,
-  UpdateLabelsDto,
 } from "@/types/email";
 import http from "../http";
 
@@ -27,8 +26,7 @@ class LabelsService {
   }
 
   /**
-   * Get the mapping between system labels and Gmail label IDs
-   * @requires ADMIN role
+   * (Deprecated) Mapping is now stored under /shared/settings/email.labels.
    */
   async getLabels(): Promise<LabelMappingDto> {
     const res = await http.get<LabelMappingDto>(
@@ -38,13 +36,9 @@ class LabelsService {
   }
 
   /**
-   * Update the mapping between system labels and Gmail label IDs
-   * @param data - Label mappings to update
-   * @requires ADMIN role
+   * (Deprecated) Update mapping via /shared/settings/email.labels.
    */
-  async updateLabels(data: UpdateLabelsDto): Promise<void> {
-    await http.put(API_ENDPOINTS.email.labels.base, data);
-  }
+  async updateLabels(): Promise<void> {}
 
   /**
    * Automatically create missing Gmail labels and update mappings

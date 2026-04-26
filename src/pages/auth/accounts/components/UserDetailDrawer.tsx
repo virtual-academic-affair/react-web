@@ -17,9 +17,7 @@ interface UserDetailDrawerProps {
 
 type StudentProfileForm = {
   enrollmentYear: string;
-  classNo: string;
   major: string;
-  classAdvisor: string;
 };
 
 function profileToForm(profile: User["profile"]): StudentProfileForm {
@@ -27,27 +25,21 @@ function profileToForm(profile: User["profile"]): StudentProfileForm {
   return {
     enrollmentYear:
       p.enrollmentYear != null ? String(p.enrollmentYear) : "",
-    classNo: p.classNo ?? "",
     major: p.major ?? "",
-    classAdvisor: p.classAdvisor ?? "",
   };
 }
 
 function formsEqual(a: StudentProfileForm, b: StudentProfileForm): boolean {
   return (
     a.enrollmentYear === b.enrollmentYear &&
-    a.classNo === b.classNo &&
-    a.major === b.major &&
-    a.classAdvisor === b.classAdvisor
+    a.major === b.major
   );
 }
 
 /** Gửi lên API: merge profile; khóa chỉ gửi khi ô có giá trị hợp lệ. */
 function formToProfileDto(form: StudentProfileForm): UserProfile {
   const dto: UserProfile = {
-    classNo: form.classNo.trim(),
     major: form.major.trim(),
-    classAdvisor: form.classAdvisor.trim(),
   };
   const y = form.enrollmentYear.trim();
   if (y) {
@@ -68,9 +60,7 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
   const [saving, setSaving] = useState(false);
   const [studentForm, setStudentForm] = useState<StudentProfileForm>(() => ({
     enrollmentYear: "",
-    classNo: "",
     major: "",
-    classAdvisor: "",
   }));
 
   const { data: detail = null, isLoading: loading } = useQuery({
@@ -157,7 +147,7 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
       const profile = formToProfileDto(studentForm);
       const updated = await usersService.updateUser(detail.id, { profile });
       queryClient.setQueryData(["user", userId], updated);
-      toast.success("Đã cập nhật thông tin học sinh.");
+      toast.success("Đã cập nhật thông tin sinh viên.");
       onUserChanged(updated);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Cập nhật thất bại.";
@@ -323,13 +313,13 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
           {isStudent && (
             <div className="mt-4 border-t border-gray-100 pt-4 dark:border-white/10">
               <p className="text-navy-700 mb-3 text-xs font-semibold tracking-wide uppercase dark:text-white">
-                Thông tin học sinh
+                Thông tin sinh viên
               </p>
               <div className="flex flex-col gap-3 text-sm text-gray-600 dark:text-gray-400">
                 <div className="flex items-center gap-6">
                   <div className="w-40 shrink-0">
                     <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                      Khóa (năm nhập học)
+                      Năm nhập học
                     </p>
                   </div>
                   <div className="flex-1">
@@ -338,52 +328,11 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
                       min={1900}
                       max={2100}
                       inputMode="numeric"
-                      placeholder="VD: 2024"
                       value={studentForm.enrollmentYear}
                       onChange={(e) =>
                         setStudentForm((f) => ({
                           ...f,
                           enrollmentYear: e.target.value,
-                        }))
-                      }
-                      disabled={saving}
-                      className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center gap-6">
-                  <div className="w-40 shrink-0">
-                    <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                      Lớp chủ nhiệm
-                    </p>
-                  </div>
-                  <div className="flex-1">
-                    <input
-                      value={studentForm.classNo}
-                      onChange={(e) =>
-                        setStudentForm((f) => ({
-                          ...f,
-                          classNo: e.target.value,
-                        }))
-                      }
-                      disabled={saving}
-                      className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center gap-6">
-                  <div className="w-40 shrink-0">
-                    <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                      Giáo viên chủ nhiệm
-                    </p>
-                  </div>
-                  <div className="flex-1">
-                    <input
-                      value={studentForm.classAdvisor}
-                      onChange={(e) =>
-                        setStudentForm((f) => ({
-                          ...f,
-                          classAdvisor: e.target.value,
                         }))
                       }
                       disabled={saving}

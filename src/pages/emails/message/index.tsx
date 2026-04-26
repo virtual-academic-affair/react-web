@@ -86,8 +86,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
   );
   const [deleteLoading, setDeleteLoading] = React.useState(false);
 
-  const systemLabelEnum: SystemLabelEnumData | null | undefined =
-    data?.enums?.["shared.systemLabel"];
+  const systemLabelEnum: SystemLabelEnumData | null | undefined = undefined;
   const superEmail = data?.settings?.["email.superEmail"];
 
   // Use "id" as the URL param for the selected message instead of "messageId"
@@ -417,7 +416,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ data }) => {
         detailDrawer={
           <EmailDetailDrawer
             messageId={selectedId}
-            systemLabelEnum={data?.enums?.["shared.systemLabel"]}
+            systemLabelEnum={systemLabelEnum}
             onClose={handleCloseDetail}
             onLabelChanged={handleLabelChanged}
             processingIds={processingIds}

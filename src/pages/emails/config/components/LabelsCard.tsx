@@ -1,38 +1,44 @@
 import Card from "@/components/card";
-import Tag from "@/components/tag/Tag";
-import { getLabelColor, getLabelVi } from "@/pages/emails/message/labelUtils";
+import SelectField, { type SelectOption } from "@/components/fields/SelectField";
 import { labelsService } from "@/services/email";
+import { settingsService } from "@/services/shared";
 import type {
   GmailLabel,
   LabelMappingDto,
-  UpdateLabelsDto,
 } from "@/types/email.ts";
-import type { SystemLabelEnumData } from "@/types/shared";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React, { useMemo, useState } from "react";
 import { MdAutoAwesome, MdEdit, MdLabel, MdSave } from "react-icons/md";
 
 interface LabelsCardProps {
-  systemLabelEnum?: SystemLabelEnumData | null;
+  mapping: LabelMappingDto | null;
+  onRefresh: () => Promise<void>;
 }
 
-const LabelsCard: React.FC<LabelsCardProps> = ({ systemLabelEnum }) => {
-  const queryClient = useQueryClient();
+const LABEL_KEYS = [
+  "classRegistration",
+  "training",
+  "graduation",
+] as const satisfies ReadonlyArray<keyof LabelMappingDto>;
+
+const LABEL_META: Record<
+  (typeof LABEL_KEYS)[number],
+  { vi: string; color: string }
+> = {
+  classRegistration: { vi: "Đăng ký lớp", color: "#9b59b6" },
+  training: { vi: "Đào tạo", color: "#3498db" },
+  graduation: { vi: "Tốt nghiệp", color: "#2ecc71" },
+};
+
+const LabelsCard: React.FC<LabelsCardProps> = ({
+  mapping,
+  onRefresh,
+}) => {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<LabelMappingDto | null>(null);
   const [saving, setSaving] = useState(false);
   const [autoCreating, setAutoCreating] = useState(false);
-
-  const {
-    data: mapping = null,
-    isLoading: loadingMapping,
-    refetch: refetchLabels,
-  } = useQuery<LabelMappingDto>({
-    queryKey: ["email-labels"],
-    queryFn: () => labelsService.getLabels(),
-    staleTime: 5 * 60 * 1000,
-  });
 
   const { data: gmailLabels = [], isLoading: loadingGmail } = useQuery<
     GmailLabel[]
@@ -42,36 +48,21 @@ const LabelsCard: React.FC<LabelsCardProps> = ({ systemLabelEnum }) => {
     staleTime: 60 * 1000,
   });
 
-  const loading = loadingMapping || loadingGmail;
+  const loading = loadingGmail;
 
-  const mappingKeys = useMemo(() => {
-    // Preferred order: the order defined by systemLabelEnum from backend
-    const enumKeys = Object.keys(
-      systemLabelEnum ?? {},
-    ) as (keyof LabelMappingDto)[];
-    if (enumKeys.length) {
-      return enumKeys;
-    }
-
-    // Fallback 1: keys present in current mapping response (if any)
-    const mappingObjKeys = Object.keys(
-      mapping ?? {},
-    ) as (keyof LabelMappingDto)[];
-    if (mappingObjKeys.length) {
-      return mappingObjKeys;
-    }
-
-    // Fallback 2: static default order
-    return [
-      "classRegistration",
-      "task",
-      "inquiry",
-      "other",
-    ] as (keyof LabelMappingDto)[];
-  }, [mapping, systemLabelEnum]);
+  const mappingKeys = useMemo(
+    () => LABEL_KEYS as ReadonlyArray<keyof LabelMappingDto>,
+    [],
+  );
+  const labelOptions = useMemo<SelectOption[]>(
+    () => [
+      { value: "", label: "— Chưa gán —" },
+      ...gmailLabels.map((gl) => ({ value: gl.value, label: gl.label })),
+    ],
+    [gmailLabels],
+  );
 
   const handleEdit = () => {
-    refetchLabels();
     setDraft(mapping ? { ...mapping } : null);
     setEditing(true);
   };
@@ -82,9 +73,13 @@ const LabelsCard: React.FC<LabelsCardProps> = ({ systemLabelEnum }) => {
     if (!draft) return;
     setSaving(true);
     try {
-      const dto: UpdateLabelsDto = { ...draft };
-      await labelsService.updateLabels(dto);
-      queryClient.setQueryData(["email-labels"], draft);
+      const payload: LabelMappingDto = {
+        classRegistration: draft.classRegistration ?? null,
+        training: draft.training ?? null,
+        graduation: draft.graduation ?? null,
+      };
+      await settingsService.update("email.labels", payload);
+      await onRefresh();
       setEditing(false);
       toast.success("Cập nhật thành công.");
     } catch (err: unknown) {
@@ -98,8 +93,8 @@ const LabelsCard: React.FC<LabelsCardProps> = ({ systemLabelEnum }) => {
   const handleAutoCreate = async () => {
     setAutoCreating(true);
     try {
-      const result = await labelsService.autoCreateLabels();
-      queryClient.setQueryData(["email-labels"], result);
+      await labelsService.autoCreateLabels();
+      await onRefresh();
       toast.success("Tự động tạo nhãn thành công.");
     } catch (err: unknown) {
       const msg =
@@ -163,7 +158,7 @@ const LabelsCard: React.FC<LabelsCardProps> = ({ systemLabelEnum }) => {
       </div>
 
       <p className="mt-2 text-base text-gray-600 dark:text-gray-400">
-        Ánh xạ từng nhãn hệ thống sang nhãn Gmail tương ứng.
+        Ánh xạ  nhãn hệ thống sang nhãn Gmail tương ứng.
       </p>
 
       {/* Mapping rows */}
@@ -177,56 +172,34 @@ const LabelsCard: React.FC<LabelsCardProps> = ({ systemLabelEnum }) => {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col">
           {mappingKeys.map((key) => {
             const currentValue = editing ? draft?.[key] : mapping?.[key];
             return (
               <div
                 key={key}
-                className="flex items-center gap-3 rounded-xl px-4 py-2.5"
+                className="flex items-center rounded-xl py-2.5"
               >
-                <span className="w-40 shrink-0">
-                  <Tag
-                    color={getLabelColor(key, systemLabelEnum)}
-                    interactive={false}
-                  >
-                    {getLabelVi(key, systemLabelEnum)}
-                  </Tag>
+                <span
+                  className="w-40 shrink-0 text-sm font-semibold"
+                  style={{ color: LABEL_META[key].color }}
+                >
+                  {LABEL_META[key].vi}
                 </span>
-                {editing ? (
-                  <Tag
-                    variant="selection"
-                    value={draft?.[key] ?? ""}
-                    options={gmailLabels.map((gl) => ({
-                      value: gl.value,
-                      label: gl.label,
-                    }))}
-                    onChange={(v) =>
+                <div className="flex-1">
+                  <SelectField
+                    value={currentValue ?? ""}
+                    options={labelOptions}
+                    onChange={(v) => {
+                      if (!editing) return;
                       setDraft((prev) =>
                         prev ? { ...prev, [key]: v || null } : prev,
-                      )
-                    }
-                    className="flex-1"
-                  >
-                    {draft?.[key]
-                      ? (gmailLabels.find((g) => g.value === draft?.[key])
-                          ?.label ?? draft?.[key])
-                      : "—"}
-                  </Tag>
-                ) : (
-                  <div className="flex-1">
-                    {currentValue ? (
-                      <Tag interactive={false}>
-                        {gmailLabels.find((g) => g.value === currentValue)
-                          ?.label ?? currentValue}
-                      </Tag>
-                    ) : (
-                      <span className="text-sm text-gray-400 italic dark:text-gray-500">
-                        —
-                      </span>
-                    )}
-                  </div>
-                )}
+                      );
+                    }}
+                    disabled={!editing}
+                    label={`Gmail label for ${LABEL_META[key].vi}`}
+                  />
+                </div>
               </div>
             );
           })}

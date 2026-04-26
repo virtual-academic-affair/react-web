@@ -6,14 +6,13 @@ import { InquiryTypeLabels, InquiryTypeColors } from "@/types/inquiry";
 import { type TimeRangeType, getDateRange } from "./utils/dateRange";
 import { useQuery } from "@tanstack/react-query";
 
-const INQUIRY_TYPES = ["graduation", "training", "procedure"] as const;
+const INQUIRY_TYPES = ["graduation", "training"] as const;
 
 interface Summary {
   total: number;
   totalTypes: number;
   graduation: number;
   training: number;
-  procedure: number;
 }
 
 interface PeakDay {
@@ -72,7 +71,6 @@ export function useInquiryStatistics(): UseInquiryStatisticsReturn {
         types: {
           graduation: val.types?.graduation || 0,
           training: val.types?.training || 0,
-          procedure: val.types?.procedure || 0,
         },
       });
     });
@@ -84,18 +82,15 @@ export function useInquiryStatistics(): UseInquiryStatisticsReturn {
     const byType: Record<InquiryType, number> = {
       graduation: 0,
       training: 0,
-      procedure: 0,
     };
 
     dataByLocalDate.forEach((val) => {
       total += val.total;
       byType.graduation += val.types.graduation;
       byType.training += val.types.training;
-      byType.procedure += val.types.procedure;
     });
 
-    const totalTypes =
-      byType.graduation + byType.training + byType.procedure;
+    const totalTypes = byType.graduation + byType.training;
     return { total, totalTypes, ...byType };
   }, [dataByLocalDate]);
 
@@ -141,7 +136,6 @@ export function useInquiryStatistics(): UseInquiryStatisticsReturn {
     const categories: string[] = [];
     const graduationData: number[] = [];
     const trainingData: number[] = [];
-    const procedureData: number[] = [];
     const tooltipMeta: Array<Record<InquiryType, number> | undefined> = [];
 
     let overallMax = 0;
@@ -154,13 +148,11 @@ export function useInquiryStatistics(): UseInquiryStatisticsReturn {
 
       const g = item?.types.graduation || 0;
       const tr = item?.types.training || 0;
-      const p = item?.types.procedure || 0;
 
       graduationData.push(g);
       trainingData.push(tr);
-      procedureData.push(p);
 
-      overallMax = Math.max(overallMax, g, tr, p);
+      overallMax = Math.max(overallMax, g, tr);
       tooltipMeta.push(item?.types);
 
       current.setDate(current.getDate() + 1);
@@ -182,7 +174,7 @@ export function useInquiryStatistics(): UseInquiryStatisticsReturn {
           }) {
             const types = tooltipMeta[dataPointIndex];
             const dateStr = categories[dataPointIndex];
-            const typeKeys = ["graduation", "training", "procedure"] as const;
+            const typeKeys = ["graduation", "training"] as const;
 
             let content = `<div style="padding: 12px; min-width: 200px; background: #111c44; color: white; border-radius: 8px;">`;
             content += `<div style="font-weight: 800; font-size: 14px; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;">Ngày ${dateStr}</div>`;
@@ -253,7 +245,6 @@ export function useInquiryStatistics(): UseInquiryStatisticsReturn {
       series: [
         { name: InquiryTypeLabels.graduation, data: graduationData },
         { name: InquiryTypeLabels.training, data: trainingData },
-        { name: InquiryTypeLabels.procedure, data: procedureData },
       ],
     };
   }, [dataByLocalDate, timeRange]);
