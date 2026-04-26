@@ -39,7 +39,9 @@ export default function GmailGrantFromAddonPage() {
 
     const run = async () => {
       try {
-        window.location.href = `${API_CONFIG.baseURL}${API_ENDPOINTS.auth.googleGmailGrant}`;
+        const url = new URL(`${API_CONFIG.baseURL}${API_ENDPOINTS.auth.googleGmailGrant}`);
+        url.searchParams.set("state", API_CONFIG.appURL);
+        window.location.href = url.toString();
       } catch {
         setMessage("Không thể bắt đầu cấp quyền. Thử lại sau.");
         toast.error("Không thể bắt đầu cấp quyền Gmail.");
