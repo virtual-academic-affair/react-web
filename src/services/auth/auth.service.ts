@@ -15,8 +15,12 @@ export const authService = {
   /**
    * Start Google OAuth sign-in via Passport redirect.
    */
-  getGoogleAuthRedirectUrl(): string {
-    return `${API_CONFIG.baseURL}${API_ENDPOINTS.auth.googleUrl}`;
+  getGoogleAuthRedirectUrl(state: string = API_CONFIG.appURL): string {
+    const url = new URL(`${API_CONFIG.baseURL}${API_ENDPOINTS.auth.googleUrl}`);
+    if (state) {
+      url.searchParams.set("state", state);
+    }
+    return url.toString();
   },
 
   /**

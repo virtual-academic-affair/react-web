@@ -33,7 +33,9 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ data, loading }) => {
   const handleGrant = async () => {
     setGranting(true);
     try {
-      window.location.href = `${API_CONFIG.baseURL}${API_ENDPOINTS.auth.googleGmailGrant}`;
+      const url = new URL(`${API_CONFIG.baseURL}${API_ENDPOINTS.auth.googleGmailGrant}`);
+      url.searchParams.set("state", API_CONFIG.appURL);
+      window.location.href = url.toString();
     } catch {
       setGranting(false);
     }

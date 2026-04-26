@@ -6,6 +6,7 @@
 export const API_CONFIG = {
   baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:3000",
   ragBaseURL: import.meta.env.VITE_RAG_API_BASE_URL || "http://localhost:8000",
+  appURL: import.meta.env.VITE_APP_URL || `${window.location.origin}/`,
   timeout: 30000, // 30 seconds
 } as const;
 
