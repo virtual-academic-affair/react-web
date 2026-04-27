@@ -62,6 +62,11 @@ interface TableLayoutProps<T> {
 
   // Pagination
   onPageChange: (page: number) => void;
+  pagination?: {
+    currentPage: number;
+    totalPages: number;
+    total: number;
+  };
 
   // Detail drawer (optional)
   detailDrawer?: React.ReactNode;
@@ -87,9 +92,39 @@ function TableLayout<T extends { id: number | string }>({
   actions = [],
   onRowClick,
   onPageChange,
+  pagination: paginationProp,
   detailDrawer,
 }: TableLayoutProps<T>) {
-  const { items = [], pagination } = result ?? { items: [], pagination: null };
+  const { items = [] } = result ?? { items: [] };
+
+  // Calculate pagination info from multiple possible sources
+  const paginationInfo = React.useMemo(() => {
+    // 1. Prioritize explicitly passed pagination prop
+    if (paginationProp) return paginationProp;
+
+    // 2. Try nested pagination object (NestJS style)
+    if (result && (result as any).pagination) {
+      const p = (result as any).pagination;
+      return {
+        total: p.total,
+        currentPage: p.currentPage || p.page,
+        totalPages: p.totalPages,
+      };
+    }
+
+    // 3. Try flat structure (Python RAG style)
+    if (result && (result as any).total !== undefined) {
+      const r = result as any;
+      const limit = r.limit || pageSize;
+      return {
+        total: r.total,
+        currentPage: r.page || r.currentPage || 1,
+        totalPages: Math.ceil(r.total / limit),
+      };
+    }
+
+    return null;
+  }, [paginationProp, result, pageSize]);
 
   return (
     <div className="flex flex-col gap-4 pb-10">
@@ -201,14 +236,16 @@ function TableLayout<T extends { id: number | string }>({
                     </td>
                   </tr>
                 ) : (
-                  items.map((item, index) => (
-                    <tr
-                      key={String(item.id)}
+                  items.map((item, index) => {
+                    const rowKey = (item as any).id || (item as any).faqId || (item as any).candidateId || index;
+                    return (
+                      <tr
+                        key={String(rowKey)}
                         className={`group hover:bg-lightPrimary dark:hover:bg-navy-700 border-b border-gray-50 dark:border-white/5 ${
-                        onRowClick ? "cursor-pointer" : ""
-                      }`}
-                      onClick={() => onRowClick?.(item)}
-                    >
+                          onRowClick ? "cursor-pointer" : ""
+                        }`}
+                        onClick={() => onRowClick?.(item)}
+                      >
                       {columns.map((col) => (
                         <td
                           key={col.key}
@@ -262,18 +299,19 @@ function TableLayout<T extends { id: number | string }>({
                         </td>
                       )}
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>
           </div>
 
           {/* Pagination */}
-          {pagination && pagination.totalPages > 1 && (
+          {paginationInfo && paginationInfo.total > 0 && (
             <div className="flex items-center justify-between pt-1">
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Trang {pagination.currentPage} trên {pagination.totalPages}{" "}
-                <span className="mx-2">·</span> {pagination.total} bản ghi
+                Trang {paginationInfo.currentPage} trên {paginationInfo.totalPages}{" "}
+                <span className="mx-2">·</span> {paginationInfo.total} bản ghi
               </p>
               <div className="flex items-center gap-1">
                 <button
@@ -285,8 +323,8 @@ function TableLayout<T extends { id: number | string }>({
                 </button>
                 {/* Condensed page numbers */}
                 {(() => {
-                  const total = pagination.totalPages;
-                  const current = pagination.currentPage;
+                  const total = paginationInfo.totalPages;
+                  const current = paginationInfo.currentPage;
                   const pages: (number | "...")[] = [];
 
                   if (total <= 5) {
@@ -340,7 +378,7 @@ function TableLayout<T extends { id: number | string }>({
 
                 <button
                   onClick={() => onPageChange(page + 1)}
-                  disabled={page >= pagination.totalPages}
+                  disabled={page >= paginationInfo.totalPages}
                   className="flex items-center rounded-lg p-1.5 text-gray-500  hover:bg-gray-100 disabled:opacity-40 dark:text-gray-400 dark:hover:bg-white/10"
                 >
                   <MdChevronRight className="h-5 w-5" />
