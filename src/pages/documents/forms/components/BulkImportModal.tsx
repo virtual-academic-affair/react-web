@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { message as toast, App } from "antd";
+import { message as toast } from "antd";
 import Drawer from "@/components/drawer/Drawer";
 import DetailFormLayout, { FormRow } from "@/components/layouts/DetailFormLayout";
 import { useMutation, useQueryClient } from "@tanstack/react-query";

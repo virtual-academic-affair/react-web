@@ -7,7 +7,7 @@ import { FormFormFields } from "./FormFormFields";
 import { formsService } from "@/services/documents/forms.service";
 import ConfirmModal from "@/components/modal/ConfirmModal";
 import type { Form } from "@/types/forms";
-import { MdDeleteOutline } from "react-icons/md";
+import { MdDeleteOutline, MdSave } from "react-icons/md";
 
 interface FormDetailDrawerProps {
   id?: number;

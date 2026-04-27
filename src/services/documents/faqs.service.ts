@@ -1,5 +1,5 @@
 import { API_ENDPOINTS } from "@/config/api.config";
-import type { FAQ, FAQListResponse, FAQCandidate, FAQCandidateListResponse } from "@/types/faqs";
+import type { FAQ, FAQListResponse, FAQCandidateListResponse } from "@/types/faqs";
 import ragHttp from "../rag-http";
 
 class FAQsService {

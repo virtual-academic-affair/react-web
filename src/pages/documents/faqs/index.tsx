@@ -2,9 +2,9 @@ import TableLayout from "@/components/table/TableLayout";
 import type { TableAction, TableColumn } from "@/components/table/TableLayout";
 import { faqsService } from "@/services/documents/faqs.service";
 import type { FAQ } from "@/types/faqs";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
-import React, { useState } from "react";
+import { useState } from "react";
 import { MdDeleteOutline, MdInfoOutline } from "react-icons/md";
 import { fixRichTextLinks } from "@/components/fields/RichTextEditor";
 import { useSearchParams } from "react-router-dom";
@@ -16,6 +16,7 @@ import ConfirmModal from "@/components/modal/ConfirmModal";
 const PAGE_SIZE = 10;
 
 export default function FAQsPage() {
+  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // State from URL

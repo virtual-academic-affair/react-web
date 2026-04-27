@@ -1,6 +1,6 @@
 import RichTextEditor from "@/components/fields/RichTextEditor";
 import { FormRow } from "@/components/layouts/DetailFormLayout";
-import React from "react";
+
 
 interface FAQFormFieldsProps {
   question: string;

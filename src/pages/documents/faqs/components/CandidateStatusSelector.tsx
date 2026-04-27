@@ -1,4 +1,4 @@
-import React from "react";
+
 import Tag from "@/components/tag/Tag";
 
 type CandidateStatus = "pending" | "approved" | "rejected";

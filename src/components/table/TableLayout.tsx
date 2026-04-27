@@ -28,7 +28,7 @@ export interface TableAction<T> {
 
 interface TableLayoutProps<T> {
   // Data
-  result: PaginatedResponse<T> | null;
+  result: PaginatedResponse<T> | { items: T[]; total?: number; page?: number; limit?: number } | null;
   loading: boolean;
   page: number;
   pageSize?: number;
@@ -54,7 +54,7 @@ interface TableLayoutProps<T> {
 
   // Table
   columns: TableColumn<T>[];
-  emptyMessage?: string;
+  emptyMessage?: React.ReactNode;
 
   // Actions
   actions?: TableAction<T>[];

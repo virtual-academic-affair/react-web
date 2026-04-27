@@ -4,7 +4,7 @@ import { faqsService } from "@/services/documents/faqs.service";
 import type { FAQCandidate } from "@/types/faqs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   MdInfoOutline,
   MdList,
@@ -49,7 +49,7 @@ export default function ProposedFAQsPage() {
   const { mutate: review } = useMutation({
     mutationFn: ({ id, action }: { id: string; action: "approve" | "reject" }) =>
       faqsService.reviewCandidate(id, action),
-    onSuccess: (updatedCandidate, variables) => {
+    onSuccess: (_, variables) => {
       toast.success(
         variables.action === "approve" ? "Đã duyệt câu hỏi" : "Đã từ chối câu hỏi"
       );
