@@ -42,9 +42,12 @@ interface TableLayoutProps<T> {
   // Filter (optional)
   showFilter?: boolean;
   onFilterClick?: () => void;
+  filterButtonRef?: React.RefObject<HTMLButtonElement | null>;
 
   // Optional right-side slot in search bar (e.g. create button)
   rightSlot?: React.ReactNode;
+  // Optional slot between search bar and table card
+  middleSlot?: React.ReactNode;
 
   // Hide the built-in search + filter bar (when parent owns search UI)
   hideSearchBar?: boolean;
@@ -75,7 +78,9 @@ function TableLayout<T extends { id: number | string }>({
   searchPlaceholder = "Tìm...",
   showFilter = false,
   onFilterClick,
+  filterButtonRef,
   rightSlot,
+  middleSlot,
   hideSearchBar = false,
   columns,
   emptyMessage = "Không tìm thấy dữ liệu.",
@@ -109,6 +114,7 @@ function TableLayout<T extends { id: number | string }>({
           </div>
           {showFilter && onFilterClick && (
             <button
+              ref={filterButtonRef}
               type="button"
               onClick={onFilterClick}
               className="bg-brand-500 hover:bg-brand-600 dark:bg-brand-500 dark:hover:bg-brand-400 flex h-10 w-10 items-center justify-center rounded-2xl text-white  dark:text-white"
@@ -119,6 +125,7 @@ function TableLayout<T extends { id: number | string }>({
           {rightSlot}
         </div>
       )}
+      {middleSlot}
 
       {/* Table Card */}
       <Card extra="p-6">

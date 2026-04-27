@@ -6,6 +6,7 @@
 export const API_CONFIG = {
   baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:3000",
   ragBaseURL: import.meta.env.VITE_RAG_API_BASE_URL || "http://localhost:8000",
+  appURL: import.meta.env.VITE_APP_URL || `${window.location.origin}/`,
   timeout: 30000, // 30 seconds
 } as const;
 
@@ -14,6 +15,7 @@ export const API_ENDPOINTS = {
   auth: {
     googleUrl: "/authentication/google",
     googleCallback: "/authentication/google",
+    googleGmailGrant: "/authentication/google/grant-gmail",
     refresh: "/authentication/auth/refresh",
     logout: "/authentication/auth/logout",
     me: "/authentication/auth/me",
@@ -26,6 +28,11 @@ export const API_ENDPOINTS = {
       base: "/authentication/users",
       byId: (id: number) => `/authentication/users/${id}`,
       assignRole: "/authentication/users/assignRole",
+    },
+    students: {
+      base: "/authentication/students",
+      byId: (id: number) => `/authentication/students/${id}`,
+      import: "/authentication/students/import",
     },
   },
 
@@ -63,12 +70,6 @@ export const API_ENDPOINTS = {
       gmailLabels: "/email/labels/gmailLabels",
       autoCreate: "/email/labels/autoCreate",
     },
-    allowedDomains: {
-      base: "/email/allowedDomains",
-    },
-    grants: {
-      base: "/email/grants",
-    },
     canSaveContent: {
       base: "/email/canSaveContent",
     },
@@ -76,7 +77,8 @@ export const API_ENDPOINTS = {
 
   // Shared
   shared: {
-    dynamicData: "/shared/dynamic-data",
+    settings: "/shared/settings",
+    settingsByKey: (key: string) => `/shared/settings/${key}`,
     dashboardTodaySummary: "/shared/dashboard/today-summary",
   },
 

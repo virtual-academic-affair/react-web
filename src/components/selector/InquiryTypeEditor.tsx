@@ -21,7 +21,7 @@ const InquiryTypeEditor: React.FC<InquiryTypeEditorProps> = ({
   const [dropdownPos, setDropdownPos] = React.useState({ top: 0, left: 0 });
   const containerRef = React.useRef<HTMLDivElement>(null);
 
-  const options: InquiryType[] = ["graduation", "training", "procedure"];
+  const options: InquiryType[] = ["graduation", "training"];
 
   const handleOpen = (e: React.MouseEvent) => {
     e.stopPropagation();

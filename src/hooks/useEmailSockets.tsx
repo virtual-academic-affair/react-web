@@ -10,6 +10,16 @@ export const useEmailSockets = () => {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    const isLocalApi =
+      API_CONFIG.baseURL.includes("localhost:3000") ||
+      API_CONFIG.baseURL.includes("127.0.0.1:3000");
+
+    // Disable socket connections to local API by default.
+    // (This avoids noisy reconnect loops when running FE without the socket server.)
+    if (isLocalApi) {
+      return;
+    }
+
     const socket = io(API_CONFIG.baseURL);
 
     socket.on("connect", () => {});

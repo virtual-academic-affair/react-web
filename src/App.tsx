@@ -11,12 +11,12 @@ import GmailDeeplinkPage from "@/pages/gmail-deeplink";
 import UserDashboard from "@/pages/user";
 import { refreshTokens } from "@/services/http";
 import { useAuthStore } from "@/stores/auth.store";
-import { ConfigProvider, theme } from "antd";
+import { ConfigProvider, message as toast, theme } from "antd";
 import viVN from "antd/locale/vi_VN";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
 import "driver.js/dist/driver.css";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   BrowserRouter,
   Navigate,
@@ -39,17 +39,41 @@ function RootRedirect() {
   const location = useLocation();
   const { accessToken } = useAuthStore();
   const searchParams = new URLSearchParams(location.search);
+  const tokenParam = searchParams.get("token");
+  const grantParam = searchParams.get("grant");
   const messageId = searchParams.get("messageId");
   const threadId = searchParams.get("threadId");
   const email = searchParams.get("email");
   const shouldDeepLinkRedirect = !!messageId && !!threadId && !!email;
+  const grantHandledRef = useRef(false);
 
   const [status, setStatus] = useState<"checking" | "done">(
     accessToken ? "done" : "checking",
   );
 
   useEffect(() => {
+    if (!grantHandledRef.current && (grantParam === "1" || grantParam === "0")) {
+      grantHandledRef.current = true;
+      if (grantParam === "1") {
+        toast.success("Cấp quyền thành công.");
+      } else {
+        toast.error("Cấp quyền thất bại.");
+      }
+
+      if (!tokenParam && !shouldDeepLinkRedirect) {
+        window.history.replaceState({}, "", "/");
+      }
+    }
+
     if (shouldDeepLinkRedirect) return;
+    if (tokenParam) {
+      const normalized = tokenParam.replace(/^"+|"+$/g, "");
+      useAuthStore.getState().setAccessToken(normalized);
+      setStatus("done");
+      // Clean URL (drop token) after we store it
+      window.history.replaceState({}, "", "/");
+      return;
+    }
     if (status !== "checking") return;
     refreshTokens()
       .then((tokens) => {
@@ -59,7 +83,7 @@ function RootRedirect() {
       .catch(() => {
         setStatus("done"); // not logged in → show landing
       });
-  }, [status, shouldDeepLinkRedirect]);
+  }, [status, shouldDeepLinkRedirect, tokenParam, grantParam]);
 
   // Deep-link entry: /?messageId=...&email=... -> /gmail-deeplink?... (preserve full query)
   if (shouldDeepLinkRedirect) {

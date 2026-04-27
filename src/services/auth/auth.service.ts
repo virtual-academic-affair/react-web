@@ -4,6 +4,7 @@
  */
 
 import { API_ENDPOINTS } from "@/config/api.config";
+import { API_CONFIG } from "@/config/api.config";
 import http from "@/services/http";
 import type { AuthTokens } from "@/services/http";
 import type { UserInfo } from "@/utils/auth.util";
@@ -12,28 +13,14 @@ export type { AuthTokens };
 
 export const authService = {
   /**
-   * GET /authentication/google
-   * Returns the Google OAuth consent URL to redirect the user to.
+   * Start Google OAuth sign-in via Passport redirect.
    */
-  async getGoogleAuthUrl(): Promise<string> {
-    const redirectUrl = `${window.location.origin}/auth/callback`;
-    const { data } = await http.get<string>(
-      `${API_ENDPOINTS.auth.googleUrl}?redirectUrl=${encodeURIComponent(redirectUrl)}`,
-    );
-    return data;
-  },
-
-  /**
-   * POST /authentication/google
-   * Exchanges the authorization code from Google for JWT tokens.
-   */
-  async authenticateWithGoogle(code: string): Promise<AuthTokens> {
-    const redirectUrl = `${window.location.origin}/auth/callback`;
-    const { data } = await http.post<AuthTokens>(
-      API_ENDPOINTS.auth.googleCallback,
-      { code, redirectUrl  },
-    );
-    return data;
+  getGoogleAuthRedirectUrl(state: string = API_CONFIG.appURL): string {
+    const url = new URL(`${API_CONFIG.baseURL}${API_ENDPOINTS.auth.googleUrl}`);
+    if (state) {
+      url.searchParams.set("state", state);
+    }
+    return url.toString();
   },
 
   /**

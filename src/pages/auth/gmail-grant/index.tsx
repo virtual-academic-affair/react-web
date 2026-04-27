@@ -3,9 +3,9 @@
  * Query: ?token=<app JWT from add-on> — used as Bearer to start the Gmail OAuth grant flow.
  */
 
-import { grantsService } from "@/services/email/grants.service";
+import { API_CONFIG, API_ENDPOINTS } from "@/config/api.config";
 import { useAuthStore } from "@/stores/auth.store";
-import { getRolePath, setAuthCallbackFlow } from "@/utils/auth.util";
+import { getRolePath } from "@/utils/auth.util";
 import { message as toast } from "antd";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -39,9 +39,9 @@ export default function GmailGrantFromAddonPage() {
 
     const run = async () => {
       try {
-        setAuthCallbackFlow("gmail_grant");
-        const url = await grantsService.getGmailAuthUrl();
-        window.location.href = url;
+        const url = new URL(`${API_CONFIG.baseURL}${API_ENDPOINTS.auth.googleGmailGrant}`);
+        url.searchParams.set("state", API_CONFIG.appURL);
+        window.location.href = url.toString();
       } catch {
         setMessage("Không thể bắt đầu cấp quyền. Thử lại sau.");
         toast.error("Không thể bắt đầu cấp quyền Gmail.");

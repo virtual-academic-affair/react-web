@@ -5,7 +5,7 @@ import { InquiryTypeLabels, InquiryTypeColors } from "@/types/inquiry";
 import balanceImg from "@/assets/img/dashboards/balanceImg.png";
 import fakeGraph from "@/assets/img/dashboards/fakeGraph.png";
 
-const INQUIRY_TYPES = ["graduation", "training", "procedure"] as const;
+const INQUIRY_TYPES = ["graduation", "training"] as const;
 
 interface InquirySummaryWidgetProps {
   summary: {

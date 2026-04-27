@@ -1,28 +1,43 @@
 import Card from "@/components/card";
 import Tag from "@/components/tag/Tag";
-import { allowedDomainsService } from "@/services/email";
-import type { UpdateAllowedDomainsDto } from "@/types/email";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { settingsService } from "@/services/shared";
+import { Role, RoleLabels, type Role as RoleType } from "@/types/users";
 import { message } from "antd";
 import React from "react";
 import { MdAdd, MdClose, MdDomain, MdEdit, MdSave } from "react-icons/md";
 
-const AllowedDomainsCard: React.FC = () => {
-  const queryClient = useQueryClient();
+type Props = {
+  domainsByRole: Partial<Record<RoleType, string[]>> | null;
+  onRefresh: () => Promise<void>;
+};
+
+const ROLE_TABS: RoleType[] = [Role.Student, Role.Admin];
+
+const normalizeDomain = (value: string): string =>
+  value.trim().replace(/^@+/, "").toLowerCase();
+
+const uniqueDomains = (domains: string[]): string[] => {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const raw of domains) {
+    const normalized = normalizeDomain(raw);
+    if (!normalized || seen.has(normalized)) continue;
+    seen.add(normalized);
+    result.push(normalized);
+  }
+  return result;
+};
+
+const AllowedDomainsCard: React.FC<Props> = ({ domainsByRole, onRefresh }) => {
   const [saving, setSaving] = React.useState(false);
   const [editing, setEditing] = React.useState(false);
-  const [draft, setDraft] = React.useState<string[]>([]);
+  const [activeRole, setActiveRole] = React.useState<RoleType>(Role.Student);
+  const [draftByRole, setDraftByRole] = React.useState<Partial<Record<RoleType, string[]>>>({});
   const [newDomain, setNewDomain] = React.useState("");
-
-  const { data: domains, isLoading: loading } = useQuery({
-    queryKey: ["email-allowed-domains"],
-    queryFn: () => allowedDomainsService.getAllowedDomains(),
-    staleTime: 5 * 60 * 1000,
-  });
 
   // ── edit controls ──────────────────────────────────────────────────────────
   const handleEdit = () => {
-    setDraft([...(domains ?? [])]);
+    setDraftByRole(structuredClone(domainsByRole ?? {}));
     setNewDomain("");
     setEditing(true);
   };
@@ -33,19 +48,27 @@ const AllowedDomainsCard: React.FC = () => {
   };
 
   const handleRemove = (index: number) => {
-    setDraft((prev) => prev.filter((_, i) => i !== index));
+    setDraftByRole((prev) => {
+      const cur = [...(prev[activeRole] ?? [])];
+      cur.splice(index, 1);
+      return { ...prev, [activeRole]: cur };
+    });
   };
 
   const handleAdd = () => {
-    const trimmed = newDomain.trim();
-    if (!trimmed) {
+    const normalized = normalizeDomain(newDomain);
+    if (!normalized) {
       return;
     }
-    if (draft.includes(trimmed)) {
+    const list = (editing ? draftByRole : domainsByRole)?.[activeRole] ?? [];
+    if (list.some((domain) => normalizeDomain(domain) === normalized)) {
       message.warning("Tên miền đã tồn tại.");
       return;
     }
-    setDraft((prev) => [...prev, trimmed]);
+    setDraftByRole((prev) => ({
+      ...prev,
+      [activeRole]: [...(prev[activeRole] ?? []), normalized],
+    }));
     setNewDomain("");
   };
 
@@ -60,9 +83,12 @@ const AllowedDomainsCard: React.FC = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const dto: UpdateAllowedDomainsDto = { domains: draft };
-      await allowedDomainsService.updateAllowedDomains(dto);
-      queryClient.setQueryData(["email-allowed-domains"], draft);
+      const payload: Partial<Record<RoleType, string[]>> = {
+        [Role.Student]: uniqueDomains(draftByRole[Role.Student] ?? []),
+        [Role.Admin]: uniqueDomains(draftByRole[Role.Admin] ?? []),
+      };
+      await settingsService.update("auth.roleDomains", payload);
+      await onRefresh();
       setEditing(false);
       message.success("Cập nhật thành công.");
     } catch (err: unknown) {
@@ -74,7 +100,7 @@ const AllowedDomainsCard: React.FC = () => {
   };
 
   // ── render ─────────────────────────────────────────────────────────────────
-  const displayList = editing ? draft : (domains ?? []);
+  const displayList = (editing ? draftByRole : domainsByRole)?.[activeRole] ?? [];
 
   return (
     <Card extra="p-6 flex flex-col gap-4 col-span-1">
@@ -83,7 +109,7 @@ const AllowedDomainsCard: React.FC = () => {
         <div className="flex items-center gap-2">
           <MdDomain className="text-brand-500 h-5 w-5 shrink-0" />
           <h3 className="text-navy-700 text-xl font-bold dark:text-white">
-            Tên miền được phép
+          Cấu hình tên miền & phân quyền
           </h3>
         </div>
 
@@ -115,21 +141,37 @@ const AllowedDomainsCard: React.FC = () => {
         )}
       </div>
 
-      <p className="mt-2 text-base text-gray-600 dark:text-gray-400">
-        Chỉ những email từ các tên miền này mới được đồng bộ.
-      </p>
+      {/* Role tabs */}
+      <div className="flex flex-wrap gap-2">
+        {ROLE_TABS.map((r) => (
+          <button
+            key={r}
+            type="button"
+            onClick={() => setActiveRole(r)}
+            className={`rounded-xl px-3 py-1.5 text-sm font-medium transition-colors ${
+              activeRole === r
+                ? "bg-brand-500 text-white"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-white/15"
+            }`}
+          >
+            {RoleLabels[r]}
+          </button>
+        ))}
+      </div>
+
+      {activeRole === Role.Student && (
+        <p className="text-gray-600 dark:text-gray-400">
+          Hệ thống sẽ tự động đọc và xử lý email từ domain này.
+        </p>
+      )}
+      {activeRole === Role.Admin && (
+        <p className="text-gray-600 dark:text-gray-400">
+          Dùng để định danh quyền truy cập trang quản trị.
+        </p>
+      )}
 
       {/* Domain list */}
-      {loading ? (
-        <div className="flex flex-wrap gap-2">
-          {[...Array(3)].map((_, i) => (
-            <div
-              key={i}
-              className="dark:bg-navy-700 h-7 w-24 animate-pulse rounded-full bg-gray-200"
-            />
-          ))}
-        </div>
-      ) : displayList.length === 0 ? (
+      {displayList.length === 0 ? (
         <p className="text-sm text-gray-600 italic dark:text-gray-400">
           Chưa có tên miền nào được cấu hình.
         </p>
@@ -139,9 +181,9 @@ const AllowedDomainsCard: React.FC = () => {
             <Tag
               key={i}
               interactive={false}
-              className="flex items-center gap-1 px-4 text-sm!"
+              className="flex items-center gap-1 px-2 text-sm!"
             >
-              {domain}
+              @{normalizeDomain(domain)}
               {editing && (
                 <button
                   onClick={() => handleRemove(i)}
@@ -159,14 +201,19 @@ const AllowedDomainsCard: React.FC = () => {
       {/* Add new domain input (edit mode only) */}
       {editing && (
         <div className="flex items-center gap-2">
-          <input
-            type="text"
-            value={newDomain}
-            onChange={(e) => setNewDomain(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="vd: example.com"
-            className="focus:ring-brand-500 w-full rounded-xl border border-gray-300 bg-transparent px-3 py-1.5 text-gray-700 transition-colors outline-none placeholder:text-gray-500 dark:bg-transparent dark:text-white dark:placeholder:text-gray-400"
-          />
+          <div className="relative w-full">
+            <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-gray-500 dark:text-gray-400">
+              @
+            </span>
+            <input
+              type="text"
+              value={newDomain}
+              onChange={(e) => setNewDomain(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="example.com"
+              className="focus:ring-brand-500 w-full rounded-xl border border-gray-300 bg-transparent py-1.5 pr-3 pl-7 text-gray-700 transition-colors outline-none placeholder:text-gray-500 dark:bg-transparent dark:text-white dark:placeholder:text-gray-400"
+            />
+          </div>
           <button
             onClick={handleAdd}
             className="bg-brand-500 hover:bg-brand-600 flex items-center gap-1 rounded-xl px-3 py-2 text-sm font-medium text-white transition-colors"

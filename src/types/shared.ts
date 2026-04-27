@@ -7,12 +7,13 @@
 import type { LabelMappingDto } from "./email";
 import type { Role } from "./users";
 
-/** Known setting keys for /shared/dynamic-data */
+/** Known setting keys for /shared/settings */
 export type SettingKey =
+  | "auth.roleDomains"
   | "email.labels"
   | "email.superEmail"
   | "email.lastPullAt"
-  | "email.allowedDomains";
+  | "email.gmailHistoryId";
 
 /** Gmail account used for syncing */
 export interface SuperEmailDto {
@@ -24,16 +25,12 @@ export interface SuperEmailDto {
 
 /** Map of setting key → value (only requested keys are present) */
 export interface SettingsMap {
+  "auth.roleDomains"?: Partial<Record<Role, string[]>>;
   "email.labels"?: LabelMappingDto;
   "email.superEmail"?: SuperEmailDto;
   "email.lastPullAt"?: string;
-  "email.allowedDomains"?: string[];
+  "email.gmailHistoryId"?: string;
 }
-
-// ─── Enum types ───────────────────────────────────────────────────────────────
-
-/** Known enum paths for /shared/dynamic-data */
-export type EnumPath = "shared.systemLabel" | "authentication.role";
 
 /** i18n + color entry for a single system label */
 export interface SystemLabelLangItem {
@@ -45,27 +42,11 @@ export interface SystemLabelLangItem {
 /** Shape returned for the "shared.systemLabel" enum path — flat record of label key → i18n+color */
 export type SystemLabelEnumData = Record<string, SystemLabelLangItem>;
 
-/** Shape returned for the "authentication.role" enum path */
-export interface RoleEnumData {
-  Role: typeof Role;
-}
-
-/** Map of enum path → value (null if path not found in registry) */
-export interface EnumsMap {
-  "shared.systemLabel"?: SystemLabelEnumData | null;
-  "authentication.role"?: RoleEnumData | null;
-}
-
 // ─── Request / Response ───────────────────────────────────────────────────────
-
-/** Query params for GET /shared/dynamic-data */
-export interface DynamicDataParams {
-  settings?: readonly SettingKey[] | SettingKey[];
-  enums?: readonly EnumPath[] | EnumPath[];
+export interface SharedSettingsParams {
+  keys: readonly SettingKey[] | SettingKey[];
 }
 
-/** Response from GET /shared/dynamic-data */
 export interface DynamicDataResponse {
   settings?: SettingsMap;
-  enums?: EnumsMap;
 }
