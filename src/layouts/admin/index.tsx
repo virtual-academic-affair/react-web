@@ -13,6 +13,7 @@ import DocumentCreatePage from "@/pages/documents/create";
 import DocumentListPage from "@/pages/documents/list";
 import MetadataManagementPage from "@/pages/documents/metadata";
 import MetadataTypeCreatePage from "@/pages/documents/metadata/create";
+import ChatbotPage from "@/pages/chatbot";
 import GmailConfigPage from "@/pages/emails/config";
 import MessagesPage from "@/pages/emails/message";
 import InquiryCreatePage from "@/pages/inquiry/create";
@@ -177,6 +178,7 @@ const AdminLayout: React.FC = () => {
               path="documents/metadata/create"
               element={<MetadataTypeCreatePage />}
             />
+            <Route path="chatbot" element={<ChatbotPage />} />
             <Route
               path="tasks"
               element={<Navigate to="/admin/tasks/statistics" replace />}

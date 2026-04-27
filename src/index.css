@@ -580,3 +580,19 @@ body.dark .ant-notification-notice {
 .dark .ant-notification-notice-close {
   color: var(--color-gray-500) !important;
 }
+
+
+@keyframes chat-message-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chat-message-enter {
+  animation: chat-message-enter 0.25s ease-out;
+}

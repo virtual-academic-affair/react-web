@@ -127,5 +127,8 @@ export const API_ENDPOINTS = {
       valueById: (key: string, value: string) =>
         `/api/metadata/${key}/values/${value}`,
     },
+    chat: {
+      stream: "/api/chat/stream",
+    },
   },
 } as const;

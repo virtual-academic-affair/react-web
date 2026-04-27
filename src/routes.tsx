@@ -9,6 +9,7 @@ import {
   MdQuestionAnswer,
   MdSchool,
   MdSettings,
+  MdSmartToy,
 } from "react-icons/md";
 import { SiGmail } from "react-icons/si";
 
@@ -139,6 +140,12 @@ const routes: RoutesType[] = [
         ],
       },
     ],
+  },
+  {
+    name: "Chatbot",
+    layout: "/admin",
+    path: "chatbot",
+    icon: <MdSmartToy className="h-6 w-6" />,
   },
   {
     name: "Quản trị",
