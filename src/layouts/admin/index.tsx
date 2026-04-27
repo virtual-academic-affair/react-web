@@ -6,6 +6,9 @@ import UsersPage from "@/pages/auth/accounts";
 import StudentsPage from "@/pages/auth/students";
 import ClassRegistrationStatisticsPage from "@/pages/class-registration/statistics";
 import DocumentCreatePage from "@/pages/documents/create";
+import FormsPage from "@/pages/documents/forms";
+import FAQsPage from "@/pages/documents/faqs";
+import ProposedFAQsPage from "@/pages/documents/faqs/candidates";
 import DocumentListPage from "@/pages/documents/list";
 import MetadataManagementPage from "@/pages/documents/metadata";
 import MetadataTypeCreatePage from "@/pages/documents/metadata/create";
@@ -47,14 +50,21 @@ const AdminLayout: React.FC = () => {
   const profile = data?.settings?.["email.superEmail"];
 
   const isRouteActive = (route: RoutesType): boolean => {
+    if (!route.path) return window.location.pathname === route.layout;
+    
     const href = `${route.layout}/${route.path}`.replace(/\/+/g, "/");
-    if (!route.path) {
-      return window.location.pathname.startsWith(route.layout);
+    const currentPath = window.location.pathname;
+
+    // Exact match is always true
+    if (currentPath === href) return true;
+    
+    // Parent match only if the route has children defined in config
+    const hasChildren = route.children && route.children.length > 0;
+    if (hasChildren && currentPath.startsWith(`${href}/`)) {
+      return true;
     }
-    return (
-      window.location.pathname === href ||
-      window.location.pathname.startsWith(`${href}/`)
-    );
+
+    return false;
   };
 
   const getActiveRoute = (routes: RoutesType[]): string => {
@@ -129,6 +139,9 @@ const AdminLayout: React.FC = () => {
               element={<InquiryStatisticsPage />}
             />
             <Route path="documents/list" element={<DocumentListPage />} />
+            <Route path="documents/forms" element={<FormsPage />} />
+            <Route path="documents/faqs" element={<FAQsPage />} />
+            <Route path="documents/candidates" element={<ProposedFAQsPage />} />
             <Route path="documents/create" element={<DocumentCreatePage />} />
             <Route
               path="documents/metadata/index"
