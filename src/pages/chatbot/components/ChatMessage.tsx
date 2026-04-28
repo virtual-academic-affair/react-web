@@ -1,6 +1,6 @@
 import React from "react";
 import { MdCheck, MdContentCopy, MdRefresh } from "react-icons/md";
-import type { ChatMessage as ChatMessageType } from "../types";
+import type { ChatMessage as ChatMessageType, ChatSourceItem } from "../types";
 import { formatMessageTime, isImageMessage, isUrl, parseContentSegments, splitTextAndLinks } from "../utils";
 
 interface ChatMessageProps {
@@ -10,14 +10,16 @@ interface ChatMessageProps {
   onRegenerate: () => void;
 }
 
+const getSourceLink = (source: ChatSourceItem): string => source.url;
+
 const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming, onCopy, onRegenerate }) => {
   const isAssistant = message.role === "assistant";
   const parsedSegments = parseContentSegments(message.content);
   const [copied, setCopied] = React.useState(false);
 
-  const handleCopyClick = async () => {
+  const handleCopyClick = () => {
     try {
-      await onCopy(message.content);
+      onCopy(message.content);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1200);
     } catch {
@@ -92,6 +94,26 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming, onCopy,
                 </p>
               );
             })}
+          </div>
+        )}
+
+        {!!message.sources?.length && (
+          <div className="mt-3 rounded-xl border border-gray-200/70 bg-gray-50/60 p-3 dark:border-white/10 dark:bg-white/5">
+            <p className="mb-2 text-xs font-medium text-gray-500 dark:text-gray-300">Nguồn tham khảo</p>
+            <ul className="space-y-1.5">
+              {message.sources.map((source, index) => (
+                <li key={`${source.url}-${index}`}>
+                  <a
+                    href={getSourceLink(source)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs text-brand-500 underline underline-offset-2 hover:text-brand-600"
+                  >
+                    {source.title || source.url}
+                  </a>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
 

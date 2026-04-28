@@ -17,7 +17,7 @@ import {
   INITIAL_MESSAGES,
   NEW_CHAT_TITLE,
 } from "./constants";
-import type { ChatMessage as ChatMessageType } from "./types";
+import type { ChatMessage as ChatMessageType, ChatSourceItem } from "./types";
 
 const ChatbotPage: React.FC = () => {
   const [messages, setMessages] = React.useState<ChatMessageType[]>(INITIAL_MESSAGES);
@@ -116,8 +116,31 @@ const ChatbotPage: React.FC = () => {
                   item.id === assistantMessageId ? { ...item, content: `${item.content}${chunk}` } : item,
                 ),
               );
+              return;
             }
 
+            if ((event as { done?: boolean }).done) {
+              const rawSources = (event as { sources?: unknown[] }).sources ?? [];
+              const sources: ChatSourceItem[] = rawSources
+                .map((source) => {
+                  if (!source || typeof source !== "object") return null;
+                  const candidate = source as Record<string, unknown>;
+                  const urlRaw = candidate.url ?? candidate.link ?? candidate.source_url ?? candidate.file_url;
+                  if (typeof urlRaw !== "string" || !urlRaw.trim()) return null;
+                  const titleRaw = candidate.title ?? candidate.name ?? candidate.filename;
+                  return {
+                    title: typeof titleRaw === "string" && titleRaw.trim() ? titleRaw : urlRaw,
+                    url: urlRaw,
+                  };
+                })
+                .filter((item): item is ChatSourceItem => item !== null);
+
+              if (sources.length > 0) {
+                setMessages((prev) =>
+                  prev.map((item) => (item.id === assistantMessageId ? { ...item, sources } : item)),
+                );
+              }
+            }
           },
         );
       } catch (error) {
