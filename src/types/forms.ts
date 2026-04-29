@@ -1,8 +1,7 @@
-﻿export interface Form {
-  id: number;
+export interface Form {
+  id: string;
   documentType: string;
   contentLink: string;
-  linkDisplayName?: string;
   notes?: string;
   createdAt: string;
   updatedAt: string;
@@ -19,7 +18,6 @@ export interface GetFormsParams {
 export interface CreateFormDto {
   documentType: string;
   contentLink: string;
-  linkDisplayName?: string;
   notes?: string;
 }
 
@@ -28,7 +26,6 @@ export interface UpdateFormDto extends Partial<CreateFormDto> {}
 export interface ImportFormsDto {
   documentTypeCol?: number;
   contentLinkCol?: number;
-  linkDisplayNameCol?: number;
   notesCol?: number;
   startRow?: number;
 }

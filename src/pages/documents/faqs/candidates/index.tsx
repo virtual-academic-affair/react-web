@@ -167,13 +167,6 @@ export default function ProposedFAQsPage() {
   return (
     <>
       <div className="flex flex-col gap-4">
-        <div className="mb-2">
-          <h1 className="text-2xl font-bold text-navy-700 dark:text-white">Câu hỏi đề xuất</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Phê duyệt các câu hỏi được AI tổng hợp tự động từ lịch sử hội thoại.
-          </p>
-        </div>
-
         {error && (
           <div className="rounded-2xl bg-red-50 p-4 text-sm text-red-500 dark:bg-red-500/10">
             Lỗi khi lấy dữ liệu: {(error as any)?.response?.data?.message || error.message}. 

@@ -104,12 +104,6 @@ export const API_ENDPOINTS = {
 
   // Documents (Nest API)
   document: {
-    forms: {
-      base: "/form/forms",
-      byId: (id: number) => `/form/forms/${id}`,
-      import: "/form/forms/import",
-      importPreview: "/form/forms/import-preview",
-    },
     accesses: {
       base: "/document/files/accesses",
       recent: "/document/files/accesses/recent",
@@ -142,6 +136,12 @@ export const API_ENDPOINTS = {
       importPreview: "/api/faqs/import/preview",
       candidates: "/api/faqs/candidates/list",
       reviewCandidate: (id: string) => `/api/faqs/candidates/${id}/review`,
+    },
+    forms: {
+      base: "/api/forms",
+      byId: (id: string) => `/api/forms/${id}`,
+      import: "/api/forms/import",
+      importPreview: "/api/forms/import-preview",
     },
   },
 } as const;
