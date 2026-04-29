@@ -15,12 +15,10 @@ export default function CreationDrawer({ open, onClose }: CreationDrawerProps) {
   const queryClient = useQueryClient();
   const [documentType, setDocumentType] = useState("");
   const [contentLink, setContentLink] = useState("");
-  const [linkDisplayName, setLinkDisplayName] = useState("");
   const [notes, setNotes] = useState("");
   const [errors, setErrors] = useState<{
     documentType?: string;
     contentLink?: string;
-    linkDisplayName?: string;
     notes?: string;
   }>({});
 
@@ -39,7 +37,6 @@ export default function CreationDrawer({ open, onClose }: CreationDrawerProps) {
   const handleClose = () => {
     setDocumentType("");
     setContentLink("");
-    setLinkDisplayName("");
     setNotes("");
     setErrors({});
     onClose();
@@ -57,8 +54,7 @@ export default function CreationDrawer({ open, onClose }: CreationDrawerProps) {
 
     create({
       documentType: documentType.trim(),
-      contentLink: contentLink.trim(),
-      linkDisplayName: linkDisplayName.trim() || undefined,
+      contentLink: contentLink,
       notes: notes || undefined,
     });
   };
@@ -70,7 +66,6 @@ export default function CreationDrawer({ open, onClose }: CreationDrawerProps) {
           <FormFormFields
             documentType={documentType}
             contentLink={contentLink}
-            linkDisplayName={linkDisplayName}
             notes={notes}
             onDocumentTypeChange={(v) => {
               setDocumentType(v);
@@ -79,10 +74,6 @@ export default function CreationDrawer({ open, onClose }: CreationDrawerProps) {
             onContentLinkChange={(v) => {
               setContentLink(v);
               if (errors.contentLink) setErrors({ ...errors, contentLink: undefined });
-            }}
-            onLinkDisplayNameChange={(v) => {
-              setLinkDisplayName(v);
-              if (errors.linkDisplayName) setErrors({ ...errors, linkDisplayName: undefined });
             }}
             onNotesChange={(v) => {
               setNotes(v);

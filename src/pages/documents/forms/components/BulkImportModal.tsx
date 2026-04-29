@@ -4,6 +4,7 @@ import Drawer from "@/components/drawer/Drawer";
 import DetailFormLayout, { FormRow } from "@/components/layouts/DetailFormLayout";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { formsService } from "@/services/documents/forms.service";
+import { fixRichTextLinks } from "@/components/fields/RichTextEditor";
 
 interface BulkImportModalProps {
   open: boolean;
@@ -13,7 +14,6 @@ interface BulkImportModalProps {
 interface PreviewRow {
   documentType: string;
   contentLink: string;
-  linkDisplayName: string;
   notes: string;
 }
 
@@ -26,8 +26,7 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
   const [config, setConfig] = useState({
     documentTypeCol: 1,
     contentLinkCol: 2,
-    linkDisplayNameCol: 3,
-    notesCol: 4,
+    notesCol: 3,
     startRow: 2,
   });
 
@@ -52,7 +51,6 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
       formsService.importForms(file!, {
         documentTypeCol: config.documentTypeCol,
         contentLinkCol: config.contentLinkCol,
-        linkDisplayNameCol: config.linkDisplayNameCol,
         notesCol: config.notesCol,
         startRow: config.startRow,
       }),
@@ -95,8 +93,7 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
     setConfig({
       documentTypeCol: 1,
       contentLinkCol: 2,
-      linkDisplayNameCol: 3,
-      notesCol: 4,
+      notesCol: 3,
       startRow: 2,
     });
     if (fileInputRef.current) {
@@ -115,8 +112,8 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
     importData();
   };
 
-  const previewHeaders = ["Loại văn bản", "Link", "Nội dung hiển thị", "Ghi chú"];
-  const previewData = preview.map(r => [r.documentType, r.contentLink, r.linkDisplayName, r.notes]);
+  const previewHeaders = ["Loại văn bản", "Nội dung & Đường link", "Ghi chú"];
+  const previewData = preview.map(r => [r.documentType, r.contentLink, r.notes]);
 
   return (
     <Drawer
@@ -162,16 +159,6 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
             />
           </FormRow>
 
-          <FormRow label="Cột Nội dung hiển thị">
-            <input
-              type="number"
-              min={1}
-              value={config.linkDisplayNameCol}
-              onChange={updateConfig("linkDisplayNameCol")}
-              disabled={isPending || isPreviewLoading}
-              className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
-            />
-          </FormRow>
 
           <FormRow label="Cột Ghi chú">
             <input
@@ -236,17 +223,17 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
                           {idx + 1}
                         </td>
                         {row.map((cellValue, colIdx) => {
-                          const isNotesCol = colIdx === 3;
+                          const isRichTextCol = colIdx === 1 || colIdx === 2;
                           
                           return (
                             <td
                               key={`cell-${idx}-${colIdx}`}
-                              className={`${isNotesCol ? "" : "whitespace-nowrap"} border-r border-gray-100 px-2 py-1.5 text-sm text-gray-700 last:border-r-0 dark:border-white/10 dark:text-white`}
+                              className={`${isRichTextCol ? "" : "whitespace-nowrap"} border-r border-gray-100 px-2 py-1.5 text-sm text-gray-700 last:border-r-0 dark:border-white/10 dark:text-white`}
                             >
-                              {isNotesCol ? (
+                              {isRichTextCol ? (
                                 <div 
                                   className="min-w-[300px] max-h-[100px] overflow-y-auto rich-text-preview"
-                                  dangerouslySetInnerHTML={{ __html: cellValue }} 
+                                  dangerouslySetInnerHTML={{ __html: fixRichTextLinks(cellValue) }} 
                                 />
                               ) : (
                                 <div className="max-w-[200px] truncate">

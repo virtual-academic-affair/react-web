@@ -10,11 +10,11 @@ import type { Form } from "@/types/forms";
 import { MdDeleteOutline, MdSave } from "react-icons/md";
 
 interface FormDetailDrawerProps {
-  id?: number;
+  id?: string;
   open: boolean;
   onClose: () => void;
   onFormChanged: (updated: Form) => void;
-  onFormDeleted: (id: number) => void;
+  onFormDeleted: (id: string) => void;
 }
 
 export default function FormDetailDrawer({
@@ -28,13 +28,11 @@ export default function FormDetailDrawer({
   const [edits, setEdits] = useState<{
     documentType?: string;
     contentLink?: string;
-    linkDisplayName?: string;
     notes?: string;
   }>({});
   const [errors, setErrors] = useState<{
     documentType?: string;
     contentLink?: string;
-    linkDisplayName?: string;
     notes?: string;
   }>({});
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
@@ -58,15 +56,13 @@ export default function FormDetailDrawer({
   // Derive form values: user edits override detail data
   const documentType = edits.documentType ?? detail?.documentType ?? "";
   const contentLink = edits.contentLink ?? detail?.contentLink ?? "";
-  const linkDisplayName = edits.linkDisplayName ?? detail?.linkDisplayName ?? "";
   const notes = edits.notes ?? detail?.notes ?? "";
 
   const { mutate: update, isPending: isUpdating } = useMutation({
     mutationFn: () =>
       formsService.updateForm(id!, {
         documentType: documentType.trim(),
-        contentLink: contentLink.trim(),
-        linkDisplayName: linkDisplayName.trim() || undefined,
+        contentLink: contentLink,
         notes: notes || undefined,
       }),
     onSuccess: (updated) => {
@@ -94,7 +90,6 @@ export default function FormDetailDrawer({
   const isDirty = detail
     ? detail.documentType !== documentType ||
       detail.contentLink !== contentLink ||
-      (detail.linkDisplayName ?? "") !== linkDisplayName ||
       (detail.notes ?? "") !== notes
     : false;
 
@@ -146,7 +141,6 @@ export default function FormDetailDrawer({
               key={id}
               documentType={documentType}
               contentLink={contentLink}
-              linkDisplayName={linkDisplayName}
               notes={notes}
               onDocumentTypeChange={(v) => {
                 setEdits(p => ({ ...p, documentType: v }));
@@ -155,10 +149,6 @@ export default function FormDetailDrawer({
               onContentLinkChange={(v) => {
                 setEdits(p => ({ ...p, contentLink: v }));
                 if (errors.contentLink) setErrors({ ...errors, contentLink: undefined });
-              }}
-              onLinkDisplayNameChange={(v) => {
-                setEdits(p => ({ ...p, linkDisplayName: v }));
-                if (errors.linkDisplayName) setErrors({ ...errors, linkDisplayName: undefined });
               }}
               onNotesChange={(v) => {
                 setEdits(p => ({ ...p, notes: v }));

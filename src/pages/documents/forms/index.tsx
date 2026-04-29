@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { MdDeleteOutline, MdInfoOutline } from "react-icons/md";
 import { message as toast } from "antd";
+import { fixRichTextLinks } from "@/components/fields/RichTextEditor";
 
 import TableLayout from "@/components/table/TableLayout";
 import type { TableColumn, TableAction } from "@/components/table/TableLayout";
@@ -24,15 +25,13 @@ export default function FormsPage() {
   // State từ URL
   const page = parseInt(searchParams.get("page") || "1", 10);
   const keyword = searchParams.get("keyword") || "";
-  const selectedId = searchParams.get("id")
-    ? parseInt(searchParams.get("id")!, 10)
-    : undefined;
+  const selectedId = searchParams.get("id") || undefined;
 
   // Local UI state
   const [searchValue, setSearchValue] = useState(keyword);
   const [creationOpen, setCreationOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   // Data fetching
   const { data: result, isFetching } = useQuery({
@@ -63,14 +62,10 @@ export default function FormsPage() {
       key: "contentLink",
       header: "Nội dung & Phạm vi áp dụng",
       render: (item) => (
-        <a
-          href={item.contentLink}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-sm font-medium text-brand-500 hover:text-brand-600 hover:underline dark:text-brand-400 line-clamp-2"
-        >
-          {item.linkDisplayName || item.contentLink}
-        </a>
+        <div
+          className="tiptap-prose text-sm text-navy-700 dark:text-white [&_a]:text-brand-500 [&_a:hover]:underline dark:[&_a]:text-brand-400 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 line-clamp-2"
+          dangerouslySetInnerHTML={{ __html: fixRichTextLinks(item.contentLink || "") }}
+        />
       ),
     },
     {
@@ -79,14 +74,14 @@ export default function FormsPage() {
       render: (item) => (
         <div
           className="tiptap-prose text-sm text-navy-700 dark:text-white [&_a]:text-brand-500 [&_a:hover]:underline dark:[&_a]:text-brand-400 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 line-clamp-3"
-          dangerouslySetInnerHTML={{ __html: item.notes || "" }}
+          dangerouslySetInnerHTML={{ __html: fixRichTextLinks(item.notes || "") }}
         />
       ),
     },
   ];
 
   // Actions
-  const handleEdit = (id: number) => {
+  const handleEdit = (id: string) => {
     setSearchParams((prev) => {
       prev.set("id", id.toString());
       return prev;
