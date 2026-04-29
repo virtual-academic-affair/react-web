@@ -57,7 +57,6 @@ class FormsService {
 
     if (dto.documentTypeCol != null) formData.append("document_type_col", String(dto.documentTypeCol));
     if (dto.contentLinkCol != null) formData.append("content_link_col", String(dto.contentLinkCol));
-    if (dto.linkDisplayNameCol != null) formData.append("link_display_name_col", String(dto.linkDisplayNameCol));
     if (dto.notesCol != null) formData.append("notes_col", String(dto.notesCol));
     if (dto.startRow != null) formData.append("start_row", String(dto.startRow));
 
@@ -78,7 +77,6 @@ class FormsService {
 
     if (dto.documentTypeCol != null) formData.append("document_type_col", String(dto.documentTypeCol));
     if (dto.contentLinkCol != null) formData.append("content_link_col", String(dto.contentLinkCol));
-    if (dto.linkDisplayNameCol != null) formData.append("link_display_name_col", String(dto.linkDisplayNameCol));
     if (dto.notesCol != null) formData.append("notes_col", String(dto.notesCol));
     if (dto.startRow != null) formData.append("start_row", String(dto.startRow));
 
