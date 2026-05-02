@@ -12,16 +12,9 @@ export interface ChatStreamHistoryItem {
   timestamp?: string;
 }
 
-export interface ChatStreamMetadataFilter {
-  academicYear?: string[];
-  accessScope?: string[];
-  [key: string]: string[] | undefined;
-}
-
 export interface ChatStreamRequest {
   question: string;
   chatHistory: ChatStreamHistoryItem[];
-  metadataFilter?: ChatStreamMetadataFilter;
 }
 
 interface StreamBaseEvent {
