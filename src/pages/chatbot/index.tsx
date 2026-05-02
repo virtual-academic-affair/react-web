@@ -31,6 +31,9 @@ const ChatbotPage: React.FC = () => {
   const listRef = React.useRef<HTMLDivElement | null>(null);
   const messageSequenceRef = React.useRef(1);
   const lastUserPromptRef = React.useRef("");
+  const textBufferRef = React.useRef("");
+  const reasoningBufferRef = React.useRef("");
+  const typingTimerRef = React.useRef<number | null>(null);
 
   const scrollToBottom = React.useCallback((behavior: ScrollBehavior = "smooth") => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior });
@@ -42,6 +45,52 @@ const ChatbotPage: React.FC = () => {
 
   const handleCopy = React.useCallback(async (content: string) => {
     await navigator.clipboard.writeText(content);
+  }, []);
+
+  const TEXT_TYPING_CHARS_PER_TICK = 1;
+  const TEXT_TYPING_INTERVAL_MS = 40;
+  const REASONING_TYPING_CHARS_PER_TICK = 4;
+  const REASONING_VISIBLE_WINDOW = 180;
+
+  const flushTypingBuffers = React.useCallback((assistantMessageId: string) => {
+    if (typingTimerRef.current !== null) return;
+
+    typingTimerRef.current = window.setInterval(() => {
+      const reasoningChars = Array.from(reasoningBufferRef.current);
+      const textChars = Array.from(textBufferRef.current);
+
+      if (reasoningChars.length === 0 && textChars.length === 0) {
+        if (typingTimerRef.current !== null) {
+          window.clearInterval(typingTimerRef.current);
+          typingTimerRef.current = null;
+        }
+        return;
+      }
+
+      const reasoningChunk = reasoningChars
+        .slice(0, REASONING_TYPING_CHARS_PER_TICK)
+        .join("");
+      const textChunk = textChars.slice(0, TEXT_TYPING_CHARS_PER_TICK).join("");
+
+      reasoningBufferRef.current = reasoningChars.slice(REASONING_TYPING_CHARS_PER_TICK).join("");
+      textBufferRef.current = textChars.slice(TEXT_TYPING_CHARS_PER_TICK).join("");
+
+      setMessages((prev) =>
+        prev.map((item) => {
+          if (item.id !== assistantMessageId) return item;
+          const nextReasoning = `${item.reasoning ?? ""}${reasoningChunk}`;
+          return {
+            ...item,
+            reasoning: nextReasoning.slice(-REASONING_VISIBLE_WINDOW),
+            content: `${item.content}${textChunk}`,
+          };
+        }),
+      );
+    }, TEXT_TYPING_INTERVAL_MS);
+  }, []);
+
+  const clearReasoningBuffer = React.useCallback(() => {
+    reasoningBufferRef.current = "";
   }, []);
 
   const syncConversationTitle = React.useCallback((title: string) => {
@@ -90,6 +139,13 @@ const ChatbotPage: React.FC = () => {
         },
       ]);
 
+      textBufferRef.current = "";
+      reasoningBufferRef.current = "";
+      if (typingTimerRef.current !== null) {
+        window.clearInterval(typingTimerRef.current);
+        typingTimerRef.current = null;
+      }
+
       setInputValue("");
       setSending(true);
 
@@ -108,23 +164,36 @@ const ChatbotPage: React.FC = () => {
             const eventType = (event as { type?: string }).type;
             if (eventType === "text") {
               const chunk = (event as { content?: string }).content ?? "";
-              setMessages((prev) =>
-                prev.map((item) =>
-                  item.id === assistantMessageId ? { ...item, content: `${item.content}${chunk}` } : item,
-                ),
-              );
+              if (!chunk) return;
+              textBufferRef.current += chunk;
+              flushTypingBuffers(assistantMessageId);
+              return;
+            }
+
+            if (eventType === "reasoning" || eventType === "thought") {
+              const chunk = (event as { content?: string }).content ?? "";
+              if (!chunk) return;
+              reasoningBufferRef.current += chunk;
+              flushTypingBuffers(assistantMessageId);
               return;
             }
 
             if ((event as { done?: boolean }).done) {
-              const rawSources = (event as { sources?: unknown[] }).sources ?? [];
+              clearReasoningBuffer();
+
+              const doneEvent = event as { sources?: unknown[]; error?: unknown };
+              const errorText =
+                typeof doneEvent.error === "string" ? doneEvent.error.trim() : "";
+
+              const rawSources = doneEvent.sources ?? [];
               const sources: ChatSourceItem[] = rawSources
                 .map((source) => {
                   if (!source || typeof source !== "object") return null;
                   const candidate = source as Record<string, unknown>;
-                  const urlRaw = candidate.url ?? candidate.link ?? candidate.source_url ?? candidate.file_url;
+                  const urlRaw = candidate.original_url;
                   if (typeof urlRaw !== "string" || !urlRaw.trim()) return null;
-                  const titleRaw = candidate.title ?? candidate.name ?? candidate.filename;
+                  const titleRaw =
+                    candidate.title ?? candidate.file_name ?? candidate.name ?? candidate.filename;
                   return {
                     title: typeof titleRaw === "string" && titleRaw.trim() ? titleRaw : urlRaw,
                     url: urlRaw,
@@ -132,11 +201,23 @@ const ChatbotPage: React.FC = () => {
                 })
                 .filter((item): item is ChatSourceItem => item !== null);
 
-              if (sources.length > 0) {
-                setMessages((prev) =>
-                  prev.map((item) => (item.id === assistantMessageId ? { ...item, sources } : item)),
-                );
-              }
+              setMessages((prev) =>
+                prev.map((item) => {
+                  if (item.id !== assistantMessageId) return item;
+
+                  const content =
+                    errorText && !item.content.trim()
+                      ? `Lỗi từ hệ thống: ${errorText}`
+                      : item.content;
+
+                  return {
+                    ...item,
+                    reasoning: "",
+                    content,
+                    sources: sources.length ? sources : [],
+                  };
+                }),
+              );
             }
           },
         );
@@ -152,7 +233,7 @@ const ChatbotPage: React.FC = () => {
         setSending(false);
       }
     },
-    [chatTitle, inputValue, messages, sending, syncConversationTitle],
+    [chatTitle, clearReasoningBuffer, flushTypingBuffers, inputValue, messages, sending, syncConversationTitle],
   );
 
   return (

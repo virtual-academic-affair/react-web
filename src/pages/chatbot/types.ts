@@ -10,6 +10,7 @@ export interface ChatMessage {
   role: ChatRole;
   content: string;
   createdAt: string;
+  reasoning?: string;
   sources?: ChatSourceItem[];
 }
 
