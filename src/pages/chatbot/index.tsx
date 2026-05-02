@@ -10,7 +10,7 @@ import {
   CHAT_INPUT_PLACEHOLDER,
   CHAT_LAYOUT_CLASSNAME,
   CHAT_SUGGESTIONS,
-  CHATBOT_METADATA_FILTER,
+
   CHATBOT_PAGE_SUBTITLE,
   CHATBOT_PAGE_TITLE,
   INITIAL_CONVERSATIONS,
@@ -102,10 +102,7 @@ const ChatbotPage: React.FC = () => {
               content: item.content,
               timestamp: item.createdAt,
             })),
-            metadataFilter: {
-              academicYear: [...CHATBOT_METADATA_FILTER.academicYear],
-              accessScope: [...CHATBOT_METADATA_FILTER.accessScope],
-            },
+
           },
           (event) => {
             const eventType = (event as { type?: string }).type;
