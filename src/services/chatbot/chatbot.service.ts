@@ -1,5 +1,4 @@
 import { API_CONFIG, API_ENDPOINTS } from "@/config/api.config";
-import { AUTH_CONFIG } from "@/config/auth.config";
 import { useAuthStore } from "@/stores/auth.store";
 
 const SSE_EVENT_SEPARATOR = "\n\n";
@@ -79,9 +78,6 @@ export type ChatStreamEvent =
 const getAuthToken = (): string | null => {
   const storeToken = useAuthStore.getState().accessToken;
   if (storeToken) return storeToken;
-  if (AUTH_CONFIG.bypassAuth && AUTH_CONFIG.tempAccessToken) {
-    return AUTH_CONFIG.tempAccessToken;
-  }
   return null;
 };
 
