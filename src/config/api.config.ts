@@ -143,5 +143,8 @@ export const API_ENDPOINTS = {
       import: "/api/forms/import",
       importPreview: "/api/forms/import-preview",
     },
+    chat: {
+      stream: "/api/chat/stream",
+    },
   },
 } as const;
