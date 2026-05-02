@@ -39,16 +39,24 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming, onCopy,
         }`}
       >
         {isAssistant && isStreaming ? (
-          <div className="space-y-2">
-            {message.content ? (
-              <p className="wrap-break-word whitespace-pre-wrap">{message.content}</p>
-            ) : (
+          <div className="space-y-3">
+            {!message.content && !message.reasoning && (
               <div className="space-y-2">
+                <p className="text-xs text-gray-500 dark:text-gray-300">Đang chờ phản hồi...</p>
                 <div className="h-2 w-36 animate-pulse rounded bg-gray-200 dark:bg-white/10" />
                 <div className="h-2 w-56 animate-pulse rounded bg-gray-200 dark:bg-white/10" />
               </div>
             )}
-            <div className="h-2 w-28 animate-pulse rounded bg-gray-200 dark:bg-white/10" />
+
+            {!message.content && !!message.reasoning && (
+              <p className="whitespace-pre-wrap rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-800 dark:border-amber-300/20 dark:bg-amber-300/10 dark:text-amber-100">
+                {message.reasoning}
+              </p>
+            )}
+
+            {!!message.content && (
+              <p className="wrap-break-word whitespace-pre-wrap">{message.content}</p>
+            )}
           </div>
         ) : isImageMessage(message.content) ? (
           <img
@@ -58,6 +66,13 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming, onCopy,
           />
         ) : (
           <div className="space-y-3">
+
+            {isAssistant && !!message.reasoning && !message.content && (
+              <p className="whitespace-pre-wrap rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-800 dark:border-amber-300/20 dark:bg-amber-300/10 dark:text-amber-100">
+                {message.reasoning}
+              </p>
+            )}
+
             {parsedSegments.map((segment, index) => {
               if (segment.type === "code") {
                 return (
