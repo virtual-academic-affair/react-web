@@ -1,6 +1,5 @@
 import ConfirmModal from "@/components/modal/ConfirmModal";
 import Tag from "@/components/tag/Tag";
-import Tooltip from "@/components/tooltip/Tooltip.tsx";
 import InquiryReplyRichTextEditor from "@/pages/inquiry/inquiries/components/InquiryReplyRichTextEditor";
 import { inquiriesService } from "@/services/inquiry";
 import {
@@ -16,7 +15,7 @@ import {
 } from "@/types/messageStatus";
 import { useMutation } from "@tanstack/react-query";
 import { Input, message } from "antd";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MdDeleteOutline, MdSave } from "react-icons/md";
 import DeeplinkPillActionButton from "./DeeplinkPillActionButton";
 import {
@@ -73,7 +72,7 @@ interface Props {
 const DeeplinkInquirySection: React.FC<Props> = ({ inquiry, onChanged }) => {
   const inquiryId = inquiry.id;
   const messageStatusView = coerceMessageStatus(inquiry.messageStatus) ?? "new";
-  const isReplied = messageStatusView === "replied";
+  const canEdit = messageStatusView === "new";
 
   const [question, setQuestion] = useState(() =>
     stripHtml(inquiry.question ?? ""),
@@ -83,6 +82,7 @@ const DeeplinkInquirySection: React.FC<Props> = ({ inquiry, onChanged }) => {
     normalizeTypes(inquiry.types),
   );
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [revertStatusConfirmOpen, setRevertStatusConfirmOpen] = useState(false);
   const [autoSaving, setAutoSaving] = useState(false);
 
   const lastPersistedRef = useRef({
@@ -148,12 +148,12 @@ const DeeplinkInquirySection: React.FC<Props> = ({ inquiry, onChanged }) => {
 
   /** Vấn đề hoặc phản hồi khác bản đã lưu → Hủy/Lưu thay cho 3 nút. */
   const contentManualDirty =
-    !isReplied &&
+    canEdit &&
     (question.trim() !== lastPersistedRef.current.question.trim() ||
       (answer.trim() || "") !== (lastPersistedRef.current.answer.trim() || ""));
 
   useEffect(() => {
-    if (isReplied) return;
+    if (!canEdit) return;
     if (contentManualDirty) return;
     const last = lastPersistedRef.current;
     if (typesEqual(types, last.types)) return;
@@ -165,7 +165,7 @@ const DeeplinkInquirySection: React.FC<Props> = ({ inquiry, onChanged }) => {
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [question, types, answer, contentManualDirty, persist, isReplied]);
+  }, [question, types, answer, contentManualDirty, persist, canEdit]);
 
   const toggleType = (t: InquiryType) => {
     setTypes((prev) =>
@@ -217,6 +217,8 @@ const DeeplinkInquirySection: React.FC<Props> = ({ inquiry, onChanged }) => {
 
   const replyActionsBusy = autoSaving;
 
+  const hasReplyContent = useMemo(() => stripHtml(answer).length > 0, [answer]);
+
   const pillRowBtnSecondary =
     `${deeplinkBtnSecondary} min-w-0 flex-1 justify-center !rounded-full px-1 text-xs font-medium`.trim();
   const pillRowBtnPrimary =
@@ -232,19 +234,17 @@ const DeeplinkInquirySection: React.FC<Props> = ({ inquiry, onChanged }) => {
             <h2 className="text-navy-900 min-w-0 text-base font-bold tracking-tight uppercase dark:text-white">
               Thắc mắc
             </h2>
-            {!isReplied && !contentManualDirty ? (
-              <Tooltip label="Xóa thắc mắc">
-                <button
-                  type="button"
-                  aria-label="Xóa thắc mắc"
-                  disabled={footerActionsBusy}
-                  className={headerDeleteIconBtnClass}
-                  onClick={() => setDeleteConfirmOpen(true)}
-                >
-                  <MdDeleteOutline className="h-4 w-4" />
-                </button>
-              </Tooltip>
-            ) : null}
+            <button
+              type="button"
+              aria-label="Xóa thắc mắc"
+              disabled={footerActionsBusy}
+              className={headerDeleteIconBtnClass}
+              onClick={() => setDeleteConfirmOpen(true)}
+            >
+              {canEdit && !contentManualDirty ? (
+                <MdDeleteOutline className="h-4 w-4" />
+              ) : null}
+            </button>
           </div>
           <div className="flex flex-col items-end gap-2">
             <Tag
@@ -267,8 +267,8 @@ const DeeplinkInquirySection: React.FC<Props> = ({ inquiry, onChanged }) => {
               <Tag
                 key={t}
                 color={on ? pal.hex : INQUIRY_TYPE_TAG_NEUTRAL_HEX}
-                interactive={!isReplied}
-                onClick={isReplied ? undefined : () => toggleType(t)}
+                interactive={canEdit}
+                onClick={canEdit ? () => toggleType(t) : undefined}
                 className="!px-3 !py-1 text-sm font-medium"
               >
                 {InquiryTypeLabels[t]}
@@ -287,7 +287,7 @@ const DeeplinkInquirySection: React.FC<Props> = ({ inquiry, onChanged }) => {
               onChange={(e) => setQuestion(e.target.value)}
               placeholder="Nội dung câu hỏi"
               autoSize={{ minRows: 3, maxRows: 8 }}
-              readOnly={isReplied}
+              readOnly={!canEdit}
               bordered={false}
               className={deeplinkCompactPlainTextAreaClass}
             />
@@ -297,13 +297,19 @@ const DeeplinkInquirySection: React.FC<Props> = ({ inquiry, onChanged }) => {
         <div className="flex flex-col gap-2">
           <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
             Phản hồi
+            {canEdit ? (
+              <span className="text-red-500" aria-hidden>
+                {" "}
+                *
+              </span>
+            ) : null}
           </span>
           <div className="overflow-hidden">
             <InquiryReplyRichTextEditor
               value={answer}
               onChange={setAnswer}
               placeholder="Soạn câu trả lời…"
-              disabled={isReplied}
+              disabled={!canEdit}
               compact
               className="rounded-none! border-0 bg-transparent dark:bg-transparent"
             />
@@ -312,77 +318,91 @@ const DeeplinkInquirySection: React.FC<Props> = ({ inquiry, onChanged }) => {
       </div>
 
       <footer className="mt-4 flex flex-col gap-3">
-        {isReplied ? (
+        {canEdit ? (
+          contentManualDirty ? (
+            <div className="flex w-full gap-3">
+              <button
+                type="button"
+                className={pillRowBtnSecondary}
+                disabled={replyActionsBusy}
+                onClick={() => {
+                  const b = lastPersistedRef.current;
+                  setQuestion(b.question);
+                  setAnswer(b.answer);
+                  setTypes([...b.types]);
+                }}
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                className={pillRowBtnPrimary}
+                disabled={replyActionsBusy}
+                onClick={() => void persist(false)}
+              >
+                <MdSave className="h-4 w-4" />
+                {autoSaving ? "Đang lưu..." : "Lưu"}
+              </button>
+            </div>
+          ) : (
+            <div className="flex w-full gap-3">
+              <DeeplinkPillActionButton
+                variant="secondary"
+                disabled={footerActionsBusy || !hasReplyContent}
+                onClick={() => void sendReplyOnlyMutation.mutate()}
+                label={
+                  sendReplyOnlyMutation.isPending
+                    ? "Đang gửi…"
+                    : "Phản hồi ngay"
+                }
+              />
+              <DeeplinkPillActionButton
+                variant="primary"
+                disabled={footerActionsBusy || !hasReplyContent}
+                onClick={() =>
+                  void inquiryMessageStatusMutation.mutate("staged")
+                }
+                label={
+                  inquiryMessageStatusMutation.isPending
+                    ? "Đang duyệt…"
+                    : "Duyệt hồ sơ"
+                }
+              />
+            </div>
+          )
+        ) : (
           <div className="flex w-full gap-3">
             <button
               type="button"
               className={`${pillRowBtnPrimary} w-full`}
               disabled={footerActionsBusy}
-              onClick={() => void inquiryMessageStatusMutation.mutate("new")}
+              onClick={() => setRevertStatusConfirmOpen(true)}
             >
-              {inquiryMessageStatusMutation.isPending
-                ? "Đang hoàn tác…"
-                : "Hoàn tác"}
+              Hoàn tác
             </button>
-          </div>
-        ) : contentManualDirty ? (
-          <div className="flex w-full gap-3">
-            <button
-              type="button"
-              className={pillRowBtnSecondary}
-              disabled={replyActionsBusy}
-              onClick={() => {
-                const b = lastPersistedRef.current;
-                setQuestion(b.question);
-                setAnswer(b.answer);
-                setTypes([...b.types]);
-              }}
-            >
-              Hủy
-            </button>
-            <button
-              type="button"
-              className={pillRowBtnPrimary}
-              disabled={replyActionsBusy}
-              onClick={() => void persist(false)}
-            >
-              <MdSave className="h-4 w-4" />
-              {autoSaving ? "Đang lưu..." : "Lưu"}
-            </button>
-          </div>
-        ) : (
-          <div className="flex w-full gap-3">
-            <DeeplinkPillActionButton
-              variant="secondary"
-              disabled={footerActionsBusy}
-              onClick={() => void sendReplyOnlyMutation.mutate()}
-              label={
-                sendReplyOnlyMutation.isPending
-                  ? "Đang gửi…"
-                  : "Phản hồi ngay"
-              }
-            />
-            <DeeplinkPillActionButton
-              variant="primary"
-              disabled={footerActionsBusy}
-              onClick={() =>
-                void inquiryMessageStatusMutation.mutate(
-                  messageStatusView === "new" ? "staged" : "new",
-                )
-              }
-              label={
-                inquiryMessageStatusMutation.isPending
-                  ? messageStatusView === "new"
-                    ? "Đang duyệt…"
-                    : "Đang hoàn tác…"
-                  : messageStatusView === "new"
-                    ? "Duyệt hồ sơ"
-                    : "Hoàn tác"
-              }
-            />
           </div>
         )}
       </footer>
+
+      <ConfirmModal
+        open={revertStatusConfirmOpen}
+        onCancel={() => setRevertStatusConfirmOpen(false)}
+        onConfirm={async () => {
+          try {
+            await inquiryMessageStatusMutation.mutateAsync("new");
+            setRevertStatusConfirmOpen(false);
+          } catch {
+            /* toast trong mutation */
+          }
+        }}
+        title="Hoàn tác trạng thái hồ sơ?"
+        subTitle="Đưa thắc mắc về trạng thái Mới để chỉnh sửa lại. Xác nhận hoàn tác?"
+        confirmText="Hoàn tác"
+        cancelText="Hủy"
+        loading={inquiryMessageStatusMutation.isPending}
+        danger={false}
+        icon="warning"
+      />
 
       <ConfirmModal
         open={deleteConfirmOpen}

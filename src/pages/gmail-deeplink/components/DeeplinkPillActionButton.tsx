@@ -1,4 +1,3 @@
-import Tooltip from "@/components/tooltip/Tooltip.tsx";
 import type { FC } from "react";
 import {
   deeplinkBtnPrimary,
@@ -14,11 +13,10 @@ interface Props {
   variant: Variant;
   disabled?: boolean;
   onClick: () => void;
-  /** Hiển thị + tooltip (đầy đủ khi bị cắt …). */
   label: string;
 }
 
-/** Nút hàng footer deeplink — một dòng ellipsis, hover xem đủ chữ. */
+/** Nút hàng footer deeplink — một dòng ellipsis. */
 const DeeplinkPillActionButton: FC<Props> = ({
   variant,
   disabled,
@@ -31,7 +29,7 @@ const DeeplinkPillActionButton: FC<Props> = ({
       : `${deeplinkBtnSecondary} ${pillRowBtnBase} w-full`;
 
   return (
-    <Tooltip label={label} className="flex min-w-0 flex-1" placement="top" wrap>
+    <div className="flex min-w-0 flex-1">
       <button
         type="button"
         className={btnClass}
@@ -42,7 +40,7 @@ const DeeplinkPillActionButton: FC<Props> = ({
           {label}
         </span>
       </button>
-    </Tooltip>
+    </div>
   );
 };
 
