@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import BusinessCardsView from "./components/BusinessCardsView";
+import DeeplinkIframeNoThreadDashboard from "./components/DeeplinkIframeNoThreadDashboard";
 
 function useQueryParams() {
   const { search } = useLocation();
@@ -163,26 +164,14 @@ const GmailDeeplinkPage = () => {
   }
 
   if (fromIframe && !hasFullParams && hasBootstrapTokenFromUrl) {
+    const afterQ = params.get("after");
+    const beforeQ = params.get("before");
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center px-4">
-        <p className="mb-4 max-w-md text-center text-base text-gray-500">
-          Đã xác thực quyền quản trị. Mở một cuộc hội thoại trong Gmail (nhãn
-          VAA) để xem hồ sơ đầy đủ.
-        </p>
-        <button
-          type="button"
-          onClick={() =>
-            window.open(
-              "https://vaa.hcmus.app",
-              "_blank",
-              "noopener,noreferrer",
-            )
-          }
-          className="bg-brand-500 hover:bg-brand-600 rounded-full px-5 py-3 text-xs font-semibold text-white"
-        >
-          Quản lý Giáo vụ số
-        </button>
-      </div>
+      <DeeplinkIframeNoThreadDashboard
+        key={`${afterQ ?? ""}\0${beforeQ ?? ""}`}
+        afterParam={afterQ}
+        beforeParam={beforeQ}
+      />
     );
   }
 

@@ -57,6 +57,8 @@ export interface GetInquiriesParams extends ResourceQueryDto {
   types?: InquiryType[];
   messageId?: string | number;
   messageStatuses?: MessageStatus[];
+  sentFrom?: string;
+  sentTo?: string;
 }
 
 export interface CreateInquiryDto {

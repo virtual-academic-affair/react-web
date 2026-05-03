@@ -49,6 +49,10 @@ export const API_ENDPOINTS = {
         `/classRegistration/classRegistrations/${parentId}/items`,
       itemById: (parentId: number, id: number) =>
         `/classRegistration/classRegistrations/${parentId}/items/${id}`,
+      itemsOverview: (parentId: number) =>
+        `/classRegistration/classRegistrations/${parentId}/items/overview`,
+      itemsBulkStatus: (parentId: number) =>
+        `/classRegistration/classRegistrations/${parentId}/items/bulkStatus`,
     },
     cancelReasons: {
       base: "/classRegistration/cancelReasons",

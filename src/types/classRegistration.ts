@@ -68,6 +68,8 @@ export interface ClassRegistrationItem {
   classRegistrationId?: number;
   /** API trả về `parentId` thay cho classRegistrationId */
   parentId?: number;
+  /** GET items: join qua parent.message (MSSV) */
+  studentCode?: string | null;
   action: RegistrationAction;
   subjectName: string;
   subjectCode?: string;
@@ -151,6 +153,33 @@ export interface GetClassRegistrationsParams extends ResourceQueryDto {
   smartOrder?: string;
   messageId?: string | number;
   messageStatuses?: MessageStatus[];
+  sentFrom?: string;
+  sentTo?: string;
+}
+
+/** GET .../classRegistrations/:parentId/items */
+export interface GetClassRegistrationItemsParams extends ResourceQueryDto {
+  statuses?: ItemStatus[];
+  actions?: RegistrationAction[];
+  subjectName?: string;
+  subjectCode?: string;
+  messageId?: string | number;
+  messageStatuses?: MessageStatus[];
+  sentFrom?: string;
+  sentTo?: string;
+}
+
+/** GET .../items/overview — nhóm môn → các lớp (bucket) */
+export interface OverviewClassBucket {
+  className: string | null;
+  byStatus: Record<ItemStatus, number>;
+  byAction: Record<RegistrationAction, number>;
+}
+
+export interface OverviewSubjectGroup {
+  subjectName: string;
+  subjectCode: string | null;
+  classes: OverviewClassBucket[];
 }
 
 export interface CreateClassRegistrationItemDto {

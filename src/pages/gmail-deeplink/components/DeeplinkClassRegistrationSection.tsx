@@ -57,11 +57,10 @@ function norm(s: string | undefined | null): string {
   return (s ?? "").trim().toUpperCase();
 }
 
-/** Chỉ gộp nhóm khi trùng cả mã môn và tên môn; thiếu một trong hai → mỗi yêu cầu một nhóm. */
+/** Gộp nhóm theo tên môn (trim, không phân biệt hoa thường). Không có tên → mỗi dòng một nhóm. */
 function subjectGroupKey(item: ClassRegistrationItem): string {
-  const code = norm(item.subjectCode);
   const name = norm(item.subjectName);
-  if (code && name) return `${code}\x1e${name}`;
+  if (name) return `name:${name}`;
   return `solo:${item.id}`;
 }
 
@@ -380,7 +379,7 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
       <header className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
           <div className="border-brand-500 flex min-w-0 flex-1 items-center gap-2 border-l-4 pl-3">
-            <h2 className="text-navy-900 min-w-0 text-base font-bold tracking-tight uppercase dark:text-white">
+            <h2 className="text-navy-900 min-w-0 text-base font-semibold tracking-tight uppercase dark:text-white">
               Đăng ký lớp
             </h2>
             <button

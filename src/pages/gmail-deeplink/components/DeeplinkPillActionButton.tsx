@@ -36,7 +36,7 @@ const DeeplinkPillActionButton: FC<Props> = ({
         disabled={disabled}
         onClick={onClick}
       >
-        <span className="block min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-center">
+        <span className="block min-w-0 overflow-hidden text-center text-ellipsis whitespace-nowrap">
           {label}
         </span>
       </button>

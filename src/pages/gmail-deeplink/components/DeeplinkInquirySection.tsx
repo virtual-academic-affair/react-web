@@ -231,7 +231,7 @@ const DeeplinkInquirySection: React.FC<Props> = ({ inquiry, onChanged }) => {
       <header className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
           <div className="border-brand-500 flex min-w-0 flex-1 items-center gap-2 border-l-4 pl-3">
-            <h2 className="text-navy-900 min-w-0 text-base font-bold tracking-tight uppercase dark:text-white">
+            <h2 className="text-navy-900 min-w-0 text-base font-semibold tracking-tight uppercase dark:text-white">
               Thắc mắc
             </h2>
             <button
