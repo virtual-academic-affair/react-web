@@ -29,10 +29,10 @@ import { Input, message } from "antd";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MdDeleteOutline, MdEdit, MdSave } from "react-icons/md";
 import {
-  deeplinkBtnDanger,
   deeplinkBtnPrimary,
   deeplinkBtnSecondary,
 } from "./deeplinkButtonClasses";
+import DeeplinkPillActionButton from "./DeeplinkPillActionButton";
 import RegistrationActionTag from "./RegistrationActionTag";
 
 const itemStatusOptions = (Object.keys(ItemStatusLabels) as ItemStatus[]).map(
@@ -98,6 +98,9 @@ function normalizeItems(
   });
 }
 
+const registrationNoteTextAreaClass =
+  "text-navy-800 resize-none !rounded-none !border-0 bg-transparent px-3 py-2 text-sm leading-snug shadow-none placeholder:text-gray-400 read-only:cursor-default focus:!shadow-none dark:text-gray-100 dark:placeholder:text-gray-500 max-h-[6.5rem] overflow-y-auto";
+
 const RegistrationNoteBlock: React.FC<{
   note: string;
   onNoteChange: (value: string) => void;
@@ -109,10 +112,10 @@ const RegistrationNoteBlock: React.FC<{
         value={note}
         onChange={(e) => onNoteChange(e.target.value)}
         placeholder="Ghi chú hồ sơ…"
-        rows={4}
+        autoSize={{ minRows: 3, maxRows: 8 }}
         readOnly={readOnly}
         bordered={false}
-        className="text-navy-800 resize-y !rounded-none !border-0 bg-transparent px-3 py-2.5 text-sm shadow-none placeholder:text-gray-400 focus:!shadow-none read-only:cursor-default dark:text-gray-100 dark:placeholder:text-gray-500"
+        className={registrationNoteTextAreaClass}
       />
     </div>
   </div>
@@ -165,8 +168,7 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
     noteBaselineRef.current = n;
   }, [parentId, registration.note, registration.updatedAt]);
 
-  const noteDirty =
-    note.trim() !== (noteBaselineRef.current ?? "").trim();
+  const noteDirty = note.trim() !== (noteBaselineRef.current ?? "").trim();
 
   const [itemDrawerOpen, setItemDrawerOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -365,23 +367,35 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
   }, [parentId, note, onChanged]);
 
   const pillRowBtnSecondary =
-    `${deeplinkBtnSecondary} min-w-0 flex-1 justify-center !rounded-full px-4 py-2 text-sm font-medium`.trim();
+    `${deeplinkBtnSecondary} min-w-0 flex-1 justify-center !rounded-full px-1 text-xs font-medium`.trim();
   const pillRowBtnPrimary =
-    `${deeplinkBtnPrimary} min-w-0 flex-1 justify-center !rounded-full px-4 py-2 text-sm font-medium`.trim();
-  const pillRowBtnDanger =
-    `${deeplinkBtnDanger} min-w-0 w-full justify-center !rounded-full px-4 py-2 text-sm font-medium`.trim();
-
+    `${deeplinkBtnPrimary} min-w-0 flex-1 justify-center !rounded-full px-1 text-xs font-medium`.trim();
   const rowIconBtnClass =
     "text-brand-600 dark:text-brand-400 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-gray-100 active:scale-95 dark:hover:bg-white/10";
+  const headerDeleteIconBtnClass =
+    "text-red-600 dark:text-red-400 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-red-50 active:scale-95 dark:hover:bg-red-950/40";
 
   return (
     <section className="dark:bg-navy-950/40 rounded-2xl bg-white p-4">
       <header className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
-          <div className="border-brand-500 min-w-0 border-l-4 pl-3">
-            <h2 className="text-navy-900 text-base font-bold tracking-tight uppercase dark:text-white">
+          <div className="border-brand-500 flex min-w-0 flex-1 items-center gap-2 border-l-4 pl-3">
+            <h2 className="text-navy-900 min-w-0 text-base font-bold tracking-tight uppercase dark:text-white">
               Đăng ký lớp
             </h2>
+            {!isReplied && !noteDirty ? (
+              <Tooltip label="Xóa hồ sơ">
+                <button
+                  type="button"
+                  aria-label="Xóa hồ sơ đăng ký lớp"
+                  disabled={footerActionsBusy}
+                  className={headerDeleteIconBtnClass}
+                  onClick={() => setDeleteRegConfirmOpen(true)}
+                >
+                  <MdDeleteOutline className="h-4 w-4" />
+                </button>
+              </Tooltip>
+            ) : null}
           </div>
           <div className="flex flex-col items-end gap-2">
             <Tag
@@ -424,11 +438,13 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
                 </span>
               ) : null}
               {g.subjectName ? (
-                <CopyableText
-                  text={g.subjectName}
-                  variant="field"
-                  className="min-w-0 flex-1 truncate text-sm font-medium"
-                />
+                <span className="min-w-0 flex-1 overflow-hidden">
+                  <CopyableText
+                    text={g.subjectName}
+                    variant="field"
+                    className="min-w-0 truncate text-sm font-medium"
+                  />
+                </span>
               ) : null}
               {!g.subjectCode && !g.subjectName ? (
                 <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
@@ -450,28 +466,32 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
                     <div className="flex min-w-[70px] shrink-0 items-center">
                       <RegistrationActionTag value={it.action} />
                     </div>
-                    <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
-                      {it.action !== "requestOpen" ? (
-                        <CopyableText
-                          text={classText}
-                          variant="field"
-                          className="min-w-0 truncate"
-                        />
-                      ) : (
-                        <span className="text-sm text-gray-400 dark:text-gray-500">
-                          —
-                        </span>
-                      )}
-                      {!isReplied ? (
-                        <button
-                          type="button"
-                          aria-label="Sửa"
-                          className={rowIconBtnClass}
-                          onClick={() => openEdit(it)}
-                        >
-                          <MdEdit className="h-4 w-4" />
-                        </button>
-                      ) : null}
+                    <div className="flex min-w-0 flex-1 items-center overflow-hidden">
+                      <span className="inline-flex max-w-full min-w-0 items-center gap-1">
+                        {it.action !== "requestOpen" ? (
+                          <span className="block min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
+                            <CopyableText
+                              text={classText}
+                              variant="field"
+                              className="text-sm font-medium"
+                            />
+                          </span>
+                        ) : (
+                          <span className="text-sm text-gray-400 dark:text-gray-500">
+                            —
+                          </span>
+                        )}
+                        {!isReplied ? (
+                          <button
+                            type="button"
+                            aria-label="Sửa"
+                            className={rowIconBtnClass}
+                            onClick={() => openEdit(it)}
+                          >
+                            <MdEdit className="h-4 w-4" />
+                          </button>
+                        ) : null}
+                      </span>
                     </div>
                     {it.action !== "requestOpen" ? (
                       <Tag
@@ -548,49 +568,36 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
           </div>
         ) : (
           <div className="flex w-full gap-3">
-            <span className="min-w-0 flex-1">
-              <button
-                type="button"
-                className={`${pillRowBtnDanger} w-full`}
-                disabled={footerActionsBusy}
-                aria-label="Xóa hồ sơ đăng ký lớp"
-                onClick={() => setDeleteRegConfirmOpen(true)}
-              >
-                Xóa hồ sơ
-              </button>
-            </span>
-            <button
-              type="button"
-              className={pillRowBtnSecondary}
+            <DeeplinkPillActionButton
+              variant="secondary"
               disabled={footerActionsBusy}
               onClick={() =>
                 runWithPendingReplyWarning(
                   () => void sendReplyOnlyMutation.mutate(),
                 )
               }
-            >
-              {sendReplyOnlyMutation.isPending
-                ? "Đang gửi…"
-                : "Phản hồi ngay"}
-            </button>
-            <button
-              type="button"
-              className={pillRowBtnPrimary}
+              label={
+                sendReplyOnlyMutation.isPending ? "Đang gửi…" : "Phản hồi ngay"
+              }
+            />
+            <DeeplinkPillActionButton
+              variant="primary"
               disabled={footerActionsBusy}
               onClick={() =>
                 void registrationMessageStatusMutation.mutate(
                   messageStatusView === "new" ? "staged" : "new",
                 )
               }
-            >
-              {registrationMessageStatusMutation.isPending
-                ? messageStatusView === "new"
-                  ? "Đang duyệt…"
-                  : "Đang hoàn tác…"
-                : messageStatusView === "new"
-                  ? "Duyệt hồ sơ"
-                  : "Hoàn tác"}
-            </button>
+              label={
+                registrationMessageStatusMutation.isPending
+                  ? messageStatusView === "new"
+                    ? "Đang duyệt…"
+                    : "Đang hoàn tác…"
+                  : messageStatusView === "new"
+                    ? "Duyệt hồ sơ"
+                    : "Hoàn tác"
+              }
+            />
           </div>
         )}
       </footer>
