@@ -6,7 +6,6 @@ import type {
     GetClassRegistrationsParams,
     GetStatsParams,
     PreviewReplyDto,
-    ReplyDto,
     UpdateClassRegistrationDto,
 } from "@/types/classRegistration";
 import type { PaginatedResponse } from "@/types/common";
@@ -68,23 +67,14 @@ class ClassRegistrationsService {
     return res.data;
   }
 
-  async reply(id: number, dto: ReplyDto): Promise<void> {
-    await http.post(API_ENDPOINTS.classRegistration.registrations.reply(id), dto);
+  /** POST không kèm body — server tự lấy nội dung từ preview. */
+  async reply(id: number): Promise<void> {
+    await http.post(API_ENDPOINTS.classRegistration.registrations.reply(id));
   }
 
-  /**
-   * Lấy nội dung preview mặc định rồi gửi phản hồi (vd. "Gửi và đóng" không mở modal).
-   */
-  async replyWithDefaultPreview(
-    id: number,
-    closeAfterSend: boolean,
-  ): Promise<void> {
-    const { content } = await this.previewReply(id);
-    const trimmed = content?.trim();
-    if (!trimmed) {
-      throw new Error("Không có nội dung phản hồi để gửi.");
-    }
-    await this.reply(id, { content: trimmed, closeAfterSend });
+  /** Gửi phản hồi nhanh (Gmail deeplink / không mở modal soạn). */
+  async replyWithDefaultPreview(id: number): Promise<void> {
+    await this.reply(id);
   }
 }
 

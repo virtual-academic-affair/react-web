@@ -1,6 +1,10 @@
 import Tag from "@/components/tag/Tag";
 import type { MessageStatus } from "@/types/messageStatus";
-import { MessageStatusLabels } from "@/types/messageStatus";
+import {
+  MESSAGE_STATUSES,
+  MessageStatusColors,
+  MessageStatusLabels,
+} from "@/types/messageStatus";
 import React from "react";
 
 interface MessageStatusSelectorProps {
@@ -10,34 +14,25 @@ interface MessageStatusSelectorProps {
   className?: string;
 }
 
-const ALL_STATUSES: MessageStatus[] = ["new", "opened", "replied", "closed"];
-
-const MessageStatusHexColors: Record<MessageStatus, string> = {
-  new: "#f59e0b",
-  opened: "#a3aed0",
-  replied: "#3b82f6",
-  closed: "#10b981",
-};
-
 const MessageStatusSelector: React.FC<MessageStatusSelectorProps> = ({
   value,
   onChange,
   disabled = false,
   className,
 }) => {
-  const options = ALL_STATUSES.map((s) => ({
+  const options = MESSAGE_STATUSES.map((s) => ({
     value: s,
     label: MessageStatusLabels[s],
   }));
 
   const optionColors = Object.fromEntries(
-    ALL_STATUSES.map((s) => [s, MessageStatusHexColors[s]]),
+    MESSAGE_STATUSES.map((s) => [s, MessageStatusColors[s].hex]),
   );
 
   return (
     <Tag
       variant="selection"
-      color={value ? MessageStatusHexColors[value] : undefined}
+      color={value ? MessageStatusColors[value].hex : undefined}
       value={value ?? ""}
       options={options}
       optionColors={optionColors}

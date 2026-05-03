@@ -192,7 +192,7 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
     if (!detail) return;
     setSendingReply(true);
     try {
-      await classRegistrationsService.replyWithDefaultPreview(detail.id, true);
+      await classRegistrationsService.replyWithDefaultPreview(detail.id);
       toast.success("Đã gửi phản hồi và đóng.");
       queryClient.invalidateQueries({ queryKey: ["class-registrations"] });
       queryClient.invalidateQueries({
@@ -200,7 +200,7 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
       });
       onRegistrationChanged({
         ...detail,
-        messageStatus: "closed",
+        messageStatus: "old",
       });
       onClose();
     } catch (err: unknown) {

@@ -5,7 +5,6 @@ import type {
   CreateInquiryDto,
   GetInquiriesParams,
   InquiryPreviewReplyDto,
-  InquiryReplyDto,
   UpdateInquiryDto,
 } from "@/types/inquiry";
 import type { PaginatedResponse } from "@/types/common";
@@ -68,8 +67,14 @@ class InquiriesService {
     return res.data;
   }
 
-  async reply(id: number, dto: InquiryReplyDto): Promise<void> {
-    await http.post(API_ENDPOINTS.inquiry.inquiries.reply(id), dto);
+  /** POST không kèm body — server tự lấy nội dung từ preview. */
+  async reply(id: number): Promise<void> {
+    await http.post(API_ENDPOINTS.inquiry.inquiries.reply(id));
+  }
+
+  /** Gửi phản hồi nhanh (Gmail deeplink / không mở modal soạn). */
+  async replyWithDefaultPreview(id: number): Promise<void> {
+    await this.reply(id);
   }
 }
 

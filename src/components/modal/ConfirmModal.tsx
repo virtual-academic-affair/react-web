@@ -1,6 +1,6 @@
 import React, { type ReactNode } from "react";
 
-import { MdDelete, MdWarningAmber } from "react-icons/md";
+import { MdDelete, MdSend, MdWarningAmber } from "react-icons/md";
 import StandardModal from "./StandardModal";
 
 interface ConfirmModalProps {
@@ -48,7 +48,11 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
           : "bg-brand-500 hover:bg-brand-600"
       }
       confirmIcon={
-        icon === "delete" ? <MdDelete className="h-4 w-4" /> : undefined
+        icon === "delete" ? (
+          <MdDelete className="h-4 w-4" />
+        ) : icon === "warning" ? (
+          <MdSend className="h-4 w-4" />
+        ) : undefined
       }
       loading={loading}
     >
@@ -66,7 +70,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
               <p
                 className={`text-base font-bold ${danger ? "text-red-800 dark:text-red-200" : "text-brand-800 dark:text-brand-200"}`}
               >
-                Thông tin quan trọng
+                Xác nhận
               </p>
               <p
                 className={`text-sm leading-relaxed ${danger ? "text-red-700/80 dark:text-red-200/70" : "text-brand-700/80 dark:text-brand-200/70"}`}

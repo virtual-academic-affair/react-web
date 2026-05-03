@@ -373,7 +373,7 @@ const InquiriesPage: React.FC = () => {
             ...prev,
             items: prev.items.map((x) =>
               x.id === previewId
-                ? { ...x, messageStatus: isClose ? "closed" : "replied" }
+                ? { ...x, messageStatus: isClose ? "old" : "replied" }
                 : x,
             ),
           }))

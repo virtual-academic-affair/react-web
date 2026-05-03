@@ -44,7 +44,10 @@ function RootRedirect() {
   const messageId = searchParams.get("messageId");
   const threadId = searchParams.get("threadId");
   const email = searchParams.get("email");
-  const shouldDeepLinkRedirect = !!messageId && !!threadId && !!email;
+  const iframeMode = searchParams.get("iframe") === "true";
+  /** Extension luôn gửi iframe=true&email; phải vào /gmail-deeplink ngay — nếu không, refresh cookie → Navigate /admin trong iframe gây redirect/reload lặp. */
+  const shouldEnterGmailDeeplink =
+    (!!messageId && !!threadId && !!email) || (iframeMode && !!email);
   const grantHandledRef = useRef(false);
 
   const [status, setStatus] = useState<"checking" | "done">(
@@ -60,12 +63,12 @@ function RootRedirect() {
         toast.error("Cấp quyền thất bại.");
       }
 
-      if (!tokenParam && !shouldDeepLinkRedirect) {
+      if (!tokenParam && !shouldEnterGmailDeeplink) {
         window.history.replaceState({}, "", "/");
       }
     }
 
-    if (shouldDeepLinkRedirect) return;
+    if (shouldEnterGmailDeeplink) return;
     if (tokenParam) {
       const normalized = tokenParam.replace(/^"+|"+$/g, "");
       useAuthStore.getState().setAccessToken(normalized);
@@ -83,10 +86,10 @@ function RootRedirect() {
       .catch(() => {
         setStatus("done"); // not logged in → show landing
       });
-  }, [status, shouldDeepLinkRedirect, tokenParam, grantParam]);
+  }, [status, shouldEnterGmailDeeplink, tokenParam, grantParam]);
 
-  // Deep-link entry: /?messageId=...&email=... -> /gmail-deeplink?... (preserve full query)
-  if (shouldDeepLinkRedirect) {
+  // Gmail extension / deeplink: preserve full query on /gmail-deeplink
+  if (shouldEnterGmailDeeplink) {
     return <Navigate to={`/gmail-deeplink${location.search}`} replace />;
   }
 

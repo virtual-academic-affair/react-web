@@ -26,7 +26,7 @@ interface AdvancedFilterModalProps {
   onRequestClose: () => void;
 }
 
-const MESSAGE_STATUS_OPTIONS: MessageStatus[] = ["opened", "replied", "closed"];
+const MESSAGE_STATUS_OPTIONS: MessageStatus[] = ["staged", "replied", "old"];
 
 const AdvancedFilterModal: React.FC<AdvancedFilterModalProps> = ({
   open,

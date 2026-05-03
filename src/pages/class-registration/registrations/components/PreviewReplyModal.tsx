@@ -1,6 +1,5 @@
 import Card from "@/components/card";
 import { classRegistrationsService } from "@/services/class-registration";
-import type { ReplyDto } from "@/types/classRegistration";
 import { message as toast } from "antd";
 import React from "react";
 import { MdClose, MdEdit, MdSend } from "react-icons/md";
@@ -98,11 +97,7 @@ const PreviewReplyModal: React.FC<PreviewReplyModalProps> = ({
 
     setSending(true);
     try {
-      const dto: ReplyDto = {
-        content: finalContent,
-        closeAfterSend,
-      };
-      await classRegistrationsService.reply(registrationId, dto);
+      await classRegistrationsService.reply(registrationId);
       toast.success("Gửi phản hồi thành công.");
       onSent(closeAfterSend);
       if (closeAfterSend) {

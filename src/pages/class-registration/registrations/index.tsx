@@ -219,7 +219,7 @@ const ClassRegistrationsPage: React.FC = () => {
     async (id: number) => {
       setSendingReplyId(id);
       try {
-        await classRegistrationsService.replyWithDefaultPreview(id, true);
+        await classRegistrationsService.replyWithDefaultPreview(id);
         toast.success("Đã gửi phản hồi và đóng.");
         queryClient.invalidateQueries({ queryKey: ["class-registrations"] });
         queryClient.invalidateQueries({ queryKey: ["class-registration", id] });
@@ -231,7 +231,7 @@ const ClassRegistrationsPage: React.FC = () => {
                   ...old,
                   items: old.items.map((x) =>
                     x.id === id
-                      ? { ...x, messageStatus: "closed" as const }
+                      ? { ...x, messageStatus: "old" as const }
                       : x,
                   ),
                 }
@@ -438,7 +438,7 @@ const ClassRegistrationsPage: React.FC = () => {
                   x.id === previewId
                     ? {
                         ...x,
-                        messageStatus: closeAfterSend ? "closed" : "replied",
+                        messageStatus: closeAfterSend ? "old" : "replied",
                       }
                     : x,
                 ),

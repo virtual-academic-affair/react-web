@@ -11,6 +11,10 @@ interface FormRowProps {
   labelWidthClassName?: string;
   className?: string;
   required?: boolean;
+  /** Căn label + control theo mép trên (vd. textarea nhiều dòng). */
+  alignTop?: boolean;
+  /** Khoảng cách label–field gọn (vd. Gmail deeplink). */
+  dense?: boolean;
 }
 
 interface DetailFormSectionProps {
@@ -32,10 +36,16 @@ export const FormRow: React.FC<FormRowProps> = ({
   labelWidthClassName = "w-40",
   className,
   required = false,
+  alignTop = false,
+  dense = false,
 }) => {
   return (
-    <div className={`flex items-center gap-6 ${className ?? ""}`}>
-      <div className={`${labelWidthClassName} shrink-0`}>
+    <div
+      className={`flex ${dense ? "gap-3" : "gap-6"} ${alignTop ? "items-start" : "items-center"} ${className ?? ""}`}
+    >
+      <div
+        className={`${labelWidthClassName} shrink-0 ${alignTop ? "pt-1.5" : ""}`}
+      >
         <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
           {label}
           {required && <span className="ml-1 text-red-500">*</span>}

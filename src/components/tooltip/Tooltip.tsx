@@ -1,5 +1,5 @@
 import { Tooltip as AntdTooltip } from "antd";
-import type { TooltipPlacement } from "antd/es/tooltip";
+import type { AdjustOverflow, TooltipPlacement } from "antd/es/tooltip";
 import type { ReactNode } from "react";
 import React from "react";
 
@@ -12,6 +12,8 @@ interface TooltipProps {
   placement?: TooltipPlacement;
   /** When true, long text wraps to multiple lines instead of overflowing on one line. */
   wrap?: boolean;
+  /** Khi `false`, không đổi hướng tooltip khi sát mép (vd. iframe Gmail: giữ `placement="bottom"`). */
+  autoAdjustOverflow?: boolean | AdjustOverflow;
 }
 
 const Tooltip: React.FC<TooltipProps> = ({
@@ -21,6 +23,7 @@ const Tooltip: React.FC<TooltipProps> = ({
   parentClassName,
   placement = "top",
   wrap = false,
+  autoAdjustOverflow,
 }) => {
   const wrapperClass = className !== undefined ? className : "inline-flex";
 
@@ -38,6 +41,7 @@ const Tooltip: React.FC<TooltipProps> = ({
         </div>
       }
       placement={placement}
+      autoAdjustOverflow={autoAdjustOverflow}
       color="transparent"
       zIndex={99999}
       arrow={false}

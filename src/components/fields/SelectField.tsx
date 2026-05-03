@@ -93,7 +93,7 @@ function SelectField<T extends string = string>({
         aria-expanded={open}
         disabled={disabled}
         onClick={handleOpen}
-        className={`dark:border-navy-600 dark:bg-navy-900 text-navy-700 focus:border-brand-500 focus:ring-brand-500/20 flex w-full items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm transition-all duration-150 outline-none select-none hover:border-gray-300 hover:shadow-sm focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50 dark:text-white dark:hover:border-white/20 ${className ?? ""}`}
+        className={`dark:border-navy-600 dark:bg-navy-900 text-navy-700 focus:border-brand-500 focus:ring-brand-500/20 flex w-full min-h-[42px] items-center justify-between gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm transition-all duration-150 outline-none select-none hover:border-gray-300 hover:shadow-sm focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50 dark:text-white dark:hover:border-white/20 ${className ?? ""}`}
       >
         <span className="flex items-center gap-2 truncate">
           {selectedOption?.color && (

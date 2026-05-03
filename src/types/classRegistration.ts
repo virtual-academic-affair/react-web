@@ -1,9 +1,19 @@
 import type { ResourceQueryDto } from "./common";
 
 import type { MessageStatus } from "./messageStatus";
-import { MessageStatusLabels, MessageStatusColors } from "./messageStatus";
+import {
+  MessageStatusLabels,
+  MessageStatusColors,
+  MESSAGE_STATUSES,
+  coerceMessageStatus,
+} from "./messageStatus";
 export type { MessageStatus };
-export { MessageStatusLabels, MessageStatusColors };
+export {
+  MessageStatusLabels,
+  MessageStatusColors,
+  MESSAGE_STATUSES,
+  coerceMessageStatus,
+};
 
 export type ItemStatus = "pending" | "approved" | "rejected";
 export type RegistrationAction = "register" | "cancel" | "requestOpen";
@@ -43,7 +53,9 @@ export const ItemStatusColors: Record<
 
 export interface ClassRegistrationItem {
   id: number;
-  classRegistrationId: number;
+  classRegistrationId?: number;
+  /** API trả về `parentId` thay cho classRegistrationId */
+  parentId?: number;
   action: RegistrationAction;
   subjectName: string;
   subjectCode?: string;
@@ -58,9 +70,9 @@ export interface ClassRegistrationItem {
 
 export interface ClassRegistration {
   id: number;
-  studentCode: string;
-  studentName: string;
-  academicYear: number;
+  studentCode?: string;
+  studentName?: string;
+  academicYear?: number;
   note?: string | null;
   messageId?: number | null;
   messageStatus?: MessageStatus | null;
@@ -110,6 +122,8 @@ export interface CreateClassRegistrationItemDto {
   className?: string;
   slotInfo?: string;
   isInCurriculum?: boolean;
+  status?: ItemStatus;
+  note?: string;
 }
 
 export interface CreateClassRegistrationDto {
@@ -130,6 +144,11 @@ export interface UpdateClassRegistrationDto {
 }
 
 export interface UpdateClassRegistrationItemDto {
+  action?: RegistrationAction;
+  subjectName?: string;
+  subjectCode?: string;
+  className?: string;
+  slotInfo?: string;
   status?: ItemStatus;
   note?: string;
   isInCurriculum?: boolean;
