@@ -152,7 +152,7 @@ const GmailDeeplinkPage = () => {
         <p className="mb-2 text-center text-base font-medium text-red-500">
           Đã xảy ra lỗi khi tải dữ liệu email.
         </p>
-        <p className="text-gray-600 dark:text-gray-400 mb-4 max-w-lg text-center text-sm">
+        <p className="mb-4 max-w-lg text-center text-sm text-gray-600 dark:text-gray-400">
           {messageLoadErrorText}
         </p>
         <button
@@ -201,11 +201,16 @@ const GmailDeeplinkPage = () => {
   if (!message) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-4">
-        <img src="/nothing.png" alt="Không có dữ liệu" className="mb-4 w-72" />
+        <img
+          src="/nothing.png"
+          alt="Không có dữ liệu"
+          className="mb-4 w-72 rounded-4xl"
+        />
         <p className="mb-4 max-w-md text-center text-base text-gray-500">
-          Không tìm thấy tin email này trong Giáo vụ số. Thư có thể chưa được
-          đồng bộ, hoặc mã thread / message từ Gmail không khớp dữ liệu hiện
-          có.
+          <div className="mb-2 font-semibold uppercase">Không tìm thấy</div>
+          <span className="text-sm">
+            Vui lòng thử cập nhật lại danh sách nhãn từ Gmail
+          </span>
         </p>
         <button
           type="button"

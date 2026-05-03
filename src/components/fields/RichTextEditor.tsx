@@ -45,6 +45,8 @@ interface RichTextEditorProps {
   error?: string;
   placeholder?: string;
   disabled?: boolean;
+  /** Gmail deeplink: khối soạn ~3 dòng, dài hơn thì cuộn. */
+  compact?: boolean;
   /** Mở rộng Tiptap (nâng cao). Drawer đăng ký lớp dùng cho gợi ý ghi chú nhanh. */
   extraExtensions?: AnyExtension[];
 }
@@ -245,6 +247,7 @@ const RichTextEditor = React.forwardRef<
       error,
       placeholder,
       disabled = false,
+      compact = false,
       extraExtensions,
     },
     ref,
@@ -300,11 +303,12 @@ const RichTextEditor = React.forwardRef<
       },
       editorProps: {
         attributes: {
-          class:
-            "tiptap-prose min-h-[150px] px-3 py-2 text-[15px] text-navy-700 outline-none dark:text-white focus:outline-none transition-colors duration-300",
+          class: compact
+            ? "tiptap-prose min-h-[5.25rem] max-h-[10rem] overflow-y-auto px-3 py-2 text-[15px] text-navy-700 outline-none dark:text-white focus:outline-none transition-colors duration-300"
+            : "tiptap-prose min-h-[150px] px-3 py-2 text-[15px] text-navy-700 outline-none dark:text-white focus:outline-none transition-colors duration-300",
         },
       },
-    });
+    }, [extensions, compact]);
 
     React.useEffect(() => {
       if (!editor) return;
@@ -353,8 +357,13 @@ const RichTextEditor = React.forwardRef<
           className={`overflow-hidden rounded-2xl border transition-colors duration-300 ${error ? "border-red-500" : "border-gray-200 dark:border-white/10"}`}
         >
           <style>{`
-            .tiptap-editor .ProseMirror {
+            .tiptap-editor:not(.tiptap-editor--compact) .ProseMirror {
               min-height: 150px;
+            }
+            .tiptap-editor--compact .ProseMirror {
+              min-height: 5.25rem;
+              max-height: 10rem;
+              overflow-y: auto;
             }
             .tiptap-editor .tiptap-prose p.is-editor-empty::before {
               content: attr(data-placeholder);
@@ -407,12 +416,16 @@ const RichTextEditor = React.forwardRef<
             .tiptap-editor .tiptap-prose pre code { background: none; padding: 0; }
           `}</style>
           {editor ? (
-            <div className="tiptap-editor bg-transparent">
+            <div
+              className={`tiptap-editor bg-transparent ${compact ? "tiptap-editor--compact" : ""}`}
+            >
               <EditorToolbar editor={editor} disabled={disabled} />
               <EditorContent editor={editor} />
             </div>
           ) : (
-            <div className="min-h-[186px] bg-transparent" />
+            <div
+              className={`bg-transparent ${compact ? "min-h-[132px]" : "min-h-[186px]"}`}
+            />
           )}
         </div>
         {error && <p className="mt-1 ml-3 text-xs text-red-500">{error}</p>}

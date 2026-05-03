@@ -1,5 +1,6 @@
 import ConfirmModal from "@/components/modal/ConfirmModal";
 import Tag from "@/components/tag/Tag";
+import Tooltip from "@/components/tooltip/Tooltip.tsx";
 import InquiryReplyRichTextEditor from "@/pages/inquiry/inquiries/components/InquiryReplyRichTextEditor";
 import { inquiriesService } from "@/services/inquiry";
 import {
@@ -16,9 +17,9 @@ import {
 import { useMutation } from "@tanstack/react-query";
 import { Input, message } from "antd";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MdSave } from "react-icons/md";
+import { MdDeleteOutline, MdSave } from "react-icons/md";
+import DeeplinkPillActionButton from "./DeeplinkPillActionButton";
 import {
-  deeplinkBtnDanger,
   deeplinkBtnPrimary,
   deeplinkBtnSecondary,
 } from "./deeplinkButtonClasses";
@@ -60,8 +61,9 @@ function inquiryBodyDirty(
   );
 }
 
-const inquiryTextAreaClass =
-  "text-navy-800 resize-y !rounded-none !border-0 bg-transparent px-3 py-2.5 text-sm shadow-none placeholder:text-gray-400 focus:!shadow-none read-only:cursor-default dark:text-gray-100 dark:placeholder:text-gray-500";
+/** ~2 dòng mặc định, tối đa ~4 dòng rồi cuộn (text-sm ~leading-snug). */
+const deeplinkCompactPlainTextAreaClass =
+  "text-navy-800 resize-none !rounded-none !border-0 bg-transparent px-3 py-2 text-sm leading-snug shadow-none placeholder:text-gray-400 focus:!shadow-none read-only:cursor-default dark:text-gray-100 dark:placeholder:text-gray-500 max-h-[6.5rem] overflow-y-auto";
 
 interface Props {
   inquiry: Inquiry;
@@ -82,9 +84,6 @@ const DeeplinkInquirySection: React.FC<Props> = ({ inquiry, onChanged }) => {
   );
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [autoSaving, setAutoSaving] = useState(false);
-  const [autosaveCountdownSec, setAutosaveCountdownSec] = useState<
-    number | null
-  >(null);
 
   const lastPersistedRef = useRef({
     question: stripHtml(inquiry.question ?? ""),
@@ -154,37 +153,17 @@ const DeeplinkInquirySection: React.FC<Props> = ({ inquiry, onChanged }) => {
       (answer.trim() || "") !== (lastPersistedRef.current.answer.trim() || ""));
 
   useEffect(() => {
-    if (isReplied) {
-      setAutosaveCountdownSec(null);
-      return;
-    }
-    if (contentManualDirty) {
-      setAutosaveCountdownSec(null);
-      return;
-    }
+    if (isReplied) return;
+    if (contentManualDirty) return;
     const last = lastPersistedRef.current;
-    if (typesEqual(types, last.types)) {
-      setAutosaveCountdownSec(null);
-      return;
-    }
-
-    const deadline = Date.now() + AUTOSAVE_DELAY_MS;
-    const tick = () => {
-      const sec = Math.ceil(Math.max(0, deadline - Date.now()) / 1000);
-      setAutosaveCountdownSec(sec > 0 ? sec : null);
-    };
-    tick();
-    const intervalId = window.setInterval(tick, 200);
+    if (typesEqual(types, last.types)) return;
 
     const timeoutId = window.setTimeout(() => {
-      window.clearInterval(intervalId);
-      setAutosaveCountdownSec(null);
       void persist(true);
     }, AUTOSAVE_DELAY_MS);
 
     return () => {
       window.clearTimeout(timeoutId);
-      window.clearInterval(intervalId);
     };
   }, [question, types, answer, contentManualDirty, persist, isReplied]);
 
@@ -239,20 +218,33 @@ const DeeplinkInquirySection: React.FC<Props> = ({ inquiry, onChanged }) => {
   const replyActionsBusy = autoSaving;
 
   const pillRowBtnSecondary =
-    `${deeplinkBtnSecondary} min-w-0 flex-1 justify-center !rounded-full px-4 py-2 text-sm font-medium`.trim();
+    `${deeplinkBtnSecondary} min-w-0 flex-1 justify-center !rounded-full px-1 text-xs font-medium`.trim();
   const pillRowBtnPrimary =
-    `${deeplinkBtnPrimary} min-w-0 flex-1 justify-center !rounded-full px-4 py-2 text-sm font-medium`.trim();
-  const pillRowBtnDanger =
-    `${deeplinkBtnDanger} min-w-0 w-full justify-center !rounded-full px-4 py-2 text-sm font-medium`.trim();
+    `${deeplinkBtnPrimary} min-w-0 flex-1 justify-center !rounded-full px-1 text-xs font-medium`.trim();
+  const headerDeleteIconBtnClass =
+    "text-red-600 dark:text-red-400 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-red-50 active:scale-95 dark:hover:bg-red-950/40";
 
   return (
     <section className="dark:bg-navy-950/40 rounded-2xl bg-white p-4">
       <header className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
-          <div className="border-brand-500 min-w-0 border-l-4 pl-3">
-            <h2 className="text-navy-900 text-base font-bold tracking-tight uppercase dark:text-white">
+          <div className="border-brand-500 flex min-w-0 flex-1 items-center gap-2 border-l-4 pl-3">
+            <h2 className="text-navy-900 min-w-0 text-base font-bold tracking-tight uppercase dark:text-white">
               Thắc mắc
             </h2>
+            {!isReplied && !contentManualDirty ? (
+              <Tooltip label="Xóa thắc mắc">
+                <button
+                  type="button"
+                  aria-label="Xóa thắc mắc"
+                  disabled={footerActionsBusy}
+                  className={headerDeleteIconBtnClass}
+                  onClick={() => setDeleteConfirmOpen(true)}
+                >
+                  <MdDeleteOutline className="h-4 w-4" />
+                </button>
+              </Tooltip>
+            ) : null}
           </div>
           <div className="flex flex-col items-end gap-2">
             <Tag
@@ -297,7 +289,7 @@ const DeeplinkInquirySection: React.FC<Props> = ({ inquiry, onChanged }) => {
               autoSize={{ minRows: 3, maxRows: 8 }}
               readOnly={isReplied}
               bordered={false}
-              className={inquiryTextAreaClass}
+              className={deeplinkCompactPlainTextAreaClass}
             />
           </div>
         </div>
@@ -312,6 +304,7 @@ const DeeplinkInquirySection: React.FC<Props> = ({ inquiry, onChanged }) => {
               onChange={setAnswer}
               placeholder="Soạn câu trả lời…"
               disabled={isReplied}
+              compact
               className="rounded-none! border-0 bg-transparent dark:bg-transparent"
             />
           </div>
@@ -325,9 +318,7 @@ const DeeplinkInquirySection: React.FC<Props> = ({ inquiry, onChanged }) => {
               type="button"
               className={`${pillRowBtnPrimary} w-full`}
               disabled={footerActionsBusy}
-              onClick={() =>
-                void inquiryMessageStatusMutation.mutate("new")
-              }
+              onClick={() => void inquiryMessageStatusMutation.mutate("new")}
             >
               {inquiryMessageStatusMutation.isPending
                 ? "Đang hoàn tác…"
@@ -360,61 +351,36 @@ const DeeplinkInquirySection: React.FC<Props> = ({ inquiry, onChanged }) => {
             </button>
           </div>
         ) : (
-          <>
-            <div className="flex min-h-6 flex-col items-center justify-center gap-1">
-              {autoSaving ? (
-                <div
-                  className="border-t-brand-500 h-5 w-5 animate-spin rounded-full border-2 border-gray-200 border-t-transparent dark:border-white/15"
-                  aria-hidden
-                />
-              ) : autosaveCountdownSec != null && autosaveCountdownSec > 0 ? (
-                <p className="text-center text-xs text-gray-500 dark:text-gray-400">
-                  Tự động lưu sau {autosaveCountdownSec}s
-                </p>
-              ) : null}
-            </div>
-            <div className="flex w-full gap-3">
-              <span className="min-w-0 flex-1">
-                <button
-                  type="button"
-                  className={`${pillRowBtnDanger} w-full`}
-                  disabled={footerActionsBusy}
-                  aria-label="Xóa thắc mắc"
-                  onClick={() => setDeleteConfirmOpen(true)}
-                >
-                  Xóa thắc mắc
-                </button>
-              </span>
-              <button
-                type="button"
-                className={pillRowBtnSecondary}
-                disabled={footerActionsBusy}
-                onClick={() => void sendReplyOnlyMutation.mutate()}
-              >
-                {sendReplyOnlyMutation.isPending
+          <div className="flex w-full gap-3">
+            <DeeplinkPillActionButton
+              variant="secondary"
+              disabled={footerActionsBusy}
+              onClick={() => void sendReplyOnlyMutation.mutate()}
+              label={
+                sendReplyOnlyMutation.isPending
                   ? "Đang gửi…"
-                  : "Phản hồi ngay"}
-              </button>
-              <button
-                type="button"
-                className={pillRowBtnPrimary}
-                disabled={footerActionsBusy}
-                onClick={() =>
-                  void inquiryMessageStatusMutation.mutate(
-                    messageStatusView === "new" ? "staged" : "new",
-                  )
-                }
-              >
-                {inquiryMessageStatusMutation.isPending
+                  : "Phản hồi ngay"
+              }
+            />
+            <DeeplinkPillActionButton
+              variant="primary"
+              disabled={footerActionsBusy}
+              onClick={() =>
+                void inquiryMessageStatusMutation.mutate(
+                  messageStatusView === "new" ? "staged" : "new",
+                )
+              }
+              label={
+                inquiryMessageStatusMutation.isPending
                   ? messageStatusView === "new"
                     ? "Đang duyệt…"
                     : "Đang hoàn tác…"
                   : messageStatusView === "new"
                     ? "Duyệt hồ sơ"
-                    : "Hoàn tác"}
-              </button>
-            </div>
-          </>
+                    : "Hoàn tác"
+              }
+            />
+          </div>
         )}
       </footer>
 

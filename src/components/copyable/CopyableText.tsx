@@ -40,7 +40,7 @@ export function CopyableText({
   const tooltipWrapperClass = wantsFullWidth
     ? "block w-full min-w-0"
     : wantsTruncate
-      ? "min-w-0 max-w-full flex-1 overflow-hidden"
+      ? "min-w-0 max-w-full overflow-hidden"
       : "inline max-w-full min-w-0 align-baseline";
 
   const copy = async () => {
