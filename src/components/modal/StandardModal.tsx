@@ -12,8 +12,6 @@ interface StandardModalProps {
   confirmIcon?: React.ReactNode;
   title?: React.ReactNode;
   loading?: boolean;
-  /** Tiêu đề + nội dung + nút căn giữa (ConfirmModal). */
-  centered?: boolean;
   children: React.ReactNode;
 }
 
@@ -27,7 +25,6 @@ const StandardModal: React.FC<StandardModalProps> = ({
   confirmIcon,
   title,
   loading = false,
-  centered = false,
   children,
 }) => {
   if (!open) {
@@ -44,20 +41,14 @@ const StandardModal: React.FC<StandardModalProps> = ({
         <Card extra="p-4 shadow-2xl border border-gray-200 dark:border-white/10 dark:bg-navy-800 sm:p-5">
           <div className="flex flex-col gap-3 sm:gap-4">
             {title && (
-              <div
-                className={`text-navy-700 -mx-4 -mt-4 border-b border-gray-100 px-4 pb-3 pt-4 text-base font-bold dark:border-white/10 dark:text-white sm:-mx-5 sm:-mt-5 sm:px-5 sm:pb-3 sm:pt-5 ${centered ? "flex justify-center text-center" : ""}`}
-              >
+              <div className="text-navy-700 -mx-4 -mt-4 border-b border-gray-100 px-4 pb-3 pt-4 text-base font-bold dark:border-white/10 dark:text-white sm:-mx-5 sm:-mt-5 sm:px-5 sm:pb-3 sm:pt-5">
                 {title}
               </div>
             )}
-            <div
-              className={`mt-1 py-1 text-sm leading-relaxed sm:mt-2 sm:py-2 ${centered ? "text-center" : ""}`}
-            >
+            <div className="mt-1 py-1 text-sm leading-relaxed sm:mt-2 sm:py-2">
               {children}
             </div>
-            <div
-              className={`mt-2 flex flex-wrap gap-2 ${centered ? "justify-center" : "justify-end"}`}
-            >
+            <div className="mt-2 flex flex-wrap justify-end gap-2">
               <button
                 type="button"
                 onClick={onCancel}
