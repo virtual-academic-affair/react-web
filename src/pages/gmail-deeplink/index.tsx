@@ -26,14 +26,10 @@ function GmailAccessBlocked({
         alt=""
         className="mb-4 w-72"
       />
-      <p className="mb-2 text-center text-base font-medium text-gray-700">
+      <p className="mb-2 text-center text-base font-semibold text-gray-500 uppercase">
         {title}
       </p>
-      <p className="mb-4 text-center text-base text-gray-500">{message}</p>
-      <p className="mb-4 max-w-md text-center text-sm text-gray-400">
-        Nếu bạn cho rằng đây là nhầm lẫn hoặc cần hỗ trợ, vui lòng liên hệ quản
-        trị viên để được xử lý.
-      </p>
+      <p className="mb-4 text-center text-sm text-gray-500">{message}</p>
       <button
         type="button"
         onClick={() =>
@@ -141,7 +137,7 @@ const GmailDeeplinkPage = () => {
     return (
       <GmailAccessBlocked
         title="Thiếu accessToken"
-        message="Liên kết deeplink cần có tham số accessToken (JWT) do extension hoặc máy chủ cấp."
+        message="Liên kết cần có token để xác thực quyền quản trị."
       />
     );
   }

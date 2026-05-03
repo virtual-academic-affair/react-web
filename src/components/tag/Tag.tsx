@@ -120,14 +120,15 @@ const Tag: FC<TagProps> = ({
               borderColor: color,
             }}
             onClick={(e) => {
+              if (disabled) return;
               onClick?.();
               handleOpen(e);
             }}
             className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 pl-3 text-xs font-medium select-none ${
-              interactive
+              interactive && !disabled
                 ? "cursor-pointer transition-all duration-150 hover:opacity-80 hover:shadow-sm"
                 : ""
-            } ${disabled ? "cursor-not-allowed opacity-50" : ""} ${className ?? ""}`}
+            } ${disabled ? "cursor-default" : ""} ${className ?? ""}`}
           >
             {children}
             {!disabled && (
@@ -154,7 +155,7 @@ const Tag: FC<TagProps> = ({
                   bottom: dropdownPos.bottom,
                   left: dropdownPos.left,
                 }}
-                className="dark:bg-navy-900 fixed z-210 min-w-[140px] max-h-[280px] overflow-y-auto rounded-2xl border border-gray-100 bg-white py-1.5 shadow-xl dark:border-white/10 dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
+                className="dark:bg-navy-900 fixed z-210 max-h-[280px] min-w-[140px] overflow-y-auto rounded-2xl border border-gray-100 bg-white py-1.5 shadow-xl dark:border-white/10 dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
               >
                 {options.map((opt) => {
                   const isActive = opt.value === value;
