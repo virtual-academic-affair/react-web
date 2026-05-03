@@ -264,7 +264,7 @@ const BusinessCardsView: React.FC<Props> = ({
       {showDeeplinkCreateFooter ? (
         <footer
           ref={footerRef}
-          className={`mx-auto w-full max-w-lg px-4 py-2 backdrop-blur-xs transition-colors ${
+          className={`mx-auto w-full max-w-lg py-2 backdrop-blur-xs transition-colors ${
             dockFooter
               ? "fixed bottom-0 left-1/2 z-20 -translate-x-1/2 pt-3"
               : "relative z-10 mt-2 shrink-0 bg-transparent"
