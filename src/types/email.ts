@@ -3,6 +3,8 @@
  */
 
 import type { ResourceQueryDto } from "./common";
+import type { ClassRegistration } from "./classRegistration";
+import type { Inquiry } from "./inquiry";
 
 /**
  * System label values
@@ -36,6 +38,17 @@ export interface Message {
   inquiryId?: number | null;
   classRegistrationId?: number | null;
   isProcessing?: boolean;
+  /** MSSV gắn tin (nếu khớp danh sách SV) */
+  studentCode?: string | null;
+  student?: {
+    studentCode?: string;
+    studentName?: string;
+    enrollmentYear?: number;
+    major?: string | null;
+  } | null;
+  /** Có khi GET /email/messages/:id (join) */
+  classRegistration?: ClassRegistration | null;
+  inquiry?: Inquiry | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -45,6 +58,10 @@ export interface Message {
  */
 export interface GetMessagesParams extends ResourceQueryDto {
   systemLabels?: SystemLabel[];
+  gmailMessageId?: string;
+  threadId?: string;
+  /** true = chỉ bản ghi isCurrent trong thread (đúng thread view) */
+  threadView?: boolean;
 }
 
 /**

@@ -3,11 +3,22 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import { defineConfig } from "vite";
 
+/** Cho phép nhúng trong Gmail iframe; * = mọi ancestor (dev/ngrok). Production: dùng header trên Vercel. */
+const FRAME_ANCESTORS_CSP = "frame-ancestors *;";
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    host: "127.0.0.1",
+    allowedHosts: true,
+    headers: {
+      "Content-Security-Policy": FRAME_ANCESTORS_CSP,
+    },
+  },
+  preview: {
+    headers: {
+      "Content-Security-Policy": FRAME_ANCESTORS_CSP,
+    },
   },
   resolve: {
     alias: {

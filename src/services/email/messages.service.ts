@@ -29,9 +29,7 @@ class MessagesService {
    * @param params - Query parameters for filtering, sorting, and pagination
    * @requires ADMIN role
    */
-  async getMessages(
-    params?: GetMessagesParams & { gmailMessageId?: string; threadId?: string },
-  ): Promise<PaginatedResponse<Message>> {
+  async getMessages(params?: GetMessagesParams): Promise<PaginatedResponse<Message>> {
     const res = await http.get<PaginatedResponse<Message>>(
       API_ENDPOINTS.email.messages.base,
       { params },
@@ -60,11 +58,49 @@ class MessagesService {
   async findFirstByThreadId(threadId: string): Promise<Message | null> {
     const result = await this.getMessages({
       threadId,
+      threadView: true,
       page: 1,
       limit: 1,
     });
     if (!result.items.length) return null;
     return result.items[0]!;
+  }
+
+  /**
+   * Gmail deeplink / iframe: ưu tiên đúng `gmailMessageId`, rồi tin `isCurrent` trong thread,
+   * cuối cùng bất kỳ tin nào trong thread (tránh null khi ID Gmail lệch hoặc chưa cập nhật isCurrent).
+   */
+  async findForGmailDeeplink(
+    threadId: string,
+    gmailMessageId?: string,
+  ): Promise<Message | null> {
+    if (gmailMessageId) {
+      const byGmail = await this.getMessages({
+        gmailMessageId,
+        page: 1,
+        limit: 1,
+      });
+      if (byGmail.items.length) return byGmail.items[0]!;
+    }
+
+    const byThreadCurrent = await this.getMessages({
+      threadId,
+      threadView: true,
+      page: 1,
+      limit: 1,
+    });
+    if (byThreadCurrent.items.length) return byThreadCurrent.items[0]!;
+
+    const byThreadLatest = await this.getMessages({
+      threadId,
+      page: 1,
+      limit: 1,
+      orderCol: "sentAt",
+      orderDir: "DESC",
+    });
+    if (byThreadLatest.items.length) return byThreadLatest.items[0]!;
+
+    return null;
   }
 
   /**

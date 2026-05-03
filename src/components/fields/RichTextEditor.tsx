@@ -118,7 +118,10 @@ function EditorToolbar({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-0.5 border-b border-gray-200 transition-colors duration-300 bg-transparent px-2 py-1.5 dark:border-white/10">
+    <div
+      className="flex min-h-9 min-w-0 flex-nowrap items-center gap-0.5 overflow-x-auto overflow-y-hidden border-b border-gray-200 bg-transparent px-2 py-1.5 transition-colors duration-300 dark:border-white/10"
+      style={{ WebkitOverflowScrolling: "touch" }}
+    >
       <ToolbarButton
         title="Đậm"
         disabled={disabled}
@@ -159,7 +162,7 @@ function EditorToolbar({
       >
         <MdCode className="h-4 w-4" />
       </ToolbarButton>
-      <span className="mx-1 h-5 w-px shrink-0 bg-gray-200 dark:bg-white/15 transition-colors duration-300" />
+      <span className="mx-1 h-5 w-px shrink-0 bg-gray-200 transition-colors duration-300 dark:bg-white/15" />
       <ToolbarButton
         title="Danh sách bullet"
         disabled={disabled}
@@ -184,7 +187,7 @@ function EditorToolbar({
       >
         <MdFormatQuote className="h-4 w-4" />
       </ToolbarButton>
-      <span className="mx-1 h-5 w-px shrink-0 bg-gray-200 dark:bg-white/15 transition-colors duration-300" />
+      <span className="mx-1 h-5 w-px shrink-0 bg-gray-200 transition-colors duration-300 dark:bg-white/15" />
       <ToolbarButton
         title="Tiêu đề 2"
         disabled={disabled}
@@ -209,7 +212,7 @@ function EditorToolbar({
       >
         <MdLink className="h-4 w-4" />
       </ToolbarButton>
-      <span className="mx-1 h-5 w-px shrink-0 bg-gray-200 dark:bg-white/15 transition-colors duration-300" />
+      <span className="mx-1 h-5 w-px shrink-0 bg-gray-200 transition-colors duration-300 dark:bg-white/15" />
       <ToolbarButton
         title="Hoàn tác"
         disabled={disabled || !state.canUndo}
@@ -341,13 +344,13 @@ const RichTextEditor = React.forwardRef<
         {label && (
           <label
             htmlFor={id}
-            className="text-navy-700 ml-3 text-sm font-bold dark:text-white transition-colors duration-300"
+            className="text-navy-700 ml-3 text-sm font-bold transition-colors duration-300 dark:text-white"
           >
             {label}
           </label>
         )}
         <div
-          className={`mt-2 overflow-hidden rounded-2xl border transition-colors duration-300 ${error ? "border-red-500" : "border-gray-200 dark:border-white/10"}`}
+          className={`overflow-hidden rounded-2xl border transition-colors duration-300 ${error ? "border-red-500" : "border-gray-200 dark:border-white/10"}`}
         >
           <style>{`
             .tiptap-editor .ProseMirror {

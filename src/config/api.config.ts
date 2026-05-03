@@ -19,7 +19,6 @@ export const API_ENDPOINTS = {
     refresh: "/authentication/auth/refresh",
     logout: "/authentication/auth/logout",
     me: "/authentication/auth/me",
-    superToken: "/authentication/auth/super-token",
   },
 
   // Authentication - Users

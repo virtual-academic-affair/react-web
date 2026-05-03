@@ -1,7 +1,6 @@
 import Card from "@/components/card";
 import { DocumentsService } from "@/services/documents";
 import { inquiriesService } from "@/services/inquiry";
-import type { InquiryReplyDto } from "@/types/inquiry";
 import { useQuery } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React from "react";
@@ -132,11 +131,7 @@ const PreviewReplyModal: React.FC<PreviewReplyModalProps> = ({
 
     setSending(true);
     try {
-      const dto: InquiryReplyDto = {
-        content: finalContent,
-        isClose,
-      };
-      await inquiriesService.reply(inquiryId, dto);
+      await inquiriesService.reply(inquiryId);
       toast.success("Gửi phản hồi thành công.");
       onSent(isClose);
       if (isClose) {
