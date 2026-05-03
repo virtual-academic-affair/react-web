@@ -8,7 +8,7 @@ import type { CreateClassRegistrationDto } from "@/types/classRegistration";
 import type { Message } from "@/types/email";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
-import { useCallback } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import DeeplinkClassRegistrationSection from "./DeeplinkClassRegistrationSection";
 import DeeplinkInquirySection from "./DeeplinkInquirySection";
 import DeeplinkPillActionButton from "./DeeplinkPillActionButton";
@@ -173,10 +173,60 @@ const BusinessCardsView: React.FC<Props> = ({
   const showCreateInquiry = detailReady && inq == null;
   const showDeeplinkCreateFooter = showCreateRegistration || showCreateInquiry;
 
+  const contentRef = useRef<HTMLDivElement>(null);
+  const footerRef = useRef<HTMLElement>(null);
+  const [dockFooter, setDockFooter] = useState(false);
+  const [footerH, setFooterH] = useState(0);
+
+  const updateCreateFooterLayout = useCallback(() => {
+    if (!showDeeplinkCreateFooter) {
+      setDockFooter(false);
+      setFooterH(0);
+      return;
+    }
+    const mainEl = contentRef.current;
+    const footEl = footerRef.current;
+    if (!mainEl || !footEl) return;
+
+    const fh = footEl.offsetHeight;
+    setFooterH(fh);
+
+    const vh =
+      typeof window !== "undefined"
+        ? (window.visualViewport?.height ?? window.innerHeight)
+        : 0;
+    const mainH = mainEl.scrollHeight;
+    /** Không đủ chỗ hiện cả khối nội dung + 2 nút → ghim footer + border-t */
+    setDockFooter(mainH + fh > vh - 2);
+  }, [showDeeplinkCreateFooter]);
+
+  useLayoutEffect(() => {
+    updateCreateFooterLayout();
+    const mainEl = contentRef.current;
+    const footEl = footerRef.current;
+    const ro = new ResizeObserver(() => updateCreateFooterLayout());
+    if (mainEl) ro.observe(mainEl);
+    if (footEl) ro.observe(footEl);
+    window.addEventListener("resize", updateCreateFooterLayout);
+    window.visualViewport?.addEventListener("resize", updateCreateFooterLayout);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", updateCreateFooterLayout);
+      window.visualViewport?.removeEventListener(
+        "resize",
+        updateCreateFooterLayout,
+      );
+    };
+  }, [updateCreateFooterLayout, fullMessage, reg, inq, detailLoading]);
+
   return (
     <div className="flex min-h-screen flex-col">
       <div
-        className={`mx-auto flex w-full max-w-lg flex-1 flex-col gap-2 ${showDeeplinkCreateFooter ? "pb-16" : ""}`}
+        ref={contentRef}
+        className="mx-auto flex w-full max-w-lg flex-col gap-2"
+        style={
+          dockFooter && footerH > 0 ? { paddingBottom: footerH } : undefined
+        }
       >
         {detailLoading && !messageDetail ? (
           <div className="flex justify-center py-6">
@@ -212,8 +262,15 @@ const BusinessCardsView: React.FC<Props> = ({
       </div>
 
       {showDeeplinkCreateFooter ? (
-        <footer className="dark:bg-navy-950/95 sticky bottom-0 z-10 mt-auto border-t border-gray-200 px-4 py-2 backdrop-blur-md dark:border-white/10">
-          <div className="mx-auto flex w-full max-w-lg gap-3">
+        <footer
+          ref={footerRef}
+          className={`mx-auto w-full max-w-lg px-4 py-2 backdrop-blur-xs transition-colors ${
+            dockFooter
+              ? "fixed bottom-0 left-1/2 z-20 -translate-x-1/2 pt-3"
+              : "relative z-10 mt-2 shrink-0 bg-transparent"
+          }`}
+        >
+          <div className="flex w-full gap-3">
             {showCreateRegistration ? (
               <DeeplinkPillActionButton
                 variant="secondary"
