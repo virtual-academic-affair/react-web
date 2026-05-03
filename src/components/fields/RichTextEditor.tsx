@@ -19,6 +19,18 @@ import {
   MdUndo,
 } from "react-icons/md";
 
+/**
+ * Helper to ensure all links in rich text HTML open in a new tab.
+ * Useful for dangerouslySetInnerHTML content.
+ */
+export const fixRichTextLinks = (html: string): string => {
+  if (!html) return "";
+  return html.replace(/<a\b([^>]*)>/gi, (_match, attrs: string) => {
+    if (/\btarget\s*=/i.test(attrs)) return `<a${attrs}>`;
+    return `<a${attrs} target="_blank" rel="noopener noreferrer nofollow">`;
+  });
+};
+
 export interface RichTextEditorHandle {
   focus: () => void;
   getEditor: () => Editor | null;
@@ -241,14 +253,19 @@ const RichTextEditor = React.forwardRef<
       const list: AnyExtension[] = [
         StarterKit.configure({
           heading: { levels: [2, 3] },
-        }),
+          // Disable extensions that might be bundled in v3 to avoid duplicates
+          link: false,
+          underline: false,
+        } as any),
         Underline,
         Link.configure({
-          openOnClick: false,
+          openOnClick: true,
           autolink: true,
           defaultProtocol: "https",
           HTMLAttributes: {
             class: "text-brand-600 underline dark:text-brand-400",
+            target: "_blank",
+            rel: "noopener noreferrer nofollow",
           },
         }),
         Placeholder.configure({
@@ -259,26 +276,35 @@ const RichTextEditor = React.forwardRef<
       if (extraExtensions?.length) {
         list.push(...extraExtensions);
       }
-      return list;
+      
+      // Filter out duplicate extensions by name to avoid Tiptap warnings
+      const uniqueExtensions: AnyExtension[] = [];
+      const extensionNames = new Set<string>();
+      
+      for (const ext of list) {
+        if (!extensionNames.has(ext.name)) {
+          uniqueExtensions.push(ext);
+          extensionNames.add(ext.name);
+        }
+      }
+      
+      return uniqueExtensions;
     }, [placeholder, extraExtensions]);
 
-    const editor = useEditor(
-      {
-        extensions,
-        content: value || "",
-        editable: !disabled,
-        onUpdate: ({ editor: ed }) => {
-          onChange(ed.getHTML());
-        },
-        editorProps: {
-          attributes: {
-            class:
-              "tiptap-prose min-h-[150px] px-3 py-2 text-[15px] text-navy-700 outline-none dark:text-white focus:outline-none transition-colors duration-300",
-          },
+    const editor = useEditor({
+      extensions,
+      content: value || "",
+      editable: !disabled,
+      onUpdate: ({ editor: ed }) => {
+        onChange(ed.getHTML());
+      },
+      editorProps: {
+        attributes: {
+          class:
+            "tiptap-prose min-h-[150px] px-3 py-2 text-[15px] text-navy-700 outline-none dark:text-white focus:outline-none transition-colors duration-300",
         },
       },
-      [disabled, extensions],
-    );
+    });
 
     React.useEffect(() => {
       if (!editor) return;
@@ -286,12 +312,20 @@ const RichTextEditor = React.forwardRef<
     }, [editor, disabled]);
 
     React.useEffect(() => {
-      if (!editor) return;
-      if (editor.isFocused) return;
-      const current = editor.getHTML();
-      if (value !== current) {
-        editor.commands.setContent(value || "", { emitUpdate: false });
-      }
+      if (!editor || editor.isDestroyed) return;
+
+      const currentHTML = editor.getHTML();
+      const newValue = value || "";
+
+      // Tiptap empty = "<p></p>", but value="" means empty — treat as equal to skip
+      const isTiptapEmpty = (html: string) =>
+        !html || html === "<p></p>" || html === "<p> </p>";
+
+      if (isTiptapEmpty(newValue) && isTiptapEmpty(currentHTML)) return;
+      if (newValue === currentHTML) return;
+
+      // Use emitUpdate:false to avoid triggering onChange and causing circular state updates
+      editor.commands.setContent(newValue, { emitUpdate: false });
     }, [editor, value]);
 
     React.useImperativeHandle(

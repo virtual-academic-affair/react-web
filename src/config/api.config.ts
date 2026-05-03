@@ -128,5 +128,22 @@ export const API_ENDPOINTS = {
       valueById: (key: string, value: string) =>
         `/api/metadata/${key}/values/${value}`,
     },
+    faqs: {
+      base: "/api/faqs",
+      byId: (id: string) => `/api/faqs/${id}`,
+      import: "/api/faqs/import",
+      importPreview: "/api/faqs/import/preview",
+      candidates: "/api/faqs/candidates/list",
+      reviewCandidate: (id: string) => `/api/faqs/candidates/${id}/review`,
+    },
+    forms: {
+      base: "/api/forms",
+      byId: (id: string) => `/api/forms/${id}`,
+      import: "/api/forms/import",
+      importPreview: "/api/forms/import-preview",
+    },
+    chat: {
+      stream: "/api/chat/stream",
+    },
   },
 } as const;

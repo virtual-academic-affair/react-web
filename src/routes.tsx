@@ -8,6 +8,7 @@ import {
   MdQuestionAnswer,
   MdSchool,
   MdSettings,
+  MdSmartToy,
 } from "react-icons/md";
 import { SiGmail } from "react-icons/si";
 
@@ -56,6 +57,21 @@ const routes: RoutesType[] = [
         path: "documents/list",
       },
       {
+        name: "DS biểu mẫu",
+        layout: "/admin",
+        path: "documents/forms",
+      },
+      {
+        name: "DS câu hỏi thường gặp",
+        layout: "/admin",
+        path: "documents/faqs",
+      },
+      {
+        name: "DS câu hỏi đề xuất",
+        layout: "/admin",
+        path: "documents/candidates",
+      },
+      {
         name: "Tải lên tài liệu",
         layout: "/admin",
         path: "documents/create",
@@ -78,6 +94,12 @@ const routes: RoutesType[] = [
         ],
       },
     ],
+  },
+  {
+    name: "Chatbot",
+    layout: "/admin",
+    path: "chatbot",
+    icon: <MdSmartToy className="h-6 w-6" />,
   },
   {
     name: "Quản trị",
