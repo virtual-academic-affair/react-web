@@ -39,7 +39,8 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
       open={open}
       onCancel={onCancel}
       onConfirm={onConfirm}
-      title={<div className="flex items-center gap-2">{title}</div>}
+      centered
+      title={title}
       confirmText={confirmText}
       cancelText={cancelText}
       confirmColor={
@@ -56,19 +57,14 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
       }
       loading={loading}
     >
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col items-center gap-4 text-center sm:gap-6">
         {subTitle && (
           <div
-            className={`flex gap-4 rounded-2xl p-4 ${danger ? "bg-red-50 dark:bg-red-500/10" : "bg-brand-50 dark:bg-brand-500/10"}`}
+            className={`flex w-full flex-col items-center gap-3 rounded-2xl p-3 sm:gap-4 sm:p-4 ${danger ? "bg-red-50 dark:bg-red-500/10" : "bg-brand-50 dark:bg-brand-500/10"}`}
           >
-            <div className="shrink-0 pt-0.5">
-              <IconComponent
-                className={`h-6 w-6 ${danger ? "text-red-500" : "text-brand-500"}`}
-              />
-            </div>
-            <div className="flex flex-col gap-1">
+            <div className="flex max-w-full min-w-0 flex-col gap-1">
               <p
-                className={`text-base font-bold ${danger ? "text-red-800 dark:text-red-200" : "text-brand-800 dark:text-brand-200"}`}
+                className={`mb-2 text-sm font-semibold uppercase ${danger ? "text-red-800 dark:text-red-200" : "text-brand-800 dark:text-brand-200"}`}
               >
                 Xác nhận
               </p>
@@ -80,7 +76,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
             </div>
           </div>
         )}
-        {children}
+        {children ? <div className="w-full">{children}</div> : null}
       </div>
     </StandardModal>
   );

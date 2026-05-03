@@ -58,8 +58,8 @@ const Drawer: React.FC<DrawerProps> = ({
             isOpen ? "translate-x-0" : offTransform
           }`}
         >
-          <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-6 py-4 dark:border-white/10">
-            <h2 className="text-navy-700 min-w-0 flex-1 truncate text-xl font-bold dark:text-white">
+          <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-4 py-3 dark:border-white/10 md:gap-3 md:px-6 md:py-4">
+            <h2 className="text-navy-700 min-w-0 flex-1 truncate text-base font-bold dark:text-white">
               {title}
             </h2>
             <div className="flex shrink-0 items-center gap-3">
@@ -74,10 +74,12 @@ const Drawer: React.FC<DrawerProps> = ({
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
+          <div className="flex-1 overflow-y-auto px-4 py-4 text-sm leading-relaxed md:px-6 md:py-5">
+            {children}
+          </div>
 
           {(footerLeft || footerRight) && (
-            <div className="flex items-center justify-between border-t border-gray-100 px-6 py-4 dark:border-white/10">
+            <div className="flex items-center justify-between gap-2 border-t border-gray-100 px-4 py-3 dark:border-white/10 md:px-6 md:py-4">
               <div className="flex items-center gap-3 empty:hidden">
                 {footerLeft}
               </div>
@@ -103,16 +105,18 @@ const Drawer: React.FC<DrawerProps> = ({
             <MdClose className="h-5 w-5 text-white dark:text-gray-200" />
           </button>
 
-          <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-6 py-4 dark:border-white/10">
-            <h2 className="text-navy-700 min-w-0 flex-1 truncate pr-12 text-xl font-bold dark:text-white">
+          <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-4 py-3 dark:border-white/10 md:gap-3 md:px-6 md:py-4">
+            <h2 className="text-navy-700 min-w-0 flex-1 truncate pr-10 text-base font-bold dark:text-white md:pr-12">
               {title}
             </h2>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
+          <div className="flex-1 overflow-y-auto px-4 py-4 text-sm leading-relaxed md:px-6 md:py-5">
+            {children}
+          </div>
 
           {(footerLeft || footerRight) && (
-            <div className="flex items-center justify-between border-t border-gray-100 px-6 py-4 dark:border-white/10">
+            <div className="flex items-center justify-between gap-2 border-t border-gray-100 px-4 py-3 dark:border-white/10 md:px-6 md:py-4">
               <div className="flex items-center gap-3 empty:hidden">
                 {footerLeft}
               </div>

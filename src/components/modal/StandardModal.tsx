@@ -12,6 +12,8 @@ interface StandardModalProps {
   confirmIcon?: React.ReactNode;
   title?: React.ReactNode;
   loading?: boolean;
+  /** Tiêu đề + nội dung + nút căn giữa (ConfirmModal). */
+  centered?: boolean;
   children: React.ReactNode;
 }
 
@@ -25,6 +27,7 @@ const StandardModal: React.FC<StandardModalProps> = ({
   confirmIcon,
   title,
   loading = false,
+  centered = false,
   children,
 }) => {
   if (!open) {
@@ -37,16 +40,24 @@ const StandardModal: React.FC<StandardModalProps> = ({
         className="fixed inset-0 z-999 bg-black/20 backdrop-blur-[2px]"
         onClick={onCancel}
       />
-      <div className="fixed top-1/2 left-1/2 z-1000 w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 px-4 md:px-0">
-        <Card extra="p-5 shadow-2xl border border-gray-200 dark:border-white/10 dark:bg-navy-800">
-          <div className="flex flex-col gap-4">
+      <div className="fixed top-1/2 left-1/2 z-1000 w-[min(100%,28rem)] max-w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 px-3 sm:px-4 md:w-full md:max-w-2xl md:px-0">
+        <Card extra="p-4 shadow-2xl border border-gray-200 dark:border-white/10 dark:bg-navy-800 sm:p-5">
+          <div className="flex flex-col gap-3 sm:gap-4">
             {title && (
-              <div className="text-navy-700 -m-5 border-b border-gray-100 p-5 pb-3 text-xl font-bold dark:border-white/10 dark:text-white">
+              <div
+                className={`text-navy-700 -mx-4 -mt-4 border-b border-gray-100 px-4 pb-3 pt-4 text-base font-bold dark:border-white/10 dark:text-white sm:-mx-5 sm:-mt-5 sm:px-5 sm:pb-3 sm:pt-5 ${centered ? "flex justify-center text-center" : ""}`}
+              >
                 {title}
               </div>
             )}
-            <div className="mt-4 py-2">{children}</div>
-            <div className="mt-2 flex justify-end gap-2">
+            <div
+              className={`mt-1 py-1 text-sm leading-relaxed sm:mt-2 sm:py-2 ${centered ? "text-center" : ""}`}
+            >
+              {children}
+            </div>
+            <div
+              className={`mt-2 flex flex-wrap gap-2 ${centered ? "justify-center" : "justify-end"}`}
+            >
               <button
                 type="button"
                 onClick={onCancel}

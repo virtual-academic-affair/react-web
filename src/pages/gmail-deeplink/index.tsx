@@ -39,7 +39,7 @@ function GmailAccessBlocked({
         onClick={() =>
           window.open("https://vaa.hcmus.app", "_blank", "noopener,noreferrer")
         }
-        className="bg-brand-500 hover:bg-brand-600 rounded-xl px-5 py-3 text-xs font-semibold text-white"
+        className="bg-brand-500 hover:bg-brand-600 rounded-full px-5 py-3 text-xs font-semibold text-white"
       >
         Quản lý Giáo vụ số
       </button>
@@ -182,7 +182,7 @@ const GmailDeeplinkPage = () => {
               "noopener,noreferrer",
             )
           }
-          className="bg-brand-500 hover:bg-brand-600 rounded-xl px-5 py-3 text-xs font-semibold text-white"
+          className="bg-brand-500 hover:bg-brand-600 rounded-full px-5 py-3 text-xs font-semibold text-white"
         >
           Quản lý Giáo vụ số
         </button>
@@ -221,7 +221,7 @@ const GmailDeeplinkPage = () => {
               "noopener,noreferrer",
             )
           }
-          className="bg-brand-500 hover:bg-brand-600 rounded-xl px-5 py-3 text-xs font-semibold text-white"
+          className="bg-brand-500 hover:bg-brand-600 rounded-full px-5 py-3 text-xs font-semibold text-white"
         >
           Quản lý Giáo vụ số
         </button>
