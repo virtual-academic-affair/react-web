@@ -120,14 +120,15 @@ const Tag: FC<TagProps> = ({
               borderColor: color,
             }}
             onClick={(e) => {
+              if (disabled) return;
               onClick?.();
               handleOpen(e);
             }}
             className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 pl-3 text-xs font-medium select-none ${
-              interactive
+              interactive && !disabled
                 ? "cursor-pointer transition-all duration-150 hover:opacity-80 hover:shadow-sm"
                 : ""
-            } ${disabled ? "cursor-not-allowed opacity-50" : ""} ${className ?? ""}`}
+            } ${disabled ? "cursor-default" : ""} ${className ?? ""}`}
           >
             {children}
             {!disabled && (
