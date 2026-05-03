@@ -225,27 +225,32 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const dtoBase = {
-        action: formAction,
-        subjectName: formSubjectName.trim() || "—",
-        subjectCode: formSubjectCode.trim() || undefined,
-        className: formClassName.trim() || undefined,
-      };
-      const dto:
-        | CreateClassRegistrationItemDto
-        | UpdateClassRegistrationItemDto =
-        formAction === "requestOpen"
-          ? dtoBase
-          : editingId == null
-            ? dtoBase
-            : { ...dtoBase, status: formItemStatus };
+      const subjectName = formSubjectName.trim() || "—";
+      const subjectCode = formSubjectCode.trim() || undefined;
+      const className = formClassName.trim() || undefined;
       if (editingId == null) {
-        await classRegistrationItemsService.create(parentId, dto);
+        const createDto: CreateClassRegistrationItemDto = {
+          action: formAction,
+          subjectName,
+          subjectCode,
+          className,
+        };
+        await classRegistrationItemsService.create(parentId, createDto);
       } else {
+        const updateDto: UpdateClassRegistrationItemDto =
+          formAction === "requestOpen"
+            ? { action: formAction, subjectName, subjectCode, className }
+            : {
+                action: formAction,
+                subjectName,
+                subjectCode,
+                className,
+                status: formItemStatus,
+              };
         await classRegistrationItemsService.update(
           parentId,
           editingId,
-          dto as UpdateClassRegistrationItemDto,
+          updateDto,
         );
       }
     },

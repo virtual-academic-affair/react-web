@@ -68,7 +68,10 @@ export function CopyableText({
 
   if (!canCopy) {
     return (
-      <span className={`text-navy-600 dark:text-gray-400 ${className}`.trim()}>
+      <span
+        className={`text-navy-600 dark:text-gray-400 ${className}`.trim()}
+        title={tooltip}
+      >
         {display}
       </span>
     );
@@ -83,14 +86,17 @@ export function CopyableText({
     `${variantClass[variant]} ${focusRing} ${layout} ${className}`.trim();
 
   return (
-    <span
-      className={merged}
-      role="button"
-      tabIndex={0}
-      onClick={onClick}
-      onKeyDown={onKeyDown}
-    >
-      {display}
+    <span className={tooltipWrapperClass}>
+      <span
+        className={merged}
+        title={tooltip}
+        role="button"
+        tabIndex={0}
+        onClick={onClick}
+        onKeyDown={onKeyDown}
+      >
+        {display}
+      </span>
     </span>
   );
 }

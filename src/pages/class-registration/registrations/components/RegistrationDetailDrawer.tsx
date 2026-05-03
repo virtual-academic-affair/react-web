@@ -153,8 +153,8 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
     initializedIdRef.current = detail.id;
 
     setForm({
-      studentCode: detail.studentCode,
-      studentName: detail.studentName,
+      studentCode: detail.studentCode ?? "",
+      studentName: detail.studentName ?? "",
       academicYear: String(detail.academicYear),
       note: detail.note ?? "",
       messageStatus: detail.messageStatus ?? null,
@@ -396,8 +396,8 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
       return;
     }
     setForm({
-      studentCode: detail.studentCode,
-      studentName: detail.studentName,
+      studentCode: detail.studentCode ?? "",
+      studentName: detail.studentName ?? "",
       academicYear: String(detail.academicYear),
       note: detail.note ?? "",
       messageStatus: detail.messageStatus ?? null,
