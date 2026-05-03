@@ -413,7 +413,9 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
               >
                 Thêm yêu cầu
               </button>
-            ) : null}
+            ) : (
+              <div className="h-2" />
+            )}
           </div>
         </div>
       </header>

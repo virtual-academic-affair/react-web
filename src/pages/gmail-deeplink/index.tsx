@@ -136,7 +136,7 @@ const GmailDeeplinkPage = () => {
   if (needsAuthBootstrap && !hasBootstrapTokenFromUrl) {
     return (
       <GmailAccessBlocked
-        title="Thiếu accessToken"
+        title="Thiếu token"
         message="Liên kết cần có token để xác thực quyền quản trị."
       />
     );

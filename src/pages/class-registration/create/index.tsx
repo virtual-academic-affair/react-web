@@ -46,9 +46,6 @@ const ClassRegistrationCreatePage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [currentStep, setCurrentStep] = React.useState(1);
-  const [studentCode, setStudentCode] = React.useState("");
-  const [studentName, setStudentName] = React.useState("");
-  const [academicYear, setAcademicYear] = React.useState("2026");
   const [note, setNote] = React.useState("");
   const [items, setItems] = React.useState<DraftItem[]>([emptyItem()]);
   const [submitting, setSubmitting] = React.useState(false);
@@ -101,6 +98,23 @@ const ClassRegistrationCreatePage: React.FC = () => {
     }
   }, [messageId, navigate]);
 
+  const studentPreview = React.useMemo(() => {
+    if (!message) {
+      return { studentCode: "", studentName: "", academicYear: "" };
+    }
+    const studentCode =
+      message.student?.studentCode?.trim() ||
+      message.studentCode?.trim() ||
+      "";
+    const studentName =
+      message.student?.studentName?.trim() || message.senderName?.trim() || "";
+    const academicYear =
+      message.student?.enrollmentYear != null
+        ? String(message.student.enrollmentYear)
+        : "";
+    return { studentCode, studentName, academicYear };
+  }, [message]);
+
   const updateItem = (
     key: string,
     field: keyof DraftItem,
@@ -118,16 +132,8 @@ const ClassRegistrationCreatePage: React.FC = () => {
       toast.error("Vui lòng đính kèm email.");
       return false;
     }
-    if (!studentCode.trim()) {
-      toast.error("Vui lòng nhập MSSV.");
-      return false;
-    }
-    if (!studentName.trim()) {
-      toast.error("Vui lòng nhập họ tên.");
-      return false;
-    }
-    if (!academicYear.trim()) {
-      toast.error("Vui lòng nhập năm học.");
+    if (!message) {
+      toast.error("Đang tải hoặc thiếu thông tin tin nhắn.");
       return false;
     }
     return true;
@@ -169,16 +175,13 @@ const ClassRegistrationCreatePage: React.FC = () => {
     }
 
     const dto: CreateClassRegistrationDto = {
-      studentCode: studentCode.trim(),
-      studentName: studentName.trim(),
-      academicYear: Number(academicYear),
+      messageId: messageId!,
       note: note || undefined,
       items: items.map((it) => {
         const { key, ...rest } = it;
         void key;
         return rest;
       }),
-      messageId: messageId!,
     };
 
     setSubmitting(true);
@@ -309,19 +312,18 @@ const ClassRegistrationCreatePage: React.FC = () => {
           {/* Step 1: Thông tin SV */}
           {currentStep === 1 && (
             <div className="flex flex-col gap-3">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Thông tin sinh viên lấy từ tin nhắn email đã chọn (khớp MSSV trong hệ
+                thống nếu có).
+              </p>
               <div className="flex items-center gap-6">
                 <div className="w-40 shrink-0">
                   <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                     MSSV
                   </p>
                 </div>
-                <div className="flex-1">
-                  <input
-                    value={studentCode}
-                    onChange={(e) => setStudentCode(e.target.value)}
-                    placeholder="Nhập MSSV"
-                    className="focus:border-brand-500 w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 transition-colors outline-none dark:border-white/10 dark:text-white"
-                  />
+                <div className="flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/[0.03] dark:text-white">
+                  {studentPreview.studentCode || "—"}
                 </div>
               </div>
               <div className="flex items-center gap-6">
@@ -330,28 +332,18 @@ const ClassRegistrationCreatePage: React.FC = () => {
                     Họ tên
                   </p>
                 </div>
-                <div className="flex-1">
-                  <input
-                    value={studentName}
-                    placeholder="Nhập họ tên"
-                    onChange={(e) => setStudentName(e.target.value)}
-                    className="focus:border-brand-500 w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 transition-colors outline-none dark:border-white/10 dark:text-white"
-                  />
+                <div className="flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/[0.03] dark:text-white">
+                  {studentPreview.studentName || "—"}
                 </div>
               </div>
               <div className="flex items-center gap-6">
                 <div className="w-40 shrink-0">
                   <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                    Năm học
+                    Năm nhập học
                   </p>
                 </div>
-                <div className="flex-1">
-                  <input
-                    type="number"
-                    value={academicYear}
-                    onChange={(e) => setAcademicYear(e.target.value)}
-                    className="focus:border-brand-500 w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 transition-colors outline-none dark:border-white/10 dark:text-white"
-                  />
+                <div className="flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/[0.03] dark:text-white">
+                  {studentPreview.academicYear || "—"}
                 </div>
               </div>
             </div>

@@ -4,7 +4,6 @@ import { classRegistrationsService } from "@/services/class-registration";
 import { messagesService } from "@/services/email";
 import { ApiError } from "@/services/http";
 import { inquiriesService } from "@/services/inquiry";
-import type { CreateClassRegistrationDto } from "@/types/classRegistration";
 import type { Message } from "@/types/email";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
@@ -110,15 +109,10 @@ const BusinessCardsView: React.FC<Props> = ({
 
   const createRegistrationMutation = useMutation({
     mutationFn: async () => {
-      const dto: CreateClassRegistrationDto = {
+      return classRegistrationsService.create({
         messageId: fullMessage.id,
-        studentCode: "",
-        studentName: "",
-        academicYear: new Date().getFullYear(),
-        note: "",
         items: [],
-      };
-      return classRegistrationsService.create(dto);
+      });
     },
     onSuccess: () => {
       void toast.success("Đã tạo đăng ký lớp.");

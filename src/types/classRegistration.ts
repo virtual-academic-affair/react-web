@@ -51,6 +51,18 @@ export const ItemStatusColors: Record<
   rejected: { bg: "bg-red-100", text: "text-red-800", hex: "#ef4444" },
 };
 
+/** Tin nhắn join khi GET chi tiết — thông tin SV lấy từ đây, không lưu trên entity đăng ký */
+export interface ClassRegistrationLinkedMessage {
+  id?: number;
+  studentCode?: string | null;
+  senderName?: string;
+  student?: {
+    studentCode?: string;
+    studentName?: string;
+    enrollmentYear?: number;
+  } | null;
+}
+
 export interface ClassRegistrationItem {
   id: number;
   classRegistrationId?: number;
@@ -70,6 +82,7 @@ export interface ClassRegistrationItem {
 
 export interface ClassRegistration {
   id: number;
+  message?: ClassRegistrationLinkedMessage | null;
   studentCode?: string;
   studentName?: string;
   academicYear?: number;
@@ -80,6 +93,31 @@ export interface ClassRegistration {
   items?: ClassRegistrationItem[];
   createdAt: string;
   updatedAt: string;
+}
+
+export function classRegistrationStudentDisplay(reg: ClassRegistration): {
+  studentCode: string;
+  studentName: string;
+  academicYear: string;
+} {
+  const m = reg.message;
+  const studentCode =
+    m?.student?.studentCode?.trim() ||
+    m?.studentCode?.trim() ||
+    reg.studentCode?.trim() ||
+    "";
+  const studentName =
+    m?.student?.studentName?.trim() ||
+    m?.senderName?.trim() ||
+    reg.studentName?.trim() ||
+    "";
+  const academicYear =
+    m?.student?.enrollmentYear != null
+      ? String(m.student.enrollmentYear)
+      : reg.academicYear != null
+        ? String(reg.academicYear)
+        : "";
+  return { studentCode, studentName, academicYear };
 }
 
 export interface ClassRegistrationStatsItem {
@@ -127,18 +165,13 @@ export interface CreateClassRegistrationItemDto {
 }
 
 export interface CreateClassRegistrationDto {
-  studentCode: string;
-  studentName: string;
-  academicYear: number;
+  messageId: number;
+  messageStatus?: MessageStatus;
   note?: string;
-  messageId?: number;
   items: CreateClassRegistrationItemDto[];
 }
 
 export interface UpdateClassRegistrationDto {
-  studentCode?: string;
-  studentName?: string;
-  academicYear?: number;
   note?: string;
   messageStatus?: MessageStatus | null;
 }
