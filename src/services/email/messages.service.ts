@@ -8,6 +8,8 @@ import type { PaginatedResponse } from "@/types/common";
 import type {
   GetMessagesParams,
   Message,
+  ReplyPluckDto,
+  ReplyPluckResult,
   UpdateMessageSystemLabelsDto,
 } from "@/types/email";
 import http from "../http";
@@ -67,22 +69,9 @@ class MessagesService {
   }
 
   /**
-   * Gmail deeplink / iframe: ưu tiên đúng `gmailMessageId`, rồi tin `isCurrent` trong thread,
-   * cuối cùng bất kỳ tin nào trong thread (tránh null khi ID Gmail lệch hoặc chưa cập nhật isCurrent).
+   * Gmail deeplink / iframe: lấy bản ghi current theo threadId.
    */
-  async findForGmailDeeplink(
-    threadId: string,
-    gmailMessageId?: string,
-  ): Promise<Message | null> {
-    if (gmailMessageId) {
-      const byGmail = await this.getMessages({
-        gmailMessageId,
-        page: 1,
-        limit: 1,
-      });
-      if (byGmail.items.length) return byGmail.items[0]!;
-    }
-
+  async findForGmailDeeplink(threadId: string): Promise<Message | null> {
     const byThreadCurrent = await this.getMessages({
       threadId,
       threadView: true,
@@ -144,6 +133,17 @@ class MessagesService {
   async getProcessingIds(): Promise<number[]> {
     const res = await http.get<{ data: number[] }>(`${API_ENDPOINTS.email.messages.base}/processing-ids`);
     return res.data.data;
+  }
+
+  /**
+   * Reply staged inquiries/class registrations in selected time range.
+   */
+  async replyPluck(data: ReplyPluckDto): Promise<ReplyPluckResult> {
+    const res = await http.post<ReplyPluckResult>(
+      `${API_ENDPOINTS.email.messages.base}/reply-pluck`,
+      data,
+    );
+    return res.data;
   }
 }
 

@@ -122,11 +122,14 @@ const RegistrationNoteBlock: React.FC<{
 interface Props {
   registration: ClassRegistration;
   onChanged: () => void;
+  /** Chỉ Xóa + Phản hồi ngay; không sửa dòng / thêm yêu cầu / duyệt hồ sơ. */
+  conflictResolutionMode?: boolean;
 }
 
 const DeeplinkClassRegistrationSection: React.FC<Props> = ({
   registration,
   onChanged,
+  conflictResolutionMode = false,
 }) => {
   const parentId = registration.id;
   const items = useMemo(() => normalizeItems(registration), [registration]);
@@ -154,7 +157,9 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
 
   const messageStatusView =
     coerceMessageStatus(registration.messageStatus) ?? "new";
-  const canEdit = messageStatusView === "new";
+  const canEdit =
+    messageStatusView === "new" || messageStatusView === "conflict";
+  const allowItemEdits = canEdit && !conflictResolutionMode;
 
   const [note, setNote] = useState(() => registration.note ?? "");
   const noteBaselineRef = useRef(registration.note ?? "");
@@ -389,7 +394,7 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
               className={headerDeleteIconBtnClass}
               onClick={() => setDeleteRegConfirmOpen(true)}
             >
-              {canEdit && !noteDirty ? (
+              {canEdit && !noteDirty && !conflictResolutionMode ? (
                 <MdDeleteOutline className="h-4 w-4" />
               ) : null}
             </button>
@@ -402,7 +407,7 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
             >
               {MessageStatusLabels[messageStatusView]}
             </Tag>
-            {canEdit ? (
+            {allowItemEdits ? (
               <button
                 type="button"
                 className="text-brand-600 dark:text-brand-400 mb-1 w-full cursor-pointer border-0 bg-transparent p-0 text-right text-xs font-medium italic underline-offset-2 hover:underline focus-visible:underline focus-visible:outline-none"
@@ -480,7 +485,7 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
                             —
                           </span>
                         )}
-                        {canEdit ? (
+                        {allowItemEdits ? (
                           <button
                             type="button"
                             aria-label="Sửa"
@@ -493,7 +498,7 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
                       </span>
                     </div>
                     {it.action !== "requestOpen" ? (
-                      canEdit ? (
+                      allowItemEdits ? (
                         <Tag
                           variant="selection"
                           value={it.status}
@@ -562,6 +567,29 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
                 <MdSave className="h-4 w-4" />
                 {noteSaving ? "Đang lưu..." : "Lưu"}
               </button>
+            </div>
+          ) : conflictResolutionMode ? (
+            <div className="flex w-full gap-3">
+              <DeeplinkPillActionButton
+                variant="secondary"
+                disabled={footerActionsBusy}
+                onClick={() => setDeleteRegConfirmOpen(true)}
+                label="Xóa"
+              />
+              <DeeplinkPillActionButton
+                variant="primary"
+                disabled={footerActionsBusy}
+                onClick={() =>
+                  runWithPendingReplyWarning(
+                    () => void sendReplyOnlyMutation.mutate(),
+                  )
+                }
+                label={
+                  sendReplyOnlyMutation.isPending
+                    ? "Đang gửi…"
+                    : "Phản hồi ngay"
+                }
+              />
             </div>
           ) : (
             <div className="flex w-full gap-3">

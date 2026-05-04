@@ -67,12 +67,19 @@ const deeplinkCompactPlainTextAreaClass =
 interface Props {
   inquiry: Inquiry;
   onChanged: () => void;
+  /** Chỉ Xóa + Phản hồi ngay (không duyệt hồ sơ / không icon xóa header). */
+  conflictResolutionMode?: boolean;
 }
 
-const DeeplinkInquirySection: React.FC<Props> = ({ inquiry, onChanged }) => {
+const DeeplinkInquirySection: React.FC<Props> = ({
+  inquiry,
+  onChanged,
+  conflictResolutionMode = false,
+}) => {
   const inquiryId = inquiry.id;
   const messageStatusView = coerceMessageStatus(inquiry.messageStatus) ?? "new";
-  const canEdit = messageStatusView === "new";
+  const canEdit =
+    messageStatusView === "new" || messageStatusView === "conflict";
 
   const [question, setQuestion] = useState(() =>
     stripHtml(inquiry.question ?? ""),
@@ -241,7 +248,7 @@ const DeeplinkInquirySection: React.FC<Props> = ({ inquiry, onChanged }) => {
               className={headerDeleteIconBtnClass}
               onClick={() => setDeleteConfirmOpen(true)}
             >
-              {canEdit && !contentManualDirty ? (
+              {canEdit && !contentManualDirty && !conflictResolutionMode ? (
                 <MdDeleteOutline className="h-4 w-4" />
               ) : null}
             </button>
@@ -267,8 +274,12 @@ const DeeplinkInquirySection: React.FC<Props> = ({ inquiry, onChanged }) => {
               <Tag
                 key={t}
                 color={on ? pal.hex : INQUIRY_TYPE_TAG_NEUTRAL_HEX}
-                interactive={canEdit}
-                onClick={canEdit ? () => toggleType(t) : undefined}
+                interactive={canEdit && !conflictResolutionMode}
+                onClick={
+                  canEdit && !conflictResolutionMode
+                    ? () => toggleType(t)
+                    : undefined
+                }
                 className="!px-3 !py-1 text-sm font-medium"
               >
                 {InquiryTypeLabels[t]}
@@ -343,6 +354,25 @@ const DeeplinkInquirySection: React.FC<Props> = ({ inquiry, onChanged }) => {
                 <MdSave className="h-4 w-4" />
                 {autoSaving ? "Đang lưu..." : "Lưu"}
               </button>
+            </div>
+          ) : conflictResolutionMode ? (
+            <div className="flex w-full gap-3">
+              <DeeplinkPillActionButton
+                variant="secondary"
+                disabled={footerActionsBusy}
+                onClick={() => setDeleteConfirmOpen(true)}
+                label="Xóa"
+              />
+              <DeeplinkPillActionButton
+                variant="primary"
+                disabled={footerActionsBusy || !hasReplyContent}
+                onClick={() => void sendReplyOnlyMutation.mutate()}
+                label={
+                  sendReplyOnlyMutation.isPending
+                    ? "Đang gửi…"
+                    : "Phản hồi ngay"
+                }
+              />
             </div>
           ) : (
             <div className="flex w-full gap-3">

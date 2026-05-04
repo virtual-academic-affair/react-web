@@ -1,16 +1,23 @@
 /**
  * Khớp `nest-api/src/email/enums/belongs-to-message-status.enum.ts`
- * (`MessageStatus`: New, Staged, Replied, Old).
+ * (`MessageStatus`: new, staged, replied, old, conflict).
  */
-export const MESSAGE_STATUSES = ["new", "staged", "replied", "old"] as const;
+export const MESSAGE_STATUSES = [
+  "new",
+  "staged",
+  "replied",
+  "old",
+  "conflict",
+] as const;
 
 export type MessageStatus = (typeof MESSAGE_STATUSES)[number];
 
 export const MessageStatusLabels: Record<MessageStatus, string> = {
   new: "Mới",
-  staged: "Chờ gửi",
-  replied: "Đã trả lời",
+  staged: "Đã tiếp nhận",
+  replied: "Đã xử lý",
   old: "Đã kết thúc",
+  conflict: "Cần cập nhật",
 };
 
 export const MessageStatusColors: Record<
@@ -21,6 +28,7 @@ export const MessageStatusColors: Record<
   staged: { bg: "bg-blue-100", text: "text-blue-800", hex: "#2563eb" },
   replied: { bg: "bg-green-100", text: "text-green-800", hex: "#16a34a" },
   old: { bg: "bg-slate-200", text: "text-slate-800", hex: "#64748b" },
+  conflict: { bg: "bg-rose-100", text: "text-rose-800", hex: "#e11d48" },
 };
 
 const LEGACY_STATUS_MAP: Record<string, MessageStatus> = {
@@ -28,7 +36,9 @@ const LEGACY_STATUS_MAP: Record<string, MessageStatus> = {
   closed: "old",
 };
 
-export function isMessageStatus(v: string | null | undefined): v is MessageStatus {
+export function isMessageStatus(
+  v: string | null | undefined,
+): v is MessageStatus {
   return v != null && (MESSAGE_STATUSES as readonly string[]).includes(v);
 }
 

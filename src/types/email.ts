@@ -62,6 +62,35 @@ export interface GetMessagesParams extends ResourceQueryDto {
   threadId?: string;
   /** true = chỉ bản ghi isCurrent trong thread (đúng thread view) */
   threadView?: boolean;
+  /** true = có inquiry/class registration conflict; false = không conflict */
+  hasConflict?: boolean;
+}
+
+export const ReplyPluckEntity = {
+  Inquiry: "inquiry",
+  ClassRegistration: "classRegistration",
+} as const;
+
+export type ReplyPluckEntity =
+  (typeof ReplyPluckEntity)[keyof typeof ReplyPluckEntity];
+
+export interface ReplyPluckDto {
+  sentFrom?: string;
+  sentTo?: string;
+  entities?: ReplyPluckEntity[];
+}
+
+export interface ReplyPluckResult {
+  total: number;
+  success: number;
+  failed: number;
+  inquiry: { total: number; success: number; failed: number };
+  classRegistration: { total: number; success: number; failed: number };
+  failures: Array<{
+    type: ReplyPluckEntity;
+    id: number;
+    reason: string;
+  }>;
 }
 
 /**

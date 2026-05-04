@@ -155,6 +155,8 @@ export interface GetClassRegistrationsParams extends ResourceQueryDto {
   messageStatuses?: MessageStatus[];
   sentFrom?: string;
   sentTo?: string;
+  /** Lọc theo thread Gmail (message liên kết). */
+  threadId?: string;
 }
 
 /** GET .../classRegistrations/:parentId/items */
