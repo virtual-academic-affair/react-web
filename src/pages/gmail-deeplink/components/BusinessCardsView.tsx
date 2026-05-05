@@ -4,7 +4,6 @@ import { classRegistrationsService } from "@/services/class-registration";
 import { messagesService } from "@/services/email";
 import { ApiError } from "@/services/http";
 import { inquiriesService } from "@/services/inquiry";
-import type { CreateClassRegistrationDto } from "@/types/classRegistration";
 import type { Message } from "@/types/email";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
@@ -53,6 +52,44 @@ const BusinessCardsView: React.FC<Props> = ({
   gmailMessageId,
 }) => {
   const queryClient = useQueryClient();
+  const threadIdTrim = threadId?.trim() ?? "";
+
+  const { data: conflictInquiriesRes, isPending: conflictInqPending } =
+    useQuery({
+      queryKey: ["gmail-deeplink-conflict-thread", threadIdTrim, "inquiries"],
+      queryFn: () =>
+        inquiriesService.getList({
+          threadId: threadIdTrim,
+          messageStatuses: ["conflict"],
+          page: 1,
+          limit: 20,
+        }),
+      enabled: threadIdTrim.length > 0,
+    });
+
+  const conflictInquiries = conflictInquiriesRes?.items ?? [];
+
+  const { data: conflictRegsHydrated = [], isPending: conflictRegPending } =
+    useQuery({
+      queryKey: [
+        "gmail-deeplink-conflict-thread",
+        threadIdTrim,
+        "regs-hydrated",
+      ],
+      queryFn: async () => {
+        const res = await classRegistrationsService.getList({
+          threadId: threadIdTrim,
+          messageStatuses: ["conflict"],
+          page: 1,
+          limit: 20,
+        });
+        if (!res.items.length) return [];
+        return Promise.all(
+          res.items.map((r) => classRegistrationsService.getById(r.id)),
+        );
+      },
+      enabled: threadIdTrim.length > 0,
+    });
 
   const {
     data: messageDetail,
@@ -106,19 +143,19 @@ const BusinessCardsView: React.FC<Props> = ({
     void queryClient.invalidateQueries({
       queryKey: ["gmail-deeplink-message", threadId, gmailMessageId],
     });
-  }, [queryClient, message.id, threadId, gmailMessageId]);
+    if (threadIdTrim.length > 0) {
+      void queryClient.invalidateQueries({
+        queryKey: ["gmail-deeplink-conflict-thread", threadIdTrim],
+      });
+    }
+  }, [queryClient, message.id, threadId, gmailMessageId, threadIdTrim]);
 
   const createRegistrationMutation = useMutation({
     mutationFn: async () => {
-      const dto: CreateClassRegistrationDto = {
+      return classRegistrationsService.create({
         messageId: fullMessage.id,
-        studentCode: "",
-        studentName: "",
-        academicYear: new Date().getFullYear(),
-        note: "",
         items: [],
-      };
-      return classRegistrationsService.create(dto);
+      });
     },
     onSuccess: () => {
       void toast.success("Đã tạo đăng ký lớp.");
@@ -235,7 +272,44 @@ const BusinessCardsView: React.FC<Props> = ({
         ) : null}
 
         <StudentSummaryFromMessage message={fullMessage} />
-
+        {threadIdTrim.length > 0 ? (
+          <section className="">
+            {/* <h2 className="text-rose-900 dark:text-rose-100 mb-1 text-sm font-semibold uppercase tracking-tight">
+              Hồ sơ conflict (cùng thread)
+            </h2> */}
+            {!conflictRegPending &&
+            !conflictInqPending &&
+            conflictRegsHydrated.length === 0 &&
+            conflictInquiries.length === 0 ? null : (
+              <p className="mt-2 mb-3 text-center text-xs leading-snug font-medium text-red-500 italic dark:text-rose-200/90">
+                Có tin nhắn mới sau khi hồ sơ đã tiếp nhận.
+              </p>
+            )}
+            {conflictRegPending || conflictInqPending ? (
+              <p className="text-xs text-rose-700 dark:text-rose-300">
+                Đang tải…
+              </p>
+            ) : null}
+            {conflictRegsHydrated.map((cr) => (
+              <div key={cr.id} className="mb-3">
+                <DeeplinkClassRegistrationSection
+                  registration={cr}
+                  onChanged={bumpMessageQueries}
+                  conflictResolutionMode
+                />
+              </div>
+            ))}
+            {conflictInquiries.map((ci) => (
+              <div key={ci.id} className="mb-3">
+                <DeeplinkInquirySection
+                  inquiry={ci}
+                  onChanged={bumpMessageQueries}
+                  conflictResolutionMode
+                />
+              </div>
+            ))}
+          </section>
+        ) : null}
         {classRegHydratedLoading &&
         !reg &&
         detailFetched &&
@@ -264,7 +338,7 @@ const BusinessCardsView: React.FC<Props> = ({
       {showDeeplinkCreateFooter ? (
         <footer
           ref={footerRef}
-          className={`mx-auto w-full max-w-lg px-4 py-2 backdrop-blur-xs transition-colors ${
+          className={`mx-auto w-full max-w-lg py-2 backdrop-blur-xs transition-colors ${
             dockFooter
               ? "fixed bottom-0 left-1/2 z-20 -translate-x-1/2 pt-3"
               : "relative z-10 mt-2 shrink-0 bg-transparent"

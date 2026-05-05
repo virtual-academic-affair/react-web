@@ -32,6 +32,7 @@ import {
   RegistrationActionColors,
   RegistrationActionLabels,
   RegistrationActionOptions,
+  classRegistrationStudentDisplay,
   type UpdateClassRegistrationDto,
 } from "@/types/classRegistration";
 import { formatDate } from "@/utils/date";
@@ -106,9 +107,6 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
   );
   const [savingInfo, setSavingInfo] = React.useState(false);
   const [form, setForm] = React.useState<{
-    studentCode: string;
-    studentName: string;
-    academicYear: string;
     note: string;
     messageStatus: MessageStatus | null;
   } | null>(null);
@@ -138,6 +136,11 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
     };
   }, [detail?.items]);
 
+  const studentDisplay = React.useMemo(
+    () => (detail ? classRegistrationStudentDisplay(detail) : null),
+    [detail],
+  );
+
   React.useEffect(() => {
     if (!detail) {
       setForm(null);
@@ -153,9 +156,6 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
     initializedIdRef.current = detail.id;
 
     setForm({
-      studentCode: detail.studentCode ?? "",
-      studentName: detail.studentName ?? "",
-      academicYear: String(detail.academicYear),
       note: detail.note ?? "",
       messageStatus: detail.messageStatus ?? null,
     });
@@ -380,11 +380,8 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
     }));
   };
 
-  const handleFieldChange = (
-    field: "studentCode" | "studentName" | "academicYear" | "note",
-    value: string,
-  ) => {
-    setForm((prev) => (prev ? { ...prev, [field]: value } : prev));
+  const handleNoteChange = (value: string) => {
+    setForm((prev) => (prev ? { ...prev, note: value } : prev));
   };
 
   const handleMessageStatusChange = (status: MessageStatus | null) => {
@@ -396,9 +393,6 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
       return;
     }
     setForm({
-      studentCode: detail.studentCode ?? "",
-      studentName: detail.studentName ?? "",
-      academicYear: String(detail.academicYear),
       note: detail.note ?? "",
       messageStatus: detail.messageStatus ?? null,
     });
@@ -417,12 +411,7 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
       return;
     }
 
-    const academicYearNumber = Number(form.academicYear) || detail.academicYear;
-
     const dto: UpdateClassRegistrationDto = {
-      studentCode: form.studentCode.trim() || detail.studentCode,
-      studentName: form.studentName.trim() || detail.studentName,
-      academicYear: academicYearNumber,
       note: form.note.trim() || undefined,
       messageStatus: form.messageStatus,
     };
@@ -446,9 +435,6 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
       return false;
     }
     return (
-      form.studentCode !== detail.studentCode ||
-      form.studentName !== detail.studentName ||
-      form.academicYear !== String(detail.academicYear) ||
       plainTextFromHtml(form.note) !== plainTextFromHtml(detail.note ?? "") ||
       form.messageStatus !== (detail.messageStatus ?? null)
     );
@@ -560,14 +546,8 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                     MSSV
                   </p>
                 </div>
-                <div className="w-full flex-1">
-                  <input
-                    value={form.studentCode}
-                    onChange={(e) =>
-                      handleFieldChange("studentCode", e.target.value)
-                    }
-                    className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
-                  />
+                <div className="w-full flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/[0.03] dark:text-white">
+                  {studentDisplay?.studentCode || "—"}
                 </div>
               </div>
               <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-6">
@@ -576,31 +556,18 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                     Họ tên
                   </p>
                 </div>
-                <div className="w-full flex-1">
-                  <input
-                    value={form.studentName}
-                    onChange={(e) =>
-                      handleFieldChange("studentName", e.target.value)
-                    }
-                    className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
-                  />
+                <div className="w-full flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/[0.03] dark:text-white">
+                  {studentDisplay?.studentName || "—"}
                 </div>
               </div>
               <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-6">
                 <div className="w-full shrink-0 md:w-40">
                   <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                    Năm học
+                    Năm nhập học
                   </p>
                 </div>
-                <div className="w-full flex-1">
-                  <input
-                    type="number"
-                    value={form.academicYear}
-                    onChange={(e) =>
-                      handleFieldChange("academicYear", e.target.value)
-                    }
-                    className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
-                  />
+                <div className="w-full flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/[0.03] dark:text-white">
+                  {studentDisplay?.academicYear || "—"}
                 </div>
               </div>
               <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-6">
@@ -627,7 +594,7 @@ const RegistrationDetailDrawer: React.FC<RegistrationDetailDrawerProps> = ({
                   <RegistrationNoteRichTextEditor
                     ref={noteEditorRef}
                     value={form.note}
-                    onChange={(html) => handleFieldChange("note", html)}
+                    onChange={(html) => handleNoteChange(html)}
                     suggestionItems={cancelReasonSuggestionItems}
                     placeholder="Gõ @ để chèn ghi chú nhanh"
                   />

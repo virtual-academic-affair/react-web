@@ -124,13 +124,15 @@ const Tag: FC<TagProps> = ({
               onClick?.();
               handleOpen(e);
             }}
-            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 pl-3 text-xs font-medium select-none ${
+            className={`inline-flex min-w-0 max-w-full items-center gap-1 rounded-full border px-2 py-0.5 pl-3 text-xs font-medium select-none ${
               interactive && !disabled
                 ? "cursor-pointer transition-all duration-150 hover:opacity-80 hover:shadow-sm"
                 : ""
             } ${disabled ? "cursor-default" : ""} ${className ?? ""}`}
           >
-            {children}
+            <span className="min-w-0 max-w-full truncate whitespace-nowrap">
+              {children}
+            </span>
             {!disabled && (
               <MdExpandMore
                 className={`h-3.5 w-3.5 text-inherit transition-transform duration-200 ${open ? "rotate-180" : ""}`}
@@ -226,11 +228,13 @@ const Tag: FC<TagProps> = ({
     <span
       style={{ backgroundColor: bgWithOpacity, color, borderColor: color }}
       onClick={onClick}
-      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${
+      className={`inline-flex min-w-0 max-w-full items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${
         interactive ? "cursor-pointer transition-opacity hover:opacity-80" : ""
       } ${className ?? ""}`}
     >
-      {children}
+      <span className="min-w-0 max-w-full truncate whitespace-nowrap">
+        {children}
+      </span>
     </span>
   );
 };

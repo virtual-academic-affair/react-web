@@ -5,7 +5,6 @@ import DetailFormLayout, {
 } from "@/components/layouts/DetailFormLayout";
 import ConfirmModal from "@/components/modal/ConfirmModal";
 import Tag from "@/components/tag/Tag";
-import Tooltip from "@/components/tooltip/Tooltip.tsx";
 import {
   classRegistrationItemsService,
   classRegistrationsService,
@@ -58,11 +57,10 @@ function norm(s: string | undefined | null): string {
   return (s ?? "").trim().toUpperCase();
 }
 
-/** Chỉ gộp nhóm khi trùng cả mã môn và tên môn; thiếu một trong hai → mỗi yêu cầu một nhóm. */
+/** Gộp nhóm theo tên môn (trim, không phân biệt hoa thường). Không có tên → mỗi dòng một nhóm. */
 function subjectGroupKey(item: ClassRegistrationItem): string {
-  const code = norm(item.subjectCode);
   const name = norm(item.subjectName);
-  if (code && name) return `${code}\x1e${name}`;
+  if (name) return `name:${name}`;
   return `solo:${item.id}`;
 }
 
@@ -124,11 +122,14 @@ const RegistrationNoteBlock: React.FC<{
 interface Props {
   registration: ClassRegistration;
   onChanged: () => void;
+  /** Chỉ Xóa + Phản hồi ngay; không sửa dòng / thêm yêu cầu / duyệt hồ sơ. */
+  conflictResolutionMode?: boolean;
 }
 
 const DeeplinkClassRegistrationSection: React.FC<Props> = ({
   registration,
   onChanged,
+  conflictResolutionMode = false,
 }) => {
   const parentId = registration.id;
   const items = useMemo(() => normalizeItems(registration), [registration]);
@@ -156,7 +157,9 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
 
   const messageStatusView =
     coerceMessageStatus(registration.messageStatus) ?? "new";
-  const isReplied = messageStatusView === "replied";
+  const canEdit =
+    messageStatusView === "new" || messageStatusView === "conflict";
+  const allowItemEdits = canEdit && !conflictResolutionMode;
 
   const [note, setNote] = useState(() => registration.note ?? "");
   const noteBaselineRef = useRef(registration.note ?? "");
@@ -174,6 +177,7 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deleteRegConfirmOpen, setDeleteRegConfirmOpen] = useState(false);
   const [deleteItemConfirmOpen, setDeleteItemConfirmOpen] = useState(false);
+  const [revertStatusConfirmOpen, setRevertStatusConfirmOpen] = useState(false);
   const [pendingReplyWarningOpen, setPendingReplyWarningOpen] = useState(false);
   const pendingReplyFnRef = useRef<(() => void) | null>(null);
   const [formAction, setFormAction] = useState<RegistrationAction>("register");
@@ -214,7 +218,7 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
   };
 
   useEffect(() => {
-    if (!isReplied) return;
+    if (canEdit) return;
     setItemDrawerOpen(false);
     setDeleteItemConfirmOpen(false);
     setEditingId(null);
@@ -223,7 +227,7 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
     setFormSubjectName("");
     setFormClassName("");
     setFormItemStatus("pending");
-  }, [isReplied]);
+  }, [canEdit]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -380,22 +384,20 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
       <header className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
           <div className="border-brand-500 flex min-w-0 flex-1 items-center gap-2 border-l-4 pl-3">
-            <h2 className="text-navy-900 min-w-0 text-base font-bold tracking-tight uppercase dark:text-white">
+            <h2 className="text-navy-900 min-w-0 text-base font-semibold tracking-tight uppercase dark:text-white">
               Đăng ký lớp
             </h2>
-            {!isReplied && !noteDirty ? (
-              <Tooltip label="Xóa hồ sơ">
-                <button
-                  type="button"
-                  aria-label="Xóa hồ sơ đăng ký lớp"
-                  disabled={footerActionsBusy}
-                  className={headerDeleteIconBtnClass}
-                  onClick={() => setDeleteRegConfirmOpen(true)}
-                >
-                  <MdDeleteOutline className="h-4 w-4" />
-                </button>
-              </Tooltip>
-            ) : null}
+            <button
+              type="button"
+              aria-label="Xóa hồ sơ đăng ký lớp"
+              disabled={footerActionsBusy}
+              className={headerDeleteIconBtnClass}
+              onClick={() => setDeleteRegConfirmOpen(true)}
+            >
+              {canEdit && !noteDirty && !conflictResolutionMode ? (
+                <MdDeleteOutline className="h-4 w-4" />
+              ) : null}
+            </button>
           </div>
           <div className="flex flex-col items-end gap-2">
             <Tag
@@ -405,7 +407,7 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
             >
               {MessageStatusLabels[messageStatusView]}
             </Tag>
-            {!isReplied ? (
+            {allowItemEdits ? (
               <button
                 type="button"
                 className="text-brand-600 dark:text-brand-400 mb-1 w-full cursor-pointer border-0 bg-transparent p-0 text-right text-xs font-medium italic underline-offset-2 hover:underline focus-visible:underline focus-visible:outline-none"
@@ -413,7 +415,9 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
               >
                 Thêm yêu cầu
               </button>
-            ) : null}
+            ) : (
+              <div className="h-2" />
+            )}
           </div>
         </div>
       </header>
@@ -481,7 +485,7 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
                             —
                           </span>
                         )}
-                        {!isReplied ? (
+                        {allowItemEdits ? (
                           <button
                             type="button"
                             aria-label="Sửa"
@@ -494,23 +498,35 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
                       </span>
                     </div>
                     {it.action !== "requestOpen" ? (
-                      <Tag
-                        variant="selection"
-                        value={it.status}
-                        color={ITEM_STATUS_HEX[it.status]}
-                        options={itemStatusOptions}
-                        optionColors={ITEM_STATUS_HEX}
-                        disabled={statusBusy || isReplied}
-                        className="shrink-0"
-                        onChange={(v) =>
-                          void updateItemStatusMutation.mutate({
-                            itemId: it.id,
-                            status: v as ItemStatus,
-                          })
-                        }
-                      >
-                        {ItemStatusLabels[it.status]}
-                      </Tag>
+                      allowItemEdits ? (
+                        <Tag
+                          variant="selection"
+                          value={it.status}
+                          color={ITEM_STATUS_HEX[it.status]}
+                          options={itemStatusOptions}
+                          optionColors={ITEM_STATUS_HEX}
+                          disabled={statusBusy}
+                          className="shrink-0"
+                          onChange={(v) =>
+                            void updateItemStatusMutation.mutate({
+                              itemId: it.id,
+                              status: v as ItemStatus,
+                            })
+                          }
+                        >
+                          {ItemStatusLabels[it.status]}
+                        </Tag>
+                      ) : (
+                        <Tag
+                          variant="selection"
+                          value={it.status}
+                          color={ITEM_STATUS_HEX[it.status]}
+                          interactive={false}
+                          className="shrink-0"
+                        >
+                          {ItemStatusLabels[it.status]}
+                        </Tag>
+                      )
                     ) : null}
                   </li>
                 );
@@ -529,75 +545,92 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
         <RegistrationNoteBlock
           note={note}
           onNoteChange={setNote}
-          readOnly={isReplied}
+          readOnly={!canEdit}
         />
-        {isReplied ? (
+        {canEdit ? (
+          noteDirty ? (
+            <div className="flex w-full gap-3">
+              <button
+                type="button"
+                className={pillRowBtnSecondary}
+                disabled={noteSaving}
+                onClick={() => setNote(noteBaselineRef.current)}
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                className={pillRowBtnPrimary}
+                disabled={noteSaving}
+                onClick={() => void saveRegistrationNote()}
+              >
+                <MdSave className="h-4 w-4" />
+                {noteSaving ? "Đang lưu..." : "Lưu"}
+              </button>
+            </div>
+          ) : conflictResolutionMode ? (
+            <div className="flex w-full gap-3">
+              <DeeplinkPillActionButton
+                variant="secondary"
+                disabled={footerActionsBusy}
+                onClick={() => setDeleteRegConfirmOpen(true)}
+                label="Xóa"
+              />
+              <DeeplinkPillActionButton
+                variant="primary"
+                disabled={footerActionsBusy}
+                onClick={() =>
+                  runWithPendingReplyWarning(
+                    () => void sendReplyOnlyMutation.mutate(),
+                  )
+                }
+                label={
+                  sendReplyOnlyMutation.isPending
+                    ? "Đang gửi…"
+                    : "Phản hồi ngay"
+                }
+              />
+            </div>
+          ) : (
+            <div className="flex w-full gap-3">
+              <DeeplinkPillActionButton
+                variant="secondary"
+                disabled={footerActionsBusy || items.length === 0}
+                onClick={() =>
+                  runWithPendingReplyWarning(
+                    () => void sendReplyOnlyMutation.mutate(),
+                  )
+                }
+                label={
+                  sendReplyOnlyMutation.isPending
+                    ? "Đang gửi…"
+                    : "Phản hồi ngay"
+                }
+              />
+              <DeeplinkPillActionButton
+                variant="primary"
+                disabled={footerActionsBusy || items.length === 0}
+                onClick={() =>
+                  void registrationMessageStatusMutation.mutate("staged")
+                }
+                label={
+                  registrationMessageStatusMutation.isPending
+                    ? "Đang duyệt…"
+                    : "Duyệt hồ sơ"
+                }
+              />
+            </div>
+          )
+        ) : (
           <div className="flex w-full gap-3">
             <button
               type="button"
               className={`${pillRowBtnPrimary} w-full`}
               disabled={footerActionsBusy}
-              onClick={() =>
-                void registrationMessageStatusMutation.mutate("new")
-              }
+              onClick={() => setRevertStatusConfirmOpen(true)}
             >
-              {registrationMessageStatusMutation.isPending
-                ? "Đang hoàn tác…"
-                : "Hoàn tác"}
+              Hoàn tác
             </button>
-          </div>
-        ) : noteDirty ? (
-          <div className="flex w-full gap-3">
-            <button
-              type="button"
-              className={pillRowBtnSecondary}
-              disabled={noteSaving}
-              onClick={() => setNote(noteBaselineRef.current)}
-            >
-              Hủy
-            </button>
-            <button
-              type="button"
-              className={pillRowBtnPrimary}
-              disabled={noteSaving}
-              onClick={() => void saveRegistrationNote()}
-            >
-              <MdSave className="h-4 w-4" />
-              {noteSaving ? "Đang lưu..." : "Lưu"}
-            </button>
-          </div>
-        ) : (
-          <div className="flex w-full gap-3">
-            <DeeplinkPillActionButton
-              variant="secondary"
-              disabled={footerActionsBusy}
-              onClick={() =>
-                runWithPendingReplyWarning(
-                  () => void sendReplyOnlyMutation.mutate(),
-                )
-              }
-              label={
-                sendReplyOnlyMutation.isPending ? "Đang gửi…" : "Phản hồi ngay"
-              }
-            />
-            <DeeplinkPillActionButton
-              variant="primary"
-              disabled={footerActionsBusy}
-              onClick={() =>
-                void registrationMessageStatusMutation.mutate(
-                  messageStatusView === "new" ? "staged" : "new",
-                )
-              }
-              label={
-                registrationMessageStatusMutation.isPending
-                  ? messageStatusView === "new"
-                    ? "Đang duyệt…"
-                    : "Đang hoàn tác…"
-                  : messageStatusView === "new"
-                    ? "Duyệt hồ sơ"
-                    : "Hoàn tác"
-              }
-            />
           </div>
         )}
       </footer>
@@ -609,19 +642,15 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
         width="max-w-lg"
         footerLeft={
           editingId != null ? (
-            <Tooltip label="Xóa">
-              <button
-                type="button"
-                aria-label="Xóa yêu cầu"
-                disabled={
-                  deleteItemMutation.isPending || saveMutation.isPending
-                }
-                onClick={() => setDeleteItemConfirmOpen(true)}
-                className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600 disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-600"
-              >
-                <MdDeleteOutline className="h-4 w-4" />
-              </button>
-            </Tooltip>
+            <button
+              type="button"
+              aria-label="Xóa yêu cầu"
+              disabled={deleteItemMutation.isPending || saveMutation.isPending}
+              onClick={() => setDeleteItemConfirmOpen(true)}
+              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600 disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-600"
+            >
+              <MdDeleteOutline className="h-4 w-4" />
+            </button>
           ) : undefined
         }
       >
@@ -732,6 +761,26 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
         subTitle="Xác nhận xóa dữ liệu này? Hành động này không thể hoàn tác."
         confirmText="Xóa"
         loading={deleteRegMutation.isPending}
+      />
+
+      <ConfirmModal
+        open={revertStatusConfirmOpen}
+        onCancel={() => setRevertStatusConfirmOpen(false)}
+        onConfirm={async () => {
+          try {
+            await registrationMessageStatusMutation.mutateAsync("new");
+            setRevertStatusConfirmOpen(false);
+          } catch {
+            /* toast trong mutation */
+          }
+        }}
+        title="Hoàn tác trạng thái hồ sơ?"
+        subTitle="Đưa hồ sơ về trạng thái Mới để chỉnh sửa lại. Xác nhận hoàn tác?"
+        confirmText="Hoàn tác"
+        cancelText="Hủy"
+        loading={registrationMessageStatusMutation.isPending}
+        danger={false}
+        icon="warning"
       />
 
       <ConfirmModal

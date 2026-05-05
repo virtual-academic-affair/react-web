@@ -57,6 +57,10 @@ export interface GetInquiriesParams extends ResourceQueryDto {
   types?: InquiryType[];
   messageId?: string | number;
   messageStatuses?: MessageStatus[];
+  sentFrom?: string;
+  sentTo?: string;
+  /** Lọc theo thread Gmail (message liên kết). */
+  threadId?: string;
 }
 
 export interface CreateInquiryDto {

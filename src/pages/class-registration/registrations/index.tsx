@@ -6,9 +6,10 @@ import TableLayout, {
 } from "@/components/table/TableLayout";
 import Tooltip from "@/components/tooltip/Tooltip";
 import { classRegistrationsService } from "@/services/class-registration";
-import type {
-  ClassRegistration,
-  MessageStatus,
+import {
+  type ClassRegistration,
+  type MessageStatus,
+  classRegistrationStudentDisplay,
 } from "@/types/classRegistration";
 import type { PaginatedResponse } from "@/types/common";
 import { formatDate } from "@/utils/date";
@@ -259,30 +260,33 @@ const ClassRegistrationsPage: React.FC = () => {
         key: "student",
         header: "Sinh viên",
         width: "30%",
-        render: (item) => (
-          <div className="flex min-w-0 flex-col">
-            <Tooltip
-              label={item.studentName}
-              className="block min-w-0"
-              placement="topLeft"
-              wrap
-            >
-              <p className="text-navy-700 truncate text-sm font-bold dark:text-white">
-                {item.studentName}
-              </p>
-            </Tooltip>
-            <Tooltip
-              label={item.studentCode}
-              className="block min-w-0"
-              placement="topLeft"
-              wrap
-            >
-              <p className="mt-0.5 truncate text-xs text-gray-500">
-                MSSV: {item.studentCode}
-              </p>
-            </Tooltip>
-          </div>
-        ),
+        render: (item) => {
+          const d = classRegistrationStudentDisplay(item);
+          return (
+            <div className="flex min-w-0 flex-col">
+              <Tooltip
+                label={d.studentName}
+                className="block min-w-0"
+                placement="topLeft"
+                wrap
+              >
+                <p className="text-navy-700 truncate text-sm font-bold dark:text-white">
+                  {d.studentName || "—"}
+                </p>
+              </Tooltip>
+              <Tooltip
+                label={d.studentCode}
+                className="block min-w-0"
+                placement="topLeft"
+                wrap
+              >
+                <p className="mt-0.5 truncate text-xs text-gray-500">
+                  MSSV: {d.studentCode || "—"}
+                </p>
+              </Tooltip>
+            </div>
+          );
+        },
       },
       {
         key: "createdAt",
@@ -378,6 +382,12 @@ const ClassRegistrationsPage: React.FC = () => {
       setSearchParams,
     ],
   );
+
+  let deleteStudentLabel = "";
+  if (deleteTarget) {
+    const d = classRegistrationStudentDisplay(deleteTarget);
+    deleteStudentLabel = d.studentName || d.studentCode || "không rõ";
+  }
 
   return (
     <>
@@ -475,7 +485,7 @@ const ClassRegistrationsPage: React.FC = () => {
         onCancel={() => setDeleteTarget(null)}
         onConfirm={executeDelete}
         title="Xóa đăng ký lớp"
-        subTitle={`Bạn có chắc chắn muốn xóa đăng ký lớp của sinh viên "${deleteTarget?.studentName}" không? Hành động này không thể hoàn tác.`}
+        subTitle={`Bạn có chắc chắn muốn xóa đăng ký lớp của sinh viên "${deleteStudentLabel}" không? Hành động này không thể hoàn tác.`}
         loading={deleting}
       />
     </>
