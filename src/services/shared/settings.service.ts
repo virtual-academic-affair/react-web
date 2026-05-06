@@ -16,6 +16,10 @@ class SettingsService {
   ): Promise<void> {
     await http.put(API_ENDPOINTS.shared.settingsByKey(key), dto);
   }
+
+  async remove(key: SettingKey): Promise<void> {
+    await http.delete(API_ENDPOINTS.shared.settingsByKey(key));
+  }
 }
 
 export const settingsService = new SettingsService();
