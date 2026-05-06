@@ -1,6 +1,7 @@
 import Drawer from "@/components/drawer/Drawer";
 import DetailFormLayout, { FormRow } from "@/components/layouts/DetailFormLayout";
 import { faqsService } from "@/services/documents/faqs.service";
+import type { YearRange } from "@/types/faqs";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import { useRef, useState, useEffect } from "react";
@@ -16,8 +17,8 @@ interface ImportRowPreview {
   question: string;
   answerRichText: string; // Updated to match new backend field
   metadata: {
-    academicYear: string[];
-    cohort: string[];
+    academicYear: YearRange;
+    enrollmentYear: YearRange;
   };
   isValid: boolean;
   error?: string;
@@ -34,7 +35,7 @@ export default function FAQBulkImportModal({
     questionCol: "1",
     answerCol: "2",
     academicYearCol: "3",
-    cohortCol: "4",
+    enrollmentYearCol: "4",
     startRow: 2,
   });
 
@@ -48,7 +49,7 @@ export default function FAQBulkImportModal({
         questionCol: config.questionCol,
         answerCol: config.answerCol,
         academicYearCol: config.academicYearCol,
-        cohortCol: config.cohortCol,
+        enrollmentYearCol: config.enrollmentYearCol,
         skipRows: config.startRow - 1,
       }),
     onSuccess: (res) => {
@@ -70,7 +71,7 @@ export default function FAQBulkImportModal({
         questionCol: config.questionCol,
         answerCol: config.answerCol,
         academicYearCol: config.academicYearCol,
-        cohortCol: config.cohortCol,
+        enrollmentYearCol: config.enrollmentYearCol,
         skipRows: config.startRow - 1,
       }),
     onSuccess: (res: any) => {
@@ -105,18 +106,27 @@ export default function FAQBulkImportModal({
     setConfig((p) => ({ ...p, [key]: value }));
   };
 
+  // Reset state when drawer closes
+  useEffect(() => {
+    if (!open) {
+      setFile(null);
+      setPreviewData([]);
+      setPreviewError(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      // Optional: also reset config if you want a clean slate every time
+      setConfig({
+        questionCol: "1",
+        answerCol: "2",
+        academicYearCol: "3",
+        enrollmentYearCol: "4",
+        startRow: 2,
+      });
+    }
+  }, [open]);
+
   const handleClose = () => {
-    setFile(null);
-    setPreviewData([]);
-    setPreviewError(null);
-    setConfig({
-      questionCol: "1",
-      answerCol: "2",
-      academicYearCol: "3",
-      cohortCol: "4",
-      startRow: 2,
-    });
-    if (fileInputRef.current) fileInputRef.current.value = "";
     onClose();
   };
 
@@ -134,6 +144,7 @@ export default function FAQBulkImportModal({
         <DetailFormLayout>
           <FormRow label="File dữ liệu">
             <input
+              key={open ? 'open' : 'closed'}
               ref={fileInputRef}
               type="file"
               accept=".xlsx,.xls,.csv"
@@ -172,8 +183,8 @@ export default function FAQBulkImportModal({
             <FormRow label="Cột Niên khóa">
               <input
                 type="text"
-                value={config.cohortCol}
-                onChange={(e) => handleConfigChange("cohortCol", e.target.value)}
+                value={config.enrollmentYearCol}
+                onChange={(e) => handleConfigChange("enrollmentYearCol", e.target.value)}
                 className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
               />
             </FormRow>
@@ -254,12 +265,16 @@ export default function FAQBulkImportModal({
                         </td>
                         <td className="border-r border-gray-100 px-2 py-1.5 text-center dark:border-white/10">
                           <span className="text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                            {row.metadata.academicYear.join(", ") || "all"}
+                            {row.metadata.academicYear.fromYear === 0 && row.metadata.academicYear.toYear === 9999
+                              ? "Tất cả"
+                              : `${row.metadata.academicYear.fromYear} - ${row.metadata.academicYear.toYear}`}
                           </span>
                         </td>
                         <td className="px-2 py-1.5 text-center">
                           <span className="text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                            {row.metadata.cohort.join(", ") || "all"}
+                            {row.metadata.enrollmentYear.fromYear === 0 && row.metadata.enrollmentYear.toYear === 9999
+                              ? "Tất cả"
+                              : `${row.metadata.enrollmentYear.fromYear} - ${row.metadata.enrollmentYear.toYear}`}
                           </span>
                         </td>
                       </tr>

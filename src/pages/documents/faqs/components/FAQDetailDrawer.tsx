@@ -1,12 +1,14 @@
 import Drawer from "@/components/drawer/Drawer";
 import DetailFormLayout, { FormRow, DetailFormSection } from "@/components/layouts/DetailFormLayout";
+import YearRangeField from "@/components/fields/YearRangeField";
+import type { FAQ, YearRange } from "@/types/faqs";
 import { faqsService } from "@/services/documents/faqs.service";
-import type { FAQ } from "@/types/faqs";
 import { formatDate } from "@/utils/date";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import { useEffect, useState } from "react";
 import { FAQFormFields } from "./FAQFormFields";
+import { MdDeleteOutline, MdSave } from "react-icons/md";
 import ConfirmModal from "@/components/modal/ConfirmModal";
 
 interface FAQDetailDrawerProps {
@@ -16,8 +18,6 @@ interface FAQDetailDrawerProps {
   onFAQChanged?: (updated: FAQ) => void;
   onFAQDeleted?: (id: string) => void;
 }
-
-const inputCls = `w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white`;
 
 export default function FAQDetailDrawer({
   id,
@@ -32,8 +32,8 @@ export default function FAQDetailDrawer({
   const [edits, setEdits] = useState<{
     question?: string;
     answer?: string;
-    academicYear?: string;
-    cohort?: string;
+    academicYear?: YearRange;
+    enrollmentYear?: YearRange;
     isActive?: boolean;
   }>({});
 
@@ -46,27 +46,39 @@ export default function FAQDetailDrawer({
     enabled: !!id && open,
   });
 
-  // Reset edits when switching to a different item
+  // Reset edits when switching to a different item or closing
   useEffect(() => {
-    setEdits({});
-    setErrors({});
-  }, [id]);
+    if (!open || !id) {
+      setEdits({});
+      setErrors({});
+    }
+  }, [id, open]);
 
   // Derive form values: user edits override faq data
   const meta = faq?.metadataFilter;
   const question = edits.question ?? faq?.question ?? "";
   const answer = edits.answer ?? faq?.answerRichText ?? "";
-  const academicYear = edits.academicYear ?? meta?.academicYear?.[0] ?? "all";
-  const cohort = edits.cohort ?? meta?.cohort?.[0] ?? "all";
+  const academicYear = edits.academicYear ?? meta?.academicYear ?? { fromYear: 0, toYear: 9999 };
+  const enrollmentYear = edits.enrollmentYear ?? meta?.enrollmentYear ?? { fromYear: 0, toYear: 9999 };
   const isActive = edits.isActive ?? faq?.isActive ?? true;
+
+  const isDirty =
+    faq &&
+    (question !== faq.question ||
+      answer !== faq.answerRichText ||
+      academicYear.fromYear !== meta?.academicYear.fromYear ||
+      academicYear.toYear !== meta?.academicYear.toYear ||
+      enrollmentYear.fromYear !== meta?.enrollmentYear.fromYear ||
+      enrollmentYear.toYear !== meta?.enrollmentYear.toYear ||
+      isActive !== faq.isActive);
 
   const { mutate: update, isPending: isUpdating } = useMutation({
     mutationFn: () =>
       faqsService.updateFAQ(id!, {
         question,
         answer,
-        academicYear: academicYear !== "all" ? academicYear : undefined,
-        cohort: cohort !== "all" ? cohort : undefined,
+        academicYear,
+        enrollmentYear,
         isActive,
       }),
     onSuccess: (updated) => {
@@ -111,7 +123,38 @@ export default function FAQDetailDrawer({
 
   return (
     <>
-      <Drawer isOpen={open} onClose={onClose} title="Chi tiết câu hỏi thường gặp">
+      <Drawer 
+        isOpen={open} 
+        onClose={onClose} 
+        title="Chi tiết câu hỏi thường gặp"
+        footerLeft={
+          <button
+            type="button"
+            onClick={() => setConfirmDeleteOpen(true)}
+            disabled={!faq || isLoading || isUpdating || isDeleting}
+            title={isDeleting ? "Đang xóa..." : "Xóa"}
+            aria-label={isDeleting ? "Đang xóa..." : "Xóa"}
+            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600 disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-600"
+          >
+            <MdDeleteOutline className="h-4 w-4" />
+          </button>
+        }
+        footerRight={
+          <div className="flex items-center gap-2">
+            {isDirty && (
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={!faq || isLoading || isUpdating || isDeleting}
+                className="bg-brand-500 hover:bg-brand-600 flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
+              >
+                <MdSave className="h-4 w-4" />
+                {isUpdating ? "Đang lưu..." : "Lưu thay đổi"}
+              </button>
+            )}
+          </div>
+        }
+      >
         {isLoading ? (
           <div className="flex h-40 items-center justify-center">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-500 border-t-transparent" />
@@ -129,27 +172,19 @@ export default function FAQDetailDrawer({
                 disabled={isUpdating || isDeleting}
               />
 
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                <FormRow label="Năm học">
-                  <input
-                    type="text"
-                    placeholder="2023-2024"
-                    value={academicYear}
-                    onChange={(e) => setEdits(p => ({ ...p, academicYear: e.target.value }))}
-                    disabled={isUpdating || isDeleting}
-                    className={inputCls}
-                  />
-                </FormRow>
-                <FormRow label="Niên khóa">
-                  <input
-                    type="text"
-                    placeholder="K21"
-                    value={cohort}
-                    onChange={(e) => setEdits(p => ({ ...p, cohort: e.target.value }))}
-                    disabled={isUpdating || isDeleting}
-                    className={inputCls}
-                  />
-                </FormRow>
+              <div className="flex flex-col gap-4 mt-4">
+                <YearRangeField
+                  label="Năm học áp dụng"
+                  value={academicYear}
+                  onChange={(val) => setEdits((p) => ({ ...p, academicYear: val }))}
+                  disabled={isUpdating || isDeleting}
+                />
+                <YearRangeField
+                  label="Niên khóa áp dụng (Khóa tuyển sinh)"
+                  value={enrollmentYear}
+                  onChange={(val) => setEdits((p) => ({ ...p, enrollmentYear: val }))}
+                  disabled={isUpdating || isDeleting}
+                />
               </div>
 
               {faq && (
@@ -173,32 +208,6 @@ export default function FAQDetailDrawer({
               )}
             </DetailFormLayout>
 
-            <div className="mt-6 flex items-center justify-between gap-3 border-t border-gray-100 pt-6 dark:border-white/10">
-              <button
-                type="button"
-                onClick={() => setConfirmDeleteOpen(true)}
-                disabled={isUpdating || isDeleting}
-                className="rounded-xl px-4 py-2 text-sm font-medium text-red-500 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-500/10"
-              >
-                Xóa câu hỏi
-              </button>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="rounded-xl px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  disabled={isUpdating || isDeleting}
-                  className="bg-brand-500 hover:bg-brand-600 rounded-xl px-5 py-2 text-sm font-medium text-white disabled:opacity-60"
-                >
-                  {isUpdating ? "Đang cập nhật..." : "Lưu thay đổi"}
-                </button>
-              </div>
-            </div>
           </form>
         )}
       </Drawer>
