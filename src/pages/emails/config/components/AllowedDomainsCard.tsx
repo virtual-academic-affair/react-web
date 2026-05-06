@@ -11,7 +11,7 @@ type Props = {
   onRefresh: () => Promise<void>;
 };
 
-const ROLE_TABS: RoleType[] = [Role.Student, Role.Admin];
+const ROLE_TABS: RoleType[] = [Role.Student, Role.Lecture];
 
 const normalizeDomain = (value: string): string =>
   value.trim().replace(/^@+/, "").toLowerCase();
@@ -85,7 +85,7 @@ const AllowedDomainsCard: React.FC<Props> = ({ domainsByRole, onRefresh }) => {
     try {
       const payload: Partial<Record<RoleType, string[]>> = {
         [Role.Student]: uniqueDomains(draftByRole[Role.Student] ?? []),
-        [Role.Admin]: uniqueDomains(draftByRole[Role.Admin] ?? []),
+        [Role.Lecture]: uniqueDomains(draftByRole[Role.Lecture] ?? []),
       };
       await settingsService.update("auth.roleDomains", payload);
       await onRefresh();
@@ -164,9 +164,9 @@ const AllowedDomainsCard: React.FC<Props> = ({ domainsByRole, onRefresh }) => {
           Hệ thống sẽ tự động đọc và xử lý email từ domain này.
         </p>
       )}
-      {activeRole === Role.Admin && (
+      {activeRole === Role.Lecture && (
         <p className="text-gray-600 dark:text-gray-400">
-          Dùng để định danh quyền truy cập trang quản trị.
+          Dùng để định danh quyền truy cập của giảng viên.
         </p>
       )}
 

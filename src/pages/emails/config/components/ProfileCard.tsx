@@ -1,18 +1,26 @@
 import banner from "@/assets/img/auth/banner.png";
 import { API_CONFIG, API_ENDPOINTS } from "@/config/api.config";
+import { settingsService } from "@/services/shared";
 import type { DynamicDataResponse } from "@/types/shared";
+import { message as toast } from "antd";
 import { useEffect, useRef, useState } from "react";
 
 interface ProfileCardProps {
   data: DynamicDataResponse | null;
   loading: boolean;
+  onRefresh: () => Promise<void>;
 }
 
-const ProfileCard: React.FC<ProfileCardProps> = ({ data, loading }) => {
+const ProfileCard: React.FC<ProfileCardProps> = ({
+  data,
+  loading,
+  onRefresh,
+}) => {
   const profile = data?.settings?.["email.superEmail"];
 
   const [showDropdown, setShowDropdown] = useState(false);
   const [granting, setGranting] = useState(false);
+  const [revoking, setRevoking] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,11 +41,36 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ data, loading }) => {
   const handleGrant = async () => {
     setGranting(true);
     try {
-      const url = new URL(`${API_CONFIG.baseURL}${API_ENDPOINTS.auth.googleGmailGrant}`);
+      const url = new URL(
+        `${API_CONFIG.baseURL}${API_ENDPOINTS.auth.googleGmailGrant}`,
+      );
       url.searchParams.set("state", API_CONFIG.appURL);
       window.location.href = url.toString();
     } catch {
       setGranting(false);
+    }
+  };
+
+  const handleRevoke = async () => {
+    if (
+      !window.confirm(
+        "Thu hồi sẽ ngắt kết nối Gmail và xóa cấu hình nhãn. Tiếp tục?",
+      )
+    ) {
+      return;
+    }
+    setRevoking(true);
+    try {
+      await settingsService.remove("email.superEmail");
+      await settingsService.remove("email.labels");
+      await settingsService.remove("email.gmailHistoryId");
+      await onRefresh();
+      setShowDropdown(false);
+      toast.success("Đã thu hồi tài khoản Gmail");
+    } catch {
+      toast.error("Không thể thu hồi tài khoản");
+    } finally {
+      setRevoking(false);
     }
   };
 
@@ -129,13 +162,24 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ data, loading }) => {
           </button>
 
           {showDropdown && (
-            <button
-              onClick={handleGrant}
-              disabled={granting}
-              className="text-navy-700 dark:hover:bg-navy-700 dark:border-navy-600 dark:bg-navy-800 absolute top-full left-1/2 z-50 mt-2 flex w-max -translate-x-1/2 cursor-pointer items-center gap-2 rounded-4xl bg-white px-4 py-2.5 text-sm font-medium shadow-xl transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 dark:text-white"
-            >
-              Đổi tài khoản
-            </button>
+            <div className="dark:bg-navy-800 absolute top-full left-1/2 z-50 mt-2 flex w-max min-w-[200px] -translate-x-1/2 flex-col overflow-hidden rounded-3xl bg-white p-1 shadow-xl">
+              <button
+                type="button"
+                onClick={handleGrant}
+                disabled={granting || revoking}
+                className="text-navy-700 dark:hover:bg-navy-700 rounded-full px-4 py-2.5 text-left text-sm font-medium transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 dark:text-white"
+              >
+                Đổi tài khoản
+              </button>
+              <button
+                type="button"
+                onClick={handleRevoke}
+                disabled={granting || revoking}
+                className="dark:hover:bg-navy-700 rounded-full px-4 py-2.5 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 dark:text-red-400"
+              >
+                {revoking ? "Đang thu hồi…" : "Thu hồi tài khoản"}
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -149,7 +193,6 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ data, loading }) => {
           {profile.email}
         </p>
       </div>
-
     </div>
   );
 };

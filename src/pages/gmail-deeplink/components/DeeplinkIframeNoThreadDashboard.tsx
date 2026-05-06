@@ -469,11 +469,11 @@ const DeeplinkIframeNoThreadDashboard: React.FC<
   );
 
   const gmailRangeLine = useMemo(() => {
-    const hasTừ = afterVn != null;
-    const hasĐến = beforeVn != null;
-    if (!hasTừ && !hasĐến) return null;
-    if (hasĐến && !hasTừ) return `đến ${beforeVn}`;
-    if (hasTừ && !hasĐến) return `từ ${afterVn}`;
+    const hasTo = afterVn != null;
+    const hasFrom = beforeVn != null;
+    if (!hasTo && !hasFrom) return null;
+    if (hasFrom && !hasTo) return `từ ${beforeVn}`;
+    if (hasTo && !hasFrom) return `đến ${afterVn}`;
     return `${beforeVn} - ${afterVn}`;
   }, [afterVn, beforeVn]);
 
