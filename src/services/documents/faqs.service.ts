@@ -1,5 +1,5 @@
 import { API_ENDPOINTS } from "@/config/api.config";
-import type { FAQ, FAQListResponse, FAQCandidateListResponse } from "@/types/faqs";
+import type { FAQ, FAQListResponse, FAQCandidateListResponse, YearRange } from "@/types/faqs";
 import ragHttp from "../rag-http";
 
 class FAQsService {
@@ -8,15 +8,15 @@ class FAQsService {
     limit?: number;
     search?: string;
     isActive?: boolean;
-    academicYear?: string;
-    cohort?: string;
+    academicYear?: YearRange;
+    enrollmentYear?: YearRange;
   }) {
-    const { academicYear, cohort, isActive, ...rest } = params;
+    const { academicYear, enrollmentYear, isActive, ...rest } = params;
     
-    // Convert separate metadata filters into a single JSON string as required by the new backend
+    // Convert separate metadata filters into a single JSON string as required by the backend
     const metadataFilter: any = {};
-    if (academicYear) metadataFilter.academic_year = [academicYear];
-    if (cohort) metadataFilter.cohort = [cohort];
+    if (academicYear) metadataFilter.academic_year = academicYear;
+    if (enrollmentYear) metadataFilter.enrollment_year = enrollmentYear;
     
     const queryParams: any = { ...rest };
     if (isActive !== undefined) queryParams.isActive = isActive;
@@ -91,15 +91,15 @@ class FAQsService {
   async createFAQ(data: {
     question: string;
     answer: string;
-    academicYear?: string;
-    cohort?: string;
+    academicYear?: YearRange;
+    enrollmentYear?: YearRange;
   }) {
     const payload = {
       question: data.question,
       answerRichText: data.answer,
       metadataFilter: {
-        academic_year: data.academicYear ? [data.academicYear] : [],
-        cohort: data.cohort ? [data.cohort] : [],
+        academicYear: data.academicYear || { fromYear: 0, toYear: 9999 },
+        enrollmentYear: data.enrollmentYear || { fromYear: 0, toYear: 9999 },
       },
     };
     const response = await ragHttp.post<FAQ>(
@@ -112,8 +112,8 @@ class FAQsService {
   async updateFAQ(id: string, data: {
     question?: string;
     answer?: string;
-    academicYear?: string;
-    cohort?: string;
+    academicYear?: YearRange;
+    enrollmentYear?: YearRange;
     isActive?: boolean;
   }) {
     const payload: any = {};
@@ -121,10 +121,10 @@ class FAQsService {
     if (data.answer) payload.answerRichText = data.answer;
     if (data.isActive !== undefined) payload.isActive = data.isActive;
     
-    if (data.academicYear || data.cohort) {
+    if (data.academicYear || data.enrollmentYear) {
       payload.metadataFilter = {
-        academic_year: data.academicYear ? [data.academicYear] : [],
-        cohort: data.cohort ? [data.cohort] : [],
+        academicYear: data.academicYear || { fromYear: 0, toYear: 9999 },
+        enrollmentYear: data.enrollmentYear || { fromYear: 0, toYear: 9999 },
       };
     }
     
@@ -145,7 +145,7 @@ class FAQsService {
       questionCol: string;
       answerCol: string;
       academicYearCol?: string;
-      cohortCol?: string;
+      enrollmentYearCol?: string;
       sheetName?: string;
       skipRows?: number;
     }
@@ -158,7 +158,7 @@ class FAQsService {
     // New metadata format
     const metadataMap: any = {};
     if (config.academicYearCol) metadataMap.academic_year = config.academicYearCol;
-    if (config.cohortCol) metadataMap.cohort = config.cohortCol;
+    if (config.enrollmentYearCol) metadataMap.enrollment_year = config.enrollmentYearCol;
     formData.append("metadataFilterJson", JSON.stringify(metadataMap));
 
     if (config.sheetName) formData.append("sheet_name", config.sheetName);
@@ -176,7 +176,7 @@ class FAQsService {
       questionCol: string;
       answerCol: string;
       academicYearCol?: string;
-      cohortCol?: string;
+      enrollmentYearCol?: string;
       sheetName?: string;
       skipRows?: number;
     }
@@ -188,7 +188,7 @@ class FAQsService {
     
     const metadataMap: any = {};
     if (config.academicYearCol) metadataMap.academic_year = config.academicYearCol;
-    if (config.cohortCol) metadataMap.cohort = config.cohortCol;
+    if (config.enrollmentYearCol) metadataMap.enrollment_year = config.enrollmentYearCol;
     formData.append("metadataFilterJson", JSON.stringify(metadataMap));
 
     if (config.sheetName) formData.append("sheet_name", config.sheetName);

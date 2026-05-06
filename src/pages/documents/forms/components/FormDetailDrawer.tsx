@@ -111,7 +111,7 @@ export default function FormDetailDrawer({
         isOpen={open} 
         onClose={onClose} 
         title="Chi tiết biểu mẫu"
-        footerRight={
+        footerLeft={
           <button
             type="button"
             onClick={() => setConfirmDeleteOpen(true)}
@@ -122,6 +122,19 @@ export default function FormDetailDrawer({
           >
             <MdDeleteOutline className="h-4 w-4" />
           </button>
+        }
+        footerRight={
+          isDirty && (
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={!detail || isLoading || isUpdating || isDeleting}
+              className="bg-brand-500 hover:bg-brand-600 flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
+            >
+              <MdSave className="h-4 w-4" />
+              {isUpdating ? "Đang lưu..." : "Lưu thay đổi"}
+            </button>
+          )
         }
       >
         {isLoading ? (
@@ -157,20 +170,6 @@ export default function FormDetailDrawer({
               errors={errors}
               disabled={isUpdating || isDeleting}
             />
-
-            {isDirty && (
-              <div className="mt-2 flex justify-end">
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={!detail || isLoading || isUpdating || isDeleting}
-                  className="bg-brand-500 hover:bg-brand-600 flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
-                >
-                  <MdSave className="h-4 w-4" />
-                  {isUpdating ? "Đang lưu..." : "Lưu thay đổi"}
-                </button>
-              </div>
-            )}
 
             <DetailFormSection title="Thông số kỹ thuật">
               <div className="flex flex-col gap-2">

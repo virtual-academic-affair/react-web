@@ -1,17 +1,16 @@
 import Drawer from "@/components/drawer/Drawer";
-import DetailFormLayout, { FormRow } from "@/components/layouts/DetailFormLayout";
+import DetailFormLayout from "@/components/layouts/DetailFormLayout";
 import { faqsService } from "@/services/documents/faqs.service";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import YearRangeField from "@/components/fields/YearRangeField";
 import { FAQFormFields } from "./FAQFormFields";
 
 interface FAQCreationDrawerProps {
   open: boolean;
   onClose: () => void;
 }
-
-const inputCls = `w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white`;
 
 export default function FAQCreationDrawer({
   open,
@@ -21,8 +20,8 @@ export default function FAQCreationDrawer({
   const [formData, setFormData] = useState({
     question: "",
     answer: "",
-    academicYear: "all",
-    cohort: "all",
+    academicYear: { fromYear: 0, toYear: 9999 },
+    enrollmentYear: { fromYear: 0, toYear: 9999 },
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -32,8 +31,8 @@ export default function FAQCreationDrawer({
       faqsService.createFAQ({
         question: formData.question,
         answer: formData.answer,
-        academicYear: formData.academicYear !== "all" ? formData.academicYear : undefined,
-        cohort: formData.cohort !== "all" ? formData.cohort : undefined,
+        academicYear: formData.academicYear,
+        enrollmentYear: formData.enrollmentYear,
       }),
     onSuccess: () => {
       toast.success("Thêm câu hỏi thành công");
@@ -45,14 +44,20 @@ export default function FAQCreationDrawer({
     },
   });
 
+  // Reset state when drawer closes
+  useEffect(() => {
+    if (!open) {
+      setFormData({
+        question: "",
+        answer: "",
+        academicYear: { fromYear: 0, toYear: 9999 },
+        enrollmentYear: { fromYear: 0, toYear: 9999 },
+      });
+      setErrors({});
+    }
+  }, [open]);
+
   const handleClose = () => {
-    setFormData({
-      question: "",
-      answer: "",
-      academicYear: "all",
-      cohort: "all",
-    });
-    setErrors({});
     onClose();
   };
 
@@ -84,27 +89,19 @@ export default function FAQCreationDrawer({
             disabled={isPending}
           />
 
-          <div className="grid grid-cols-2 gap-4 mt-4">
-            <FormRow label="Năm học">
-              <input
-                type="text"
-                placeholder="2023-2024"
-                value={formData.academicYear}
-                onChange={(e) => setFormData(p => ({ ...p, academicYear: e.target.value }))}
-                disabled={isPending}
-                className={inputCls}
-              />
-            </FormRow>
-            <FormRow label="Niên khóa">
-              <input
-                type="text"
-                placeholder="K21"
-                value={formData.cohort}
-                onChange={(e) => setFormData(p => ({ ...p, cohort: e.target.value }))}
-                disabled={isPending}
-                className={inputCls}
-              />
-            </FormRow>
+          <div className="flex flex-col gap-4 mt-4">
+            <YearRangeField
+              label="Năm học áp dụng"
+              value={formData.academicYear}
+              onChange={(val) => setFormData((p) => ({ ...p, academicYear: val }))}
+              disabled={isPending}
+            />
+            <YearRangeField
+              label="Niên khóa áp dụng (Khóa tuyển sinh)"
+              value={formData.enrollmentYear}
+              onChange={(val) => setFormData((p) => ({ ...p, enrollmentYear: val }))}
+              disabled={isPending}
+            />
           </div>
         </DetailFormLayout>
 

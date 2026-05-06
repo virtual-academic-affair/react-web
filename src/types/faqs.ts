@@ -1,11 +1,16 @@
+export interface YearRange {
+  fromYear: number;
+  toYear: number;
+}
+
 export interface FAQ {
   id: string; // faqId in JSON, but mapped to id for frontend consistency if needed
   faqId: string; 
   question: string;
   answerRichText: string;
   metadataFilter: {
-    academicYear: string[];
-    cohort: string[];
+    academicYear: YearRange;
+    enrollmentYear: YearRange;
   };
   isActive: boolean;
   viewCount: number;
@@ -27,8 +32,8 @@ export interface FAQCandidate {
   question: string;
   answerDraftRichText: string;
   metadataFilterSuggestion: {
-    academicYear: string[];
-    cohort: string[];
+    academicYear: YearRange;
+    enrollmentYear: YearRange;
   };
   status: "pending" | "approved" | "rejected";
   similarCount: number;
