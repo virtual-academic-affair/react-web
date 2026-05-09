@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { message as toast } from "antd";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Drawer from "@/components/drawer/Drawer";
 import DetailFormLayout, { DetailFormSection, FormRow } from "@/components/layouts/DetailFormLayout";
 import { FormFormFields } from "./FormFormFields";
@@ -24,6 +24,7 @@ export default function FormDetailDrawer({
   onFormChanged,
   onFormDeleted,
 }: FormDetailDrawerProps) {
+  const queryClient = useQueryClient();
   // Track only user edits — NOT a copy of detail data
   const [edits, setEdits] = useState<{
     documentType?: string;
@@ -67,6 +68,10 @@ export default function FormDetailDrawer({
       }),
     onSuccess: (updated) => {
       toast.success("Cập nhật biểu mẫu thành công");
+      // Invalidate list and specific item cache to ensure detail shows fresh data
+      queryClient.invalidateQueries({ queryKey: ["forms"] });
+      queryClient.setQueryData(["form", id], updated);
+
       onFormChanged(updated);
       onClose();
     },
@@ -95,7 +100,7 @@ export default function FormDetailDrawer({
 
   const handleSave = () => {
     const newErrors: typeof errors = {};
-    if (!documentType.trim()) newErrors.documentType = "Loại văn bản không được để trống";
+    if (!documentType.trim()) newErrors.documentType = "Nội dung không được để trống";
     if (!contentLink.trim()) newErrors.contentLink = "Đường link không được để trống";
 
     if (Object.keys(newErrors).length > 0) {
@@ -111,30 +116,19 @@ export default function FormDetailDrawer({
         isOpen={open} 
         onClose={onClose} 
         title="Chi tiết biểu mẫu"
-        footerLeft={
-          <button
-            type="button"
-            onClick={() => setConfirmDeleteOpen(true)}
-            disabled={!detail || isLoading || isUpdating || isDeleting}
-            title={isDeleting ? "Đang xóa..." : "Xóa"}
-            aria-label={isDeleting ? "Đang xóa..." : "Xóa"}
-            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600 disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-600"
-          >
-            <MdDeleteOutline className="h-4 w-4" />
-          </button>
-        }
         footerRight={
-          isDirty && (
+          <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={handleSave}
+              onClick={() => setConfirmDeleteOpen(true)}
               disabled={!detail || isLoading || isUpdating || isDeleting}
-              className="bg-brand-500 hover:bg-brand-600 flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
+              title={isDeleting ? "Đang xóa..." : "Xóa"}
+              aria-label={isDeleting ? "Đang xóa..." : "Xóa"}
+              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600 disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-600"
             >
-              <MdSave className="h-4 w-4" />
-              {isUpdating ? "Đang lưu..." : "Lưu thay đổi"}
+              <MdDeleteOutline className="h-4 w-4" />
             </button>
-          )
+          </div>
         }
       >
         {isLoading ? (
@@ -170,6 +164,20 @@ export default function FormDetailDrawer({
               errors={errors}
               disabled={isUpdating || isDeleting}
             />
+
+            {isDirty && (
+              <div className="mt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={!detail || isLoading || isUpdating || isDeleting}
+                  className="bg-brand-500 hover:bg-brand-600 flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
+                >
+                  <MdSave className="h-4 w-4" />
+                  {isUpdating ? "Đang lưu..." : "Lưu thay đổi"}
+                </button>
+              </div>
+            )}
 
             <DetailFormSection title="Thông số kỹ thuật">
               <div className="flex flex-col gap-2">

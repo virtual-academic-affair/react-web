@@ -4,7 +4,6 @@ import { faqsService } from "@/services/documents/faqs.service";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import { useState, useEffect } from "react";
-import YearRangeField from "@/components/fields/YearRangeField";
 import { FAQFormFields } from "./FAQFormFields";
 
 interface FAQCreationDrawerProps {
@@ -83,26 +82,15 @@ export default function FAQCreationDrawer({
           <FAQFormFields
             question={formData.question}
             answer={formData.answer}
+            academicYear={formData.academicYear}
+            enrollmentYear={formData.enrollmentYear}
             onQuestionChange={(val) => setFormData((p) => ({ ...p, question: val }))}
             onAnswerChange={(val) => setFormData((p) => ({ ...p, answer: val }))}
+            onAcademicYearChange={(val) => setFormData((p) => ({ ...p, academicYear: val }))}
+            onEnrollmentYearChange={(val) => setFormData((p) => ({ ...p, enrollmentYear: val }))}
             errors={errors}
             disabled={isPending}
           />
-
-          <div className="flex flex-col gap-4 mt-4">
-            <YearRangeField
-              label="Năm học áp dụng"
-              value={formData.academicYear}
-              onChange={(val) => setFormData((p) => ({ ...p, academicYear: val }))}
-              disabled={isPending}
-            />
-            <YearRangeField
-              label="Niên khóa áp dụng (Khóa tuyển sinh)"
-              value={formData.enrollmentYear}
-              onChange={(val) => setFormData((p) => ({ ...p, enrollmentYear: val }))}
-              disabled={isPending}
-            />
-          </div>
         </DetailFormLayout>
 
         <div className="mt-4 flex justify-end gap-2">

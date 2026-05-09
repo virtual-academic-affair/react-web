@@ -34,11 +34,11 @@ export function FormFormFields({
 }: FormFormFieldsProps) {
   return (
     <>
-      <FormRow label="Loại văn bản" required={true}>
+      <FormRow label="Nội dung" required={true}>
         <div className="flex flex-col gap-1">
           <input
             type="text"
-            placeholder="Nhập loại văn bản..."
+            placeholder="Nhập nội dung..."
             value={documentType}
             onChange={(e) => onDocumentTypeChange(e.target.value)}
             disabled={disabled}
