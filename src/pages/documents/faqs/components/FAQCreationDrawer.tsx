@@ -4,7 +4,6 @@ import { faqsService } from "@/services/documents/faqs.service";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import { useState, useEffect } from "react";
-import YearRangeField from "@/components/fields/YearRangeField";
 import { FAQFormFields } from "./FAQFormFields";
 
 interface FAQCreationDrawerProps {

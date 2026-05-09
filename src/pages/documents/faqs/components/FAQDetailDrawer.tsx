@@ -1,6 +1,5 @@
 import Drawer from "@/components/drawer/Drawer";
 import DetailFormLayout, { FormRow, DetailFormSection } from "@/components/layouts/DetailFormLayout";
-import YearRangeField from "@/components/fields/YearRangeField";
 import type { FAQ, YearRange } from "@/types/faqs";
 import { faqsService } from "@/services/documents/faqs.service";
 import { formatDate } from "@/utils/date";
