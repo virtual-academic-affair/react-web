@@ -46,21 +46,29 @@ export default function CandidateDetailDrawer({
   const enrollmentYear = edits.enrollmentYear ?? meta?.enrollmentYear ?? { fromYear: 0, toYear: 9999 };
 
   const { mutate: review, isPending } = useMutation({
-    mutationFn: (action: "approve" | "reject") =>
-      faqsService.reviewCandidate(candidate!.id, action, {
+    mutationFn: (action: "approve" | "reject") => {
+      const id = candidate?.candidateId || candidate?.id;
+      if (!id) throw new Error("Không tìm thấy ID của đề xuất");
+      
+      return faqsService.reviewCandidate(id, action, {
         question,
         answer,
         metadataFilter: {
           academicYear,
           enrollmentYear,
         },
-      }),
+      });
+    },
     onSuccess: (_, action) => {
       toast.success(action === "approve" ? "Đã duyệt và thêm vào FAQ" : "Đã từ chối đề xuất");
       
-      // Simple invalidation instead of manual cache update
+      // Invalidate ALL FAQ related queries to ensure consistency across tabs
       queryClient.invalidateQueries({ queryKey: ["faq-candidates"] });
       queryClient.invalidateQueries({ queryKey: ["faqs"] });
+      
+      // Force remove specific items from cache to ensure re-fetch if navigation happens
+      queryClient.removeQueries({ queryKey: ["faq-candidate", candidate?.candidateId || candidate?.id] });
+      
       onClose();
     },
     onError: (error: any) => {
@@ -130,26 +138,15 @@ export default function CandidateDetailDrawer({
             key={candidate?.candidateId || candidate?.id}
             question={question}
             answer={answer}
+            academicYear={academicYear}
+            enrollmentYear={enrollmentYear}
             onQuestionChange={(val) => setEdits((p) => ({ ...p, question: val }))}
             onAnswerChange={(val) => setEdits((p) => ({ ...p, answer: val }))}
+            onAcademicYearChange={(val) => setEdits((p) => ({ ...p, academicYear: val }))}
+            onEnrollmentYearChange={(val) => setEdits((p) => ({ ...p, enrollmentYear: val }))}
             errors={errors}
             disabled={isPending || candidate.status !== "pending"}
           />
-
-          <div className="flex flex-col gap-4 mt-4">
-            <YearRangeField
-              label="Năm học áp dụng (Gợi ý)"
-              value={academicYear}
-              onChange={(val) => setEdits((p) => ({ ...p, academicYear: val }))}
-              disabled={isPending || candidate.status !== "pending"}
-            />
-            <YearRangeField
-              label="Niên khóa áp dụng (Gợi ý)"
-              value={enrollmentYear}
-              onChange={(val) => setEdits((p) => ({ ...p, enrollmentYear: val }))}
-              disabled={isPending || candidate.status !== "pending"}
-            />
-          </div>
 
           <DetailFormSection title="Thông số kỹ thuật">
             <div className="flex flex-col gap-2">

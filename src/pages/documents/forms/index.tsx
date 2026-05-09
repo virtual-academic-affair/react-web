@@ -49,7 +49,7 @@ export default function FormsPage() {
   const columns: TableColumn<Form>[] = [
     {
       key: "documentType",
-      header: "Loại văn bản",
+      header: "Nội dung",
       render: (item) => (
         <div className="flex items-center gap-2">
           <p className="text-sm font-medium text-navy-700 dark:text-white">
@@ -60,7 +60,7 @@ export default function FormsPage() {
     },
     {
       key: "contentLink",
-      header: "Nội dung & Phạm vi áp dụng",
+      header: "Đường link",
       render: (item) => (
         <div
           className="tiptap-prose text-sm text-navy-700 dark:text-white [&_a]:text-brand-500 [&_a:hover]:underline dark:[&_a]:text-brand-400 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 line-clamp-2"

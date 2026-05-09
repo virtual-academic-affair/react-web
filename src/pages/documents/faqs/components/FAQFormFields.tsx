@@ -1,12 +1,18 @@
 import RichTextEditor from "@/components/fields/RichTextEditor";
+import YearRangeField from "@/components/fields/YearRangeField";
 import { FormRow } from "@/components/layouts/DetailFormLayout";
+import type { YearRange } from "@/types/faqs";
 
 
 interface FAQFormFieldsProps {
   question: string;
   answer: string;
+  academicYear: YearRange;
+  enrollmentYear: YearRange;
   onQuestionChange: (val: string) => void;
   onAnswerChange: (val: string) => void;
+  onAcademicYearChange: (val: YearRange) => void;
+  onEnrollmentYearChange: (val: YearRange) => void;
   errors?: {
     question?: string;
     answer?: string;
@@ -22,8 +28,12 @@ const inputCls = (hasError?: string) =>
 export function FAQFormFields({
   question,
   answer,
+  academicYear,
+  enrollmentYear,
   onQuestionChange,
   onAnswerChange,
+  onAcademicYearChange,
+  onEnrollmentYearChange,
   errors,
   disabled,
 }: FAQFormFieldsProps) {
@@ -52,6 +62,22 @@ export function FAQFormFields({
             disabled={disabled}
           />
         </div>
+      </FormRow>
+
+      <FormRow label="Năm học áp dụng">
+        <YearRangeField
+          value={academicYear}
+          onChange={onAcademicYearChange}
+          disabled={disabled}
+        />
+      </FormRow>
+
+      <FormRow label="Niên khóa áp dụng">
+        <YearRangeField
+          value={enrollmentYear}
+          onChange={onEnrollmentYearChange}
+          disabled={disabled}
+        />
       </FormRow>
     </>
   );
