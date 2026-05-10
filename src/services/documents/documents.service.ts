@@ -66,7 +66,7 @@ export const DocumentsService = {
     page?: number;
     limit?: number;
     keywords?: string;
-    metadataFilter?: Record<string, string[]>;
+    metadataFilter?: Record<string, unknown>;
   }): Promise<{ files: unknown[]; total: number }> {
     const queryParams: Record<string, unknown> = { ...params };
     if (params?.metadataFilter) {

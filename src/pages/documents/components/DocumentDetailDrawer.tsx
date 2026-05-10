@@ -45,6 +45,21 @@ const ALL_YEARS_MIN = 0;
 const normalizeYear = (y: number | null | undefined): number | null =>
   y == null || y <= ALL_YEARS_MIN || y >= ALL_YEARS_MAX ? null : y;
 
+/** Format a year range for read-only display */
+const formatYearRangeDisplay = (
+  range: { fromYear?: number | null; toYear?: number | null } | null | undefined,
+  allLabel: string,
+): string => {
+  if (!range) return allLabel;
+  const from = normalizeYear(range.fromYear);
+  const to = normalizeYear(range.toYear);
+  if (from === null && to === null) return allLabel;
+  if (from === to) return String(from ?? to);
+  if (from === null) return `— ${to}`;
+  if (to === null) return `${from} —`;
+  return `${from} – ${to}`;
+};
+
 // ── Row layout helper ─────────────────────────────────────────────────────────
 
 const Row: React.FC<{
@@ -73,6 +88,7 @@ const Row: React.FC<{
 const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
   fileId,
   isOpen,
+  isReadOnly = false,
   onClose,
   onDeleted,
   onUpdated,
@@ -212,7 +228,21 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
   };
 
   // ── Footer ──────────────────────────────────────────────────────────────────
-  const footerLeft = (
+  const footerLeft = isReadOnly ? (
+    <div className="flex items-center gap-3">
+      {onPreview && (
+        <Tooltip label="Xem trước tệp">
+          <button
+            type="button"
+            onClick={onPreview}
+            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500 text-white transition-colors hover:bg-blue-600"
+          >
+            <MdPreview className="h-4 w-4" />
+          </button>
+        </Tooltip>
+      )}
+    </div>
+  ) : (
     <div className="flex items-center gap-3">
       {onPreview && (
         <Tooltip label="Xem trước tệp">
@@ -239,7 +269,7 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
     </div>
   );
 
-  const footerRight = (
+  const footerRight = isReadOnly ? undefined : (
     <button
       type="button"
       disabled={saving || !hasChanges}
@@ -275,87 +305,128 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
         </div>
       ) : (
         <div className="flex flex-col gap-5">
-          {/* ── Editable fields ─────────────────────────────────── */}
+          {/* ── Metadata fields ─────────────────────────────────── */}
 
           {/* Tên hiển thị */}
           <Row label="Tên hiển thị">
-            <input
-              type="text"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              className={inputClass}
-              placeholder="Tên hiển thị"
-            />
+            {isReadOnly ? (
+              <p className="text-navy-700 text-sm dark:text-white">
+                {fileDetail?.displayName || fileDetail?.originalFilename || "—"}
+              </p>
+            ) : (
+              <input
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                className={inputClass}
+                placeholder="Tên hiển thị"
+              />
+            )}
           </Row>
 
           {/* Loại tài liệu */}
           <Row label="Loại tài liệu">
-            <Tag
-              variant="selection"
-              value={docType}
-              onChange={setDocType}
-              options={DOCUMENT_TYPES}
-              color={docType ? DOCUMENT_TYPE_COLOR_MAP[docType] : "#94a3b8"}
-              optionColors={DOCUMENT_TYPE_COLOR_MAP}
-            >
-              {docType ? DOCUMENT_TYPE_MAP[docType] : "— Chọn loại —"}
-            </Tag>
+            {isReadOnly ? (
+              docType ? (
+                <Tag
+                  color={DOCUMENT_TYPE_COLOR_MAP[docType] ?? "#94a3b8"}
+                  interactive={false}
+                >
+                  {DOCUMENT_TYPE_MAP[docType] ?? docType}
+                </Tag>
+              ) : (
+                <p className="text-sm text-gray-400">—</p>
+              )
+            ) : (
+              <Tag
+                variant="selection"
+                value={docType}
+                onChange={setDocType}
+                options={DOCUMENT_TYPES}
+                color={docType ? DOCUMENT_TYPE_COLOR_MAP[docType] : "#94a3b8"}
+                optionColors={DOCUMENT_TYPE_COLOR_MAP}
+              >
+                {docType ? DOCUMENT_TYPE_MAP[docType] : "— Chọn loại —"}
+              </Tag>
+            )}
           </Row>
 
           {/* Khóa tuyển sinh */}
           <Row label="Khóa tuyển sinh">
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                value={enrollFromYear}
-                onChange={(e) => setEnrollFromYear(e.target.value)}
-                placeholder="Từ năm"
-                min={2000}
-                max={2099}
-                className={inputClass}
-              />
-              <span className="shrink-0 text-sm text-gray-400">—</span>
-              <input
-                type="number"
-                value={enrollToYear}
-                onChange={(e) => setEnrollToYear(e.target.value)}
-                placeholder="Đến năm"
-                min={2000}
-                max={2099}
-                className={inputClass}
-              />
-            </div>
-            <p className="mt-1 text-xs text-gray-400">
-              Để trống = áp dụng mọi khóa
-            </p>
+            {isReadOnly ? (
+              <p className="text-navy-700 text-sm dark:text-white">
+                {formatYearRangeDisplay(
+                  fileDetail?.customMetadata?.enrollmentYear,
+                  "Áp dụng cho mọi khóa",
+                )}
+              </p>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={enrollFromYear}
+                    onChange={(e) => setEnrollFromYear(e.target.value)}
+                    placeholder="Từ năm"
+                    min={2000}
+                    max={2099}
+                    className={inputClass}
+                  />
+                  <span className="shrink-0 text-sm text-gray-400">—</span>
+                  <input
+                    type="number"
+                    value={enrollToYear}
+                    onChange={(e) => setEnrollToYear(e.target.value)}
+                    placeholder="Đến năm"
+                    min={2000}
+                    max={2099}
+                    className={inputClass}
+                  />
+                </div>
+                <p className="mt-1 text-xs text-gray-400">
+                  Để trống = áp dụng mọi khóa
+                </p>
+              </>
+            )}
           </Row>
 
           {/* Năm học */}
           <Row label="Năm học">
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                value={academicFromYear}
-                onChange={(e) => setAcademicFromYear(e.target.value)}
-                placeholder="Từ năm"
-                min={2000}
-                max={2099}
-                className={inputClass}
-              />
-              <span className="shrink-0 text-sm text-gray-400">—</span>
-              <input
-                type="number"
-                value={academicToYear}
-                onChange={(e) => setAcademicToYear(e.target.value)}
-                placeholder="Đến năm"
-                min={2000}
-                max={2099}
-                className={inputClass}
-              />
-            </div>
-            <p className="mt-1 text-xs text-gray-400">
-              Để trống = áp dụng mọi năm
-            </p>
+            {isReadOnly ? (
+              <p className="text-navy-700 text-sm dark:text-white">
+                {formatYearRangeDisplay(
+                  fileDetail?.customMetadata?.academicYear,
+                  "Áp dụng cho mọi năm học",
+                )}
+              </p>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={academicFromYear}
+                    onChange={(e) => setAcademicFromYear(e.target.value)}
+                    placeholder="Từ năm"
+                    min={2000}
+                    max={2099}
+                    className={inputClass}
+                  />
+                  <span className="shrink-0 text-sm text-gray-400">—</span>
+                  <input
+                    type="number"
+                    value={academicToYear}
+                    onChange={(e) => setAcademicToYear(e.target.value)}
+                    placeholder="Đến năm"
+                    min={2000}
+                    max={2099}
+                    className={inputClass}
+                  />
+                </div>
+                <p className="mt-1 text-xs text-gray-400">
+                  Để trống = áp dụng mọi năm
+                </p>
+              </>
+            )}
           </Row>
 
           {/* ── Read-only info ───────────────────────────────────── */}
@@ -413,7 +484,7 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
           </div>
 
           {/* ── Technical info ───────────────────────────────────── */}
-          {fileDetail && (
+          {fileDetail && !isReadOnly && (
             <div className="border-t border-gray-100 pt-4 dark:border-white/10">
               <p className="text-navy-700 mb-3 text-xs font-semibold tracking-wide uppercase dark:text-white">
                 Thông số kỹ thuật
@@ -461,14 +532,16 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
         </div>
       )}
 
-      <ConfirmModal
-        open={isConfirmDeleteOpen}
-        onCancel={() => setIsConfirmDeleteOpen(false)}
-        onConfirm={confirmDelete}
-        title="Xác nhận xóa tệp"
-        subTitle={`Bạn có chắc chắn muốn xóa tệp "${fileDetail?.displayName || fileDetail?.originalFilename}" không?`}
-        loading={saving}
-      />
+      {!isReadOnly && (
+        <ConfirmModal
+          open={isConfirmDeleteOpen}
+          onCancel={() => setIsConfirmDeleteOpen(false)}
+          onConfirm={confirmDelete}
+          title="Xác nhận xóa tệp"
+          subTitle={`Bạn có chắc chắn muốn xóa tệp "${fileDetail?.displayName || fileDetail?.originalFilename}" không?`}
+          loading={saving}
+        />
+      )}
     </Drawer>
   );
 };

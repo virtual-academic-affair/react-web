@@ -16,16 +16,18 @@ import {
 } from "react-icons/md";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
-import { DocumentsService, MetadataService } from "@/services/documents";
-import { authService } from "@/services/auth";
-import { useAuthStore } from "@/stores/auth.store";
 import DocumentDetailDrawer from "@/pages/documents/components/DocumentDetailDrawer";
 import FilePreviewModal from "@/pages/documents/components/FilePreviewModal";
+import { DOCUMENT_TYPES } from "@/pages/documents/components/UploadDrawer";
+import { authService } from "@/services/auth";
+import { DocumentsService, MetadataService } from "@/services/documents";
+import { useAuthStore } from "@/stores/auth.store";
 
 import ActiveFilterChips from "./components/ActiveFilterChips";
-import FilterGroup from "./components/FilterGroup";
 import { FileCard, FileRow } from "./components/FileItems";
+import FilterGroup from "./components/FilterGroup";
 import { GridSkeleton, ListSkeleton } from "./components/Skeletons";
+import YearRangeFilter, { type YearRange } from "./components/YearRangeFilter";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -33,6 +35,25 @@ const PAGE_SIZE = 18;
 
 /** Metadata type key that receives special access-scope derivation in the API call */
 const ACCESS_SCOPE_KEY = "access_scope";
+
+/** Hardcoded document type filter key — maps to customMetadata.type */
+const TYPE_FILTER_KEY = "type";
+
+/** Document type filter options for the FilterGroup pill */
+const DOC_TYPE_FILTER_OPTIONS = DOCUMENT_TYPES.map((t) => ({
+  value: t.value,
+  displayName: t.label,
+  color: t.color,
+}));
+
+/** Extra type definition so ActiveFilterChips can resolve type labels */
+const DOC_TYPE_EXTRA_TYPE = {
+  key: TYPE_FILTER_KEY,
+  displayName: "Loại tài liệu",
+  allowedValues: DOC_TYPE_FILTER_OPTIONS,
+};
+
+const EMPTY_YEAR_RANGE: YearRange = { fromYear: "", toYear: "" };
 
 // ── Filters type: keys are raw metadata type keys (e.g. "access_scope") ───────
 type UserDocFilters = Record<string, string[]>;
@@ -59,14 +80,19 @@ const UserDocumentsPage: React.FC = () => {
     return {};
   });
 
+  // Year range filters (separate from tag-based filters)
+  const [enrollmentYear, setEnrollmentYear] =
+    useState<YearRange>(EMPTY_YEAR_RANGE);
+  const [academicYear, setAcademicYear] = useState<YearRange>(EMPTY_YEAR_RANGE);
+
   // Pagination
   const [page, setPage] = useState(
-    Math.max(1, Number(searchParams.get("page") || "1"))
+    Math.max(1, Number(searchParams.get("page") || "1")),
   );
 
   // URL-driven detail / preview
   const isPreview = searchParams.get("preview") === "true";
-  const previewFileId = isPreview ? (searchParams.get("id") || null) : null;
+  const previewFileId = isPreview ? searchParams.get("id") || null : null;
   const selectedFileId = searchParams.get("id") || null;
   const wasDrawerOpen = useRef(false);
 
@@ -84,7 +110,7 @@ const UserDocumentsPage: React.FC = () => {
         if (!t.isActive) return false;
         return (t.allowedValues || []).some((v: any) => v.isActive);
       }),
-    [metadataTypes]
+    [metadataTypes],
   );
 
   /**
@@ -93,7 +119,7 @@ const UserDocumentsPage: React.FC = () => {
    * – everything else is passed as-is
    */
   const metadataFilterArg = useMemo(() => {
-    const result: Record<string, string[]> = {};
+    const result: Record<string, unknown> = {};
 
     Object.entries(filters).forEach(([key, values]) => {
       if (!Array.isArray(values) || values.length === 0) return;
@@ -103,7 +129,8 @@ const UserDocumentsPage: React.FC = () => {
         const hasLecture = values.includes("lecture");
         const hasPrivate = values.includes("private");
         const derived: string[] = [];
-        if (hasStudent && hasLecture) derived.push("both", "student", "lecture");
+        if (hasStudent && hasLecture)
+          derived.push("both", "student", "lecture");
         else if (hasStudent) derived.push("student", "both");
         else if (hasLecture) derived.push("lecture", "both");
         if (hasPrivate) derived.push("private");
@@ -114,11 +141,38 @@ const UserDocumentsPage: React.FC = () => {
       result[key] = values;
     });
 
+    // "type" filter → metadataFilter.type
+    const typeValues = filters[TYPE_FILTER_KEY];
+    if (Array.isArray(typeValues) && typeValues.length > 0) {
+      result[TYPE_FILTER_KEY] = typeValues;
+    }
+
+    // Enrollment year range
+    if (enrollmentYear.fromYear || enrollmentYear.toYear) {
+      const yearObj: Record<string, number> = {};
+      if (enrollmentYear.fromYear)
+        yearObj.fromYear = Number(enrollmentYear.fromYear);
+      if (enrollmentYear.toYear) yearObj.toYear = Number(enrollmentYear.toYear);
+      result.enrollmentYear = yearObj;
+    }
+
+    // Academic year range
+    if (academicYear.fromYear || academicYear.toYear) {
+      const yearObj: Record<string, number> = {};
+      if (academicYear.fromYear)
+        yearObj.fromYear = Number(academicYear.fromYear);
+      if (academicYear.toYear) yearObj.toYear = Number(academicYear.toYear);
+      result.academicYear = yearObj;
+    }
+
     return Object.keys(result).length > 0 ? result : undefined;
-  }, [filters]);
+  }, [filters, enrollmentYear, academicYear]);
 
   const { data: result, isLoading } = useQuery({
-    queryKey: ["documents-user", { page, keyword, metadataFilter: metadataFilterArg }],
+    queryKey: [
+      "documents-user",
+      { page, keyword, metadataFilter: metadataFilterArg },
+    ],
     queryFn: async () => {
       const res = await DocumentsService.listFiles({
         page,
@@ -182,7 +236,7 @@ const UserDocumentsPage: React.FC = () => {
       next.delete("preview");
       setSearchParams(next, { replace: true });
     },
-    [searchParams, setSearchParams]
+    [searchParams, setSearchParams],
   );
 
   const handleCloseDetail = useCallback(() => {
@@ -199,7 +253,7 @@ const UserDocumentsPage: React.FC = () => {
       next.set("preview", "true");
       setSearchParams(next, { replace: true });
     },
-    [searchParams, setSearchParams, selectedFileId, isPreview]
+    [searchParams, setSearchParams, selectedFileId, isPreview],
   );
 
   const handleClosePreview = useCallback(() => {
@@ -238,13 +292,29 @@ const UserDocumentsPage: React.FC = () => {
 
   const handleClearAll = useCallback(() => {
     setFilters({});
+    setEnrollmentYear(EMPTY_YEAR_RANGE);
+    setAcademicYear(EMPTY_YEAR_RANGE);
+    setPage(1);
+  }, []);
+
+  const handleEnrollmentYearChange = useCallback((next: YearRange) => {
+    setEnrollmentYear(next);
+    setPage(1);
+  }, []);
+
+  const handleAcademicYearChange = useCallback((next: YearRange) => {
+    setAcademicYear(next);
     setPage(1);
   }, []);
 
   const totalPages = pagination?.totalPages || 1;
-  const hasFilters = Object.values(filters).some(
-    (v) => Array.isArray(v) && v.length > 0
+  const hasTagFilters = Object.values(filters).some(
+    (v) => Array.isArray(v) && v.length > 0,
   );
+  const hasYearFilters =
+    Boolean(enrollmentYear.fromYear || enrollmentYear.toYear) ||
+    Boolean(academicYear.fromYear || academicYear.toYear);
+  const hasFilters = hasTagFilters || hasYearFilters;
 
   const handleLogout = async () => {
     try {
@@ -264,7 +334,7 @@ const UserDocumentsPage: React.FC = () => {
       {/* ── Logout Button ──────────────────────────────────────────────── */}
       <button
         onClick={handleLogout}
-        className="absolute top-4 right-4 flex items-center gap-2 rounded-xl bg-white/50 px-3 py-2 text-sm font-medium text-red-500 shadow-sm backdrop-blur-md transition-all hover:bg-red-50 sm:top-8 sm:right-8 sm:px-4 dark:bg-navy-800/50 dark:hover:bg-red-500/10"
+        className="dark:bg-navy-800/50 absolute top-4 right-4 flex items-center gap-2 rounded-xl bg-white/50 px-3 py-2 text-sm font-medium text-red-500 shadow-sm backdrop-blur-md transition-all hover:bg-red-50 sm:top-8 sm:right-8 sm:px-4 dark:hover:bg-red-500/10"
         title="Đăng xuất"
       >
         <MdLogout className="h-5 w-5" />
@@ -274,10 +344,10 @@ const UserDocumentsPage: React.FC = () => {
       {/* ── Hero header + search ────────────────────────────────────────── */}
       <div className="mx-auto mb-8 max-w-3xl text-center">
         <h1 className="text-navy-700 mb-2 text-2xl font-bold dark:text-white">
-          Tài liệu học tập
+          Tài liệu giáo vụ
         </h1>
         <p className="mb-6 text-sm text-gray-400">
-          Tìm kiếm và xem các tài liệu được chia sẻ
+          Tổng hợp tài liệu giáo vụ liên quan đến các vấn đề học tập, quy chế
         </p>
 
         <form onSubmit={handleSearch} className="relative">
@@ -288,7 +358,7 @@ const UserDocumentsPage: React.FC = () => {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Tìm tài liệu, giáo trình, bài giảng..."
-            className="dark:bg-navy-800 w-full rounded-2xl border border-gray-200 bg-white py-3 pr-24 pl-11 text-sm text-gray-700 shadow-sm outline-none transition-all focus:border-brand-400 focus:ring-2 focus:ring-brand-400/20 dark:border-white/10 dark:text-white dark:placeholder-gray-500 dark:focus:border-brand-500"
+            className="dark:bg-navy-800 focus:border-brand-400 focus:ring-brand-400/20 dark:focus:border-brand-500 w-full rounded-2xl border border-gray-200 bg-white py-3 pr-24 pl-11 text-sm text-gray-700 shadow-sm transition-all outline-none focus:ring-2 dark:border-white/10 dark:text-white dark:placeholder-gray-500"
           />
           <button
             type="submit"
@@ -306,6 +376,28 @@ const UserDocumentsPage: React.FC = () => {
         </span>
 
         <div className="flex items-center gap-2">
+          {/* Year range filters */}
+          <YearRangeFilter
+            label="Khóa tuyển sinh"
+            value={enrollmentYear}
+            onChange={handleEnrollmentYearChange}
+          />
+          <YearRangeFilter
+            label="Năm học"
+            value={academicYear}
+            onChange={handleAcademicYearChange}
+          />
+
+          {/* Hardcoded document type filter */}
+          <FilterGroup
+            label="Loại tài liệu"
+            typeKey={TYPE_FILTER_KEY}
+            options={DOC_TYPE_FILTER_OPTIONS}
+            selected={filters[TYPE_FILTER_KEY] || []}
+            onChange={(next) => handleFilterChange(TYPE_FILTER_KEY, next)}
+          />
+
+          {/* Dynamic metadata-based filters */}
           {filterableTypes.map((type: any) => {
             const opts = (type.allowedValues || [])
               .filter((v: any) => v.isActive)
@@ -363,6 +455,26 @@ const UserDocumentsPage: React.FC = () => {
           <ActiveFilterChips
             filters={filters}
             metadataTypes={filterableTypes}
+            extraTypes={[DOC_TYPE_EXTRA_TYPE]}
+            yearRanges={[
+              ...(enrollmentYear.fromYear || enrollmentYear.toYear
+                ? [
+                    {
+                      key: "enrollmentYear",
+                      label: "Khóa tuyển sinh",
+                      ...enrollmentYear,
+                    },
+                  ]
+                : []),
+              ...(academicYear.fromYear || academicYear.toYear
+                ? [{ key: "academicYear", label: "Năm học", ...academicYear }]
+                : []),
+            ]}
+            onRemoveYearRange={(key) => {
+              if (key === "enrollmentYear") setEnrollmentYear(EMPTY_YEAR_RANGE);
+              if (key === "academicYear") setAcademicYear(EMPTY_YEAR_RANGE);
+              setPage(1);
+            }}
             onRemove={handleRemoveChip}
             onClearAll={handleClearAll}
           />
@@ -406,6 +518,8 @@ const UserDocumentsPage: React.FC = () => {
                 setInputValue("");
                 setKeyword("");
                 setFilters({});
+                setEnrollmentYear(EMPTY_YEAR_RANGE);
+                setAcademicYear(EMPTY_YEAR_RANGE);
                 setPage(1);
               }}
               className="rounded-xl bg-gray-100 px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-200 dark:bg-white/8 dark:text-gray-300 dark:hover:bg-white/12"
