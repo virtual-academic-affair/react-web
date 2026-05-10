@@ -10,6 +10,7 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import Navbar from "@/components/navbar";
 import UserSidebar from "@/components/sidebar/UserSidebar";
 import ChatbotPage from "@/pages/chatbot";
+import FormsPage from "@/pages/documents/forms";
 import UserDocumentsPage from "@/pages/user/documents";
 import { useAuthStore } from "@/stores/auth.store";
 import { getUserInfoFromToken } from "@/utils/auth.util";
@@ -89,6 +90,7 @@ const UserLayout: React.FC = () => {
         >
           <Routes>
             <Route path="/documents" element={<UserDocumentsPage />} />
+            <Route path="/forms" element={<FormsPage isReadOnly />} />
             <Route path="/chatbot" element={<ChatbotPage />} />
             <Route
               path="/"

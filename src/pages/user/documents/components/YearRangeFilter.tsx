@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { MdExpandMore, MdClose } from "react-icons/md";
+import { MdClose, MdExpandMore } from "react-icons/md";
 
 export interface YearRange {
   fromYear: string;
@@ -11,15 +11,6 @@ interface YearRangeFilterProps {
   label: string;
   value: YearRange;
   onChange: (next: YearRange) => void;
-}
-
-/** Formats a year range for display as a short summary */
-function formatSummary(range: YearRange): string | null {
-  const { fromYear, toYear } = range;
-  if (!fromYear && !toYear) return null;
-  if (fromYear && toYear) return `${fromYear} – ${toYear}`;
-  if (fromYear) return `Từ ${fromYear}`;
-  return `Đến ${toYear}`;
 }
 
 /**
@@ -82,7 +73,6 @@ const YearRangeFilter: React.FC<YearRangeFilterProps> = ({
   }, [open]);
 
   const hasActive = Boolean(value.fromYear || value.toYear);
-  const summary = formatSummary(value);
 
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -109,7 +99,7 @@ const YearRangeFilter: React.FC<YearRangeFilterProps> = ({
         className={`flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium transition-transform ${
           hasActive
             ? "border-brand-500 bg-brand-500/10 text-brand-600 dark:text-brand-400"
-            : "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50 dark:border-white/10 dark:bg-navy-800 dark:text-gray-300 dark:hover:border-white/20 dark:hover:bg-white/5"
+            : "dark:bg-navy-800 border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50 dark:border-white/10 dark:text-gray-300 dark:hover:border-white/20 dark:hover:bg-white/5"
         }`}
       >
         {label}
@@ -117,7 +107,7 @@ const YearRangeFilter: React.FC<YearRangeFilterProps> = ({
           <button
             type="button"
             onClick={handleClear}
-            className="flex h-4 w-4 items-center justify-center rounded-full bg-brand-500 text-white hover:bg-brand-600"
+            className="bg-brand-500 hover:bg-brand-600 flex h-4 w-4 items-center justify-center rounded-full text-white"
           >
             <MdClose className="h-3 w-3" />
           </button>
@@ -134,7 +124,7 @@ const YearRangeFilter: React.FC<YearRangeFilterProps> = ({
             style={{ top: dropPos.top, left: dropPos.left }}
             className="dark:bg-navy-900 fixed z-9999 w-[280px] max-w-[calc(100vw-24px)] rounded-2xl border border-gray-100 bg-white p-4 shadow-xl dark:border-white/10"
           >
-            <p className="mb-3 px-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+            <p className="mb-3 px-1 text-[10px] font-semibold tracking-wider text-gray-400 uppercase dark:text-gray-500">
               {label}
             </p>
 
@@ -183,7 +173,7 @@ const YearRangeFilter: React.FC<YearRangeFilterProps> = ({
             <button
               type="button"
               onClick={applyChanges}
-              className="mt-4 w-full rounded-xl bg-brand-500 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-600"
+              className="bg-brand-500 hover:bg-brand-600 mt-4 w-full rounded-xl py-2 text-sm font-medium text-white transition-colors"
             >
               Áp dụng
             </button>

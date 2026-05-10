@@ -3,7 +3,7 @@
  * Used by the UserSidebar to render navigation links.
  */
 
-import { MdDescription, MdSmartToy } from "react-icons/md";
+import { MdArticle, MdDescription, MdSmartToy } from "react-icons/md";
 
 const userRoutes: RoutesType[] = [
   {
@@ -11,6 +11,12 @@ const userRoutes: RoutesType[] = [
     layout: "/user",
     path: "documents",
     icon: <MdDescription className="h-6 w-6" />,
+  },
+  {
+    name: "Biểu mẫu",
+    layout: "/user",
+    path: "forms",
+    icon: <MdArticle className="h-6 w-6" />,
   },
   {
     name: "Chatbot",
