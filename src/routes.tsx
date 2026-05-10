@@ -71,28 +71,6 @@ const routes: RoutesType[] = [
         layout: "/admin",
         path: "documents/candidates",
       },
-      {
-        name: "Tải lên tài liệu",
-        layout: "/admin",
-        path: "documents/create",
-      },
-      {
-        name: "Quản lý nhãn tài liệu",
-        layout: "/admin",
-        path: "",
-        children: [
-          {
-            name: "DS nhãn tài liệu",
-            layout: "/admin",
-            path: "documents/metadata/index",
-          },
-          {
-            name: "Tạo nhãn tài liệu",
-            layout: "/admin",
-            path: "documents/metadata/create",
-          },
-        ],
-      },
     ],
   },
   {

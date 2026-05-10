@@ -1,63 +1,31 @@
-﻿import { message as toast } from "antd";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { message as toast } from "antd";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { MdClose, MdCloudUpload, MdDescription } from "react-icons/md";
 
 import Drawer from "@/components/drawer/Drawer";
-import Tag from "@/components/tag/Tag";
-import {
-  DocumentsService,
-  type UploadProgressEvent,
-} from "@/services/documents";
-import { RoleColors } from "@/types/users";
+import SelectField from "@/components/fields/SelectField";
+import { DocumentsService } from "@/services/documents";
 import { parseError } from "@/utils/parseError";
-import AccessScopeBadge from "./AccessScopeBadge";
-
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-export interface MetadataValue {
-  value: string;
-  displayName: string;
-  isActive?: boolean;
-  color?: string;
-  visibleRoles?: string[];
-}
-
-export interface MetadataType {
-  key: string;
-  displayName: string;
-  isActive?: boolean;
-  allowedValues?: MetadataValue[];
-}
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 export const ALLOWED_EXTENSIONS = [
-  // Documents
   ".pdf",
   ".doc",
   ".docx",
   ".rtf",
   ".md",
-
-  // Spreadsheets
   ".xls",
   ".xlsx",
   ".xlsm",
   ".xlsb",
-
-  // Presentations
   ".ppt",
   ".pptx",
   ".pptm",
-
-  // Data / Tabular
   ".csv",
   ".tsv",
-
-  // Web / Markup
   ".html",
   ".xml",
-
-  // Others
   ".json",
   ".ods",
   ".odp",
@@ -66,188 +34,114 @@ export const ALLOWED_EXTENSIONS = [
 
 export const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
 
-// ── Step indicator ────────────────────────────────────────────────────────────
+// ── Document type config ──────────────────────────────────────────────────────
 
-/** Giống layout bước tạo đăng ký lớp: `gradient` đặt ngoài card trên nền brand; `plain` trong drawer. */
-export const ProcessSteps: React.FC<{
-  currentStep: number;
-  variant?: "gradient" | "plain";
-}> = ({ currentStep, variant = "plain" }) => {
-  const steps = [
-    { number: 1, label: "Chọn tệp tin" },
-    { number: 2, label: "Nhãn tài liệu" },
-  ];
+export const DOCUMENT_TYPES = [
+  { value: "ctdt", label: "Chương trình đề án", color: "#6366f1" },
+  { value: "cong_van", label: "Công văn", color: "#0ea5e9" },
+  { value: "quyet_dinh", label: "Quyết định", color: "#f59e0b" },
+];
 
-  const labelClass =
-    variant === "gradient"
-      ? "text-xs font-medium text-white dark:text-white"
-      : "text-xs font-medium text-gray-600 dark:text-gray-400";
+export const DOCUMENT_TYPE_MAP: Record<string, string> = Object.fromEntries(
+  DOCUMENT_TYPES.map((t) => [t.value, t.label]),
+);
 
-  return (
-    <div
-      className={
-        variant === "gradient"
-          ? "mb-8 flex items-center justify-center gap-4"
-          : "mb-6 flex items-center justify-center gap-4"
-      }
-    >
-      {steps.map((step, index) => (
-        <React.Fragment key={step.number}>
-          <div className="flex flex-col items-center gap-2">
-            <div
-              className={`flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm font-semibold transition-all ${
-                currentStep >= step.number
-                  ? "border-brand-500 bg-brand-500 text-white"
-                  : variant === "gradient"
-                    ? "border-white/50 bg-white/10 text-white/90"
-                    : "border-gray-300 bg-transparent text-gray-400 dark:border-gray-600 dark:text-gray-500"
-              }`}
-            >
-              {currentStep > step.number ? (
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              ) : (
-                step.number
-              )}
-            </div>
-            <span className={labelClass}>{step.label}</span>
-          </div>
-          {index < steps.length - 1 && (
-            <div
-              className={
-                variant === "gradient"
-                  ? "h-0.5 w-16 bg-white/40 transition-all"
-                  : "h-0.5 w-16 bg-gray-300 transition-all dark:bg-gray-600"
-              }
-            />
-          )}
-        </React.Fragment>
-      ))}
+export const DOCUMENT_TYPE_COLOR_MAP: Record<string, string> =
+  Object.fromEntries(DOCUMENT_TYPES.map((t) => [t.value, t.color]));
+
+// ── Year range input ──────────────────────────────────────────────────────────
+
+interface YearRangeInputProps {
+  label: string;
+  fromYear: string;
+  toYear: string;
+  onFromChange: (v: string) => void;
+  onToChange: (v: string) => void;
+}
+
+const YearRangeInput: React.FC<YearRangeInputProps> = ({
+  label,
+  fromYear,
+  toYear,
+  onFromChange,
+  onToChange,
+}) => (
+  <div className="flex flex-col gap-1.5">
+    <label className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+      {label}{" "}
+      <span className="font-normal text-gray-400 normal-case">
+        (để trống = áp dụng tất cả)
+      </span>
+    </label>
+    <div className="flex items-center gap-2">
+      <input
+        type="number"
+        value={fromYear}
+        onChange={(e) => onFromChange(e.target.value)}
+        placeholder="Từ năm"
+        min={2000}
+        max={2099}
+        className="dark:bg-navy-800 w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none placeholder:text-gray-400 dark:border-white/10 dark:text-white dark:placeholder:text-white/30"
+      />
+      <span className="shrink-0 text-sm text-gray-400">—</span>
+      <input
+        type="number"
+        value={toYear}
+        onChange={(e) => onToChange(e.target.value)}
+        placeholder="Đến năm"
+        min={2000}
+        max={2099}
+        className="dark:bg-navy-800 w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none placeholder:text-gray-400 dark:border-white/10 dark:text-white dark:placeholder:text-white/30"
+      />
     </div>
-  );
-};
+  </div>
+);
 
-// ── UploadForm (shared logic) ─────────────────────────────────────────────────
+// ── UploadForm ────────────────────────────────────────────────────────────────
 
 interface UploadFormProps {
-  /** All metadata types (active + inactive; this component filters internally) */
-  metadataTypes: MetadataType[];
-  /**
-   * Called after a successful upload.
-   * The consuming component decides what to do next
-   * (navigate away, close a drawer, invalidate queries…).
-   */
   onSuccess: () => void;
-  /** Optional: called when the user wants to cancel / dismiss */
   onCancel?: () => void;
-  /** Wrapper for the action buttons row (allows the page vs drawer to style differently) */
   actionsClassName?: string;
-  /** Bước hiện tại (điều khiển từ ngoài, vd. gắn với CreatePageLayout.processSteps) */
-  currentStep?: number;
-  onStepChange?: (step: number) => void;
-  /** Ẩn stepper trong form — dùng khi đã render ProcessSteps ở layout */
-  hideProcessSteps?: boolean;
 }
 
 export const UploadForm: React.FC<UploadFormProps> = ({
-  metadataTypes,
   onSuccess,
   onCancel,
   actionsClassName = "flex justify-end gap-2",
-  currentStep: controlledStep,
-  onStepChange,
-  hideProcessSteps = false,
 }) => {
-  const [internalStep, setInternalStep] = useState(1);
-  const isControlled = controlledStep !== undefined;
-  const currentStep = isControlled ? controlledStep! : internalStep;
-
-  const goToStep = useCallback(
-    (next: number) => {
-      if (isControlled) {
-        onStepChange?.(next);
-      } else {
-        setInternalStep(next);
-      }
-    },
-    [isControlled, onStepChange],
-  );
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [displayName, setDisplayName] = useState("");
-  const [customMetadata, setCustomMetadata] = useState<Record<string, string>>(
-    {},
-  );
-  const [uploadProgress, setUploadProgress] =
-    useState<UploadProgressEvent | null>(null);
-  const [wsConnected, setWsConnected] = useState(false);
+  const [docType, setDocType] = useState("");
+  const [enrollFromYear, setEnrollFromYear] = useState("");
+  const [enrollToYear, setEnrollToYear] = useState("");
+  const [academicFromYear, setAcademicFromYear] = useState("");
+  const [academicToYear, setAcademicToYear] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
-  const stageLabelMap = useMemo<Record<string, string>>(
-    () => ({
-      db_creating: "Khởi tạo bản ghi",
-      uploading_original: "Upload file gốc",
-      parsing_markdown: "OCR/Parse markdown",
-      uploading_gemini: "Upload vào Gemini",
-      saving_vector_db: "Lưu vào Vector DB",
-      completed: "Hoàn tất",
-    }),
-    [],
-  );
-
-  const closeProgressSocket = useCallback(() => {
+  const closeSocket = useCallback(() => {
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
     }
-    setWsConnected(false);
   }, []);
 
-  useEffect(() => {
-    return () => {
-      closeProgressSocket();
-    };
-  }, [closeProgressSocket]);
-  const [uploading, setUploading] = useState(false);
-  const [dragOver, setDragOver] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Only active types with at least one active value
-  const activeMetadataTypes = React.useMemo(
-    () =>
-      metadataTypes
-        .filter((t) => t.isActive !== false)
-        .map((t) => ({
-          ...t,
-          allowedValues: (t.allowedValues || []).filter(
-            (v) => v.isActive !== false,
-          ),
-        }))
-        .filter((t) => t.allowedValues.length > 0),
-    [metadataTypes],
-  );
-
-  // ── Handlers ──────────────────────────────────────────────────────────────
+  useEffect(() => () => closeSocket(), [closeSocket]);
 
   const reset = useCallback(() => {
-    goToStep(1);
     setSelectedFile(null);
     setDisplayName("");
-    setCustomMetadata({});
-    setUploadProgress(null);
+    setDocType("");
+    setEnrollFromYear("");
+    setEnrollToYear("");
+    setAcademicFromYear("");
+    setAcademicToYear("");
     setUploading(false);
-    closeProgressSocket();
-  }, [closeProgressSocket, goToStep]);
+    closeSocket();
+  }, [closeSocket]);
 
   const handleFileSelect = useCallback(
     (file: File) => {
@@ -280,342 +174,190 @@ export const UploadForm: React.FC<UploadFormProps> = ({
     [handleFileSelect],
   );
 
-  const handleMetadataChange = (key: string, value: string) =>
-    setCustomMetadata((prev) => ({ ...prev, [key]: value }));
+  const buildYearRange = (from: string, to: string) => {
+    const fromNum = from ? parseInt(from, 10) : null;
+    const toNum = to ? parseInt(to, 10) : null;
+    if (fromNum === null && toNum === null) return null;
+    return { fromYear: fromNum, toYear: toNum };
+  };
 
-  const handleNext = () => {
+  const handleUpload = async () => {
     if (!selectedFile) {
       toast.error("Vui lòng chọn file.");
       return;
     }
-    goToStep(2);
-  };
-
-  const handlePrev = () => goToStep(Math.max(1, currentStep - 1));
-
-  const handleUpload = async () => {
-    const hasAcademicYear = customMetadata["academic_year"];
-    const hasCohort = customMetadata["cohort"];
-
-    if (!hasAcademicYear && !hasCohort) {
-      toast.error("Vui lòng chọn năm học hoặc khóa.");
-      return;
-    }
 
     setUploading(true);
-    setUploadProgress(null);
-
     try {
-      const normalizedMetadata = Object.entries(customMetadata).reduce(
-        (acc, [key, value]) => {
-          if (!value) return acc;
-          acc[key] = [value];
-          return acc;
-        },
-        {} as Record<string, string[]>,
-      );
+      const customMetadata: Record<string, unknown> = {};
 
-      // access_scope is required key in backend; empty array = nội bộ
-      if (!normalizedMetadata.access_scope) {
-        normalizedMetadata.access_scope = [];
-      }
+      if (docType) customMetadata.type = docType;
+
+      const enrollRange = buildYearRange(enrollFromYear, enrollToYear);
+      if (enrollRange) customMetadata.enrollmentYear = enrollRange;
+
+      const academicRange = buildYearRange(academicFromYear, academicToYear);
+      if (academicRange) customMetadata.academicYear = academicRange;
 
       const clientId =
         (globalThis.crypto?.randomUUID && globalThis.crypto.randomUUID()) ||
         `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-      closeProgressSocket();
+      closeSocket();
       wsRef.current = DocumentsService.createUploadProgressSocket(clientId, {
-        onOpen: () => setWsConnected(true),
-        onMessage: (event) => setUploadProgress(event),
-        onError: () => setWsConnected(false),
-        onClose: () => setWsConnected(false),
+        onOpen: () => {},
+        onMessage: () => {},
+        onError: () => {},
+        onClose: () => {},
       });
 
       const formData = new FormData();
-      formData.append("file", selectedFile!);
+      formData.append("file", selectedFile);
       if (displayName.trim()) {
         formData.append("displayName", displayName.trim());
       }
       formData.append("clientId", clientId);
-      formData.append("customMetadata", JSON.stringify(normalizedMetadata));
+      if (Object.keys(customMetadata).length > 0) {
+        formData.append("customMetadata", JSON.stringify(customMetadata));
+      }
 
       await DocumentsService.uploadFile(formData);
-      toast.success("Tải lên thành công.");
+      toast.success("Tải lên thành công. Hệ thống đang xử lý tài liệu.");
       reset();
       onSuccess();
     } catch (err) {
       toast.error(parseError(err));
-      closeProgressSocket();
+      closeSocket();
     } finally {
       setUploading(false);
     }
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} Bytes`;
+    const kb = bytes / 1024;
+    if (kb < 1024) return `${kb.toFixed(2)} KB`;
+    return `${(kb / 1024).toFixed(2)} MB`;
+  };
 
   return (
     <div className="flex flex-col gap-5">
-      {!hideProcessSteps && (
-        <ProcessSteps currentStep={currentStep} variant="plain" />
-      )}
-
-      {/* ── Step 1: Chọn tệp tin ─────────────────────────────────────── */}
-      {currentStep === 1 && (
-        <>
-          <div>
-            {uploading && (
-              <div className="dark:bg-navy-800 mb-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-white/10">
-                <div className="mb-1 flex items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                    Đang xử lý tải lên
-                  </p>
-                  <span
-                    className={`text-xs font-medium ${
-                      wsConnected ? "text-green-600" : "text-amber-600"
-                    }`}
-                  >
-                    {wsConnected ? "Realtime connected" : "Connecting..."}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  {uploadProgress?.message || "Đang khởi tạo upload..."}
-                </p>
-                <p className="mt-1 text-xs text-gray-500">
-                  Bước: {stageLabelMap[uploadProgress?.step || ""] || "—"}
-                </p>
-              </div>
-            )}
-            {!selectedFile ? (
-              <div
-                className={`flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 transition-colors ${
-                  dragOver
-                    ? "border-brand-500 bg-brand-50 dark:bg-brand-500/10"
-                    : "border-gray-300 dark:border-gray-600"
-                }`}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragOver(true);
-                }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={handleDrop}
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept={ALLOWED_EXTENSIONS.join(",")}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleFileSelect(file);
-                  }}
-                  className="hidden"
-                />
-                <p className="mb-2 text-sm text-gray-600 dark:text-gray-400">
-                  Kéo thả file vào đây hoặc
-                </p>
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="bg-brand-500 hover:bg-brand-600 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors"
-                >
-                  Chọn file
-                </button>
-                <p className="mt-3 text-xs text-gray-500">
-                  Định dạng: .pdf, .doc, .docx, .xls, .xlsx,... | Tối đa 20MB
-                </p>
-              </div>
-            ) : (
-              <div className="dark:bg-navy-800 flex items-center justify-between rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-white/10">
-                <div className="flex items-center gap-3">
-                  <div className="bg-brand-500 flex h-10 w-10 items-center justify-center rounded-xl text-white">
-                    <svg
-                      className="h-5 w-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-800 dark:text-white">
-                      {selectedFile.name}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {(() => {
-                        const b = selectedFile.size;
-                        if (b < 1024) return `${b} Bytes`;
-                        const kb = b / 1024;
-                        if (kb < 1024) return `${kb.toFixed(2)} KB`;
-                        return `${(kb / 1024).toFixed(2)} MB`;
-                      })()}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedFile(null)}
-                  className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-200 dark:hover:bg-white/10"
-                >
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Tên hiển thị */}
-          <div className="flex items-start gap-6">
-            <div className="w-40 shrink-0">
-              <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                Tên hiển thị
+      {/* ── File drop zone ─────────────────────────────────────────── */}
+      {!selectedFile ? (
+        <div
+          className={`flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 transition-colors ${
+            dragOver
+              ? "border-brand-500 bg-brand-50 dark:bg-brand-500/10"
+              : "border-gray-300 dark:border-gray-600"
+          }`}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragOver(true);
+          }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={handleDrop}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={ALLOWED_EXTENSIONS.join(",")}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleFileSelect(file);
+            }}
+            className="hidden"
+          />
+          <MdCloudUpload className="mb-3 h-10 w-10 text-gray-400" />
+          <p className="mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+            Kéo thả file vào đây
+          </p>
+          <p className="mb-3 text-xs text-gray-500">hoặc</p>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="bg-brand-500 hover:bg-brand-600 rounded-xl px-5 py-2 text-sm font-medium text-white transition-colors"
+          >
+            Chọn file
+          </button>
+          <p className="mt-3 text-xs text-gray-500">
+            .pdf, .doc, .docx, .xls, .xlsx, .ppt, .pptx,... | Tối đa 20MB
+          </p>
+        </div>
+      ) : (
+        <div className="dark:bg-navy-800 flex items-center justify-between rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-white/10">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="bg-brand-500 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white">
+              <MdDescription className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-gray-800 dark:text-white">
+                {selectedFile.name}
+              </p>
+              <p className="text-xs text-gray-500">
+                {formatFileSize(selectedFile.size)}
               </p>
             </div>
-            <div className="flex-1">
-              <input
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                className="dark:bg-navy-800 w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30"
-                placeholder="Tên hiển thị (tùy chọn)"
-              />
-            </div>
           </div>
-
-          {/* Preview access scope if already set */}
-          {customMetadata["access_scope"] && (
-            <div className="flex items-start gap-6">
-              <div className="w-40 shrink-0">
-                <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                  Phạm vi truy cập
-                </p>
-              </div>
-              <div className="flex-1">
-                <AccessScopeBadge value={customMetadata["access_scope"]} />
-              </div>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* ── Step 2: Nhãn tài liệu ────────────────────────────────────── */}
-      {currentStep === 2 && (
-        <div>
-          {activeMetadataTypes.length === 0 ? (
-            <p className="text-sm text-gray-500">
-              Chưa có nhãn nào được cấu hình.
-            </p>
-          ) : (
-            <div className="flex flex-col gap-4">
-              {activeMetadataTypes.map((type) => {
-                const currentValue = customMetadata[type.key] || "";
-
-                // Access scope is special - show as role tags
-                if (type.key === "access_scope") {
-                  return (
-                    <div key={type.key} className="flex items-start gap-6">
-                      <div className="w-40 shrink-0">
-                        <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                          {type.displayName} *
-                        </p>
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex flex-wrap gap-2">
-                          {type.allowedValues?.map((val) => {
-                            const isSelected = currentValue === val.value;
-                            const colors = val.visibleRoles?.includes("student")
-                              ? RoleColors.student
-                              : RoleColors.lecture;
-                            return (
-                              <button
-                                key={val.value}
-                                type="button"
-                                onClick={() =>
-                                  handleMetadataChange(type.key, val.value)
-                                }
-                                className="cursor-pointer"
-                              >
-                                <Tag
-                                  color={
-                                    isSelected
-                                      ? colors.text
-                                          .replace("text-", "#")
-                                          .replace("-800", "00")
-                                      : "#6b7280"
-                                  }
-                                >
-                                  {val.displayName || val.value}
-                                </Tag>
-                              </button>
-                            );
-                          })}
-                        </div>
-                        <p className="mt-2 text-xs text-gray-500">
-                          Quyền truy cập:{" "}
-                          <span className="font-medium">
-                            {currentValue === "student" && "Chỉ sinh viên"}
-                            {currentValue === "lecture" && "Chỉ giảng viên"}
-                            {!currentValue && "Để trống = file nội bộ"}
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-                  );
-                }
-
-                // All other metadata types → select dropdown
-                const isRequired =
-                  type.key === "academic_year" || type.key === "cohort";
-                return (
-                  <div key={type.key} className="flex items-start gap-6">
-                    <div className="w-40 shrink-0">
-                      <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-                        {type.displayName} {isRequired ? "*" : ""}
-                      </p>
-                    </div>
-                    <div className="flex-1">
-                      <select
-                        value={currentValue}
-                        onChange={(e) =>
-                          handleMetadataChange(type.key, e.target.value)
-                        }
-                        className="dark:bg-navy-800 w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30"
-                      >
-                        <option value="">— Chọn —</option>
-                        {type.allowedValues?.map((val) => (
-                          <option key={val.value} value={val.value}>
-                            {val.displayName || val.value}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          <button
+            type="button"
+            onClick={() => setSelectedFile(null)}
+            className="ml-2 shrink-0 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-200 dark:hover:bg-white/10"
+          >
+            <MdClose className="h-5 w-5" />
+          </button>
         </div>
       )}
 
-      {/* ── Action buttons ────────────────────────────────────────────── */}
+      {/* ── Tên hiển thị ───────────────────────────────────────────── */}
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+          Tên hiển thị{" "}
+          <span className="font-normal text-gray-400 normal-case">
+            (tùy chọn)
+          </span>
+        </label>
+        <input
+          type="text"
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+          className="dark:bg-navy-800 w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none placeholder:text-gray-400 dark:border-white/10 dark:text-white dark:placeholder:text-white/30"
+          placeholder="Nhập tên hiển thị của tài liệu"
+        />
+      </div>
+
+      {/* ── Loại tài liệu ──────────────────────────────────────────── */}
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+          Loại tài liệu
+        </label>
+        <SelectField
+          value={docType}
+          onChange={setDocType}
+          options={[{ value: "", label: "— Chọn loại —" }, ...DOCUMENT_TYPES]}
+        />
+      </div>
+
+      {/* ── Năm tuyển sinh ─────────────────────────────────────────── */}
+      <YearRangeInput
+        label="Khóa tuyển sinh"
+        fromYear={enrollFromYear}
+        toYear={enrollToYear}
+        onFromChange={setEnrollFromYear}
+        onToChange={setEnrollToYear}
+      />
+
+      {/* ── Năm học ────────────────────────────────────────────────── */}
+      <YearRangeInput
+        label="Năm học"
+        fromYear={academicFromYear}
+        toYear={academicToYear}
+        onFromChange={setAcademicFromYear}
+        onToChange={setAcademicToYear}
+      />
+
+      {/* ── Action buttons ─────────────────────────────────────────── */}
       <div className={actionsClassName}>
-        {onCancel && currentStep === 1 && (
+        {onCancel && (
           <button
             type="button"
             onClick={onCancel}
@@ -624,61 +366,24 @@ export const UploadForm: React.FC<UploadFormProps> = ({
             Hủy
           </button>
         )}
-        {currentStep > 1 && (
-          <button
-            type="button"
-            disabled={uploading}
-            onClick={handlePrev}
-            className="rounded-xl px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-white/10"
-          >
-            Quay lại
-          </button>
-        )}
-        {currentStep < 2 ? (
-          <button
-            type="button"
-            disabled={!selectedFile}
-            onClick={handleNext}
-            className="bg-brand-500 hover:bg-brand-600 flex items-center gap-2 rounded-xl px-6 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
-          >
-            Tiếp tục
-          </button>
-        ) : (
-          <button
-            type="button"
-            disabled={
-              uploading ||
-              !selectedFile ||
-              (!customMetadata["academic_year"] && !customMetadata["cohort"])
-            }
-            onClick={handleUpload}
-            className="bg-brand-500 hover:bg-brand-600 flex items-center gap-2 rounded-xl px-6 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
-          >
-            {uploading ? (
-              <>
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                Đang tải lên...
-              </>
-            ) : (
-              <>
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                  />
-                </svg>
-                Tải lên
-              </>
-            )}
-          </button>
-        )}
+        <button
+          type="button"
+          disabled={uploading || !selectedFile}
+          onClick={handleUpload}
+          className="bg-brand-500 hover:bg-brand-600 flex items-center gap-2 rounded-xl px-6 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
+        >
+          {uploading ? (
+            <>
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              Đang tải lên...
+            </>
+          ) : (
+            <>
+              <MdCloudUpload className="h-4 w-4" />
+              Tải lên
+            </>
+          )}
+        </button>
       </div>
     </div>
   );
@@ -688,14 +393,12 @@ export const UploadForm: React.FC<UploadFormProps> = ({
 
 interface UploadDrawerProps {
   open: boolean;
-  metadataTypes: MetadataType[];
   onClose: () => void;
   onSuccess: () => void;
 }
 
 const UploadDrawer: React.FC<UploadDrawerProps> = ({
   open,
-  metadataTypes,
   onClose,
   onSuccess,
 }) => (
@@ -703,10 +406,9 @@ const UploadDrawer: React.FC<UploadDrawerProps> = ({
     isOpen={open}
     onClose={onClose}
     title="Tải lên tài liệu mới"
-    width="max-w-2xl"
+    width="max-w-xl"
   >
     <UploadForm
-      metadataTypes={metadataTypes}
       onSuccess={() => {
         onSuccess();
         onClose();
