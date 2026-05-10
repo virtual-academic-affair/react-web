@@ -84,7 +84,6 @@ const StudentsPage: React.FC = () => {
       next.set("keyword", keyword);
     }
     next.set("page", String(page));
-    next.set("limit", String(PAGE_SIZE));
     if (idParam) {
       next.set("id", idParam);
     }
