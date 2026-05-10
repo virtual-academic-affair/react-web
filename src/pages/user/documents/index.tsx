@@ -10,18 +10,15 @@ import React, {
 import {
   MdDescription,
   MdGridView,
-  MdLogout,
   MdSearch,
   MdTableRows,
 } from "react-icons/md";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 import DocumentDetailDrawer from "@/pages/documents/components/DocumentDetailDrawer";
 import FilePreviewModal from "@/pages/documents/components/FilePreviewModal";
 import { DOCUMENT_TYPES } from "@/pages/documents/components/UploadDrawer";
-import { authService } from "@/services/auth";
 import { DocumentsService, MetadataService } from "@/services/documents";
-import { useAuthStore } from "@/stores/auth.store";
 
 import ActiveFilterChips from "./components/ActiveFilterChips";
 import { FileCard, FileRow } from "./components/FileItems";
@@ -62,7 +59,6 @@ type UserDocFilters = Record<string, string[]>;
 
 const UserDocumentsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
 
   // View mode
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -316,30 +312,10 @@ const UserDocumentsPage: React.FC = () => {
     Boolean(academicYear.fromYear || academicYear.toYear);
   const hasFilters = hasTagFilters || hasYearFilters;
 
-  const handleLogout = async () => {
-    try {
-      await authService.logout();
-    } catch (e) {
-      console.error("Logout error", e);
-    } finally {
-      useAuthStore.getState().clearAuth();
-      navigate("/auth/login");
-    }
-  };
-
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="relative min-h-screen px-4 py-8 sm:px-8">
-      {/* ── Logout Button ──────────────────────────────────────────────── */}
-      <button
-        onClick={handleLogout}
-        className="dark:bg-navy-800/50 absolute top-4 right-4 flex items-center gap-2 rounded-xl bg-white/50 px-3 py-2 text-sm font-medium text-red-500 shadow-sm backdrop-blur-md transition-all hover:bg-red-50 sm:top-8 sm:right-8 sm:px-4 dark:hover:bg-red-500/10"
-        title="Đăng xuất"
-      >
-        <MdLogout className="h-5 w-5" />
-        <span className="hidden sm:inline">Đăng xuất</span>
-      </button>
+    <div className="relative min-h-screen">
 
       {/* ── Hero header + search ────────────────────────────────────────── */}
       <div className="mx-auto mb-8 max-w-3xl text-center">
