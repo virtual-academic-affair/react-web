@@ -55,6 +55,22 @@ const EMPTY_YEAR_RANGE: YearRange = { fromYear: "", toYear: "" };
 // ── Filters type: keys are raw metadata type keys (e.g. "access_scope") ───────
 type UserDocFilters = Record<string, string[]>;
 
+/**
+ * URL params that are NOT metadata filters.
+ * The user page supports dynamic metadata filters (keys come from the API),
+ * so we iterate all URL params and skip these reserved ones.
+ */
+const RESERVED_URL_PARAMS = new Set([
+  "keyword",
+  "page",
+  "id",
+  "preview",
+  "enrollFrom",
+  "enrollTo",
+  "acadFrom",
+  "acadTo",
+]);
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 const UserDocumentsPage: React.FC = () => {
@@ -67,19 +83,26 @@ const UserDocumentsPage: React.FC = () => {
   const [keyword, setKeyword] = useState(searchParams.get("keyword") ?? "");
   const [inputValue, setInputValue] = useState(keyword);
 
-  // Filters — keyed by raw metadata type key
+  // Filters — keyed by raw metadata type key (initialized from URL)
   const [filters, setFilters] = useState<UserDocFilters>(() => {
-    try {
-      const raw = searchParams.get("metadataFilter");
-      if (raw) return JSON.parse(raw) as UserDocFilters;
-    } catch {}
-    return {};
+    const result: UserDocFilters = {};
+    searchParams.forEach((value, key) => {
+      if (RESERVED_URL_PARAMS.has(key)) return;
+      const values = value.split(",").filter(Boolean);
+      if (values.length > 0) result[key] = values;
+    });
+    return result;
   });
 
-  // Year range filters (separate from tag-based filters)
-  const [enrollmentYear, setEnrollmentYear] =
-    useState<YearRange>(EMPTY_YEAR_RANGE);
-  const [academicYear, setAcademicYear] = useState<YearRange>(EMPTY_YEAR_RANGE);
+  // Year range filters (initialized from URL)
+  const [enrollmentYear, setEnrollmentYear] = useState<YearRange>(() => ({
+    fromYear: searchParams.get("enrollFrom") ?? "",
+    toYear: searchParams.get("enrollTo") ?? "",
+  }));
+  const [academicYear, setAcademicYear] = useState<YearRange>(() => ({
+    fromYear: searchParams.get("acadFrom") ?? "",
+    toYear: searchParams.get("acadTo") ?? "",
+  }));
 
   // Pagination
   const [page, setPage] = useState(
@@ -206,16 +229,29 @@ const UserDocumentsPage: React.FC = () => {
     const next = new URLSearchParams();
     if (keyword) next.set("keyword", keyword);
     next.set("page", String(page));
-    const activeFilters: Record<string, string[]> = {};
+    // Tag-based filters → clean per-key comma-separated params
     Object.entries(filters).forEach(([k, v]) => {
-      if (Array.isArray(v) && v.length > 0) activeFilters[k] = v;
+      if (Array.isArray(v) && v.length > 0) next.set(k, v.join(","));
     });
-    if (Object.keys(activeFilters).length > 0)
-      next.set("metadataFilter", JSON.stringify(activeFilters));
+    // Year range params
+    if (enrollmentYear.fromYear)
+      next.set("enrollFrom", enrollmentYear.fromYear);
+    if (enrollmentYear.toYear) next.set("enrollTo", enrollmentYear.toYear);
+    if (academicYear.fromYear) next.set("acadFrom", academicYear.fromYear);
+    if (academicYear.toYear) next.set("acadTo", academicYear.toYear);
     if (selectedFileId) next.set("id", selectedFileId);
     if (isPreview) next.set("preview", "true");
     setSearchParams(next, { replace: true });
-  }, [keyword, page, filters, selectedFileId, isPreview, setSearchParams]);
+  }, [
+    keyword,
+    page,
+    filters,
+    enrollmentYear,
+    academicYear,
+    selectedFileId,
+    isPreview,
+    setSearchParams,
+  ]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -316,7 +352,6 @@ const UserDocumentsPage: React.FC = () => {
 
   return (
     <div className="relative min-h-screen">
-
       {/* ── Hero header + search ────────────────────────────────────────── */}
       <div className="mx-auto mb-8 max-w-3xl text-center">
         <h1 className="text-navy-700 mb-2 text-2xl font-bold dark:text-white">
@@ -352,6 +387,14 @@ const UserDocumentsPage: React.FC = () => {
         </span>
 
         <div className="flex items-center gap-2">
+          {/* Hardcoded document type filter */}
+          <FilterGroup
+            label="Loại tài liệu"
+            typeKey={TYPE_FILTER_KEY}
+            options={DOC_TYPE_FILTER_OPTIONS}
+            selected={filters[TYPE_FILTER_KEY] || []}
+            onChange={(next) => handleFilterChange(TYPE_FILTER_KEY, next)}
+          />
           {/* Year range filters */}
           <YearRangeFilter
             label="Khóa tuyển sinh"
@@ -362,15 +405,6 @@ const UserDocumentsPage: React.FC = () => {
             label="Năm học"
             value={academicYear}
             onChange={handleAcademicYearChange}
-          />
-
-          {/* Hardcoded document type filter */}
-          <FilterGroup
-            label="Loại tài liệu"
-            typeKey={TYPE_FILTER_KEY}
-            options={DOC_TYPE_FILTER_OPTIONS}
-            selected={filters[TYPE_FILTER_KEY] || []}
-            onChange={(next) => handleFilterChange(TYPE_FILTER_KEY, next)}
           />
 
           {/* Dynamic metadata-based filters */}

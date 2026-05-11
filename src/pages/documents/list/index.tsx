@@ -1,7 +1,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  MdClose,
   MdDeleteOutline,
   MdFileDownload,
   MdInfoOutline,
@@ -20,6 +21,10 @@ import { parseError } from "@/utils/parseError";
 
 import ConfirmModal from "@/components/modal/ConfirmModal";
 import Tooltip from "@/components/tooltip/Tooltip";
+import FilterGroup from "@/pages/user/documents/components/FilterGroup";
+import YearRangeFilter, {
+  type YearRange,
+} from "@/pages/user/documents/components/YearRangeFilter";
 import DocumentDetailDrawer from "../components/DocumentDetailDrawer";
 import FilePreviewModal from "../components/FilePreviewModal";
 import UploadDrawer, {
@@ -34,6 +39,15 @@ const PAGE_SIZE = 10;
 const PREVIEW_TARGET_MARKDOWN = "markdown";
 const DOWNLOAD_FORMAT_ORIGINAL = "original" as const;
 const DOWNLOAD_FORMAT_MARKDOWN = "markdown" as const;
+
+const EMPTY_YEAR_RANGE: YearRange = { fromYear: "", toYear: "" };
+
+/** Filter options for the document type FilterGroup */
+const DOC_TYPE_FILTER_OPTIONS = DOCUMENT_TYPES.map((t) => ({
+  value: t.value,
+  displayName: t.label,
+  color: t.color,
+}));
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -90,6 +104,70 @@ const DocumentListPage = () => {
   const [searchValue, setSearchValue] = useState(initialKeyword);
   const [uploadOpen, setUploadOpen] = useState(false);
 
+  // ── Filters (initialized from URL) ──────────────────────────────────────────
+  const [typeFilter, setTypeFilter] = useState<string[]>(() => {
+    const raw = searchParams.get("type");
+    return raw ? raw.split(",").filter(Boolean) : [];
+  });
+  const [enrollmentYear, setEnrollmentYear] = useState<YearRange>(() => ({
+    fromYear: searchParams.get("enrollFrom") ?? "",
+    toYear: searchParams.get("enrollTo") ?? "",
+  }));
+  const [academicYear, setAcademicYear] = useState<YearRange>(() => ({
+    fromYear: searchParams.get("acadFrom") ?? "",
+    toYear: searchParams.get("acadTo") ?? "",
+  }));
+
+  const metadataFilterArg = useMemo(() => {
+    const result: Record<string, unknown> = {};
+    if (typeFilter.length > 0) result.type = typeFilter;
+    if (enrollmentYear.fromYear || enrollmentYear.toYear) {
+      const obj: Record<string, number> = {};
+      if (enrollmentYear.fromYear) obj.fromYear = Number(enrollmentYear.fromYear);
+      if (enrollmentYear.toYear) obj.toYear = Number(enrollmentYear.toYear);
+      result.enrollmentYear = obj;
+    }
+    if (academicYear.fromYear || academicYear.toYear) {
+      const obj: Record<string, number> = {};
+      if (academicYear.fromYear) obj.fromYear = Number(academicYear.fromYear);
+      if (academicYear.toYear) obj.toYear = Number(academicYear.toYear);
+      result.academicYear = obj;
+    }
+    return Object.keys(result).length > 0 ? result : undefined;
+  }, [typeFilter, enrollmentYear, academicYear]);
+
+  const hasFilters =
+    typeFilter.length > 0 ||
+    Boolean(enrollmentYear.fromYear || enrollmentYear.toYear) ||
+    Boolean(academicYear.fromYear || academicYear.toYear);
+
+  const handleClearAllFilters = useCallback(() => {
+    setTypeFilter([]);
+    setEnrollmentYear(EMPTY_YEAR_RANGE);
+    setAcademicYear(EMPTY_YEAR_RANGE);
+    setPage(1);
+  }, []);
+
+  // Sync filter state → URL
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams);
+    // type
+    if (typeFilter.length > 0) next.set("type", typeFilter.join(","));
+    else next.delete("type");
+    // enrollment year
+    if (enrollmentYear.fromYear) next.set("enrollFrom", enrollmentYear.fromYear);
+    else next.delete("enrollFrom");
+    if (enrollmentYear.toYear) next.set("enrollTo", enrollmentYear.toYear);
+    else next.delete("enrollTo");
+    // academic year
+    if (academicYear.fromYear) next.set("acadFrom", academicYear.fromYear);
+    else next.delete("acadFrom");
+    if (academicYear.toYear) next.set("acadTo", academicYear.toYear);
+    else next.delete("acadTo");
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [typeFilter, enrollmentYear, academicYear]);
+
   // File preview (URL-driven: ?id=fileId&preview=true[&previewPage=n])
   const isPreview = searchParams.get("preview") === "true";
   const previewTarget = searchParams.get("previewTarget") || "";
@@ -111,12 +189,13 @@ const DocumentListPage = () => {
 
   // ── Query ─────────────────────────────────────────────────────────────────────
   const { data: result = null, isLoading: loading } = useQuery({
-    queryKey: ["documents", { page, keyword }],
+    queryKey: ["documents", { page, keyword, metadataFilter: metadataFilterArg }],
     queryFn: async () => {
       const res = await DocumentsService.listFiles({
         page,
         limit: PAGE_SIZE,
         keywords: keyword || undefined,
+        metadataFilter: metadataFilterArg,
       });
       return {
         items: (res.files || []).map((f: any) => ({ ...f, id: f.fileId })),
@@ -421,6 +500,96 @@ const DocumentListPage = () => {
           next.set("page", String(p));
           setSearchParams(next, { replace: true });
         }}
+        middleSlot={
+          <div className="flex flex-col gap-3">
+            {/* Filter pills */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="shrink-0 text-xs font-medium text-gray-400">
+                Lọc theo:
+              </span>
+              <FilterGroup
+                label="Loại tài liệu"
+                typeKey="type"
+                options={DOC_TYPE_FILTER_OPTIONS}
+                selected={typeFilter}
+                onChange={(next) => { setTypeFilter(next); setPage(1); }}
+              />
+              <YearRangeFilter
+                label="Khóa tuyển sinh"
+                value={enrollmentYear}
+                onChange={(next) => { setEnrollmentYear(next); setPage(1); }}
+              />
+              <YearRangeFilter
+                label="Năm học"
+                value={academicYear}
+                onChange={(next) => { setAcademicYear(next); setPage(1); }}
+              />
+            </div>
+
+            {/* Active filter chips */}
+            {hasFilters && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium text-gray-400">Đang lọc:</span>
+
+                {typeFilter.map((v) => {
+                  const opt = DOC_TYPE_FILTER_OPTIONS.find((o) => o.value === v);
+                  return (
+                    <button
+                      key={`type:${v}`}
+                      type="button"
+                      onClick={() => { setTypeFilter((prev) => prev.filter((x) => x !== v)); setPage(1); }}
+                      className="border-brand-500/30 bg-brand-500/10 text-brand-600 hover:bg-brand-500/20 dark:text-brand-400 flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-all"
+                    >
+                      <span className="text-[10px] font-normal opacity-60">Loại:</span>
+                      {opt?.displayName || v}
+                      <MdClose className="h-3 w-3 opacity-60" />
+                    </button>
+                  );
+                })}
+
+                {(enrollmentYear.fromYear || enrollmentYear.toYear) && (
+                  <button
+                    type="button"
+                    onClick={() => { setEnrollmentYear(EMPTY_YEAR_RANGE); setPage(1); }}
+                    className="flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-600 transition-all hover:bg-amber-500/20 dark:text-amber-400"
+                  >
+                    <span className="text-[10px] font-normal opacity-60">Khóa:</span>
+                    {enrollmentYear.fromYear && enrollmentYear.toYear
+                      ? `${enrollmentYear.fromYear} – ${enrollmentYear.toYear}`
+                      : enrollmentYear.fromYear
+                        ? `Từ ${enrollmentYear.fromYear}`
+                        : `Đến ${enrollmentYear.toYear}`}
+                    <MdClose className="h-3 w-3 opacity-60" />
+                  </button>
+                )}
+
+                {(academicYear.fromYear || academicYear.toYear) && (
+                  <button
+                    type="button"
+                    onClick={() => { setAcademicYear(EMPTY_YEAR_RANGE); setPage(1); }}
+                    className="flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-600 transition-all hover:bg-amber-500/20 dark:text-amber-400"
+                  >
+                    <span className="text-[10px] font-normal opacity-60">Năm học:</span>
+                    {academicYear.fromYear && academicYear.toYear
+                      ? `${academicYear.fromYear} – ${academicYear.toYear}`
+                      : academicYear.fromYear
+                        ? `Từ ${academicYear.fromYear}`
+                        : `Đến ${academicYear.toYear}`}
+                    <MdClose className="h-3 w-3 opacity-60" />
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleClearAllFilters}
+                  className="text-xs text-gray-400 underline underline-offset-2 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  Xóa tất cả
+                </button>
+              </div>
+            )}
+          </div>
+        }
         rightSlot={
           <button
             type="button"
