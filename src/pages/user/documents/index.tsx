@@ -230,13 +230,16 @@ const UserDocumentsPage: React.FC = () => {
       const markdownUrl = String(previewFile.markdownFileUrl || "");
       const fromUrl = markdownUrl.split("?")[0].split("/").pop() || "";
       if (fromUrl) return fromUrl;
-      const baseName = previewFile.displayName || previewFile.originalFilename || "";
+      const baseName =
+        previewFile.displayName || previewFile.originalFilename || "";
       return baseName ? `${baseName}.md` : "markdown.md";
     }
     return previewFile.originalFilename || previewFile.displayName || "";
   }, [previewFile, isMarkdownPreview]);
 
-  const previewDownloadFormat = isMarkdownPreview ? "markdown" as const : "original" as const;
+  const previewDownloadFormat = isMarkdownPreview
+    ? ("markdown" as const)
+    : ("original" as const);
 
   // ── Sync URL ──────────────────────────────────────────────────────────────
 
@@ -384,7 +387,7 @@ const UserDocumentsPage: React.FC = () => {
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Tìm tài liệu, giáo trình, bài giảng..."
+            placeholder="Tìm tài liệu, công văn, quyết định..."
             className="dark:bg-navy-800 focus:border-brand-400 focus:ring-brand-400/20 dark:focus:border-brand-500 w-full rounded-2xl border border-gray-200 bg-white py-3 pr-24 pl-11 text-sm text-gray-700 shadow-sm transition-all outline-none focus:ring-2 dark:border-white/10 dark:text-white dark:placeholder-gray-500"
           />
           <button
