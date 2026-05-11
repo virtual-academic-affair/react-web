@@ -66,7 +66,7 @@ export const DocumentsService = {
     page?: number;
     limit?: number;
     keywords?: string;
-    metadataFilter?: Record<string, string[]>;
+    metadataFilter?: Record<string, unknown>;
   }): Promise<{ files: unknown[]; total: number }> {
     const queryParams: Record<string, unknown> = { ...params };
     if (params?.metadataFilter) {
@@ -151,17 +151,18 @@ export const DocumentsService = {
   },
 
   /**
-   * Update file metadata.
+   * Update file display name and/or metadata.
+   * PATCH /api/files/{fileId}
    */
   async updateFileMetadata(
     fileId: string,
     updates: {
       displayName?: string;
-      customMetadata?: Record<string, string[]>;
+      customMetadata?: Record<string, unknown>;
     },
   ): Promise<any> {
     const { data } = await ragHttp.patch(
-      `${API_ENDPOINTS.rag.files.byId(fileId)}/metadata`,
+      API_ENDPOINTS.rag.files.byId(fileId),
       {
         displayName: updates.displayName,
         customMetadata: updates.customMetadata,

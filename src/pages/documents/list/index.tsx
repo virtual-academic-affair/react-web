@@ -1,7 +1,13 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MdDeleteOutline, MdFileDownload, MdInfoOutline } from "react-icons/md";
+import {
+  MdClose,
+  MdDeleteOutline,
+  MdFileDownload,
+  MdInfoOutline,
+  MdUpload,
+} from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
 
 import TableLayout, {
@@ -9,25 +15,78 @@ import TableLayout, {
   type TableColumn,
 } from "@/components/table/TableLayout";
 import Tag from "@/components/tag/Tag";
-import { DocumentsService, MetadataService } from "@/services/documents";
+import { DocumentsService } from "@/services/documents";
 import { formatDate } from "@/utils/date";
 import { parseError } from "@/utils/parseError";
-import { parseSearchString, stringifySearchQuery } from "@/utils/search";
 
+import ConfirmModal from "@/components/modal/ConfirmModal";
 import Tooltip from "@/components/tooltip/Tooltip";
-import AccessScopeEditor from "../components/AccessScopeEditor";
-import AdvancedFilterModal, {
-  type DocumentFilters,
-} from "../components/AdvancedFilterModal";
+import FilterGroup from "@/pages/user/documents/components/FilterGroup";
+import YearRangeFilter, {
+  type YearRange,
+} from "@/pages/user/documents/components/YearRangeFilter";
 import DocumentDetailDrawer from "../components/DocumentDetailDrawer";
 import FilePreviewModal from "../components/FilePreviewModal";
+import UploadDrawer, {
+  DOCUMENT_TYPE_COLOR_MAP,
+  DOCUMENT_TYPE_MAP,
+  DOCUMENT_TYPES,
+} from "../components/UploadDrawer";
+
+// ── Constants ──────────────────────────────────────────────────────────────────
 
 const PAGE_SIZE = 10;
 const PREVIEW_TARGET_MARKDOWN = "markdown";
 const DOWNLOAD_FORMAT_ORIGINAL = "original" as const;
 const DOWNLOAD_FORMAT_MARKDOWN = "markdown" as const;
 
-const defaultFilters: DocumentFilters = {};
+const EMPTY_YEAR_RANGE: YearRange = { fromYear: "", toYear: "" };
+
+/** Filter options for the document type FilterGroup */
+const DOC_TYPE_FILTER_OPTIONS = DOCUMENT_TYPES.map((t) => ({
+  value: t.value,
+  displayName: t.label,
+  color: t.color,
+}));
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+const ALL_YEARS_SENTINEL_MAX = 9999;
+const ALL_YEARS_SENTINEL_MIN = 0;
+
+/** Normalize a year value — treat 0, null, or 9999+ as "all years" */
+const normalizeYear = (y: number | null | undefined): number | null =>
+  y == null || y <= ALL_YEARS_SENTINEL_MIN || y >= ALL_YEARS_SENTINEL_MAX
+    ? null
+    : y;
+
+/** Format a {fromYear, toYear} range, with a custom fallback label when both are "all" */
+const formatYearRange = (
+  range:
+    | { fromYear?: number | null; toYear?: number | null }
+    | null
+    | undefined,
+  allLabel: string,
+): string => {
+  if (!range) return allLabel;
+  const from = normalizeYear(range.fromYear);
+  const to = normalizeYear(range.toYear);
+  if (from === null && to === null) return allLabel;
+  if (from === to) return String(from ?? to);
+  if (from === null) return `— ${to}`;
+  if (to === null) return `${from} —`;
+  return `${from} – ${to}`;
+};
+
+/** Status → display */
+const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+  ready: { label: "Sẵn sàng", color: "#22c55e" },
+  processing: { label: "Đang xử lý", color: "#f59e0b" },
+  uploading: { label: "Đang tải lên", color: "#f59e0b" },
+  failed: { label: "Thất bại", color: "#b2161e" },
+};
+
+// ── Component ──────────────────────────────────────────────────────────────────
 
 const DocumentListPage = () => {
   const queryClient = useQueryClient();
@@ -42,53 +101,72 @@ const DocumentListPage = () => {
 
   const [page, setPage] = useState(initialPage);
   const [keyword, setKeyword] = useState(initialKeyword);
-  const [filters, setFilters] = useState<DocumentFilters>(() => {
-    // Parse filters from URL params
-    const accessScope =
-      searchParams.get("accessScope")?.split(",").filter(Boolean) || [];
-    const academicYear =
-      searchParams.get("academicYear")?.split(",").filter(Boolean) || [];
-    const cohort = searchParams.get("cohort")?.split(",").filter(Boolean) || [];
+  const [searchValue, setSearchValue] = useState(initialKeyword);
+  const [uploadOpen, setUploadOpen] = useState(false);
 
-    // Parse other filters from metadataFilter param
-    const metadataFilter = searchParams.get("metadataFilter");
-    const otherFilters: DocumentFilters = {};
-    if (metadataFilter) {
-      try {
-        const parsed = JSON.parse(metadataFilter);
-        Object.entries(parsed).forEach(([key, values]) => {
-          if (!["accessScope", "academicYear", "cohort"].includes(key)) {
-            otherFilters[key] = values as string[];
-          }
-        });
-      } catch (e) {
-        // ignore parse error
-      }
+  // ── Filters (initialized from URL) ──────────────────────────────────────────
+  const [typeFilter, setTypeFilter] = useState<string[]>(() => {
+    const raw = searchParams.get("type");
+    return raw ? raw.split(",").filter(Boolean) : [];
+  });
+  const [enrollmentYear, setEnrollmentYear] = useState<YearRange>(() => ({
+    fromYear: searchParams.get("enrollFrom") ?? "",
+    toYear: searchParams.get("enrollTo") ?? "",
+  }));
+  const [academicYear, setAcademicYear] = useState<YearRange>(() => ({
+    fromYear: searchParams.get("acadFrom") ?? "",
+    toYear: searchParams.get("acadTo") ?? "",
+  }));
+
+  const metadataFilterArg = useMemo(() => {
+    const result: Record<string, unknown> = {};
+    if (typeFilter.length > 0) result.type = typeFilter;
+    if (enrollmentYear.fromYear || enrollmentYear.toYear) {
+      const obj: Record<string, number> = {};
+      if (enrollmentYear.fromYear) obj.fromYear = Number(enrollmentYear.fromYear);
+      if (enrollmentYear.toYear) obj.toYear = Number(enrollmentYear.toYear);
+      result.enrollmentYear = obj;
     }
+    if (academicYear.fromYear || academicYear.toYear) {
+      const obj: Record<string, number> = {};
+      if (academicYear.fromYear) obj.fromYear = Number(academicYear.fromYear);
+      if (academicYear.toYear) obj.toYear = Number(academicYear.toYear);
+      result.academicYear = obj;
+    }
+    return Object.keys(result).length > 0 ? result : undefined;
+  }, [typeFilter, enrollmentYear, academicYear]);
 
-    return {
-      ...otherFilters,
-      accessScope,
-      academicYear,
-      cohort,
-    };
-  });
+  const hasFilters =
+    typeFilter.length > 0 ||
+    Boolean(enrollmentYear.fromYear || enrollmentYear.toYear) ||
+    Boolean(academicYear.fromYear || academicYear.toYear);
 
-  const [searchValue, setSearchValue] = useState(() => {
-    const params = { ...filters };
-    return stringifySearchQuery(
-      initialKeyword,
-      params as unknown as Record<string, unknown>,
-      ["page", "limit", "metadataFilter"],
-    );
-  });
+  const handleClearAllFilters = useCallback(() => {
+    setTypeFilter([]);
+    setEnrollmentYear(EMPTY_YEAR_RANGE);
+    setAcademicYear(EMPTY_YEAR_RANGE);
+    setPage(1);
+  }, []);
 
-  const [draftFilters, setDraftFilters] =
-    useState<DocumentFilters>(defaultFilters);
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [updatingAccessScopeIds, setUpdatingAccessScopeIds] = useState<
-    Set<string>
-  >(new Set());
+  // Sync filter state → URL
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams);
+    // type
+    if (typeFilter.length > 0) next.set("type", typeFilter.join(","));
+    else next.delete("type");
+    // enrollment year
+    if (enrollmentYear.fromYear) next.set("enrollFrom", enrollmentYear.fromYear);
+    else next.delete("enrollFrom");
+    if (enrollmentYear.toYear) next.set("enrollTo", enrollmentYear.toYear);
+    else next.delete("enrollTo");
+    // academic year
+    if (academicYear.fromYear) next.set("acadFrom", academicYear.fromYear);
+    else next.delete("acadFrom");
+    if (academicYear.toYear) next.set("acadTo", academicYear.toYear);
+    else next.delete("acadTo");
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [typeFilter, enrollmentYear, academicYear]);
 
   // File preview (URL-driven: ?id=fileId&preview=true[&previewPage=n])
   const isPreview = searchParams.get("preview") === "true";
@@ -102,49 +180,22 @@ const DocumentListPage = () => {
       : 1;
   const wasDrawerOpenBeforePreview = useRef(false);
 
+  const [deletingItem, setDeletingItem] = useState<any | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Detail drawer
   const idParam = searchParams.get("id");
   const selectedFileId = idParam || null;
 
-  // ── Queries ───────────────────────────────────────────────────────────────────
-  const { data: metadataTypes = [] } = useQuery({
-    queryKey: ["metadata-types-all"],
-    queryFn: () => MetadataService.listTypes(),
-  });
-
-  // Build metadataFilter for API call
-  const metadataFilter = useMemo(() => {
-    const result: Record<string, string[]> = {};
-
-    Object.entries(filters).forEach(([key, values]) => {
-      if (!Array.isArray(values) || values.length === 0) return;
-
-      // Special handling for accessScope
-      if (key === "accessScope") {
-        // Backend now only accepts: student, lecture
-        const normalized = values.filter((v) =>
-          ["student", "lecture"].includes(v),
-        );
-        if (normalized.length > 0) {
-          result[key] = normalized;
-        }
-        return;
-      }
-
-      result[key] = values;
-    });
-
-    return Object.keys(result).length > 0 ? result : undefined;
-  }, [filters]);
-
+  // ── Query ─────────────────────────────────────────────────────────────────────
   const { data: result = null, isLoading: loading } = useQuery({
-    queryKey: ["documents", { page, keyword, metadataFilter }],
+    queryKey: ["documents", { page, keyword, metadataFilter: metadataFilterArg }],
     queryFn: async () => {
       const res = await DocumentsService.listFiles({
         page,
         limit: PAGE_SIZE,
         keywords: keyword || undefined,
-        metadataFilter,
+        metadataFilter: metadataFilterArg,
       });
       return {
         items: (res.files || []).map((f: any) => ({ ...f, id: f.fileId })),
@@ -161,7 +212,11 @@ const DocumentListPage = () => {
     staleTime: 30 * 1000,
     refetchInterval: (query) => {
       const items = (query.state.data as any)?.items || [];
-      const hasPending = items.some((item: any) => item?.status === "pending");
+      const hasPending = items.some((item: any) =>
+        ["processing", "uploading"].includes(
+          String(item?.status || "").toLowerCase(),
+        ),
+      );
       return hasPending ? 3000 : false;
     },
   });
@@ -173,15 +228,14 @@ const DocumentListPage = () => {
 
   const previewFileName = useMemo(() => {
     if (!previewFile) return "";
-
     if (isMarkdownPreview) {
       const markdownUrl = String(previewFile.markdownFileUrl || "");
       const fromUrl = markdownUrl.split("?")[0].split("/").pop() || "";
       if (fromUrl) return fromUrl;
-      const baseName = previewFile.displayName || previewFile.originalFilename || "";
+      const baseName =
+        previewFile.displayName || previewFile.originalFilename || "";
       return baseName ? `${baseName}.md` : "markdown.md";
     }
-
     return previewFile.originalFilename || previewFile.displayName || "";
   }, [previewFile, isMarkdownPreview]);
 
@@ -189,94 +243,17 @@ const DocumentListPage = () => {
     ? DOWNLOAD_FORMAT_MARKDOWN
     : DOWNLOAD_FORMAT_ORIGINAL;
 
-  // ── Effects ────────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    const next = new URLSearchParams();
-    if (keyword) next.set("keyword", keyword);
-    next.set("page", String(page));
-    if (filters.accessScope?.length)
-      next.set("accessScope", filters.accessScope.join(","));
-    if (filters.academicYear?.length)
-      next.set("academicYear", filters.academicYear.join(","));
-    if (filters.cohort?.length) next.set("cohort", filters.cohort.join(","));
-    // Add other filters to metadataFilter
-    const otherFilters: Record<string, string[]> = {};
-    Object.entries(filters).forEach(([key, values]) => {
-      if (
-        !["accessScope", "academicYear", "cohort"].includes(key) &&
-        Array.isArray(values) &&
-        values.length > 0
-      ) {
-        otherFilters[key] = values;
-      }
-    });
-    if (Object.keys(otherFilters).length > 0) {
-      next.set("metadataFilter", JSON.stringify(otherFilters));
-    }
-    if (selectedFileId) next.set("id", selectedFileId);
-    if (isPreview) next.set("preview", "true");
-    if (previewTarget) next.set("previewTarget", previewTarget);
-    setSearchParams(next, { replace: true });
-  }, [
-    keyword,
-    page,
-    filters,
-    selectedFileId,
-    isPreview,
-    previewTarget,
-    setSearchParams,
-  ]);
-
-  // Sync searchValue when keyword or filters change (from filter modal or URL)
-  useEffect(() => {
-    const params = { ...filters };
-    setSearchValue(
-      stringifySearchQuery(
-        keyword,
-        params as unknown as Record<string, unknown>,
-        ["page", "limit", "metadataFilter"],
-      ),
-    );
-  }, [keyword, filters]);
-
   // ── Handlers ──────────────────────────────────────────────────────────────────
   const handleSearch = () => {
-    const parsed = parseSearchString(searchValue);
-    setKeyword(parsed.keyword);
-
-    // Parse standard filters
-    const newFilters: DocumentFilters = {
-      accessScope:
-        (parsed.params.accessScope as string)?.split(",").filter(Boolean) || [],
-      academicYear:
-        (parsed.params.academicYear as string)?.split(",").filter(Boolean) ||
-        [],
-      cohort:
-        (parsed.params.cohort as string)?.split(",").filter(Boolean) || [],
-    };
-
-    // Parse other filters from metadataFilter param
-    const metadataFilterStr = parsed.params.metadataFilter as string;
-    if (metadataFilterStr) {
-      try {
-        const parsedMeta = JSON.parse(metadataFilterStr);
-        Object.entries(parsedMeta).forEach(([key, values]) => {
-          if (!["accessScope", "academicYear", "cohort"].includes(key)) {
-            newFilters[key] = values as string[];
-          }
-        });
-      } catch (e) {
-        // ignore parse error
-      }
-    }
-
-    setFilters(newFilters);
+    setKeyword(searchValue);
     setPage(1);
+    const next = new URLSearchParams(searchParams);
+    next.set("keyword", searchValue);
+    next.set("page", "1");
+    setSearchParams(next, { replace: true });
   };
 
-  const handleKeywordChange = (value: string) => {
-    setSearchValue(value);
-  };
+  const handleKeywordChange = (value: string) => setSearchValue(value);
 
   const handleOpenDetail = useCallback(
     (item: any) => {
@@ -293,56 +270,39 @@ const DocumentListPage = () => {
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
 
-  const handleDelete = useCallback(
-    async (item: any) => {
-      if (
-        !window.confirm(
-          `Xóa tệp "${item.displayName || item.originalFilename}"?`,
-        )
-      ) {
-        return;
-      }
+  const handleDelete = useCallback((item: any) => {
+    setDeletingItem(item);
+  }, []);
+
+  const confirmDelete = async () => {
+    if (!deletingItem) return;
+    setIsDeleting(true);
+    try {
+      await DocumentsService.deleteFile(deletingItem.fileId);
+      toast.success("Đã xóa tệp.");
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
+      handleCloseDetail();
+      setDeletingItem(null);
+    } catch (err: any) {
+      toast.error(parseError(err));
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleUpdateType = useCallback(
+    async (fileId: string, oldMetadata: any, newType: string) => {
       try {
-        await DocumentsService.deleteFile(item.fileId);
-        toast.success("Đã xóa tệp.");
-        queryClient.invalidateQueries({ queryKey: ["documents"] });
-        handleCloseDetail();
-      } catch (err: any) {
-        toast.error(parseError(err));
-      }
-    },
-    [queryClient, handleCloseDetail],
-  );
-
-  const handleAccessScopeChange = useCallback(
-    async (item: any, nextScopes: ("lecture" | "student")[]) => {
-      setUpdatingAccessScopeIds((prev) => new Set(prev).add(item.fileId));
-      try {
-        const current = item.customMetadata || {};
-        const nextMetadata = { ...current } as Record<string, unknown>;
-
-        delete (nextMetadata as Record<string, unknown>).access_scope;
-
-        if (nextScopes.length > 0) {
-          nextMetadata.accessScope = nextScopes;
-        } else {
-          delete (nextMetadata as Record<string, unknown>).accessScope;
-        }
-
-        await DocumentsService.updateFileMetadata(item.fileId, {
-          customMetadata: nextMetadata as Record<string, string[]>,
+        await DocumentsService.updateFileMetadata(fileId, {
+          customMetadata: {
+            ...oldMetadata,
+            type: newType,
+          },
         });
-
-        toast.success("Đã cập nhật phạm vi truy cập.");
+        toast.success("Đã cập nhật loại tài liệu");
         queryClient.invalidateQueries({ queryKey: ["documents"] });
-      } catch (err: unknown) {
+      } catch (err) {
         toast.error(parseError(err));
-      } finally {
-        setUpdatingAccessScopeIds((prev) => {
-          const next = new Set(prev);
-          next.delete(item.fileId);
-          return next;
-        });
       }
     },
     [queryClient],
@@ -385,64 +345,94 @@ const DocumentListPage = () => {
         ),
       },
       {
-        key: "accessScope",
-        header: "Phạm vi truy cập",
+        key: "type",
+        header: "Loại tài liệu",
+        width: "182px",
         render: (x) => {
-          const meta = x.customMetadata || {};
-          const currentScopes = (
-            Array.isArray(meta.accessScope)
-              ? meta.accessScope
-              : Array.isArray(meta.access_scope)
-                ? meta.access_scope
-                : []
-          ).filter((v: string) => ["lecture", "student"].includes(v));
-
+          const typeKey = x.customMetadata?.type as string | undefined;
+          if (!typeKey) return <span className="text-sm text-gray-400">—</span>;
+          const label = DOCUMENT_TYPE_MAP[typeKey] ?? typeKey;
           return (
-            <AccessScopeEditor
-              value={currentScopes}
-              onChange={(next) => handleAccessScopeChange(x, next)}
-              disabled={updatingAccessScopeIds.has(x.fileId)}
-            />
+            <Tag
+              variant="selection"
+              value={typeKey}
+              onChange={(newType) => {
+                if (newType !== typeKey) {
+                  handleUpdateType(x.fileId, x.customMetadata, newType);
+                }
+              }}
+              options={DOCUMENT_TYPES}
+              color={DOCUMENT_TYPE_COLOR_MAP[typeKey] ?? "#94a3b8"}
+              optionColors={DOCUMENT_TYPE_COLOR_MAP}
+            >
+              {label}
+            </Tag>
           );
         },
+      },
+      {
+        key: "enrollmentYear",
+        header: "Khóa tuyển sinh",
+        render: (x) => (
+          <Tooltip
+            label={formatYearRange(
+              x.customMetadata?.enrollmentYear,
+              "Áp dụng mọi khóa",
+            )}
+            placement="topLeft"
+          >
+            <span className="text-navy-700 text-sm dark:text-white">
+              {formatYearRange(
+                x.customMetadata?.enrollmentYear,
+                "Áp dụng mọi khóa",
+              )}
+            </span>
+          </Tooltip>
+        ),
+      },
+      {
+        key: "academicYear",
+        header: "Năm học",
+        render: (x) => (
+          <Tooltip
+            label={formatYearRange(
+              x.customMetadata?.academicYear,
+              "Áp dụng mọi năm",
+            )}
+            placement="topLeft"
+          >
+            <span className="text-navy-700 text-sm dark:text-white">
+              {formatYearRange(
+                x.customMetadata?.academicYear,
+                "Áp dụng mọi năm",
+              )}
+            </span>
+          </Tooltip>
+        ),
       },
       {
         key: "createdAt",
         header: "Ngày tải lên",
         render: (x) => (
-          <p className="text-navy-700 text-sm dark:text-white">
-            {formatDate(x.createdAt)}
-          </p>
+          <Tooltip label={formatDate(x.createdAt)} placement="topLeft">
+            <p className="text-navy-700 text-sm dark:text-white">
+              {formatDate(x.createdAt)}
+            </p>
+          </Tooltip>
         ),
       },
       {
-        key: "isActive",
-        header: "Trạng thái xử lý",
+        key: "status",
+        header: "Trạng thái",
         render: (x) => {
-          const status = String(x?.status || "").toLowerCase();
-
-          if (status === "active") {
-            return <Tag color="#22c55e">Thành công</Tag>;
-          }
-
-          if (["pending", "processing", "uploading"].includes(status)) {
-            return <Tag color="#f59e0b">Đang xử lý</Tag>;
-          }
-
-          if (status === "failed") {
-            return <Tag color="#b2161e">Thất bại</Tag>;
-          }
-
+          const statusKey = String(x?.status || "").toLowerCase();
+          const cfg = STATUS_CONFIG[statusKey];
+          if (cfg) return <Tag color={cfg.color}>{cfg.label}</Tag>;
           return <Tag color="#94a3b8">Đang xử lý</Tag>;
         },
       },
     ],
-    [
-      handleAccessScopeChange,
-      searchParams,
-      setSearchParams,
-      updatingAccessScopeIds,
-    ],
+    [searchParams, setSearchParams],
   );
 
   const actions: TableAction<any>[] = useMemo(
@@ -471,7 +461,7 @@ const DocumentListPage = () => {
             a.download = x.originalFilename;
             a.click();
             URL.revokeObjectURL(url);
-          } catch (err) {
+          } catch {
             toast.error("Không thể tải xuống tệp.");
           }
         },
@@ -490,6 +480,7 @@ const DocumentListPage = () => {
     [handleOpenDetail, handleDelete],
   );
 
+  // ── Render ────────────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col gap-4">
       <TableLayout
@@ -501,19 +492,128 @@ const DocumentListPage = () => {
         onSearchChange={handleKeywordChange}
         onSearch={handleSearch}
         searchPlaceholder="Tìm tài liệu..."
-        showFilter={true}
-        onFilterClick={() => {
-          setDraftFilters(filters);
-          setFilterOpen(true);
-        }}
         columns={columns}
         actions={actions}
-        onPageChange={setPage}
+        onPageChange={(p) => {
+          setPage(p);
+          const next = new URLSearchParams(searchParams);
+          next.set("page", String(p));
+          setSearchParams(next, { replace: true });
+        }}
+        middleSlot={
+          <div className="flex flex-col gap-3">
+            {/* Filter pills */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="shrink-0 text-xs font-medium text-gray-400">
+                Lọc theo:
+              </span>
+              <FilterGroup
+                label="Loại tài liệu"
+                typeKey="type"
+                options={DOC_TYPE_FILTER_OPTIONS}
+                selected={typeFilter}
+                onChange={(next) => { setTypeFilter(next); setPage(1); }}
+              />
+              <YearRangeFilter
+                label="Khóa tuyển sinh"
+                value={enrollmentYear}
+                onChange={(next) => { setEnrollmentYear(next); setPage(1); }}
+              />
+              <YearRangeFilter
+                label="Năm học"
+                value={academicYear}
+                onChange={(next) => { setAcademicYear(next); setPage(1); }}
+              />
+            </div>
+
+            {/* Active filter chips */}
+            {hasFilters && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium text-gray-400">Đang lọc:</span>
+
+                {typeFilter.map((v) => {
+                  const opt = DOC_TYPE_FILTER_OPTIONS.find((o) => o.value === v);
+                  return (
+                    <button
+                      key={`type:${v}`}
+                      type="button"
+                      onClick={() => { setTypeFilter((prev) => prev.filter((x) => x !== v)); setPage(1); }}
+                      className="border-brand-500/30 bg-brand-500/10 text-brand-600 hover:bg-brand-500/20 dark:text-brand-400 flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-all"
+                    >
+                      <span className="text-[10px] font-normal opacity-60">Loại:</span>
+                      {opt?.displayName || v}
+                      <MdClose className="h-3 w-3 opacity-60" />
+                    </button>
+                  );
+                })}
+
+                {(enrollmentYear.fromYear || enrollmentYear.toYear) && (
+                  <button
+                    type="button"
+                    onClick={() => { setEnrollmentYear(EMPTY_YEAR_RANGE); setPage(1); }}
+                    className="flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-600 transition-all hover:bg-amber-500/20 dark:text-amber-400"
+                  >
+                    <span className="text-[10px] font-normal opacity-60">Khóa:</span>
+                    {enrollmentYear.fromYear && enrollmentYear.toYear
+                      ? `${enrollmentYear.fromYear} – ${enrollmentYear.toYear}`
+                      : enrollmentYear.fromYear
+                        ? `Từ ${enrollmentYear.fromYear}`
+                        : `Đến ${enrollmentYear.toYear}`}
+                    <MdClose className="h-3 w-3 opacity-60" />
+                  </button>
+                )}
+
+                {(academicYear.fromYear || academicYear.toYear) && (
+                  <button
+                    type="button"
+                    onClick={() => { setAcademicYear(EMPTY_YEAR_RANGE); setPage(1); }}
+                    className="flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-600 transition-all hover:bg-amber-500/20 dark:text-amber-400"
+                  >
+                    <span className="text-[10px] font-normal opacity-60">Năm học:</span>
+                    {academicYear.fromYear && academicYear.toYear
+                      ? `${academicYear.fromYear} – ${academicYear.toYear}`
+                      : academicYear.fromYear
+                        ? `Từ ${academicYear.fromYear}`
+                        : `Đến ${academicYear.toYear}`}
+                    <MdClose className="h-3 w-3 opacity-60" />
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleClearAllFilters}
+                  className="text-xs text-gray-400 underline underline-offset-2 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  Xóa tất cả
+                </button>
+              </div>
+            )}
+          </div>
+        }
+        rightSlot={
+          <button
+            type="button"
+            id="btn-upload-document"
+            onClick={() => setUploadOpen(true)}
+            className="bg-brand-500 hover:bg-brand-600 flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors"
+          >
+            <MdUpload className="h-4 w-4" />
+            Tải lên
+          </button>
+        }
+      />
+
+      <UploadDrawer
+        open={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["documents"] });
+        }}
       />
 
       <DocumentDetailDrawer
         fileId={selectedFileId}
-        metadataTypes={metadataTypes}
+        metadataTypes={[]}
         isOpen={selectedFileId !== null && !isPreview}
         isReadOnly={false}
         onClose={handleCloseDetail}
@@ -542,29 +642,6 @@ const DocumentListPage = () => {
         }}
       />
 
-      <AdvancedFilterModal
-        open={filterOpen}
-        value={draftFilters}
-        metadataTypes={metadataTypes}
-        onChange={setDraftFilters}
-        onApply={() => {
-          const parsed = parseSearchString(searchValue);
-          setKeyword(parsed.keyword);
-          setFilters(draftFilters);
-          setPage(1);
-          setFilterOpen(false);
-        }}
-        onClear={() => {
-          const parsed = parseSearchString(searchValue);
-          setKeyword(parsed.keyword);
-          setDraftFilters(defaultFilters);
-          setFilters(defaultFilters);
-          setPage(1);
-          setFilterOpen(false);
-        }}
-        onRequestClose={() => setFilterOpen(false)}
-      />
-
       <FilePreviewModal
         fileId={previewFileId}
         fileName={previewFileName}
@@ -581,6 +658,16 @@ const DocumentListPage = () => {
           }
           setSearchParams(next, { replace: true });
         }}
+      />
+
+      <ConfirmModal
+        open={Boolean(deletingItem)}
+        onCancel={() => setDeletingItem(null)}
+        onConfirm={confirmDelete}
+        title="Xác nhận xóa tệp"
+        subTitle={`Bạn có chắc chắn muốn xóa tệp "${deletingItem?.displayName || deletingItem?.originalFilename}" không?`}
+        confirmText="Xóa hoàn toàn"
+        loading={isDeleting}
       />
     </div>
   );

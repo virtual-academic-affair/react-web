@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React from "react";
 import {
   MdFileDownload,
   MdInfoOutline,
@@ -6,6 +6,10 @@ import {
 } from "react-icons/md";
 import Tag from "@/components/tag/Tag";
 import { formatDate } from "@/utils/date";
+import {
+  DOCUMENT_TYPE_MAP,
+  DOCUMENT_TYPE_COLOR_MAP,
+} from "@/pages/documents/components/UploadDrawer";
 import FileIcon from "./FileIcon";
 
 interface FileItemProps {
@@ -16,36 +20,18 @@ interface FileItemProps {
   onDownload: () => void;
 }
 
-function useVisibleTags(
-  meta: Record<string, string>,
-  metadataTypes: any[],
-  limit: number
-) {
-  return useMemo(() => {
-    const tags: Array<{ label: string; color?: string }> = [];
-    metadataTypes.forEach((type) => {
-      if (type.key === "access_scope") return;
-      const val = meta[type.key];
-      if (!val) return;
-      const valDef = type.allowedValues?.find((v: any) => v.value === val);
-      if (valDef) tags.push({ label: valDef.displayName || val, color: valDef.color });
-    });
-    return tags.slice(0, limit);
-  }, [meta, metadataTypes, limit]);
-}
-
 // ── Grid Card ──────────────────────────────────────────────────────────────────
 
 export const FileCard: React.FC<FileItemProps> = ({
   file,
-  metadataTypes,
   onDetail,
   onPreview,
   onDownload,
 }) => {
   const name = file.displayName || file.originalFilename || "—";
-  const meta = file.customMetadata || {};
-  const visibleTags = useVisibleTags(meta, metadataTypes, 2);
+  const typeKey = file.customMetadata?.type as string | undefined;
+  const typeLabel = typeKey ? DOCUMENT_TYPE_MAP[typeKey] : null;
+  const typeColor = typeKey ? DOCUMENT_TYPE_COLOR_MAP[typeKey] : null;
 
   return (
     <div className="group dark:bg-navy-800 relative flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-gray-200 hover:shadow-md dark:border-white/8 dark:hover:border-white/16">
@@ -91,14 +77,12 @@ export const FileCard: React.FC<FileItemProps> = ({
         </p>
       </button>
 
-      {/* Tags */}
-      {visibleTags.length > 0 && (
+      {/* Type chip */}
+      {typeLabel && (
         <div className="flex flex-wrap gap-1">
-          {visibleTags.map((tag, i) => (
-            <Tag key={i} color={tag.color || "#6366f1"} className="text-[10px]">
-              {tag.label}
-            </Tag>
-          ))}
+          <Tag color={typeColor || "#94a3b8"} className="text-[10px]" interactive={false}>
+            {typeLabel}
+          </Tag>
         </div>
       )}
     </div>
@@ -109,14 +93,14 @@ export const FileCard: React.FC<FileItemProps> = ({
 
 export const FileRow: React.FC<FileItemProps> = ({
   file,
-  metadataTypes,
   onDetail,
   onPreview,
   onDownload,
 }) => {
   const name = file.displayName || file.originalFilename || "—";
-  const meta = file.customMetadata || {};
-  const visibleTags = useVisibleTags(meta, metadataTypes, 3);
+  const typeKey = file.customMetadata?.type as string | undefined;
+  const typeLabel = typeKey ? DOCUMENT_TYPE_MAP[typeKey] : null;
+  const typeColor = typeKey ? DOCUMENT_TYPE_COLOR_MAP[typeKey] : null;
 
   return (
     <div className="group dark:bg-navy-800 flex items-center gap-4 rounded-2xl border border-gray-100 bg-white px-4 py-3 transition-all duration-150 hover:border-gray-200 hover:shadow-sm dark:border-white/8 dark:hover:border-white/16">
@@ -131,13 +115,14 @@ export const FileRow: React.FC<FileItemProps> = ({
         </button>
       </div>
 
-      <div className="hidden items-center gap-1.5 sm:flex">
-        {visibleTags.map((tag, i) => (
-          <Tag key={i} color={tag.color || "#6366f1"} className="text-[10px]">
-            {tag.label}
+      {/* Type chip */}
+      {typeLabel && (
+        <div className="hidden items-center gap-1.5 sm:flex">
+          <Tag color={typeColor || "#94a3b8"} className="text-[10px]" interactive={false}>
+            {typeLabel}
           </Tag>
-        ))}
-      </div>
+        </div>
+      )}
 
       <p className="hidden shrink-0 text-xs text-gray-400 lg:block">
         {formatDate(file.createdAt)}

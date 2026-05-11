@@ -18,7 +18,11 @@ import BulkImportModal from "./components/BulkImportModal";
 
 const PAGE_SIZE = 10;
 
-export default function FormsPage() {
+interface FormsPageProps {
+  isReadOnly?: boolean;
+}
+
+export default function FormsPage({ isReadOnly = false }: FormsPageProps) {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -139,22 +143,30 @@ export default function FormsPage() {
     });
   };
 
-  const actions: TableAction<Form>[] = [
-    {
-      key: "view",
-      icon: <MdInfoOutline className="h-4 w-4" />,
-      label: "Chi tiết",
-      onClick: (item) => handleEdit(item.id),
-      // Not passing className will default to blue rounded square like students page
-    },
-    {
-      key: "delete",
-      icon: <MdDeleteOutline className="h-4 w-4" />,
-      label: "Xóa",
-      className: "flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600 disabled:opacity-50",
-      onClick: (item) => setDeleteTarget(item.id),
-    },
-  ];
+  const actions: TableAction<Form>[] = isReadOnly
+    ? [
+        {
+          key: "view",
+          icon: <MdInfoOutline className="h-4 w-4" />,
+          label: "Chi tiết",
+          onClick: (item) => handleEdit(item.id),
+        },
+      ]
+    : [
+        {
+          key: "view",
+          icon: <MdInfoOutline className="h-4 w-4" />,
+          label: "Chi tiết",
+          onClick: (item) => handleEdit(item.id),
+        },
+        {
+          key: "delete",
+          icon: <MdDeleteOutline className="h-4 w-4" />,
+          label: "Xóa",
+          className: "flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600 disabled:opacity-50",
+          onClick: (item) => setDeleteTarget(item.id),
+        },
+      ];
 
   return (
     <>
@@ -172,22 +184,24 @@ export default function FormsPage() {
           onSearch={handleSearch}
           searchPlaceholder="Tìm theo loại văn bản..."
           middleSlot={
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setCreationOpen(true)}
-                className="rounded-2xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
-              >
-                Thêm
-              </button>
-              <button
-                type="button"
-                onClick={() => setImportOpen(true)}
-                className="bg-brand-500 hover:bg-brand-600 rounded-2xl px-5 py-2.5 text-sm font-semibold text-white transition-colors"
-              >
-                Thêm hàng loạt
-              </button>
-            </div>
+            !isReadOnly ? (
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setCreationOpen(true)}
+                  className="rounded-2xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
+                >
+                  Thêm
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImportOpen(true)}
+                  className="bg-brand-500 hover:bg-brand-600 rounded-2xl px-5 py-2.5 text-sm font-semibold text-white transition-colors"
+                >
+                  Thêm hàng loạt
+                </button>
+              </div>
+            ) : undefined
           }
         />
       </div>
@@ -205,6 +219,7 @@ export default function FormsPage() {
       <FormDetailDrawer
         id={selectedId}
         open={!!selectedId}
+        isReadOnly={isReadOnly}
         onClose={() => {
           setSearchParams((prev) => {
             prev.delete("id");

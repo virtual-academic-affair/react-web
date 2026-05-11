@@ -5,19 +5,17 @@ import { useEmailSockets } from "@/hooks/useEmailSockets";
 import UsersPage from "@/pages/auth/accounts";
 import StudentsPage from "@/pages/auth/students";
 import ClassRegistrationStatisticsPage from "@/pages/class-registration/statistics";
-import DocumentCreatePage from "@/pages/documents/create";
 import FormsPage from "@/pages/documents/forms";
 import FAQsPage from "@/pages/documents/faqs";
 import ProposedFAQsPage from "@/pages/documents/faqs/candidates";
 import DocumentListPage from "@/pages/documents/list";
-import MetadataManagementPage from "@/pages/documents/metadata";
-import MetadataTypeCreatePage from "@/pages/documents/metadata/create";
 import ChatbotPage from "@/pages/chatbot";
 import GmailConfigPage from "@/pages/emails/config";
 import InquiryStatisticsPage from "@/pages/inquiry/statistics";
 import routes from "@/routes";
 import { useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
+
 
 const DYNAMIC_DATA_KEYS = [
   "auth.roleDomains",
@@ -143,15 +141,6 @@ const AdminLayout: React.FC = () => {
             <Route path="documents/forms" element={<FormsPage />} />
             <Route path="documents/faqs" element={<FAQsPage />} />
             <Route path="documents/candidates" element={<ProposedFAQsPage />} />
-            <Route path="documents/create" element={<DocumentCreatePage />} />
-            <Route
-              path="documents/metadata/index"
-              element={<MetadataManagementPage />}
-            />
-            <Route
-              path="documents/metadata/create"
-              element={<MetadataTypeCreatePage />}
-            />
             <Route path="chatbot" element={<ChatbotPage />} />
             <Route
               path="class-registration"

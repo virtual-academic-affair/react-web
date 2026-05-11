@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import React from "react";
+import React, { useEffect } from "react";
 import { MdClose } from "react-icons/md";
 
 interface DrawerProps {
@@ -33,6 +33,19 @@ const Drawer: React.FC<DrawerProps> = ({
   hideBackdrop = false,
   wrapperClassName = "z-50",
 }) => {
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   const offTransform =
     side === "right"
       ? "translate-x-[calc(100%+48px)]"
@@ -58,7 +71,7 @@ const Drawer: React.FC<DrawerProps> = ({
             isOpen ? "translate-x-0" : offTransform
           }`}
         >
-          <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-4 py-3 dark:border-white/10 md:gap-3 md:px-6 md:py-4">
+          <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-4 py-3 md:gap-3 md:px-6 md:py-4 dark:border-white/10">
             <h2 className="text-navy-700 min-w-0 flex-1 truncate text-base font-bold dark:text-white">
               {title}
             </h2>
@@ -79,7 +92,7 @@ const Drawer: React.FC<DrawerProps> = ({
           </div>
 
           {(footerLeft || footerRight) && (
-            <div className="flex items-center justify-between gap-2 border-t border-gray-100 px-4 py-3 dark:border-white/10 md:px-6 md:py-4">
+            <div className="flex items-center justify-between gap-2 border-t border-gray-100 px-4 py-3 md:px-6 md:py-4 dark:border-white/10">
               <div className="flex items-center gap-3 empty:hidden">
                 {footerLeft}
               </div>
@@ -105,8 +118,8 @@ const Drawer: React.FC<DrawerProps> = ({
             <MdClose className="h-5 w-5 text-white dark:text-gray-200" />
           </button>
 
-          <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-4 py-3 dark:border-white/10 md:gap-3 md:px-6 md:py-4">
-            <h2 className="text-navy-700 min-w-0 flex-1 truncate pr-10 text-base font-bold dark:text-white md:pr-12">
+          <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-4 py-3 md:gap-3 md:px-6 md:py-4 dark:border-white/10">
+            <h2 className="text-navy-700 min-w-0 flex-1 truncate pr-10 text-base font-bold md:pr-12 dark:text-white">
               {title}
             </h2>
           </div>
@@ -116,7 +129,7 @@ const Drawer: React.FC<DrawerProps> = ({
           </div>
 
           {(footerLeft || footerRight) && (
-            <div className="flex items-center justify-between gap-2 border-t border-gray-100 px-4 py-3 dark:border-white/10 md:px-6 md:py-4">
+            <div className="flex items-center justify-between gap-2 border-t border-gray-100 px-4 py-3 md:px-6 md:py-4 dark:border-white/10">
               <div className="flex items-center gap-3 empty:hidden">
                 {footerLeft}
               </div>

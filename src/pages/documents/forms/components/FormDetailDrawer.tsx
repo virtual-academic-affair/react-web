@@ -9,9 +9,12 @@ import ConfirmModal from "@/components/modal/ConfirmModal";
 import type { Form } from "@/types/forms";
 import { MdDeleteOutline, MdSave } from "react-icons/md";
 
+import { fixRichTextLinks } from "@/components/fields/RichTextEditor";
+
 interface FormDetailDrawerProps {
   id?: string;
   open: boolean;
+  isReadOnly?: boolean;
   onClose: () => void;
   onFormChanged: (updated: Form) => void;
   onFormDeleted: (id: string) => void;
@@ -20,6 +23,7 @@ interface FormDetailDrawerProps {
 export default function FormDetailDrawer({
   id,
   open,
+  isReadOnly = false,
   onClose,
   onFormChanged,
   onFormDeleted,
@@ -117,18 +121,20 @@ export default function FormDetailDrawer({
         onClose={onClose} 
         title="Chi tiết biểu mẫu"
         footerRight={
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setConfirmDeleteOpen(true)}
-              disabled={!detail || isLoading || isUpdating || isDeleting}
-              title={isDeleting ? "Đang xóa..." : "Xóa"}
-              aria-label={isDeleting ? "Đang xóa..." : "Xóa"}
-              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600 disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-600"
-            >
-              <MdDeleteOutline className="h-4 w-4" />
-            </button>
-          </div>
+          !isReadOnly ? (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteOpen(true)}
+                disabled={!detail || isLoading || isUpdating || isDeleting}
+                title={isDeleting ? "Đang xóa..." : "Xóa"}
+                aria-label={isDeleting ? "Đang xóa..." : "Xóa"}
+                className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600 disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-600"
+              >
+                <MdDeleteOutline className="h-4 w-4" />
+              </button>
+            </div>
+          ) : undefined
         }
       >
         {isLoading ? (
@@ -142,6 +148,29 @@ export default function FormDetailDrawer({
           </div>
         ) : isError || !detail ? (
           <p className="text-sm text-gray-600 dark:text-gray-400">Không có dữ liệu.</p>
+        ) : isReadOnly ? (
+          /* Read-only view: render all fields as static text/HTML */
+          <DetailFormLayout>
+            <FormRow label="Nội dung">
+              <p className="text-navy-700 text-sm dark:text-white">
+                {detail.documentType || "—"}
+              </p>
+            </FormRow>
+            <FormRow label="Đường link">
+              <div
+                className="tiptap-prose text-sm text-navy-700 dark:text-white [&_a]:text-brand-500 [&_a:hover]:underline dark:[&_a]:text-brand-400 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+                dangerouslySetInnerHTML={{ __html: fixRichTextLinks(detail.contentLink || "") }}
+              />
+            </FormRow>
+            {detail.notes && (
+              <FormRow label="Ghi chú">
+                <div
+                  className="tiptap-prose text-sm text-navy-700 dark:text-white [&_a]:text-brand-500 [&_a:hover]:underline dark:[&_a]:text-brand-400 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+                  dangerouslySetInnerHTML={{ __html: fixRichTextLinks(detail.notes || "") }}
+                />
+              </FormRow>
+            )}
+          </DetailFormLayout>
         ) : (
           <DetailFormLayout>
             <FormFormFields
