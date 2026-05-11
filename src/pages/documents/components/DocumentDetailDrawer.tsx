@@ -4,9 +4,9 @@ import React, { useEffect, useState } from "react";
 import { MdDeleteOutline, MdPreview, MdSave } from "react-icons/md";
 
 import Drawer from "@/components/drawer/Drawer";
+import ConfirmModal from "@/components/modal/ConfirmModal";
 import Tag from "@/components/tag/Tag";
 import Tooltip from "@/components/tooltip/Tooltip";
-import ConfirmModal from "@/components/modal/ConfirmModal";
 import { DocumentsService } from "@/services/documents";
 import { formatDate } from "@/utils/date";
 import { parseError } from "@/utils/parseError";
@@ -47,7 +47,10 @@ const normalizeYear = (y: number | null | undefined): number | null =>
 
 /** Format a year range for read-only display */
 const formatYearRangeDisplay = (
-  range: { fromYear?: number | null; toYear?: number | null } | null | undefined,
+  range:
+    | { fromYear?: number | null; toYear?: number | null }
+    | null
+    | undefined,
   allLabel: string,
 ): string => {
   if (!range) return allLabel;

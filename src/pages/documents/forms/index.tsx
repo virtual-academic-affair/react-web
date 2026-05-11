@@ -1,20 +1,20 @@
-import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useSearchParams } from "react-router-dom";
-import { MdDeleteOutline, MdInfoOutline } from "react-icons/md";
-import { message as toast } from "antd";
 import { fixRichTextLinks } from "@/components/fields/RichTextEditor";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { message as toast } from "antd";
+import { useState } from "react";
+import { MdDeleteOutline, MdInfoOutline } from "react-icons/md";
+import { useSearchParams } from "react-router-dom";
 
-import TableLayout from "@/components/table/TableLayout";
-import type { TableColumn, TableAction } from "@/components/table/TableLayout";
 import ConfirmModal from "@/components/modal/ConfirmModal";
+import type { TableAction, TableColumn } from "@/components/table/TableLayout";
+import TableLayout from "@/components/table/TableLayout";
 
-import type { Form } from "@/types/forms";
 import { formsService } from "@/services/documents/forms.service";
+import type { Form } from "@/types/forms";
 
+import BulkImportModal from "./components/BulkImportModal";
 import CreationDrawer from "./components/CreationDrawer";
 import FormDetailDrawer from "./components/FormDetailDrawer";
-import BulkImportModal from "./components/BulkImportModal";
 
 const PAGE_SIZE = 10;
 
@@ -56,7 +56,7 @@ export default function FormsPage({ isReadOnly = false }: FormsPageProps) {
       header: "Nội dung",
       render: (item) => (
         <div className="flex items-center gap-2">
-          <p className="text-sm font-medium text-navy-700 dark:text-white">
+          <p className="text-navy-700 text-sm font-medium dark:text-white">
             {item.documentType}
           </p>
         </div>
@@ -67,8 +67,10 @@ export default function FormsPage({ isReadOnly = false }: FormsPageProps) {
       header: "Đường link",
       render: (item) => (
         <div
-          className="tiptap-prose text-sm text-navy-700 dark:text-white [&_a]:text-brand-500 [&_a:hover]:underline dark:[&_a]:text-brand-400 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 line-clamp-2"
-          dangerouslySetInnerHTML={{ __html: fixRichTextLinks(item.contentLink || "") }}
+          className="tiptap-prose text-navy-700 [&_a]:text-brand-500 dark:[&_a]:text-brand-400 line-clamp-2 text-sm dark:text-white [&_a:hover]:underline [&_ol]:list-decimal [&_ol]:pl-4 [&_ul]:list-disc [&_ul]:pl-4"
+          dangerouslySetInnerHTML={{
+            __html: fixRichTextLinks(item.contentLink || ""),
+          }}
         />
       ),
     },
@@ -77,8 +79,10 @@ export default function FormsPage({ isReadOnly = false }: FormsPageProps) {
       header: "Ghi chú",
       render: (item) => (
         <div
-          className="tiptap-prose text-sm text-navy-700 dark:text-white [&_a]:text-brand-500 [&_a:hover]:underline dark:[&_a]:text-brand-400 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 line-clamp-3"
-          dangerouslySetInnerHTML={{ __html: fixRichTextLinks(item.notes || "") }}
+          className="tiptap-prose text-navy-700 [&_a]:text-brand-500 dark:[&_a]:text-brand-400 line-clamp-3 text-sm dark:text-white [&_a:hover]:underline [&_ol]:list-decimal [&_ol]:pl-4 [&_ul]:list-disc [&_ul]:pl-4"
+          dangerouslySetInnerHTML={{
+            __html: fixRichTextLinks(item.notes || ""),
+          }}
         />
       ),
     },
@@ -100,21 +104,18 @@ export default function FormsPage({ isReadOnly = false }: FormsPageProps) {
       toast.success("Xóa biểu mẫu thành công");
 
       // Cập nhật query data (Optimistic update)
-      queryClient.setQueryData(
-        ["forms", { page, keyword }],
-        (old: any) => {
-          if (!old) return old;
-          return {
-            ...old,
-            items: old.items.filter((item: Form) => item.id !== deleteTarget),
-            pagination: {
-              ...old.pagination,
-              total: Math.max(0, old.pagination.total - 1),
-            },
-          };
-        },
-      );
-      
+      queryClient.setQueryData(["forms", { page, keyword }], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          items: old.items.filter((item: Form) => item.id !== deleteTarget),
+          pagination: {
+            ...old.pagination,
+            total: Math.max(0, old.pagination.total - 1),
+          },
+        };
+      });
+
       // Xóa form cache
       queryClient.removeQueries({ queryKey: ["form", deleteTarget] });
     } catch (error: any) {
@@ -163,7 +164,8 @@ export default function FormsPage({ isReadOnly = false }: FormsPageProps) {
           key: "delete",
           icon: <MdDeleteOutline className="h-4 w-4" />,
           label: "Xóa",
-          className: "flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600 disabled:opacity-50",
+          className:
+            "flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600 disabled:opacity-50",
           onClick: (item) => setDeleteTarget(item.id),
         },
       ];
@@ -182,7 +184,7 @@ export default function FormsPage({ isReadOnly = false }: FormsPageProps) {
           searchValue={searchValue}
           onSearchChange={setSearchValue}
           onSearch={handleSearch}
-          searchPlaceholder="Tìm theo loại văn bản..."
+          searchPlaceholder="Tìm biểu mẫu..."
           middleSlot={
             !isReadOnly ? (
               <div className="flex justify-end gap-3">
@@ -211,10 +213,7 @@ export default function FormsPage({ isReadOnly = false }: FormsPageProps) {
         onClose={() => setCreationOpen(false)}
       />
 
-      <BulkImportModal
-        open={importOpen}
-        onClose={() => setImportOpen(false)}
-      />
+      <BulkImportModal open={importOpen} onClose={() => setImportOpen(false)} />
 
       <FormDetailDrawer
         id={selectedId}
@@ -227,34 +226,28 @@ export default function FormsPage({ isReadOnly = false }: FormsPageProps) {
           });
         }}
         onFormChanged={(updated) => {
-          queryClient.setQueryData(
-            ["forms", { page, keyword }],
-            (old: any) => {
-              if (!old) return old;
-              return {
-                ...old,
-                items: old.items.map((item: Form) =>
-                  item.id === updated.id ? updated : item,
-                ),
-              };
-            },
-          );
+          queryClient.setQueryData(["forms", { page, keyword }], (old: any) => {
+            if (!old) return old;
+            return {
+              ...old,
+              items: old.items.map((item: Form) =>
+                item.id === updated.id ? updated : item,
+              ),
+            };
+          });
         }}
         onFormDeleted={(id) => {
-          queryClient.setQueryData(
-            ["forms", { page, keyword }],
-            (old: any) => {
-              if (!old) return old;
-              return {
-                ...old,
-                items: old.items.filter((item: Form) => item.id !== id),
-                pagination: {
-                  ...old.pagination,
-                  total: Math.max(0, old.pagination.total - 1),
-                },
-              };
-            },
-          );
+          queryClient.setQueryData(["forms", { page, keyword }], (old: any) => {
+            if (!old) return old;
+            return {
+              ...old,
+              items: old.items.filter((item: Form) => item.id !== id),
+              pagination: {
+                ...old.pagination,
+                total: Math.max(0, old.pagination.total - 1),
+              },
+            };
+          });
           queryClient.removeQueries({ queryKey: ["form", id] });
         }}
       />

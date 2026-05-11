@@ -1,13 +1,16 @@
-import { useEffect, useState } from "react";
-import { message as toast } from "antd";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Drawer from "@/components/drawer/Drawer";
-import DetailFormLayout, { DetailFormSection, FormRow } from "@/components/layouts/DetailFormLayout";
-import { FormFormFields } from "./FormFormFields";
-import { formsService } from "@/services/documents/forms.service";
+import DetailFormLayout, {
+  DetailFormSection,
+  FormRow,
+} from "@/components/layouts/DetailFormLayout";
 import ConfirmModal from "@/components/modal/ConfirmModal";
+import { formsService } from "@/services/documents/forms.service";
 import type { Form } from "@/types/forms";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { message as toast } from "antd";
+import { useEffect, useState } from "react";
 import { MdDeleteOutline, MdSave } from "react-icons/md";
+import { FormFormFields } from "./FormFormFields";
 
 import { fixRichTextLinks } from "@/components/fields/RichTextEditor";
 
@@ -104,8 +107,10 @@ export default function FormDetailDrawer({
 
   const handleSave = () => {
     const newErrors: typeof errors = {};
-    if (!documentType.trim()) newErrors.documentType = "Nội dung không được để trống";
-    if (!contentLink.trim()) newErrors.contentLink = "Đường link không được để trống";
+    if (!documentType.trim())
+      newErrors.documentType = "Nội dung không được để trống";
+    if (!contentLink.trim())
+      newErrors.contentLink = "Đường link không được để trống";
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -116,9 +121,9 @@ export default function FormDetailDrawer({
 
   return (
     <>
-      <Drawer 
-        isOpen={open} 
-        onClose={onClose} 
+      <Drawer
+        isOpen={open}
+        onClose={onClose}
         title="Chi tiết biểu mẫu"
         footerRight={
           !isReadOnly ? (
@@ -147,7 +152,9 @@ export default function FormDetailDrawer({
             ))}
           </div>
         ) : isError || !detail ? (
-          <p className="text-sm text-gray-600 dark:text-gray-400">Không có dữ liệu.</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Không có dữ liệu.
+          </p>
         ) : isReadOnly ? (
           /* Read-only view: render all fields as static text/HTML */
           <DetailFormLayout>
@@ -156,17 +163,21 @@ export default function FormDetailDrawer({
                 {detail.documentType || "—"}
               </p>
             </FormRow>
-            <FormRow label="Đường link">
+            <FormRow alignTop label="Đường link">
               <div
-                className="tiptap-prose text-sm text-navy-700 dark:text-white [&_a]:text-brand-500 [&_a:hover]:underline dark:[&_a]:text-brand-400 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
-                dangerouslySetInnerHTML={{ __html: fixRichTextLinks(detail.contentLink || "") }}
+                className="tiptap-prose text-navy-700 [&_a]:text-brand-500 dark:[&_a]:text-brand-400 text-sm dark:text-white [&_a:hover]:underline [&_ol]:list-decimal [&_ol]:pl-4 [&_ul]:list-disc [&_ul]:pl-4"
+                dangerouslySetInnerHTML={{
+                  __html: fixRichTextLinks(detail.contentLink || ""),
+                }}
               />
             </FormRow>
             {detail.notes && (
-              <FormRow label="Ghi chú">
+              <FormRow alignTop label="Ghi chú">
                 <div
-                  className="tiptap-prose text-sm text-navy-700 dark:text-white [&_a]:text-brand-500 [&_a:hover]:underline dark:[&_a]:text-brand-400 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
-                  dangerouslySetInnerHTML={{ __html: fixRichTextLinks(detail.notes || "") }}
+                  className="tiptap-prose text-navy-700 [&_a]:text-brand-500 dark:[&_a]:text-brand-400 text-sm dark:text-white [&_a:hover]:underline [&_ol]:list-decimal [&_ol]:pl-4 [&_ul]:list-disc [&_ul]:pl-4"
+                  dangerouslySetInnerHTML={{
+                    __html: fixRichTextLinks(detail.notes || ""),
+                  }}
                 />
               </FormRow>
             )}
@@ -179,15 +190,17 @@ export default function FormDetailDrawer({
               contentLink={contentLink}
               notes={notes}
               onDocumentTypeChange={(v) => {
-                setEdits(p => ({ ...p, documentType: v }));
-                if (errors.documentType) setErrors({ ...errors, documentType: undefined });
+                setEdits((p) => ({ ...p, documentType: v }));
+                if (errors.documentType)
+                  setErrors({ ...errors, documentType: undefined });
               }}
               onContentLinkChange={(v) => {
-                setEdits(p => ({ ...p, contentLink: v }));
-                if (errors.contentLink) setErrors({ ...errors, contentLink: undefined });
+                setEdits((p) => ({ ...p, contentLink: v }));
+                if (errors.contentLink)
+                  setErrors({ ...errors, contentLink: undefined });
               }}
               onNotesChange={(v) => {
-                setEdits(p => ({ ...p, notes: v }));
+                setEdits((p) => ({ ...p, notes: v }));
                 if (errors.notes) setErrors({ ...errors, notes: undefined });
               }}
               errors={errors}
@@ -211,7 +224,9 @@ export default function FormDetailDrawer({
             <DetailFormSection title="Thông số kỹ thuật">
               <div className="flex flex-col gap-2">
                 <FormRow label="ID">
-                  <p className="text-navy-700 text-sm dark:text-white">{detail.id}</p>
+                  <p className="text-navy-700 text-sm dark:text-white">
+                    {detail.id}
+                  </p>
                 </FormRow>
                 <FormRow label="Ngày tạo">
                   <p className="text-navy-700 text-sm dark:text-white">

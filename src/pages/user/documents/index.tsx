@@ -111,6 +111,8 @@ const UserDocumentsPage: React.FC = () => {
 
   // URL-driven detail / preview
   const isPreview = searchParams.get("preview") === "true";
+  const previewTarget = searchParams.get("previewTarget") || "";
+  const isMarkdownPreview = previewTarget === "markdown";
   const previewFileId = isPreview ? searchParams.get("id") || null : null;
   const selectedFileId = searchParams.get("id") || null;
   const wasDrawerOpen = useRef(false);
@@ -217,11 +219,27 @@ const UserDocumentsPage: React.FC = () => {
   const files = result?.items || [];
   const pagination = result?.pagination;
 
-  const previewFileName = useMemo(() => {
-    if (!previewFileId || !files.length) return "";
-    const f = files.find((x: any) => x.fileId === previewFileId);
-    return f?.originalFilename || f?.displayName || "";
+  const previewFile = useMemo(() => {
+    if (!previewFileId || !files.length) return null;
+    return files.find((x: any) => x.fileId === previewFileId) || null;
   }, [previewFileId, files]);
+
+  const previewFileName = useMemo(() => {
+    if (!previewFile) return "";
+    if (isMarkdownPreview) {
+      const markdownUrl = String(previewFile.markdownFileUrl || "");
+      const fromUrl = markdownUrl.split("?")[0].split("/").pop() || "";
+      if (fromUrl) return fromUrl;
+      const baseName =
+        previewFile.displayName || previewFile.originalFilename || "";
+      return baseName ? `${baseName}.md` : "markdown.md";
+    }
+    return previewFile.originalFilename || previewFile.displayName || "";
+  }, [previewFile, isMarkdownPreview]);
+
+  const previewDownloadFormat = isMarkdownPreview
+    ? ("markdown" as const)
+    : ("original" as const);
 
   // ── Sync URL ──────────────────────────────────────────────────────────────
 
@@ -291,6 +309,7 @@ const UserDocumentsPage: React.FC = () => {
   const handleClosePreview = useCallback(() => {
     const next = new URLSearchParams(searchParams);
     next.delete("preview");
+    next.delete("previewTarget");
     if (!wasDrawerOpen.current) next.delete("id");
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
@@ -368,7 +387,7 @@ const UserDocumentsPage: React.FC = () => {
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Tìm tài liệu, giáo trình, bài giảng..."
+            placeholder="Tìm tài liệu, công văn, quyết định..."
             className="dark:bg-navy-800 focus:border-brand-400 focus:ring-brand-400/20 dark:focus:border-brand-500 w-full rounded-2xl border border-gray-200 bg-white py-3 pr-24 pl-11 text-sm text-gray-700 shadow-sm transition-all outline-none focus:ring-2 dark:border-white/10 dark:text-white dark:placeholder-gray-500"
           />
           <button
@@ -617,8 +636,19 @@ const UserDocumentsPage: React.FC = () => {
         onDeleted={() => {}}
         onPreview={() => {
           if (!selectedFileId) return;
-          const target = files.find((f: any) => f.fileId === selectedFileId);
-          if (target) handleOpenPreview(target);
+          wasDrawerOpen.current = true;
+          const next = new URLSearchParams(searchParams);
+          next.set("preview", "true");
+          next.delete("previewTarget");
+          setSearchParams(next, { replace: true });
+        }}
+        onPreviewMarkdown={() => {
+          if (!selectedFileId) return;
+          wasDrawerOpen.current = true;
+          const next = new URLSearchParams(searchParams);
+          next.set("preview", "true");
+          next.set("previewTarget", "markdown");
+          setSearchParams(next, { replace: true });
         }}
       />
 
@@ -626,6 +656,7 @@ const UserDocumentsPage: React.FC = () => {
       <FilePreviewModal
         fileId={previewFileId}
         fileName={previewFileName}
+        downloadFormat={previewDownloadFormat}
         isOpen={previewFileId !== null}
         onClose={handleClosePreview}
       />
