@@ -32,5 +32,5 @@ export interface ImportFormsDto {
 
 export interface ImportFormsResult {
   message: string;
-  count: number;
+  created: number;
 }

@@ -142,28 +142,28 @@ class FAQsService {
   async importFAQs(
     file: File,
     config: {
-      questionCol: string;
-      answerCol: string;
-      academicYearCol?: string;
-      enrollmentYearCol?: string;
+      questionCol: number;
+      answerCol: number;
+      academicYearCol?: number;
+      enrollmentYearCol?: number;
       sheetName?: string;
       skipRows?: number;
     }
   ) {
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("question_col", config.questionCol);
-    formData.append("answer_col", config.answerCol);
+    formData.append("question_col", config.questionCol.toString());
+    formData.append("answer_col", config.answerCol.toString());
     
     const metadataMap: any = {};
-    if (config.academicYearCol) metadataMap.academic_year = config.academicYearCol;
-    if (config.enrollmentYearCol) metadataMap.enrollment_year = config.enrollmentYearCol;
+    if (config.academicYearCol) metadataMap.academic_year = config.academicYearCol.toString();
+    if (config.enrollmentYearCol) metadataMap.enrollment_year = config.enrollmentYearCol.toString();
     formData.append("metadataFilterJson", JSON.stringify(metadataMap));
 
     if (config.sheetName) formData.append("sheet_name", config.sheetName);
     if (config.skipRows !== undefined) formData.append("skip_rows", config.skipRows.toString());
 
-    const response = await ragHttp.post(API_ENDPOINTS.rag.faqs.import, formData, {
+    const response = await ragHttp.post<{ message: string; created: number }>(API_ENDPOINTS.rag.faqs.import, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
     return response.data;

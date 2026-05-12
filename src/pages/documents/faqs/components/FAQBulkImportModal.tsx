@@ -1,11 +1,9 @@
 import Drawer from "@/components/drawer/Drawer";
 import DetailFormLayout, { FormRow } from "@/components/layouts/DetailFormLayout";
 import { faqsService } from "@/services/documents/faqs.service";
-import type { YearRange } from "@/types/faqs";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import { useRef, useState, useEffect } from "react";
-import { MdCheckCircle, MdError } from "react-icons/md";
 import { read, utils } from "xlsx";
 
 interface FAQBulkImportModalProps {
@@ -128,8 +126,6 @@ export default function FAQBulkImportModal({
     if (!file) return;
     importData();
   };
-
-  const previewHeaders = ["Trạng thái", "Câu hỏi", "Câu trả lời", "Năm học", "Niên khóa"];
 
   return (
     <Drawer isOpen={open} onClose={handleClose} title="Thêm câu hỏi hàng loạt">

@@ -4,7 +4,6 @@ import Drawer from "@/components/drawer/Drawer";
 import DetailFormLayout, { FormRow } from "@/components/layouts/DetailFormLayout";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { formsService } from "@/services/documents/forms.service";
-import { fixRichTextLinks } from "@/components/fields/RichTextEditor";
 import { read, utils } from "xlsx";
 
 interface BulkImportModalProps {
