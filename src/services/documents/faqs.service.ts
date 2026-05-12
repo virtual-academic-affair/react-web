@@ -139,37 +139,6 @@ class FAQsService {
     await ragHttp.delete(API_ENDPOINTS.rag.faqs.byId(id));
   }
 
-  async previewImportFAQs(
-    file: File,
-    config: {
-      questionCol: string;
-      answerCol: string;
-      academicYearCol?: string;
-      enrollmentYearCol?: string;
-      sheetName?: string;
-      skipRows?: number;
-    }
-  ) {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("question_col", config.questionCol);
-    formData.append("answer_col", config.answerCol);
-    
-    // New metadata format
-    const metadataMap: any = {};
-    if (config.academicYearCol) metadataMap.academic_year = config.academicYearCol;
-    if (config.enrollmentYearCol) metadataMap.enrollment_year = config.enrollmentYearCol;
-    formData.append("metadataFilterJson", JSON.stringify(metadataMap));
-
-    if (config.sheetName) formData.append("sheet_name", config.sheetName);
-    if (config.skipRows !== undefined) formData.append("skip_rows", config.skipRows.toString());
-
-    const response = await ragHttp.post(API_ENDPOINTS.rag.faqs.importPreview, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-    return response.data;
-  }
-
   async importFAQs(
     file: File,
     config: {

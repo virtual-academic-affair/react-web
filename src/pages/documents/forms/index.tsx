@@ -54,9 +54,10 @@ export default function FormsPage({ isReadOnly = false }: FormsPageProps) {
     {
       key: "documentType",
       header: "Nội dung",
+      width: "20%",
       render: (item) => (
-        <div className="flex items-center gap-2">
-          <p className="text-navy-700 text-sm font-medium dark:text-white">
+        <div className="flex items-center gap-2 overflow-hidden">
+          <p className="truncate text-sm font-medium text-navy-700 dark:text-white">
             {item.documentType}
           </p>
         </div>
@@ -65,9 +66,10 @@ export default function FormsPage({ isReadOnly = false }: FormsPageProps) {
     {
       key: "contentLink",
       header: "Đường link",
+      width: "35%",
       render: (item) => (
         <div
-          className="tiptap-prose text-navy-700 [&_a]:text-brand-500 dark:[&_a]:text-brand-400 line-clamp-2 text-sm dark:text-white [&_a:hover]:underline [&_ol]:list-decimal [&_ol]:pl-4 [&_ul]:list-disc [&_ul]:pl-4"
+          className="tiptap-prose line-clamp-1 whitespace-normal text-sm text-navy-700 dark:text-white [&_a:hover]:underline [&_a]:text-brand-500 [&_ol]:list-decimal [&_ol]:pl-4 [&_ul]:list-disc [&_ul]:pl-4 dark:[&_a]:text-brand-400"
           dangerouslySetInnerHTML={{
             __html: fixRichTextLinks(item.contentLink || ""),
           }}
@@ -77,9 +79,10 @@ export default function FormsPage({ isReadOnly = false }: FormsPageProps) {
     {
       key: "notes",
       header: "Ghi chú",
+      width: "35%",
       render: (item) => (
         <div
-          className="tiptap-prose text-navy-700 [&_a]:text-brand-500 dark:[&_a]:text-brand-400 line-clamp-3 text-sm dark:text-white [&_a:hover]:underline [&_ol]:list-decimal [&_ol]:pl-4 [&_ul]:list-disc [&_ul]:pl-4"
+          className="tiptap-prose line-clamp-1 whitespace-normal text-sm text-navy-700 dark:text-white [&_a:hover]:underline [&_a]:text-brand-500 [&_ol]:list-decimal [&_ol]:pl-4 [&_ul]:list-disc [&_ul]:pl-4 dark:[&_a]:text-brand-400"
           dangerouslySetInnerHTML={{
             __html: fixRichTextLinks(item.notes || ""),
           }}

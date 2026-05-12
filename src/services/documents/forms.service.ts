@@ -48,26 +48,6 @@ class FormsService {
     await ragHttp.delete(API_ENDPOINTS.rag.forms.byId(id));
   }
 
-  async previewImport(
-    file: File,
-    dto: ImportFormsDto,
-  ): Promise<{ rows: any[] }> {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    if (dto.documentTypeCol != null) formData.append("document_type_col", String(dto.documentTypeCol));
-    if (dto.contentLinkCol != null) formData.append("content_link_col", String(dto.contentLinkCol));
-    if (dto.notesCol != null) formData.append("notes_col", String(dto.notesCol));
-    if (dto.startRow != null) formData.append("start_row", String(dto.startRow));
-
-    const res = await ragHttp.post<{ rows: any[] }>(
-      API_ENDPOINTS.rag.forms.importPreview,
-      formData,
-      { headers: { "Content-Type": "multipart/form-data" } },
-    );
-    return res.data;
-  }
-
   async importForms(
     file: File,
     dto: ImportFormsDto,
