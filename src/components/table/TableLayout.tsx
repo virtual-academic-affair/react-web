@@ -256,7 +256,7 @@ function TableLayout<T extends { id: number | string }>({
                         {columns.map((col) => (
                           <td
                             key={col.key}
-                            className="max-w-0 px-4 py-3"
+                            className="max-w-px px-4 py-3"
                             style={{
                               width: col.width,
                               maxWidth: col.maxWidth,

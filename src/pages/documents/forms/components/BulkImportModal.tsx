@@ -1,27 +1,21 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { message as toast } from "antd";
 import Drawer from "@/components/drawer/Drawer";
 import DetailFormLayout, { FormRow } from "@/components/layouts/DetailFormLayout";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { formsService } from "@/services/documents/forms.service";
-import { fixRichTextLinks } from "@/components/fields/RichTextEditor";
+import { read, utils } from "xlsx";
 
 interface BulkImportModalProps {
   open: boolean;
   onClose: () => void;
 }
 
-interface PreviewRow {
-  documentType: string;
-  contentLink: string;
-  notes: string;
-}
-
 export default function BulkImportModal({ open, onClose }: BulkImportModalProps) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
-  
+
   // Mapping config
   const [config, setConfig] = useState({
     documentTypeCol: 1,
@@ -30,21 +24,9 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
     startRow: 2,
   });
 
-  const [preview, setPreview] = useState<PreviewRow[]>([]);
   const [previewError, setPreviewError] = useState<string | null>(null);
-
-  const { mutate: getPreview, isPending: isPreviewLoading } = useMutation({
-    mutationFn: (args: { file: File, config: typeof config }) => 
-      formsService.previewImport(args.file, args.config),
-    onSuccess: (res) => {
-      setPreview(res.rows);
-      setPreviewError(null);
-    },
-    onError: (error: any) => {
-      setPreviewError(error?.response?.data?.message || "Lỗi đọc file từ server");
-      setPreview([]);
-    }
-  });
+  const [localPreviewRows, setLocalPreviewRows] = useState<any[][]>([]);
+  const [totalRows, setTotalRows] = useState<number>(0);
 
   const { mutate: importData, isPending } = useMutation({
     mutationFn: () =>
@@ -55,7 +37,8 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
         startRow: config.startRow,
       }),
     onSuccess: (res) => {
-      toast.success(res.message || "Import thành công");
+      const createdCount = res.created ?? 0;
+      toast.success(res.message || `Import thành công ${createdCount}/${totalRows} văn bản`);
       queryClient.invalidateQueries({ queryKey: ["forms"] });
       handleClose();
     },
@@ -64,15 +47,47 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
     },
   });
 
-  const generatePreview = (selectedFile: File, currentConfig: typeof config) => {
-    getPreview({ file: selectedFile, config: currentConfig });
-  };
+  // Re-run local preview when file changes
+  useEffect(() => {
+    let cancelled = false;
+    const parseLocalPreview = async () => {
+      if (!file) {
+        setLocalPreviewRows([]);
+        setTotalRows(0);
+        return;
+      }
+      try {
+        const buf = await file.arrayBuffer();
+        const wb = read(buf, { type: "array" });
+        const firstSheetName = wb.SheetNames[0];
+        const firstSheet = firstSheetName ? wb.Sheets[firstSheetName] : null;
+        if (!firstSheet) return;
+
+        const rows = (utils.sheet_to_json(firstSheet, {
+          header: 1,
+          blankrows: false,
+          defval: "",
+        }) as any[][]).map((row) =>
+          row.map((cell) => (cell == null ? "" : String(cell).trim())),
+        );
+
+        if (!cancelled) {
+          setLocalPreviewRows(rows.slice(0, 5));
+          const actualDataRows = Math.max(0, rows.length - (config.startRow - 1));
+          setTotalRows(actualDataRows);
+        }
+      } catch (err) {
+        console.error("Local preview error:", err);
+      }
+    };
+    parseLocalPreview();
+    return () => { cancelled = true; };
+  }, [file, config.startRow]);
 
   const handleFileFilter = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
-      generatePreview(selectedFile, config);
     }
   };
 
@@ -80,15 +95,10 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
     const numValue = Math.max(1, parseInt(value) || 1);
     const newConfig = { ...config, [key]: numValue };
     setConfig(newConfig);
-    
-    if (file) {
-      generatePreview(file, newConfig);
-    }
   };
 
   const handleClose = () => {
     setFile(null);
-    setPreview([]);
     setPreviewError(null);
     setConfig({
       documentTypeCol: 1,
@@ -112,9 +122,6 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
     importData();
   };
 
-  const previewHeaders = ["Loại văn bản", "Nội dung & Đường link", "Ghi chú"];
-  const previewData = preview.map(r => [r.documentType, r.contentLink, r.notes]);
-
   return (
     <Drawer
       isOpen={open}
@@ -131,7 +138,7 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
                 accept=".xlsx,.xls,.csv"
                 onClick={(e) => (e.currentTarget.value = "")}
                 onChange={handleFileFilter}
-                disabled={isPending || isPreviewLoading}
+                disabled={isPending}
                 className="w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm outline-none file:mr-3 file:rounded-lg file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-gray-700 hover:file:bg-gray-200 dark:border-white/10 dark:text-white dark:file:bg-white/10 dark:file:text-white dark:hover:file:bg-white/20"
               />
             </div>
@@ -143,7 +150,7 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
               min={1}
               value={config.documentTypeCol}
               onChange={updateConfig("documentTypeCol")}
-              disabled={isPending || isPreviewLoading}
+              disabled={isPending}
               className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
             />
           </FormRow>
@@ -154,7 +161,7 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
               min={1}
               value={config.contentLinkCol}
               onChange={updateConfig("contentLinkCol")}
-              disabled={isPending || isPreviewLoading}
+              disabled={isPending}
               className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
             />
           </FormRow>
@@ -166,7 +173,7 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
               min={1}
               value={config.notesCol}
               onChange={updateConfig("notesCol")}
-              disabled={isPending || isPreviewLoading}
+              disabled={isPending}
               className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
             />
           </FormRow>
@@ -177,7 +184,7 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
               min={1}
               value={config.startRow}
               onChange={updateConfig("startRow")}
-              disabled={isPending || isPreviewLoading}
+              disabled={isPending}
               className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
             />
           </FormRow>
@@ -186,12 +193,8 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
         {file && (
           <div className="mt-2">
             {previewError ? (
-              <p className="text-sm text-red-500">{previewError}</p>
-            ) : isPreviewLoading ? (
-              <p className="text-sm text-gray-500 dark:text-gray-300 animate-pulse">
-                Đang tải dữ liệu xem trước...
-              </p>
-            ) : previewData.length === 0 ? (
+              <p className="text-sm text-red-500 py-4 text-center">{previewError}</p>
+            ) : localPreviewRows.length === 0 ? (
               <p className="text-sm text-gray-500 dark:text-gray-300">
                 Không có dữ liệu mẫu để hiển thị.
               </p>
@@ -203,46 +206,31 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
                       <th className="w-12 whitespace-nowrap border-r border-gray-100 px-2 py-1.5 text-center text-xs font-semibold tracking-wide text-gray-400 uppercase dark:border-white/10 dark:text-gray-500">
                         #
                       </th>
-                      {previewHeaders.map((header, colIdx) => (
+                      {Array.from({
+                        length: Math.max(1, ...localPreviewRows.map((row) => row.length)),
+                      }).map((_, colIdx) => (
                         <th
-                          key={`col-${colIdx}`}
+                          key={`col-${colIdx + 1}`}
                           className="whitespace-nowrap border-r border-gray-100 px-2 py-1.5 text-center text-xs font-semibold tracking-wide text-gray-400 uppercase last:border-r-0 dark:border-white/10 dark:text-gray-500"
                         >
-                          {header}
+                          Cột {colIdx + 1}
                         </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {previewData.map((row, idx) => (
-                      <tr
-                        key={`${idx}`}
-                        className="border-b border-gray-50 last:border-b-0 dark:border-white/5"
-                      >
+                    {localPreviewRows.map((row, idx) => (
+                      <tr key={idx} className="border-b border-gray-50 last:border-b-0 dark:border-white/5">
                         <td className="w-12 whitespace-nowrap border-r border-gray-100 bg-gray-50 px-2 py-1.5 text-center text-xs text-gray-600 dark:border-white/10 dark:bg-white/5 dark:text-gray-300">
                           {idx + 1}
                         </td>
-                        {row.map((cellValue, colIdx) => {
-                          const isRichTextCol = colIdx === 1 || colIdx === 2;
-                          
-                          return (
-                            <td
-                              key={`cell-${idx}-${colIdx}`}
-                              className={`${isRichTextCol ? "" : "whitespace-nowrap"} border-r border-gray-100 px-2 py-1.5 text-sm text-gray-700 last:border-r-0 dark:border-white/10 dark:text-white`}
-                            >
-                              {isRichTextCol ? (
-                                <div 
-                                  className="min-w-[300px] max-h-[100px] overflow-y-auto rich-text-preview"
-                                  dangerouslySetInnerHTML={{ __html: fixRichTextLinks(cellValue) }} 
-                                />
-                              ) : (
-                                <div className="max-w-[200px] truncate">
-                                  {cellValue || "—"}
-                                </div>
-                              )}
-                            </td>
-                          );
-                        })}
+                        {row.map((cell, cIdx) => (
+                          <td key={cIdx} className="border-r border-gray-100 px-2 py-1.5 text-sm text-gray-700 last:border-r-0 dark:border-white/10 dark:text-white">
+                            <div className="max-w-[200px] truncate" title={cell}>
+                              {cell || "—"}
+                            </div>
+                          </td>
+                        ))}
                       </tr>
                     ))}
                   </tbody>
@@ -262,7 +250,7 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
           </button>
           <button
             type="submit"
-            disabled={!file || preview.length === 0 || isPending || isPreviewLoading}
+            disabled={!file || localPreviewRows.length === 0 || isPending}
             className="bg-brand-500 hover:bg-brand-600 rounded-xl px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
           >
             {isPending ? "Đang thêm..." : "Thêm"}

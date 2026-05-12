@@ -1,27 +1,14 @@
 import Drawer from "@/components/drawer/Drawer";
 import DetailFormLayout, { FormRow } from "@/components/layouts/DetailFormLayout";
 import { faqsService } from "@/services/documents/faqs.service";
-import type { YearRange } from "@/types/faqs";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import { useRef, useState, useEffect } from "react";
-import { MdCheckCircle, MdError } from "react-icons/md";
+import { read, utils } from "xlsx";
 
 interface FAQBulkImportModalProps {
   open: boolean;
   onClose: () => void;
-}
-
-interface ImportRowPreview {
-  rowIndex: number;
-  question: string;
-  answerRichText: string; // Updated to match new backend field
-  metadata: {
-    academicYear: YearRange;
-    enrollmentYear: YearRange;
-  };
-  isValid: boolean;
-  error?: string;
 }
 
 export default function FAQBulkImportModal({
@@ -32,38 +19,16 @@ export default function FAQBulkImportModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [config, setConfig] = useState({
-    questionCol: "1",
-    answerCol: "2",
-    academicYearCol: "3",
-    enrollmentYearCol: "4",
+    questionCol: 1,
+    answerCol: 2,
+    academicYearCol: 3,
+    enrollmentYearCol: 4,
     startRow: 2,
   });
 
-  const [previewData, setPreviewData] = useState<ImportRowPreview[]>([]);
-  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
-
-  const { mutate: getPreview } = useMutation({
-    mutationFn: (selectedFile: File) =>
-      faqsService.previewImportFAQs(selectedFile, {
-        questionCol: config.questionCol,
-        answerCol: config.answerCol,
-        academicYearCol: config.academicYearCol,
-        enrollmentYearCol: config.enrollmentYearCol,
-        skipRows: config.startRow - 1,
-      }),
-    onSuccess: (res) => {
-      setPreviewData(res.rows || []);
-      setPreviewError(null);
-    },
-    onError: (error: any) => {
-      setPreviewError(error?.response?.data?.message || "Lỗi khi lấy dữ liệu xem trước");
-      setPreviewData([]);
-    },
-    onSettled: () => {
-      setIsPreviewLoading(false);
-    },
-  });
+  const [localPreviewRows, setLocalPreviewRows] = useState<any[][]>([]);
+  const [totalRows, setTotalRows] = useState<number>(0);
 
   const { mutate: importData, isPending } = useMutation({
     mutationFn: () =>
@@ -75,7 +40,8 @@ export default function FAQBulkImportModal({
         skipRows: config.startRow - 1,
       }),
     onSuccess: (res: any) => {
-      toast.success(res.message || `Import thành công ${res.created} câu hỏi`);
+      const createdCount = res.created ?? 0;
+      toast.success(res.message || `Import thành công ${createdCount}/${totalRows} câu hỏi`);
       queryClient.invalidateQueries({ queryKey: ["faqs"] });
       handleClose();
     },
@@ -84,16 +50,42 @@ export default function FAQBulkImportModal({
     },
   });
 
-  // Re-run preview when config or file changes
+  // Re-run local preview when file changes
   useEffect(() => {
-    if (file) {
-      setIsPreviewLoading(true);
-      const timer = setTimeout(() => {
-        getPreview(file);
-      }, 500); // Debounce
-      return () => clearTimeout(timer);
-    }
-  }, [file, config]);
+    let cancelled = false;
+    const parseLocalPreview = async () => {
+      if (!file) {
+        setLocalPreviewRows([]);
+        setTotalRows(0);
+        return;
+      }
+      try {
+        const buf = await file.arrayBuffer();
+        const wb = read(buf, { type: "array" });
+        const firstSheetName = wb.SheetNames[0];
+        const firstSheet = firstSheetName ? wb.Sheets[firstSheetName] : null;
+        if (!firstSheet) return;
+
+        const rows = (utils.sheet_to_json(firstSheet, {
+          header: 1,
+          blankrows: false,
+          defval: "",
+        }) as any[][]).map((row) =>
+          row.map((cell) => (cell == null ? "" : String(cell).trim())),
+        );
+
+        if (!cancelled) {
+          setLocalPreviewRows(rows.slice(0, 5));
+          const actualDataRows = Math.max(0, rows.length - (config.startRow - 1));
+          setTotalRows(actualDataRows);
+        }
+      } catch (err) {
+        console.error("Local preview error:", err);
+      }
+    };
+    parseLocalPreview();
+    return () => { cancelled = true; };
+  }, [file, config.startRow]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -103,24 +95,23 @@ export default function FAQBulkImportModal({
   };
 
   const handleConfigChange = (key: keyof typeof config, value: string) => {
-    setConfig((p) => ({ ...p, [key]: value }));
+    setConfig((p) => ({ ...p, [key]: parseInt(value, 10) || 0 }));
   };
 
   // Reset state when drawer closes
   useEffect(() => {
     if (!open) {
       setFile(null);
-      setPreviewData([]);
       setPreviewError(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
       // Optional: also reset config if you want a clean slate every time
       setConfig({
-        questionCol: "1",
-        answerCol: "2",
-        academicYearCol: "3",
-        enrollmentYearCol: "4",
+        questionCol: 1,
+        answerCol: 2,
+        academicYearCol: 3,
+        enrollmentYearCol: 4,
         startRow: 2,
       });
     }
@@ -135,8 +126,6 @@ export default function FAQBulkImportModal({
     if (!file) return;
     importData();
   };
-
-  const previewHeaders = ["Trạng thái", "Câu hỏi", "Câu trả lời", "Năm học", "Niên khóa"];
 
   return (
     <Drawer isOpen={open} onClose={handleClose} title="Thêm câu hỏi hàng loạt">
@@ -158,7 +147,8 @@ export default function FAQBulkImportModal({
           <div className="grid grid-cols-2 gap-x-4 gap-y-2">
             <FormRow label="Cột Câu hỏi">
               <input
-                type="text"
+                type="number"
+                min={1}
                 value={config.questionCol}
                 onChange={(e) => handleConfigChange("questionCol", e.target.value)}
                 className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
@@ -166,7 +156,8 @@ export default function FAQBulkImportModal({
             </FormRow>
             <FormRow label="Cột Câu trả lời">
               <input
-                type="text"
+                type="number"
+                min={1}
                 value={config.answerCol}
                 onChange={(e) => handleConfigChange("answerCol", e.target.value)}
                 className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
@@ -174,7 +165,8 @@ export default function FAQBulkImportModal({
             </FormRow>
             <FormRow label="Cột Năm học">
               <input
-                type="text"
+                type="number"
+                min={1}
                 value={config.academicYearCol}
                 onChange={(e) => handleConfigChange("academicYearCol", e.target.value)}
                 className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
@@ -182,7 +174,8 @@ export default function FAQBulkImportModal({
             </FormRow>
             <FormRow label="Cột Niên khóa">
               <input
-                type="text"
+                type="number"
+                min={1}
                 value={config.enrollmentYearCol}
                 onChange={(e) => handleConfigChange("enrollmentYearCol", e.target.value)}
                 className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
@@ -203,17 +196,12 @@ export default function FAQBulkImportModal({
 
         {file && (
           <div className="mt-2">
-            <div className="mb-2 flex items-center justify-between">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
-                Xem trước dữ liệu
-              </h3>
-              {isPreviewLoading && (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
-              )}
-            </div>
-
             {previewError ? (
               <p className="text-sm text-red-500 py-4 text-center">{previewError}</p>
+            ) : localPreviewRows.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-300">
+                Không có dữ liệu mẫu để hiển thị.
+              </p>
             ) : (
               <div className="overflow-x-auto rounded-2xl border border-gray-100 dark:border-white/10">
                 <table className="min-w-full w-max text-xs">
@@ -222,70 +210,33 @@ export default function FAQBulkImportModal({
                       <th className="w-12 whitespace-nowrap border-r border-gray-100 px-2 py-1.5 text-center text-xs font-semibold tracking-wide text-gray-400 uppercase dark:border-white/10 dark:text-gray-500">
                         #
                       </th>
-                      {previewHeaders.map((header, idx) => (
+                      {Array.from({
+                        length: Math.max(1, ...localPreviewRows.map((row) => row.length)),
+                      }).map((_, colIdx) => (
                         <th
-                          key={idx}
+                          key={`col-${colIdx + 1}`}
                           className="whitespace-nowrap border-r border-gray-100 px-2 py-1.5 text-center text-xs font-semibold tracking-wide text-gray-400 uppercase last:border-r-0 dark:border-white/10 dark:text-gray-500"
                         >
-                          {header}
+                          Cột {colIdx + 1}
                         </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {previewData.map((row, idx) => (
-                      <tr
-                        key={idx}
-                        className={`border-b border-gray-50 last:border-b-0 dark:border-white/5 ${
-                          !row.isValid ? "bg-red-50/50 dark:bg-red-500/5" : ""
-                        }`}
-                      >
+                    {localPreviewRows.map((row, idx) => (
+                      <tr key={idx} className="border-b border-gray-50 last:border-b-0 dark:border-white/5">
                         <td className="w-12 whitespace-nowrap border-r border-gray-100 bg-gray-50 px-2 py-1.5 text-center text-xs text-gray-600 dark:border-white/10 dark:bg-white/5 dark:text-gray-300">
-                          {row.rowIndex}
+                          {idx + 1}
                         </td>
-                        <td className="border-r border-gray-100 px-2 py-1.5 text-center dark:border-white/10">
-                          <div className="flex justify-center">
-                            {row.isValid ? (
-                              <MdCheckCircle className="text-green-500 h-4 w-4" title="Hợp lệ" />
-                            ) : (
-                              <MdError className="text-red-500 h-4 w-4" title={row.error} />
-                            )}
-                          </div>
-                        </td>
-                        <td className="border-r border-gray-100 px-2 py-1.5 dark:border-white/10">
-                          <div className="max-w-[200px] truncate text-navy-700 dark:text-white" title={row.question}>
-                            {row.question || "—"}
-                          </div>
-                        </td>
-                        <td className="border-r border-gray-100 px-2 py-1.5 dark:border-white/10">
-                          <div 
-                            className="min-w-[300px] max-h-[100px] overflow-y-auto rich-text-preview text-gray-700 dark:text-gray-300"
-                            dangerouslySetInnerHTML={{ __html: row.answerRichText }} 
-                          />
-                        </td>
-                        <td className="border-r border-gray-100 px-2 py-1.5 text-center dark:border-white/10">
-                          <span className="text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                            {row.metadata.academicYear.fromYear === 0 && row.metadata.academicYear.toYear === 9999
-                              ? "Tất cả"
-                              : `${row.metadata.academicYear.fromYear} - ${row.metadata.academicYear.toYear}`}
-                          </span>
-                        </td>
-                        <td className="px-2 py-1.5 text-center">
-                          <span className="text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                            {row.metadata.enrollmentYear.fromYear === 0 && row.metadata.enrollmentYear.toYear === 9999
-                              ? "Tất cả"
-                              : `${row.metadata.enrollmentYear.fromYear} - ${row.metadata.enrollmentYear.toYear}`}
-                          </span>
-                        </td>
+                        {row.map((cell, cIdx) => (
+                          <td key={cIdx} className="border-r border-gray-100 px-2 py-1.5 text-sm text-gray-700 last:border-r-0 dark:border-white/10 dark:text-white">
+                            <div className="max-w-[200px] truncate" title={cell}>
+                              {cell || "—"}
+                            </div>
+                          </td>
+                        ))}
                       </tr>
                     ))}
-                    {previewData.length === 0 && !isPreviewLoading && (
-                      <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
-                          Chưa có dữ liệu xem trước
-                        </td>
-                      </tr>
-                    )}
                   </tbody>
                 </table>
               </div>
@@ -303,7 +254,7 @@ export default function FAQBulkImportModal({
           </button>
           <button
             type="submit"
-            disabled={!file || isPending || isPreviewLoading || previewData.length === 0 || previewData.every(r => !r.isValid)}
+            disabled={!file || isPending || localPreviewRows.length === 0}
             className="bg-brand-500 hover:bg-brand-600 rounded-xl px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
           >
             {isPending ? "Đang import..." : "Bắt đầu Import"}

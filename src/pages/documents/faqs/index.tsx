@@ -47,8 +47,9 @@ export default function FAQsPage() {
     {
       key: "question",
       header: "Câu hỏi",
+      width: "40%",
       render: (item) => (
-        <p className="text-sm font-medium text-navy-700 line-clamp-2 dark:text-white">
+        <p className="line-clamp-1 whitespace-normal text-sm font-medium text-navy-700 dark:text-white">
           {item.question}
         </p>
       ),
@@ -56,9 +57,10 @@ export default function FAQsPage() {
     {
       key: "answerRichText",
       header: "Câu trả lời",
+      width: "50%",
       render: (item) => (
         <div
-          className="tiptap-prose text-xs text-navy-700 line-clamp-2 dark:text-gray-300 [&_a]:text-brand-500 [&_a]:underline [&_a:hover]:opacity-80 dark:[&_a]:text-brand-400"
+          className="tiptap-prose line-clamp-1 whitespace-normal text-sm text-navy-700 dark:text-gray-300 [&_a:hover]:opacity-80 [&_a]:text-brand-500 [&_a]:underline dark:[&_a]:text-brand-400"
           dangerouslySetInnerHTML={{ __html: fixRichTextLinks(item.answerRichText) }}
         />
       ),
