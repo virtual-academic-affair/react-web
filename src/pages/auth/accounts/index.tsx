@@ -1,21 +1,23 @@
 import Drawer from "@/components/drawer/Drawer";
-import DetailFormLayout, { FormRow } from "@/components/layouts/DetailFormLayout";
+import DetailFormLayout, {
+  FormRow,
+} from "@/components/layouts/DetailFormLayout";
 import Switch from "@/components/switch";
 import TableLayout, {
   type TableAction,
   type TableColumn,
 } from "@/components/table/TableLayout.tsx";
+import FilterGroup from "@/pages/user/documents/components/FilterGroup";
 import { usersService } from "@/services/users";
 import type { PaginatedResponse } from "@/types/common.ts";
 import type { DynamicDataResponse } from "@/types/shared.ts";
 import type { Role, UpdateUserDto, User } from "@/types/users.ts";
 import { RoleColors, RoleLabels } from "@/types/users.ts";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { MdInfoOutline } from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
-import FilterGroup from "@/pages/user/documents/components/FilterGroup";
 import RoleSelector from "./components/RoleSelector.tsx";
 import UserDetailDrawer from "./components/UserDetailDrawer.tsx";
 
@@ -80,7 +82,8 @@ const UsersPage: React.FC<UsersPageProps> = () => {
 
   // Derive isActive from statusFilter for the API
   const apiIsActive = React.useMemo(() => {
-    if (statusFilter.length === 0 || statusFilter.length === 2) return undefined;
+    if (statusFilter.length === 0 || statusFilter.length === 2)
+      return undefined;
     return statusFilter.includes("active");
   }, [statusFilter]);
 
@@ -117,7 +120,10 @@ const UsersPage: React.FC<UsersPageProps> = () => {
   const selectedId = idParam ? Number(idParam) : null;
 
   const { data: result = null, isLoading: loading } = useQuery({
-    queryKey: ["users", { page, keyword, roles: roleFilter, isActive: apiIsActive }],
+    queryKey: [
+      "users",
+      { page, keyword, roles: roleFilter, isActive: apiIsActive },
+    ],
     queryFn: () =>
       usersService.getUsers({
         page,
@@ -183,7 +189,10 @@ const UsersPage: React.FC<UsersPageProps> = () => {
 
         // Optimistic local update
         queryClient.setQueryData(
-          ["users", { page, keyword, roles: roleFilter, isActive: apiIsActive }],
+          [
+            "users",
+            { page, keyword, roles: roleFilter, isActive: apiIsActive },
+          ],
           (prev: PaginatedResponse<User> | undefined) =>
             prev
               ? {
@@ -195,8 +204,7 @@ const UsersPage: React.FC<UsersPageProps> = () => {
               : prev,
         );
       } catch (err: unknown) {
-        const msg =
-          err instanceof Error ? err.message : "Cập nhật thất bại.";
+        const msg = err instanceof Error ? err.message : "Cập nhật thất bại.";
         toast.error(msg);
       } finally {
         setUpdatingUsers((prev) => {
@@ -225,7 +233,10 @@ const UsersPage: React.FC<UsersPageProps> = () => {
 
         // Optimistic local update
         queryClient.setQueryData(
-          ["users", { page, keyword, roles: roleFilter, isActive: apiIsActive }],
+          [
+            "users",
+            { page, keyword, roles: roleFilter, isActive: apiIsActive },
+          ],
           (prev: PaginatedResponse<User> | undefined) =>
             prev
               ? {
@@ -237,8 +248,7 @@ const UsersPage: React.FC<UsersPageProps> = () => {
               : prev,
         );
       } catch (err: unknown) {
-        const msg =
-          err instanceof Error ? err.message : "Cập nhật thất bại.";
+        const msg = err instanceof Error ? err.message : "Cập nhật thất bại.";
         toast.error(msg);
       } finally {
         setUpdatingUsers((prev) => {
@@ -270,13 +280,13 @@ const UsersPage: React.FC<UsersPageProps> = () => {
       setNewRole("student");
       await queryClient.invalidateQueries({ queryKey: ["users"] });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Thêm tài khoản thất bại.";
+      const msg =
+        err instanceof Error ? err.message : "Thêm tài khoản thất bại.";
       toast.error(msg);
     } finally {
       setCreating(false);
     }
   };
-
 
   // Define table columns
   const columns: TableColumn<User>[] = React.useMemo(
@@ -300,11 +310,11 @@ const UsersPage: React.FC<UsersPageProps> = () => {
                 </div>
               )}
             </div>
-            <div className="flex flex-col min-w-0">
+            <div className="flex min-w-0 flex-col">
               <p className="text-navy-700 truncate text-sm font-medium dark:text-white">
                 {user.name || user.email}
               </p>
-              <p className="text-xs truncate text-gray-400 dark:text-gray-500">
+              <p className="truncate text-xs text-gray-400 dark:text-gray-500">
                 {user.email}
               </p>
             </div>
@@ -378,21 +388,27 @@ const UsersPage: React.FC<UsersPageProps> = () => {
                 typeKey="role"
                 options={ROLE_FILTER_OPTIONS}
                 selected={roleFilter}
-                onChange={(next) => { setRoleFilter(next); setPage(1); }}
+                onChange={(next) => {
+                  setRoleFilter(next);
+                  setPage(1);
+                }}
               />
               <FilterGroup
                 label="Trạng thái"
                 typeKey="status"
                 options={STATUS_OPTIONS}
                 selected={statusFilter}
-                onChange={(next) => { setStatusFilter(next); setPage(1); }}
+                onChange={(next) => {
+                  setStatusFilter(next);
+                  setPage(1);
+                }}
               />
 
               {hasFilters && (
                 <button
                   type="button"
                   onClick={handleClearAllFilters}
-                  className="text-xs text-brand-500 underline underline-offset-2 hover:text-brand-600 dark:hover:text-brand-400 font-medium ml-2"
+                  className="text-brand-500 hover:text-brand-600 dark:hover:text-brand-400 ml-2 text-xs font-medium underline underline-offset-2"
                 >
                   Xóa tất cả
                 </button>
@@ -415,7 +431,10 @@ const UsersPage: React.FC<UsersPageProps> = () => {
             onClose={handleCloseDetail}
             onUserChanged={(updated) =>
               queryClient.setQueryData(
-                ["users", { page, keyword, roles: roleFilter, isActive: apiIsActive }],
+                [
+                  "users",
+                  { page, keyword, roles: roleFilter, isActive: apiIsActive },
+                ],
                 (prev: PaginatedResponse<User> | undefined) =>
                   prev
                     ? {

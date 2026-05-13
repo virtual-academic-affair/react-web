@@ -379,7 +379,9 @@ const DocumentListPage = () => {
         render: (x) => (
           <div className="flex flex-col gap-1 text-sm">
             <div className="text-navy-700 dark:text-white">
-              <span className="text-gray-400 font-normal">Khóa tuyển sinh: </span>
+              <span className="font-normal text-gray-400">
+                Khóa tuyển sinh:{" "}
+              </span>
               <span className="font-medium">
                 {formatYearRange(
                   x.customMetadata?.enrollmentYear,
@@ -388,7 +390,7 @@ const DocumentListPage = () => {
               </span>
             </div>
             <div className="text-navy-700 dark:text-white">
-              <span className="text-gray-400 font-normal">Năm học: </span>
+              <span className="font-normal text-gray-400">Năm học: </span>
               <span className="font-medium">
                 {formatYearRange(
                   x.customMetadata?.academicYear,

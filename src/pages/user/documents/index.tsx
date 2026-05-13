@@ -451,7 +451,7 @@ const UserDocumentsPage: React.FC = () => {
             <button
               type="button"
               onClick={handleClearAll}
-              className="text-xs text-brand-500 underline underline-offset-2 hover:text-brand-600 dark:hover:text-brand-400 font-medium"
+              className="text-brand-500 hover:text-brand-600 dark:hover:text-brand-400 text-xs font-medium underline underline-offset-2"
             >
               Xóa tất cả
             </button>
