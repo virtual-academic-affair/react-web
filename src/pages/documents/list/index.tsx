@@ -2,7 +2,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  MdClose,
   MdDeleteOutline,
   MdFileDownload,
   MdInfoOutline,
@@ -566,7 +565,14 @@ const DocumentListPage = () => {
                       ]
                     : []),
                   ...(academicYear.fromYear || academicYear.toYear
-                    ? [{ key: "academicYear", label: "Năm học", color: "#f59e0b", ...academicYear }]
+                    ? [
+                        {
+                          key: "academicYear",
+                          label: "Năm học",
+                          color: "#f59e0b",
+                          ...academicYear,
+                        },
+                      ]
                     : []),
                 ]}
                 onRemove={(_typeKey, value) => {
@@ -574,7 +580,8 @@ const DocumentListPage = () => {
                   setPage(1);
                 }}
                 onRemoveYearRange={(key) => {
-                  if (key === "enrollmentYear") setEnrollmentYear(EMPTY_YEAR_RANGE);
+                  if (key === "enrollmentYear")
+                    setEnrollmentYear(EMPTY_YEAR_RANGE);
                   if (key === "academicYear") setAcademicYear(EMPTY_YEAR_RANGE);
                   setPage(1);
                 }}
