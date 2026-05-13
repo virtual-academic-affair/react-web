@@ -42,13 +42,6 @@ const DOC_TYPE_FILTER_OPTIONS = DOCUMENT_TYPES.map((t) => ({
   color: t.color,
 }));
 
-/** Extra type definition so ActiveFilterChips can resolve type labels */
-const DOC_TYPE_EXTRA_TYPE = {
-  key: TYPE_FILTER_KEY,
-  displayName: "Loại tài liệu",
-  allowedValues: DOC_TYPE_FILTER_OPTIONS,
-};
-
 const EMPTY_YEAR_RANGE: YearRange = { fromYear: "", toYear: "" };
 
 // ── Filters type: keys are raw metadata type keys (e.g. "access_scope") ───────
@@ -329,14 +322,6 @@ const UserDocumentsPage: React.FC = () => {
 
   const handleFilterChange = useCallback((typeKey: string, next: string[]) => {
     setFilters((prev) => ({ ...prev, [typeKey]: next }));
-    setPage(1);
-  }, []);
-
-  const handleRemoveChip = useCallback((typeKey: string, value: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      [typeKey]: (prev[typeKey] || []).filter((v) => v !== value),
-    }));
     setPage(1);
   }, []);
 
