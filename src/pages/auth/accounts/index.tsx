@@ -15,7 +15,6 @@ import React from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { MdInfoOutline } from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
-import ActiveFilterChips from "@/pages/user/documents/components/ActiveFilterChips";
 import FilterGroup from "@/pages/user/documents/components/FilterGroup";
 import RoleSelector from "./components/RoleSelector.tsx";
 import UserDetailDrawer from "./components/UserDetailDrawer.tsx";
@@ -388,25 +387,17 @@ const UsersPage: React.FC<UsersPageProps> = () => {
                 selected={statusFilter}
                 onChange={(next) => { setStatusFilter(next); setPage(1); }}
               />
-            </div>
 
-            {/* Active filter chips */}
-            {hasFilters && (
-              <ActiveFilterChips
-                filters={{ roles: roleFilter, status: statusFilter }}
-                metadataTypes={[]}
-                extraTypes={[ROLE_EXTRA_TYPE, STATUS_EXTRA_TYPE]}
-                onRemove={(typeKey, value) => {
-                  if (typeKey === "roles") {
-                    setRoleFilter((prev) => prev.filter((x) => x !== value));
-                  } else if (typeKey === "status") {
-                    setStatusFilter((prev) => prev.filter((x) => x !== value));
-                  }
-                  setPage(1);
-                }}
-                onClearAll={handleClearAllFilters}
-              />
-            )}
+              {hasFilters && (
+                <button
+                  type="button"
+                  onClick={handleClearAllFilters}
+                  className="text-xs text-brand-500 underline underline-offset-2 hover:text-brand-600 dark:hover:text-brand-400 font-medium ml-2"
+                >
+                  Xóa tất cả
+                </button>
+              )}
+            </div>
           </div>
         }
         rightSlot={

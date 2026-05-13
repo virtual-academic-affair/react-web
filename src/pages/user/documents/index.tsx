@@ -20,7 +20,6 @@ import FilePreviewModal from "@/pages/documents/components/FilePreviewModal";
 import { DOCUMENT_TYPES } from "@/pages/documents/components/UploadDrawer";
 import { DocumentsService, MetadataService } from "@/services/documents";
 
-import ActiveFilterChips from "./components/ActiveFilterChips";
 import { FileCard, FileRow } from "./components/FileItems";
 import FilterGroup from "./components/FilterGroup";
 import { GridSkeleton, ListSkeleton } from "./components/Skeletons";
@@ -447,6 +446,16 @@ const UserDocumentsPage: React.FC = () => {
               />
             );
           })}
+
+          {hasFilters && (
+            <button
+              type="button"
+              onClick={handleClearAll}
+              className="text-xs text-brand-500 underline underline-offset-2 hover:text-brand-600 dark:hover:text-brand-400 font-medium"
+            >
+              Xóa tất cả
+            </button>
+          )}
         </div>
 
         {/* View toggle */}
@@ -477,39 +486,6 @@ const UserDocumentsPage: React.FC = () => {
           </button>
         </div>
       </div>
-
-      {/* ── Active filter chips ─────────────────────────────────────────── */}
-      {hasFilters && (
-        <div className="mb-4">
-          <ActiveFilterChips
-            filters={filters}
-            metadataTypes={filterableTypes}
-            extraTypes={[DOC_TYPE_EXTRA_TYPE]}
-            yearRanges={[
-              ...(enrollmentYear.fromYear || enrollmentYear.toYear
-                ? [
-                    {
-                      key: "enrollmentYear",
-                      label: "Khóa tuyển sinh",
-                      color: "#14b8a6",
-                      ...enrollmentYear,
-                    },
-                  ]
-                : []),
-              ...(academicYear.fromYear || academicYear.toYear
-                ? [{ key: "academicYear", label: "Năm học", color: "#f59e0b", ...academicYear }]
-                : []),
-            ]}
-            onRemoveYearRange={(key) => {
-              if (key === "enrollmentYear") setEnrollmentYear(EMPTY_YEAR_RANGE);
-              if (key === "academicYear") setAcademicYear(EMPTY_YEAR_RANGE);
-              setPage(1);
-            }}
-            onRemove={handleRemoveChip}
-            onClearAll={handleClearAll}
-          />
-        </div>
-      )}
 
       {/* ── Results count ──────────────────────────────────────────────── */}
       {!isLoading && (

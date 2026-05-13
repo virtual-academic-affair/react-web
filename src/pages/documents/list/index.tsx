@@ -20,7 +20,6 @@ import { parseError } from "@/utils/parseError";
 
 import ConfirmModal from "@/components/modal/ConfirmModal";
 import Tooltip from "@/components/tooltip/Tooltip";
-import ActiveFilterChips from "@/pages/user/documents/components/ActiveFilterChips";
 import FilterGroup from "@/pages/user/documents/components/FilterGroup";
 import YearRangeFilter, {
   type YearRange,
@@ -545,49 +544,17 @@ const DocumentListPage = () => {
                   setPage(1);
                 }}
               />
-            </div>
 
-            {/* Active filter chips */}
-            {hasFilters && (
-              <ActiveFilterChips
-                filters={{ type: typeFilter }}
-                metadataTypes={[]}
-                extraTypes={[DOC_TYPE_EXTRA_TYPE]}
-                yearRanges={[
-                  ...(enrollmentYear.fromYear || enrollmentYear.toYear
-                    ? [
-                        {
-                          key: "enrollmentYear",
-                          label: "Khóa",
-                          color: "#14b8a6",
-                          ...enrollmentYear,
-                        },
-                      ]
-                    : []),
-                  ...(academicYear.fromYear || academicYear.toYear
-                    ? [
-                        {
-                          key: "academicYear",
-                          label: "Năm học",
-                          color: "#f59e0b",
-                          ...academicYear,
-                        },
-                      ]
-                    : []),
-                ]}
-                onRemove={(_typeKey, value) => {
-                  setTypeFilter((prev) => prev.filter((x) => x !== value));
-                  setPage(1);
-                }}
-                onRemoveYearRange={(key) => {
-                  if (key === "enrollmentYear")
-                    setEnrollmentYear(EMPTY_YEAR_RANGE);
-                  if (key === "academicYear") setAcademicYear(EMPTY_YEAR_RANGE);
-                  setPage(1);
-                }}
-                onClearAll={handleClearAllFilters}
-              />
-            )}
+              {hasFilters && (
+                <button
+                  type="button"
+                  onClick={handleClearAllFilters}
+                  className="text-xs text-brand-500 underline underline-offset-2 hover:text-brand-600 dark:hover:text-brand-400 font-medium ml-2"
+                >
+                  Xóa tất cả
+                </button>
+              )}
+            </div>
           </div>
         }
         rightSlot={
