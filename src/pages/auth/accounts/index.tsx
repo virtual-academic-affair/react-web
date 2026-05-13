@@ -9,26 +9,47 @@ import { usersService } from "@/services/users";
 import type { PaginatedResponse } from "@/types/common.ts";
 import type { DynamicDataResponse } from "@/types/shared.ts";
 import type { Role, UpdateUserDto, User } from "@/types/users.ts";
+import { RoleColors, RoleLabels } from "@/types/users.ts";
 import { message as toast } from "antd";
 import React from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { MdInfoOutline } from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
-import AdvancedFilterModal, {
-  type AccountFilters,
-} from "./components/AdvancedFilterModal.tsx";
+import ActiveFilterChips from "@/pages/user/documents/components/ActiveFilterChips";
+import FilterGroup from "@/pages/user/documents/components/FilterGroup";
 import RoleSelector from "./components/RoleSelector.tsx";
 import UserDetailDrawer from "./components/UserDetailDrawer.tsx";
-import { parseSearchString, stringifySearchQuery } from "@/utils/search";
-
 
 const PAGE_SIZE = 10;
 
-const defaultFilters: AccountFilters = {
-  roles: [],
-  enableIsActiveFilter: false,
-  isActive: true,
+// ── Filter options ──────────────────────────────────────────────────────────
+
+const ROLE_OPTIONS: Role[] = ["student", "admin", "lecture"];
+
+const ROLE_FILTER_OPTIONS = ROLE_OPTIONS.map((role) => ({
+  value: role,
+  displayName: RoleLabels[role],
+  color: RoleColors[role].hex,
+}));
+
+const STATUS_OPTIONS = [
+  { value: "active", displayName: "Hoạt động", color: "#22c55e" },
+  { value: "inactive", displayName: "Vô hiệu hóa", color: "#ef4444" },
+];
+
+const ROLE_EXTRA_TYPE = {
+  key: "roles",
+  displayName: "Vai trò",
+  allowedValues: ROLE_FILTER_OPTIONS,
 };
+
+const STATUS_EXTRA_TYPE = {
+  key: "status",
+  displayName: "Trạng thái",
+  allowedValues: STATUS_OPTIONS,
+};
+
+// ── Component ───────────────────────────────────────────────────────────────
 
 interface UsersPageProps {
   data: DynamicDataResponse | null;
@@ -45,36 +66,46 @@ const UsersPage: React.FC<UsersPageProps> = () => {
       : 1;
 
   const [keyword, setKeyword] = React.useState(initialKeyword);
+  const [searchValue, setSearchValue] = React.useState(initialKeyword);
   const [page, setPage] = React.useState(initialPage);
-  const [filters, setFilters] = React.useState<AccountFilters>(() => {
-    const rolesParam = searchParams.get("roles");
-    const roles = rolesParam
-      ? (rolesParam.split(",").filter(Boolean) as Role[])
-      : [];
-    const enableFilter = searchParams.get("enableIsActiveFilter") === "true";
-    const isActive = searchParams.get("isActive") !== "false"; // default true
-    return {
-      roles,
-      enableIsActiveFilter: enableFilter,
-      isActive,
-    };
+
+  // ── Filters (initialized from URL) ──────────────────────────────────────
+  const [roleFilter, setRoleFilter] = React.useState<string[]>(() => {
+    const raw = searchParams.get("roles");
+    return raw ? raw.split(",").filter(Boolean) : [];
   });
-  const [searchValue, setSearchValue] = React.useState(() => {
-    const params = { ...filters };
-    if (!filters.enableIsActiveFilter) {
-      delete (params as Record<string, unknown>).isActive;
-      delete (params as Record<string, unknown>).enableIsActiveFilter;
-    }
-    return stringifySearchQuery(
-      searchParams.get("keyword") ?? "",
-      params as unknown as Record<string, unknown>,
-    );
+  const [statusFilter, setStatusFilter] = React.useState<string[]>(() => {
+    const raw = searchParams.get("status");
+    return raw ? raw.split(",").filter(Boolean) : [];
   });
 
-  const [draftFilters, setDraftFilters] =
-    React.useState<AccountFilters>(defaultFilters);
+  // Derive isActive from statusFilter for the API
+  const apiIsActive = React.useMemo(() => {
+    if (statusFilter.length === 0 || statusFilter.length === 2) return undefined;
+    return statusFilter.includes("active");
+  }, [statusFilter]);
 
-  const [filterOpen, setFilterOpen] = React.useState(false);
+  const hasFilters = roleFilter.length > 0 || statusFilter.length > 0;
+
+  const handleClearAllFilters = React.useCallback(() => {
+    setRoleFilter([]);
+    setStatusFilter([]);
+    setPage(1);
+  }, []);
+
+  // ── URL sync ────────────────────────────────────────────────────────────
+  React.useEffect(() => {
+    const next = new URLSearchParams(searchParams);
+    // roles
+    if (roleFilter.length > 0) next.set("roles", roleFilter.join(","));
+    else next.delete("roles");
+    // status
+    if (statusFilter.length > 0) next.set("status", statusFilter.join(","));
+    else next.delete("status");
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roleFilter, statusFilter]);
+
   const [updatingUsers, setUpdatingUsers] = React.useState<Set<number>>(
     new Set(),
   );
@@ -82,114 +113,47 @@ const UsersPage: React.FC<UsersPageProps> = () => {
   const [creating, setCreating] = React.useState(false);
   const [newEmail, setNewEmail] = React.useState("");
   const [newRole, setNewRole] = React.useState<Role>("student");
-  const filterButtonRef = React.useRef<HTMLButtonElement | null>(null);
 
   const idParam = searchParams.get("id");
   const selectedId = idParam ? Number(idParam) : null;
 
   const { data: result = null, isLoading: loading } = useQuery({
-    queryKey: ["users", { page, keyword, ...filters }],
+    queryKey: ["users", { page, keyword, roles: roleFilter, isActive: apiIsActive }],
     queryFn: () =>
       usersService.getUsers({
         page,
         limit: PAGE_SIZE,
         keyword: keyword || undefined,
-        roles: filters.roles.length > 0 ? filters.roles : undefined,
-        isActive: filters.enableIsActiveFilter ? filters.isActive : undefined,
+        roles: roleFilter.length > 0 ? (roleFilter as Role[]) : undefined,
+        isActive: apiIsActive,
       }),
     staleTime: 30 * 1000,
   });
 
-  // Update searchValue when keyword or filters change
-  React.useEffect(() => {
-    const paramsToSerialize = { ...filters };
-    if (!filters.enableIsActiveFilter) {
-      delete (paramsToSerialize as Record<string, unknown>).isActive;
-      delete (paramsToSerialize as Record<string, unknown>).enableIsActiveFilter;
-    }
-
-
-    setSearchValue(
-      stringifySearchQuery(keyword, paramsToSerialize as unknown as Record<string, unknown>, [
-        "page",
-        "limit",
-      ]),
-    );
-
-  }, [keyword, filters]);
-
-
   // Keep URL params in sync
   React.useEffect(() => {
-    const next = new URLSearchParams();
-    if (keyword) {
-      next.set("keyword", keyword);
-    }
+    const next = new URLSearchParams(searchParams);
+    if (keyword) next.set("keyword", keyword);
+    else next.delete("keyword");
     next.set("page", String(page));
-    next.set("limit", String(PAGE_SIZE));
-    if (filters.roles.length) {
-      next.set("roles", filters.roles.join(","));
-    }
-    if (filters.enableIsActiveFilter) {
-      next.set("enableIsActiveFilter", "true");
-      next.set("isActive", String(filters.isActive));
-    }
-    if (idParam) {
-      next.set("id", idParam);
-    }
+    if (idParam) next.set("id", idParam);
     setSearchParams(next, { replace: true });
-  }, [keyword, page, filters, idParam, setSearchParams]);
+  }, [keyword, page, idParam, setSearchParams]);
 
   const handleSearch = () => {
-    const parsed = parseSearchString(searchValue);
-    setKeyword(parsed.keyword);
-
-    const nextFilters: AccountFilters = {
-      roles: parsed.params.roles
-        ? (parsed.params.roles.split(",") as Role[])
-        : [],
-      // For isActive, we handle it specially
-      isActive: parsed.params.isActive !== "false",
-      enableIsActiveFilter: parsed.params.isActive !== undefined,
-    };
-    setFilters(nextFilters);
+    setKeyword(searchValue);
     setPage(1);
+    const next = new URLSearchParams(searchParams);
+    next.set("keyword", searchValue);
+    next.set("page", "1");
+    setSearchParams(next, { replace: true });
   };
 
-
-  const handleOpenFilter = () => {
-    setDraftFilters(filters);
-    setFilterOpen(true);
-  };
-
-  const handleApplyFilter = () => {
-    const parsed = parseSearchString(searchValue);
-    setKeyword(parsed.keyword);
-    setFilters(draftFilters);
-    setPage(1);
-    setFilterOpen(false);
-  };
-
-  const handleCloseFilter = () => {
-    setFilterOpen(false);
-  };
-
-  const handleClearFilter = () => {
-    setDraftFilters(defaultFilters);
-    setFilters(defaultFilters);
-    setPage(1);
-    setFilterOpen(false);
-  };
-
+  const handleKeywordChange = (value: string) => setSearchValue(value);
 
   const handlePageChange = (p: number) => {
     setPage(p);
   };
-
-  const handleKeywordChange = (value: string) => {
-    setSearchValue(value);
-  };
-
 
   const handleOpenDetail = React.useCallback(
     (user: User) => {
@@ -220,7 +184,7 @@ const UsersPage: React.FC<UsersPageProps> = () => {
 
         // Optimistic local update
         queryClient.setQueryData(
-          ["users", { page, keyword, ...filters }],
+          ["users", { page, keyword, roles: roleFilter, isActive: apiIsActive }],
           (prev: PaginatedResponse<User> | undefined) =>
             prev
               ? {
@@ -243,7 +207,7 @@ const UsersPage: React.FC<UsersPageProps> = () => {
         });
       }
     },
-    [queryClient, page, keyword, filters],
+    [queryClient, page, keyword, roleFilter, apiIsActive],
   );
 
   const handleStatusChange = React.useCallback(
@@ -262,7 +226,7 @@ const UsersPage: React.FC<UsersPageProps> = () => {
 
         // Optimistic local update
         queryClient.setQueryData(
-          ["users", { page, keyword, ...filters }],
+          ["users", { page, keyword, roles: roleFilter, isActive: apiIsActive }],
           (prev: PaginatedResponse<User> | undefined) =>
             prev
               ? {
@@ -285,7 +249,7 @@ const UsersPage: React.FC<UsersPageProps> = () => {
         });
       }
     },
-    [queryClient, page, keyword, filters],
+    [queryClient, page, keyword, roleFilter, apiIsActive],
   );
 
   const handleCreateUser = async (e: React.FormEvent) => {
@@ -399,32 +363,68 @@ const UsersPage: React.FC<UsersPageProps> = () => {
         searchValue={searchValue}
         onSearchChange={handleKeywordChange}
         onSearch={handleSearch}
-        middleSlot={
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => setCreateOpen(true)}
-              className="bg-brand-500 hover:bg-brand-600 rounded-2xl px-5 py-2.5 text-sm font-semibold text-white transition-colors"
-            >
-              Thêm
-            </button>
-          </div>
-        }
-
         searchPlaceholder="Tìm kiếm theo tên, email..."
-        showFilter={true}
-        onFilterClick={handleOpenFilter}
-        filterButtonRef={filterButtonRef}
         columns={columns}
         actions={actions}
         onPageChange={handlePageChange}
+        middleSlot={
+          <div className="flex flex-col gap-3">
+            {/* Filter pills */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="shrink-0 text-xs font-medium text-gray-400">
+                Lọc theo:
+              </span>
+              <FilterGroup
+                label="Vai trò"
+                typeKey="role"
+                options={ROLE_FILTER_OPTIONS}
+                selected={roleFilter}
+                onChange={(next) => { setRoleFilter(next); setPage(1); }}
+              />
+              <FilterGroup
+                label="Trạng thái"
+                typeKey="status"
+                options={STATUS_OPTIONS}
+                selected={statusFilter}
+                onChange={(next) => { setStatusFilter(next); setPage(1); }}
+              />
+            </div>
+
+            {/* Active filter chips */}
+            {hasFilters && (
+              <ActiveFilterChips
+                filters={{ roles: roleFilter, status: statusFilter }}
+                metadataTypes={[]}
+                extraTypes={[ROLE_EXTRA_TYPE, STATUS_EXTRA_TYPE]}
+                onRemove={(typeKey, value) => {
+                  if (typeKey === "roles") {
+                    setRoleFilter((prev) => prev.filter((x) => x !== value));
+                  } else if (typeKey === "status") {
+                    setStatusFilter((prev) => prev.filter((x) => x !== value));
+                  }
+                  setPage(1);
+                }}
+                onClearAll={handleClearAllFilters}
+              />
+            )}
+          </div>
+        }
+        rightSlot={
+          <button
+            type="button"
+            onClick={() => setCreateOpen(true)}
+            className="bg-brand-500 hover:bg-brand-600 rounded-2xl px-5 py-2.5 text-sm font-semibold text-white transition-colors"
+          >
+            Thêm
+          </button>
+        }
         detailDrawer={
           <UserDetailDrawer
             userId={selectedId}
             onClose={handleCloseDetail}
             onUserChanged={(updated) =>
               queryClient.setQueryData(
-                ["users", { page, keyword, ...filters }],
+                ["users", { page, keyword, roles: roleFilter, isActive: apiIsActive }],
                 (prev: PaginatedResponse<User> | undefined) =>
                   prev
                     ? {
@@ -438,17 +438,6 @@ const UsersPage: React.FC<UsersPageProps> = () => {
             }
           />
         }
-      />
-
-      <AdvancedFilterModal
-        open={filterOpen}
-        value={draftFilters}
-        onChange={setDraftFilters}
-
-        onClear={handleClearFilter}
-        onApply={handleApplyFilter}
-        onRequestClose={handleCloseFilter}
-        anchorRef={filterButtonRef}
       />
 
       <Drawer

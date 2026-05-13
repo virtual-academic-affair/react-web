@@ -21,6 +21,7 @@ import { parseError } from "@/utils/parseError";
 
 import ConfirmModal from "@/components/modal/ConfirmModal";
 import Tooltip from "@/components/tooltip/Tooltip";
+import ActiveFilterChips from "@/pages/user/documents/components/ActiveFilterChips";
 import FilterGroup from "@/pages/user/documents/components/FilterGroup";
 import YearRangeFilter, {
   type YearRange,
@@ -48,6 +49,13 @@ const DOC_TYPE_FILTER_OPTIONS = DOCUMENT_TYPES.map((t) => ({
   displayName: t.label,
   color: t.color,
 }));
+
+/** Extra type definition so ActiveFilterChips can resolve type labels + colors */
+const DOC_TYPE_EXTRA_TYPE = {
+  key: "type",
+  displayName: "Loại",
+  allowedValues: DOC_TYPE_FILTER_OPTIONS,
+};
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -542,84 +550,36 @@ const DocumentListPage = () => {
 
             {/* Active filter chips */}
             {hasFilters && (
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-medium text-gray-400">
-                  Đang lọc:
-                </span>
-
-                {typeFilter.map((v) => {
-                  const opt = DOC_TYPE_FILTER_OPTIONS.find(
-                    (o) => o.value === v,
-                  );
-                  return (
-                    <button
-                      key={`type:${v}`}
-                      type="button"
-                      onClick={() => {
-                        setTypeFilter((prev) => prev.filter((x) => x !== v));
-                        setPage(1);
-                      }}
-                      className="border-brand-500/30 bg-brand-500/10 text-brand-600 hover:bg-brand-500/20 dark:text-brand-400 flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-all"
-                    >
-                      <span className="text-[10px] font-normal opacity-60">
-                        Loại:
-                      </span>
-                      {opt?.displayName || v}
-                      <MdClose className="h-3 w-3 opacity-60" />
-                    </button>
-                  );
-                })}
-
-                {(enrollmentYear.fromYear || enrollmentYear.toYear) && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEnrollmentYear(EMPTY_YEAR_RANGE);
-                      setPage(1);
-                    }}
-                    className="flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-600 transition-all hover:bg-amber-500/20 dark:text-amber-400"
-                  >
-                    <span className="text-[10px] font-normal opacity-60">
-                      Khóa:
-                    </span>
-                    {enrollmentYear.fromYear && enrollmentYear.toYear
-                      ? `${enrollmentYear.fromYear} – ${enrollmentYear.toYear}`
-                      : enrollmentYear.fromYear
-                        ? `Từ ${enrollmentYear.fromYear}`
-                        : `Đến ${enrollmentYear.toYear}`}
-                    <MdClose className="h-3 w-3 opacity-60" />
-                  </button>
-                )}
-
-                {(academicYear.fromYear || academicYear.toYear) && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAcademicYear(EMPTY_YEAR_RANGE);
-                      setPage(1);
-                    }}
-                    className="flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-600 transition-all hover:bg-amber-500/20 dark:text-amber-400"
-                  >
-                    <span className="text-[10px] font-normal opacity-60">
-                      Năm học:
-                    </span>
-                    {academicYear.fromYear && academicYear.toYear
-                      ? `${academicYear.fromYear} – ${academicYear.toYear}`
-                      : academicYear.fromYear
-                        ? `Từ ${academicYear.fromYear}`
-                        : `Đến ${academicYear.toYear}`}
-                    <MdClose className="h-3 w-3 opacity-60" />
-                  </button>
-                )}
-
-                <button
-                  type="button"
-                  onClick={handleClearAllFilters}
-                  className="text-xs text-gray-400 underline underline-offset-2 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  Xóa tất cả
-                </button>
-              </div>
+              <ActiveFilterChips
+                filters={{ type: typeFilter }}
+                metadataTypes={[]}
+                extraTypes={[DOC_TYPE_EXTRA_TYPE]}
+                yearRanges={[
+                  ...(enrollmentYear.fromYear || enrollmentYear.toYear
+                    ? [
+                        {
+                          key: "enrollmentYear",
+                          label: "Khóa",
+                          color: "#14b8a6",
+                          ...enrollmentYear,
+                        },
+                      ]
+                    : []),
+                  ...(academicYear.fromYear || academicYear.toYear
+                    ? [{ key: "academicYear", label: "Năm học", color: "#f59e0b", ...academicYear }]
+                    : []),
+                ]}
+                onRemove={(_typeKey, value) => {
+                  setTypeFilter((prev) => prev.filter((x) => x !== value));
+                  setPage(1);
+                }}
+                onRemoveYearRange={(key) => {
+                  if (key === "enrollmentYear") setEnrollmentYear(EMPTY_YEAR_RANGE);
+                  if (key === "academicYear") setAcademicYear(EMPTY_YEAR_RANGE);
+                  setPage(1);
+                }}
+                onClearAll={handleClearAllFilters}
+              />
             )}
           </div>
         }
