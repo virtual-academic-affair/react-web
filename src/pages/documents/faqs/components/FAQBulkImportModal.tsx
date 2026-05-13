@@ -41,7 +41,7 @@ export default function FAQBulkImportModal({
       }),
     onSuccess: (res: any) => {
       const createdCount = res.created ?? 0;
-      toast.success(res.message || `Import thành công ${createdCount}/${totalRows} câu hỏi`);
+      toast.success(`Import thành công ${createdCount}/${totalRows} câu hỏi`);
       queryClient.invalidateQueries({ queryKey: ["faqs"] });
       handleClose();
     },
@@ -257,7 +257,7 @@ export default function FAQBulkImportModal({
             disabled={!file || isPending || localPreviewRows.length === 0}
             className="bg-brand-500 hover:bg-brand-600 rounded-xl px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
           >
-            {isPending ? "Đang import..." : "Bắt đầu Import"}
+            {isPending ? "Đang thêm..." : "Thêm"}
           </button>
         </div>
       </form>

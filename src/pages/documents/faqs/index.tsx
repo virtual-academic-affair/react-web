@@ -145,20 +145,20 @@ export default function FAQsPage() {
           searchValue={searchValue}
           onSearchChange={setSearchValue}
           onSearch={handleSearch}
-          searchPlaceholder="Tìm câu hỏi..."
+          searchPlaceholder="Tìm câu hỏi, câu trả lời..."
           middleSlot={
             <div className="flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setCreationOpen(true)}
-                className="rounded-2xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
+                className="rounded-2xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
               >
                 Thêm
               </button>
               <button
                 type="button"
                 onClick={() => setImportOpen(true)}
-                className="bg-brand-500 hover:bg-brand-600 rounded-2xl px-5 py-2.5 text-sm font-semibold text-white transition-colors"
+                className="bg-brand-500 hover:bg-brand-600 rounded-2xl px-5 py-2.5 text-sm font-semibold text-white"
               >
                 Thêm hàng loạt
               </button>

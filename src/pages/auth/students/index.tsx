@@ -27,7 +27,7 @@ const PAGE_SIZE = 10;
 const DEFAULT_IMPORT_CONFIG: Required<ImportStudentsDto> = {
   studentCodeCol: 1,
   studentNameCol: 2,
-  startRow: 1,
+  startRow: 2,
 };
 
 const StudentsPage: React.FC = () => {
@@ -135,8 +135,15 @@ const StudentsPage: React.FC = () => {
       }
 
       try {
-        const buf = await file.arrayBuffer();
-        const wb = read(buf, { type: "array" });
+        const isCsv = file.name.toLowerCase().endsWith(".csv");
+        let wb;
+        if (isCsv) {
+          const text = await file.text();
+          wb = read(text, { type: "string" });
+        } else {
+          const buf = await file.arrayBuffer();
+          wb = read(buf, { type: "array" });
+        }
         const firstSheetName = wb.SheetNames[0];
         const firstSheet = firstSheetName ? wb.Sheets[firstSheetName] : null;
         if (!firstSheet) {
@@ -314,14 +321,14 @@ const StudentsPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setCreateOpen(true)}
-                className="rounded-2xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
+                className="rounded-2xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
               >
                 Thêm
               </button>
               <button
                 type="button"
                 onClick={() => setImportOpen(true)}
-                className="bg-brand-500 hover:bg-brand-600 rounded-2xl px-5 py-2.5 text-sm font-semibold text-white transition-colors"
+                className="bg-brand-500 hover:bg-brand-600 rounded-2xl px-5 py-2.5 text-sm font-semibold text-white"
               >
                 Thêm hàng loạt
               </button>
@@ -376,9 +383,11 @@ const StudentsPage: React.FC = () => {
             <FormRow label="File dữ liệu">
               <div className="flex flex-col gap-2">
                 <input
+                  key={importOpen ? 'open' : 'closed'}
                   ref={fileInputRef}
                   type="file"
                   accept=".xlsx,.xls,.csv"
+                  onClick={(e) => (e.currentTarget.value = "")}
                   onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                   disabled={importing}
                   className="w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm outline-none file:mr-3 file:rounded-lg file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-gray-700 hover:file:bg-gray-200 dark:border-white/10 dark:text-white dark:file:bg-white/10 dark:file:text-white dark:hover:file:bg-white/20"
