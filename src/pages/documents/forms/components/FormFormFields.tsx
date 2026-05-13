@@ -51,12 +51,12 @@ export function FormFormFields({
         </div>
       </FormRow>
 
-      <FormRow label="Đường link" alignTop required={true}>
+      <FormRow label="Link/Email thông tin" alignTop required={true}>
         <div className="flex flex-col gap-1">
           <RichTextEditor
             value={contentLink}
             onChange={onContentLinkChange}
-            placeholder="Nhập đường link tài liệu hoặc chèn link..."
+            placeholder="Nhập link/email thông tin của nội dung..."
             error={errors?.contentLink}
             disabled={disabled}
           />

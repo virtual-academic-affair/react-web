@@ -57,7 +57,7 @@ const routes: RoutesType[] = [
         path: "documents/list",
       },
       {
-        name: "DS biểu mẫu",
+        name: "DS biểu mẫu, kênh thông tin",
         layout: "/admin",
         path: "documents/forms",
       },
