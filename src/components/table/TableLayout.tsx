@@ -367,9 +367,14 @@ function PaginationBar({
     pages.push(total);
   }
 
-  // Neighbor pages: left dots → first hidden page after 1 = 2
-  //                 right dots → first hidden page before total = end + 1
-  const leftSeed = 2;
+  // Determine which dots positions actually exist
+  const hasLeftDots = total > 5 && start > 2;
+  const hasRightDots = total > 5 && end < total - 1;
+
+  // Seed values: the most useful page to jump to from each dots
+  // Left dots represent hidden pages between 1 and start → seed to start - 1
+  // Right dots represent hidden pages between end and total → seed to end + 1
+  const leftSeed = start - 1;
   const rightSeed = end + 1;
 
   const openJump = (key: "left" | "right") => {
@@ -436,9 +441,18 @@ function PaginationBar({
 
           {pages.map((p, idx) => {
             if (p === "...") {
-              // First dots encountered = left, second = right
               dotsIndex += 1;
-              const thisKey: "left" | "right" = dotsIndex === 1 ? "left" : "right";
+              // Determine which key this dots represents based on actual position
+              // If both dots exist: first = left, second = right
+              // If only one dots: check which side it's on
+              let thisKey: "left" | "right";
+              if (hasLeftDots && hasRightDots) {
+                thisKey = dotsIndex === 1 ? "left" : "right";
+              } else if (hasLeftDots) {
+                thisKey = "left";
+              } else {
+                thisKey = "right";
+              }
               const isActive = jumpKey === thisKey;
               return (
                 <button
