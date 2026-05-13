@@ -200,13 +200,13 @@ export default function ProposedFAQsPage() {
           searchValue={searchValue}
           onSearchChange={setSearchValue}
           onSearch={handleSearch}
-          searchPlaceholder="Tìm câu hỏi đề xuất..."
+          searchPlaceholder="Tìm câu hỏi, câu trả lời đề xuất..."
           middleSlot={
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex p-1 bg-gray-100 dark:bg-navy-800 rounded-xl">
                 <button
                   onClick={() => handleTabChange("pending")}
-                  className={`flex items-center gap-2 px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                  className={`flex items-center gap-2 px-4 py-1.5 text-xs font-bold rounded-lg ${
                     view === "pending" 
                       ? "bg-white dark:bg-navy-700 text-brand-500 shadow-sm" 
                       : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -217,7 +217,7 @@ export default function ProposedFAQsPage() {
                 </button>
                 <button
                   onClick={() => handleTabChange("all")}
-                  className={`flex items-center gap-2 px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                  className={`flex items-center gap-2 px-4 py-1.5 text-xs font-bold rounded-lg ${
                     view === "all" 
                       ? "bg-white dark:bg-navy-700 text-brand-500 shadow-sm" 
                       : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -232,7 +232,7 @@ export default function ProposedFAQsPage() {
                 type="button"
                 onClick={() => triggerSynth()}
                 disabled={isSynthing}
-                className="bg-brand-500 hover:bg-brand-600 rounded-2xl px-5 py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-50"
+                className="bg-brand-500 hover:bg-brand-600 rounded-2xl px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
               >
                 {isSynthing ? (
                   <>
