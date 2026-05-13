@@ -38,18 +38,6 @@ const STATUS_OPTIONS = [
   { value: "inactive", displayName: "Vô hiệu hóa", color: "#ef4444" },
 ];
 
-const ROLE_EXTRA_TYPE = {
-  key: "roles",
-  displayName: "Vai trò",
-  allowedValues: ROLE_FILTER_OPTIONS,
-};
-
-const STATUS_EXTRA_TYPE = {
-  key: "status",
-  displayName: "Trạng thái",
-  allowedValues: STATUS_OPTIONS,
-};
-
 // ── Component ───────────────────────────────────────────────────────────────
 
 interface UsersPageProps {
