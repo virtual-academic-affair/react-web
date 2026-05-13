@@ -37,7 +37,7 @@ export const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
 // ── Document type config ──────────────────────────────────────────────────────
 
 export const DOCUMENT_TYPES = [
-  { value: "ctdt", label: "Chương trình đề án", color: "#6366f1" },
+  { value: "ctdt", label: "CTĐT", color: "#6366f1" },
   { value: "cong_van", label: "Công văn", color: "#0ea5e9" },
   { value: "quyet_dinh", label: "Quyết định", color: "#f59e0b" },
 ];
