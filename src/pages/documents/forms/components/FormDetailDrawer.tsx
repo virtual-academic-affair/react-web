@@ -110,7 +110,7 @@ export default function FormDetailDrawer({
     if (!documentType.trim())
       newErrors.documentType = "Nội dung không được để trống";
     if (!contentLink.trim())
-      newErrors.contentLink = "Đường link không được để trống";
+      newErrors.contentLink = "Link/Email thông tin không được để trống";
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -163,7 +163,7 @@ export default function FormDetailDrawer({
                 {detail.documentType || "—"}
               </p>
             </FormRow>
-            <FormRow alignTop label="Đường link">
+            <FormRow alignTop label="Link/email thông tin">
               <div
                 className="tiptap-prose text-navy-700 [&_a]:text-brand-500 dark:[&_a]:text-brand-400 text-sm dark:text-white [&_a:hover]:underline [&_ol]:list-decimal [&_ol]:pl-4 [&_ul]:list-disc [&_ul]:pl-4"
                 dangerouslySetInnerHTML={{

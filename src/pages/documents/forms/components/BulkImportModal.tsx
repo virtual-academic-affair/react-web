@@ -162,7 +162,7 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
             />
           </FormRow>
 
-          <FormRow label="Cột Đường link">
+          <FormRow label="Cột Link/email">
             <input
               type="number"
               min={1}

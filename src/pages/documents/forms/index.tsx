@@ -65,7 +65,7 @@ export default function FormsPage({ isReadOnly = false }: FormsPageProps) {
     },
     {
       key: "contentLink",
-      header: "Đường link",
+      header: "Link/email thông tin",
       width: "35%",
       render: (item) => (
         <div
