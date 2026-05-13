@@ -45,7 +45,7 @@ export default function CreationDrawer({ open, onClose }: CreationDrawerProps) {
   const handleSave = () => {
     const newErrors: typeof errors = {};
     if (!documentType.trim()) newErrors.documentType = "Nội dung không được để trống";
-    if (!contentLink.trim()) newErrors.contentLink = "Đường link không được để trống";
+    if (!contentLink.trim()) newErrors.contentLink = "Link/enail liên lạc không được để trống";
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
