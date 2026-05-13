@@ -142,9 +142,9 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
     }
   }, [fileDetail]);
 
-  // ── Reset on close ──────────────────────────────────────────────────────────
+  // ── Reset when no file selected ─────────────────────────────────────────────
   useEffect(() => {
-    if (!isOpen) {
+    if (!fileId) {
       setDisplayName("");
       setDocType("");
       setEnrollFromYear("");
@@ -152,7 +152,7 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
       setAcademicFromYear("");
       setAcademicToYear("");
     }
-  }, [isOpen]);
+  }, [fileId]);
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
   const buildYearRange = (from: string, to: string) => {
