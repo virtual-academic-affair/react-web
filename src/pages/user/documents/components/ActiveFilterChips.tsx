@@ -14,6 +14,7 @@ interface YearRangeChip {
   label: string;
   fromYear: string;
   toYear: string;
+  color?: string;
 }
 
 interface ActiveFilterChipsProps {
@@ -45,7 +46,8 @@ const ActiveFilterChips: React.FC<ActiveFilterChipsProps> = ({
   onRemoveYearRange,
   onClearAll,
 }) => {
-  const allTypes = [...metadataTypes, ...extraTypes];
+  // extraTypes first so hardcoded definitions (with colors) take priority
+  const allTypes = [...extraTypes, ...metadataTypes];
 
   const chips: Array<{
     typeKey: string;
@@ -79,36 +81,44 @@ const ActiveFilterChips: React.FC<ActiveFilterChipsProps> = ({
       <span className="text-xs font-medium text-gray-400">Đang lọc:</span>
 
       {/* Tag-based filter chips */}
-      {chips.map((chip) => (
-        <button
-          key={`${chip.typeKey}:${chip.value}`}
-          type="button"
-          onClick={() => onRemove(chip.typeKey, chip.value)}
-          className="border-brand-500/30 bg-brand-500/10 text-brand-600 hover:bg-brand-500/20 dark:text-brand-400 flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-all"
-        >
-          <span className="text-[10px] font-normal opacity-60">
-            {chip.typeLabel}:
-          </span>
-          {chip.label}
-          <MdClose className="h-3 w-3 opacity-60" />
-        </button>
-      ))}
+      {chips.map((chip) => {
+        const color = chip.color || "#7c3aed";
+        return (
+          <button
+            key={`${chip.typeKey}:${chip.value}`}
+            type="button"
+            onClick={() => onRemove(chip.typeKey, chip.value)}
+            style={{ borderColor: `${color}40`, backgroundColor: `${color}18`, color }}
+            className="flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-all hover:brightness-110"
+          >
+            <span className="text-[10px] font-normal opacity-60">
+              {chip.typeLabel}:
+            </span>
+            {chip.label}
+            <MdClose className="h-3 w-3 opacity-60" />
+          </button>
+        );
+      })}
 
       {/* Year range chips */}
-      {yearRanges.map((yr) => (
-        <button
-          key={yr.key}
-          type="button"
-          onClick={() => onRemoveYearRange?.(yr.key)}
-          className="flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-600 transition-all hover:bg-amber-500/20 dark:text-amber-400"
-        >
-          <span className="text-[10px] font-normal opacity-60">
-            {yr.label}:
-          </span>
-          {formatYearRange(yr.fromYear, yr.toYear)}
-          <MdClose className="h-3 w-3 opacity-60" />
-        </button>
-      ))}
+      {yearRanges.map((yr) => {
+        const yrColor = yr.color || "#f59e0b";
+        return (
+          <button
+            key={yr.key}
+            type="button"
+            onClick={() => onRemoveYearRange?.(yr.key)}
+            style={{ borderColor: `${yrColor}40`, backgroundColor: `${yrColor}18`, color: yrColor }}
+            className="flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-all hover:brightness-110"
+          >
+            <span className="text-[10px] font-normal opacity-60">
+              {yr.label}:
+            </span>
+            {formatYearRange(yr.fromYear, yr.toYear)}
+            <MdClose className="h-3 w-3 opacity-60" />
+          </button>
+        );
+      })}
 
       <button
         type="button"

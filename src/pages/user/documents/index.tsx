@@ -491,12 +491,13 @@ const UserDocumentsPage: React.FC = () => {
                     {
                       key: "enrollmentYear",
                       label: "Khóa tuyển sinh",
+                      color: "#14b8a6",
                       ...enrollmentYear,
                     },
                   ]
                 : []),
               ...(academicYear.fromYear || academicYear.toYear
-                ? [{ key: "academicYear", label: "Năm học", ...academicYear }]
+                ? [{ key: "academicYear", label: "Năm học", color: "#f59e0b", ...academicYear }]
                 : []),
             ]}
             onRemoveYearRange={(key) => {
