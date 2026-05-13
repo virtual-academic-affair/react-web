@@ -38,7 +38,7 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
       }),
     onSuccess: (res) => {
       const createdCount = res.created ?? 0;
-      toast.success(res.message || `Import thành công ${createdCount}/${totalRows} văn bản`);
+      toast.success(`Import thành công ${createdCount}/${totalRows} văn bản`);
       queryClient.invalidateQueries({ queryKey: ["forms"] });
       handleClose();
     },
@@ -97,18 +97,24 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
     setConfig(newConfig);
   };
 
-  const handleClose = () => {
-    setFile(null);
-    setPreviewError(null);
-    setConfig({
-      documentTypeCol: 1,
-      contentLinkCol: 2,
-      notesCol: 3,
-      startRow: 2,
-    });
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+  // Reset state when drawer closes
+  useEffect(() => {
+    if (!open) {
+      setFile(null);
+      setPreviewError(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      setConfig({
+        documentTypeCol: 1,
+        contentLinkCol: 2,
+        notesCol: 3,
+        startRow: 2,
+      });
     }
+  }, [open]);
+
+  const handleClose = () => {
     onClose();
   };
 
@@ -133,6 +139,7 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
           <FormRow label="File dữ liệu">
             <div className="flex flex-col gap-2">
               <input
+                key={open ? "open" : "closed"}
                 ref={fileInputRef}
                 type="file"
                 accept=".xlsx,.xls,.csv"
@@ -144,7 +151,7 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
             </div>
           </FormRow>
 
-          <FormRow label="Cột Loại văn bản">
+          <FormRow label="Cột Nội dung">
             <input
               type="number"
               min={1}
@@ -155,7 +162,7 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
             />
           </FormRow>
 
-          <FormRow label="Cột Nội dung (Link)">
+          <FormRow label="Cột Đường link">
             <input
               type="number"
               min={1}

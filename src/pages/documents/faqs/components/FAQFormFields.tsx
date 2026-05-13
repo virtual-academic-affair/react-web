@@ -43,7 +43,7 @@ export function FAQFormFields({
       <FormRow alignTop label="Câu hỏi" required={true}>
         <div className="flex flex-col gap-1">
           <textarea
-            placeholder="Nhập câu hỏi..."
+            placeholder="Nhập câu hỏi (ít nhất 5 kí tự)..."
             value={question}
             onChange={(e) => onQuestionChange(e.target.value)}
             disabled={disabled}
