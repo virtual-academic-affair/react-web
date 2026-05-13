@@ -124,10 +124,6 @@ const YearRangeFilter: React.FC<YearRangeFilterProps> = ({
             style={{ top: dropPos.top, left: dropPos.left }}
             className="dark:bg-navy-900 fixed z-9999 w-[280px] max-w-[calc(100vw-24px)] rounded-2xl border border-gray-100 bg-white p-4 shadow-xl dark:border-white/10"
           >
-            <p className="mb-3 px-1 text-[10px] font-semibold tracking-wider text-gray-400 uppercase dark:text-gray-500">
-              {label}
-            </p>
-
             <div className="flex items-center gap-2">
               <div className="flex-1">
                 <label className="mb-1 block text-[10px] font-medium text-gray-400">

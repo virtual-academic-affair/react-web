@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { MdExpandMore } from "react-icons/md";
-import Tag from "@/components/tag/Tag";
+import { MdCheck, MdExpandMore } from "react-icons/md";
 
 export interface FilterOption {
   value: string;
@@ -79,7 +78,7 @@ const FilterGroup: React.FC<FilterGroupProps> = ({
     onChange(
       selected.includes(value)
         ? selected.filter((v) => v !== value)
-        : [...selected, value]
+        : [...selected, value],
     );
   };
 
@@ -96,12 +95,12 @@ const FilterGroup: React.FC<FilterGroupProps> = ({
         className={`flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium transition-transform ${
           hasActive
             ? "border-brand-500 bg-brand-500/10 text-brand-600 dark:text-brand-400"
-            : "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50 dark:border-white/10 dark:bg-navy-800 dark:text-gray-300 dark:hover:border-white/20 dark:hover:bg-white/5"
+            : "dark:bg-navy-800 border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50 dark:border-white/10 dark:text-gray-300 dark:hover:border-white/20 dark:hover:bg-white/5"
         }`}
       >
         {label}
         {hasActive ? (
-          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-brand-500 text-[10px] font-bold text-white">
+          <span className="bg-brand-500 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-white">
             {selected.length}
           </span>
         ) : (
@@ -115,27 +114,41 @@ const FilterGroup: React.FC<FilterGroupProps> = ({
           <div
             ref={dropdownRef}
             style={{ top: dropPos.top, left: dropPos.left }}
-            className="dark:bg-navy-900 fixed z-9999 w-[280px] max-w-[calc(100vw-24px)] rounded-2xl border border-gray-100 bg-white p-3 shadow-xl dark:border-white/10"
+            className="dark:bg-navy-900 fixed z-9999 w-[280px] max-w-[calc(100vw-24px)] rounded-2xl border border-gray-100 bg-white px-1 shadow-xl dark:border-white/10"
           >
-            <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-              {label}
-            </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-col py-1">
               {options.map((opt) => {
                 const active = selected.includes(opt.value);
                 return (
-                  <Tag
+                  <button
                     key={opt.value}
-                    color={active ? (opt.color || "#4225ff") : "#9ca3af"}
                     onClick={() => toggle(opt.value)}
+                    style={
+                      active
+                        ? {
+                            backgroundColor: `${opt.color || "#7c3aed"}1A`,
+                            color: opt.color || "#7c3aed",
+                          }
+                        : undefined
+                    }
+                    className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors ${
+                      active
+                        ? "font-medium"
+                        : "text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-white/5"
+                    }`}
                   >
-                    {opt.displayName}
-                  </Tag>
+                    <div
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: opt.color || "#7c3aed" }}
+                    />
+                    <span className="flex-1 text-left">{opt.displayName}</span>
+                    {active && <MdCheck className="h-4 w-4 shrink-0" />}
+                  </button>
                 );
               })}
             </div>
           </div>,
-          document.body
+          document.body,
         )}
     </>
   );

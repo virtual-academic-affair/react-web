@@ -20,7 +20,6 @@ import FilePreviewModal from "@/pages/documents/components/FilePreviewModal";
 import { DOCUMENT_TYPES } from "@/pages/documents/components/UploadDrawer";
 import { DocumentsService, MetadataService } from "@/services/documents";
 
-import ActiveFilterChips from "./components/ActiveFilterChips";
 import { FileCard, FileRow } from "./components/FileItems";
 import FilterGroup from "./components/FilterGroup";
 import { GridSkeleton, ListSkeleton } from "./components/Skeletons";
@@ -42,13 +41,6 @@ const DOC_TYPE_FILTER_OPTIONS = DOCUMENT_TYPES.map((t) => ({
   displayName: t.label,
   color: t.color,
 }));
-
-/** Extra type definition so ActiveFilterChips can resolve type labels */
-const DOC_TYPE_EXTRA_TYPE = {
-  key: TYPE_FILTER_KEY,
-  displayName: "Loại tài liệu",
-  allowedValues: DOC_TYPE_FILTER_OPTIONS,
-};
 
 const EMPTY_YEAR_RANGE: YearRange = { fromYear: "", toYear: "" };
 
@@ -333,14 +325,6 @@ const UserDocumentsPage: React.FC = () => {
     setPage(1);
   }, []);
 
-  const handleRemoveChip = useCallback((typeKey: string, value: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      [typeKey]: (prev[typeKey] || []).filter((v) => v !== value),
-    }));
-    setPage(1);
-  }, []);
-
   const handleClearAll = useCallback(() => {
     setFilters({});
     setEnrollmentYear(EMPTY_YEAR_RANGE);
@@ -447,6 +431,16 @@ const UserDocumentsPage: React.FC = () => {
               />
             );
           })}
+
+          {hasFilters && (
+            <button
+              type="button"
+              onClick={handleClearAll}
+              className="text-brand-500 hover:text-brand-600 dark:hover:text-brand-400 text-xs font-medium underline underline-offset-2"
+            >
+              Xóa tất cả
+            </button>
+          )}
         </div>
 
         {/* View toggle */}
@@ -477,39 +471,6 @@ const UserDocumentsPage: React.FC = () => {
           </button>
         </div>
       </div>
-
-      {/* ── Active filter chips ─────────────────────────────────────────── */}
-      {hasFilters && (
-        <div className="mb-4">
-          <ActiveFilterChips
-            filters={filters}
-            metadataTypes={filterableTypes}
-            extraTypes={[DOC_TYPE_EXTRA_TYPE]}
-            yearRanges={[
-              ...(enrollmentYear.fromYear || enrollmentYear.toYear
-                ? [
-                    {
-                      key: "enrollmentYear",
-                      label: "Khóa tuyển sinh",
-                      color: "#14b8a6",
-                      ...enrollmentYear,
-                    },
-                  ]
-                : []),
-              ...(academicYear.fromYear || academicYear.toYear
-                ? [{ key: "academicYear", label: "Năm học", color: "#f59e0b", ...academicYear }]
-                : []),
-            ]}
-            onRemoveYearRange={(key) => {
-              if (key === "enrollmentYear") setEnrollmentYear(EMPTY_YEAR_RANGE);
-              if (key === "academicYear") setAcademicYear(EMPTY_YEAR_RANGE);
-              setPage(1);
-            }}
-            onRemove={handleRemoveChip}
-            onClearAll={handleClearAll}
-          />
-        </div>
-      )}
 
       {/* ── Results count ──────────────────────────────────────────────── */}
       {!isLoading && (

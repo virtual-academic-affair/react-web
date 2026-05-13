@@ -15,12 +15,10 @@ import TableLayout, {
 } from "@/components/table/TableLayout";
 import Tag from "@/components/tag/Tag";
 import { DocumentsService } from "@/services/documents";
-import { formatDate } from "@/utils/date";
 import { parseError } from "@/utils/parseError";
 
 import ConfirmModal from "@/components/modal/ConfirmModal";
 import Tooltip from "@/components/tooltip/Tooltip";
-import ActiveFilterChips from "@/pages/user/documents/components/ActiveFilterChips";
 import FilterGroup from "@/pages/user/documents/components/FilterGroup";
 import YearRangeFilter, {
   type YearRange,
@@ -48,13 +46,6 @@ const DOC_TYPE_FILTER_OPTIONS = DOCUMENT_TYPES.map((t) => ({
   displayName: t.label,
   color: t.color,
 }));
-
-/** Extra type definition so ActiveFilterChips can resolve type labels + colors */
-const DOC_TYPE_EXTRA_TYPE = {
-  key: "type",
-  displayName: "Loại",
-  allowedValues: DOC_TYPE_FILTER_OPTIONS,
-};
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -383,54 +374,31 @@ const DocumentListPage = () => {
         },
       },
       {
-        key: "enrollmentYear",
-        header: "Khóa tuyển sinh",
+        key: "applicableYears",
+        header: "Thời gian áp dụng",
         render: (x) => (
-          <Tooltip
-            label={formatYearRange(
-              x.customMetadata?.enrollmentYear,
-              "Áp dụng mọi khóa",
-            )}
-            placement="topLeft"
-          >
-            <span className="text-navy-700 text-sm dark:text-white">
-              {formatYearRange(
-                x.customMetadata?.enrollmentYear,
-                "Áp dụng mọi khóa",
-              )}
-            </span>
-          </Tooltip>
-        ),
-      },
-      {
-        key: "academicYear",
-        header: "Năm học",
-        render: (x) => (
-          <Tooltip
-            label={formatYearRange(
-              x.customMetadata?.academicYear,
-              "Áp dụng mọi năm",
-            )}
-            placement="topLeft"
-          >
-            <span className="text-navy-700 text-sm dark:text-white">
-              {formatYearRange(
-                x.customMetadata?.academicYear,
-                "Áp dụng mọi năm",
-              )}
-            </span>
-          </Tooltip>
-        ),
-      },
-      {
-        key: "createdAt",
-        header: "Ngày tải lên",
-        render: (x) => (
-          <Tooltip label={formatDate(x.createdAt)} placement="topLeft">
-            <p className="text-navy-700 text-sm dark:text-white">
-              {formatDate(x.createdAt)}
-            </p>
-          </Tooltip>
+          <div className="flex flex-col gap-1 text-sm">
+            <div className="text-navy-700 dark:text-white">
+              <span className="font-normal text-gray-400">
+                Khóa tuyển sinh:{" "}
+              </span>
+              <span className="font-medium">
+                {formatYearRange(
+                  x.customMetadata?.enrollmentYear,
+                  "Áp dụng mọi khóa",
+                )}
+              </span>
+            </div>
+            <div className="text-navy-700 dark:text-white">
+              <span className="font-normal text-gray-400">Năm học: </span>
+              <span className="font-medium">
+                {formatYearRange(
+                  x.customMetadata?.academicYear,
+                  "Áp dụng mọi năm",
+                )}
+              </span>
+            </div>
+          </div>
         ),
       },
       {
@@ -545,49 +513,17 @@ const DocumentListPage = () => {
                   setPage(1);
                 }}
               />
-            </div>
 
-            {/* Active filter chips */}
-            {hasFilters && (
-              <ActiveFilterChips
-                filters={{ type: typeFilter }}
-                metadataTypes={[]}
-                extraTypes={[DOC_TYPE_EXTRA_TYPE]}
-                yearRanges={[
-                  ...(enrollmentYear.fromYear || enrollmentYear.toYear
-                    ? [
-                        {
-                          key: "enrollmentYear",
-                          label: "Khóa",
-                          color: "#14b8a6",
-                          ...enrollmentYear,
-                        },
-                      ]
-                    : []),
-                  ...(academicYear.fromYear || academicYear.toYear
-                    ? [
-                        {
-                          key: "academicYear",
-                          label: "Năm học",
-                          color: "#f59e0b",
-                          ...academicYear,
-                        },
-                      ]
-                    : []),
-                ]}
-                onRemove={(_typeKey, value) => {
-                  setTypeFilter((prev) => prev.filter((x) => x !== value));
-                  setPage(1);
-                }}
-                onRemoveYearRange={(key) => {
-                  if (key === "enrollmentYear")
-                    setEnrollmentYear(EMPTY_YEAR_RANGE);
-                  if (key === "academicYear") setAcademicYear(EMPTY_YEAR_RANGE);
-                  setPage(1);
-                }}
-                onClearAll={handleClearAllFilters}
-              />
-            )}
+              {hasFilters && (
+                <button
+                  type="button"
+                  onClick={handleClearAllFilters}
+                  className="text-brand-500 hover:text-brand-600 dark:hover:text-brand-400 ml-2 text-xs font-medium underline underline-offset-2"
+                >
+                  Xóa tất cả
+                </button>
+              )}
+            </div>
           </div>
         }
         rightSlot={
