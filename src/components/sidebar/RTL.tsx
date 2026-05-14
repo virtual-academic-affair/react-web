@@ -1,7 +1,6 @@
-/* eslint-disable */
-
 import { HiX } from "react-icons/hi";
 import Links from "./components/Links";
+import { SidebarChatbotPanel } from "./components/SidebarChatbotPanel";
 
 import routes from "routes";
 import SidebarCard from "./componentsrtl/SidebarCard";
@@ -18,7 +17,7 @@ const Sidebar = (props: {
       }`}
     >
       <span
-        className="inset-e-4 absolute top-4 block cursor-pointer xl:hidden"
+        className="absolute inset-e-4 top-4 block cursor-pointer xl:hidden"
         onClick={onClose}
       >
         <HiX />
@@ -32,8 +31,9 @@ const Sidebar = (props: {
       <div className="mt-14.5 mb-7 h-px bg-gray-300 dark:bg-white/30" />
       {/* Nav item */}
 
-      <ul className="mb-auto pt-1">
+      <ul className="mb-auto min-h-0 flex-1 overflow-y-auto pt-1">
         <Links routes={routes} />
+        <SidebarChatbotPanel />
       </ul>
 
       {/* Free Horizon Card */}

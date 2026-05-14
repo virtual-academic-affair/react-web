@@ -54,6 +54,8 @@ export const ItemStatusColors: Record<
 /** Tin nhắn join khi GET chi tiết — thông tin SV lấy từ đây, không lưu trên entity đăng ký */
 export interface ClassRegistrationLinkedMessage {
   id?: number;
+  /** Mở đúng tin trên Gmail (hash `#all/…`). */
+  gmailMessageId?: string | null;
   studentCode?: string | null;
   senderName?: string;
   student?: {
@@ -165,10 +167,14 @@ export interface GetClassRegistrationItemsParams extends ResourceQueryDto {
   actions?: RegistrationAction[];
   subjectName?: string;
   subjectCode?: string;
+  /** Khớp hằng `__VAA_CLASS_EMPTY__` khi lớp không có tên (bucket rỗng). */
+  className?: string;
   messageId?: string | number;
   messageStatuses?: MessageStatus[];
   sentFrom?: string;
   sentTo?: string;
+  itemCreatedFrom?: string;
+  itemCreatedTo?: string;
 }
 
 /** GET .../items/overview — nhóm môn → các lớp (bucket) */

@@ -2,6 +2,7 @@ import SelectField, {
   type SelectOption,
 } from "@/components/fields/SelectField";
 import React from "react";
+import AcceptedOpenClassesCard from "./components/AcceptedOpenClassesCard";
 import DetailedStatsChart from "./components/DetailedStatsChart";
 import PeakDayCard from "./components/PeakDayCard";
 import SummaryWidget from "./components/SummaryWidget";
@@ -45,6 +46,7 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
             chartOptions={barChartData.options}
             chartData={barChartData.series}
           />
+          <AcceptedOpenClassesCard timeRange={timeRange} />
         </div>
 
         {/* Right Side: Widgets (1/4 width) */}

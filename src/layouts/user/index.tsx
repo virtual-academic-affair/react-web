@@ -10,6 +10,7 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import Navbar from "@/components/navbar";
 import UserSidebar from "@/components/sidebar/UserSidebar";
 import ChatbotPage from "@/pages/chatbot";
+import { ChatbotRuntimeProvider } from "@/pages/chatbot/ChatbotRuntimeProvider";
 import FormsPage from "@/pages/documents/forms";
 import UserDocumentsPage from "@/pages/user/documents";
 import { useAuthStore } from "@/stores/auth.store";
@@ -35,6 +36,9 @@ const UserLayout: React.FC = () => {
   }, []);
 
   const location = useLocation();
+  const isUserChatbotRoute =
+    location.pathname === "/user/chatbot" ||
+    location.pathname.startsWith("/user/chatbot/");
 
   const getActiveRoute = (): string => {
     for (const route of userRoutes) {
@@ -49,8 +53,8 @@ const UserLayout: React.FC = () => {
     return "Trang chủ";
   };
 
-  return (
-    <div className="bg-lightPrimary dark:bg-navy-900! flex min-h-screen w-full">
+  const layoutBody = (
+    <>
       <UserSidebar
         open={open}
         onClose={() => setOpen(false)}
@@ -103,6 +107,16 @@ const UserLayout: React.FC = () => {
           </Routes>
         </div>
       </div>
+    </>
+  );
+
+  return (
+    <div className="bg-lightPrimary dark:bg-navy-900! flex min-h-screen w-full">
+      {isUserChatbotRoute ? (
+        <ChatbotRuntimeProvider>{layoutBody}</ChatbotRuntimeProvider>
+      ) : (
+        layoutBody
+      )}
     </div>
   );
 };

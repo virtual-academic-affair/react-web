@@ -12,6 +12,7 @@ import {
 } from "react-icons/ri";
 import { useNavigate } from "react-router-dom";
 import routes from "routes";
+import { SidebarChatbotPanel } from "./components/SidebarChatbotPanel";
 import { SidebarLinks as Links } from "./components/Links";
 
 const Sidebar = (props: {
@@ -71,6 +72,7 @@ const Sidebar = (props: {
         <div className="h-full overflow-y-auto pt-6">
           <ul className={`mt-5 ${collapsed ? "px-2" : "px-4"}`}>
             <Links routes={routes} collapsed={collapsed} />
+            <SidebarChatbotPanel collapsed={collapsed} />
           </ul>
         </div>
       </Card>
