@@ -5,19 +5,13 @@ import {
   type AppendMessage,
   type ThreadMessageLike,
 } from "@assistant-ui/react";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { ASSISTANT_ERROR_FALLBACK } from "./constants";
-import type { ChatSourceItem } from "./types";
+import { ChatbotShellProvider } from "./chatbotShellContext";
+import { CHAT_SYSTEM_BUSY_MESSAGE } from "./constants";
+import type { ChatSourceItem, ChatStoreMessage, ChatThreadSession } from "./types";
 
-export type ChatStoreMessage = {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  createdAt: string;
-  reasoning?: string;
-  sources?: ChatSourceItem[];
-};
+export type { ChatStoreMessage, ChatThreadSession } from "./types";
 
 function getAppendText(message: AppendMessage): string {
   const c = message.content;
@@ -52,9 +46,27 @@ const convertMessage = (m: ChatStoreMessage): ThreadMessageLike => {
     | { type: "text"; text: string }
     | { type: "reasoning"; text: string; parentId?: string }
     | { type: "source"; sourceType: "url"; id: string; url: string; title?: string }
+    | {
+        type: "tool-call";
+        toolCallId: string;
+        toolName: string;
+        argsText: string;
+        result?: unknown;
+        isError?: boolean;
+      }
   > = [];
 
   if (m.role === "assistant") {
+    for (const tc of m.toolCalls ?? []) {
+      parts.push({
+        type: "tool-call",
+        toolCallId: tc.toolCallId,
+        toolName: tc.toolName,
+        argsText: tc.argsText,
+        result: tc.result,
+        isError: tc.isError,
+      });
+    }
     const steps = splitReasoningIntoSteps(m.reasoning);
     const n = steps.length;
     steps.forEach((step, i) => {
@@ -81,14 +93,37 @@ const convertMessage = (m: ChatStoreMessage): ThreadMessageLike => {
 };
 
 function ChatbotRuntimeProviderInner({ children }: React.PropsWithChildren) {
-  const [messages, setMessages] = useState<ChatStoreMessage[]>([]);
+  const initialThreadId = useMemo(() => newId("thread"), []);
+  const [sessions, setSessions] = useState<ChatThreadSession[]>(() => [
+    { id: initialThreadId, title: "Cuộc trò chuyện mới", messages: [] },
+  ]);
+  const [activeThreadId, setActiveThreadId] = useState(initialThreadId);
+  const [systemError, setSystemError] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
+
+  const activeThreadIdRef = useRef(activeThreadId);
+  activeThreadIdRef.current = activeThreadId;
+
+  const messages = useMemo(
+    () => sessions.find((s) => s.id === activeThreadId)?.messages ?? [],
+    [sessions, activeThreadId],
+  );
+
   const messagesRef = useRef(messages);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
+
+  const setThreadMessages = useCallback((msgs: readonly ChatStoreMessage[]) => {
+    const tid = activeThreadIdRef.current;
+    setSessions((prev) =>
+      prev.map((s) => (s.id === tid ? { ...s, messages: [...msgs] } : s)),
+    );
+  }, []);
+
+  const clearError = useCallback(() => setSystemError(null), []);
 
   const runStreamForAssistant = useCallback(
     async (userText: string, assistantId: string, prior: ChatStoreMessage[]) => {
@@ -113,12 +148,18 @@ function ChatbotRuntimeProviderInner({ children }: React.PropsWithChildren) {
                   : "";
             if (eventType === "text" || (!eventType && textChunk && !ev.done)) {
               if (!textChunk) return;
-              setMessages((prev) =>
-                prev.map((item) =>
-                  item.id === assistantId
-                    ? { ...item, content: `${item.content}${textChunk}` }
-                    : item,
-                ),
+              setSessions((prev) =>
+                prev.map((session) => {
+                  if (session.id !== activeThreadIdRef.current) return session;
+                  return {
+                    ...session,
+                    messages: session.messages.map((item) =>
+                      item.id === assistantId
+                        ? { ...item, content: `${item.content}${textChunk}` }
+                        : item,
+                    ),
+                  };
+                }),
               );
               return;
             }
@@ -128,12 +169,18 @@ function ChatbotRuntimeProviderInner({ children }: React.PropsWithChildren) {
                 (typeof ev.chunk === "string" && ev.chunk) ||
                 "";
               if (!rChunk) return;
-              setMessages((prev) =>
-                prev.map((item) =>
-                  item.id === assistantId
-                    ? { ...item, reasoning: `${item.reasoning ?? ""}${rChunk}` }
-                    : item,
-                ),
+              setSessions((prev) =>
+                prev.map((session) => {
+                  if (session.id !== activeThreadIdRef.current) return session;
+                  return {
+                    ...session,
+                    messages: session.messages.map((item) =>
+                      item.id === assistantId
+                        ? { ...item, reasoning: `${item.reasoning ?? ""}${rChunk}` }
+                        : item,
+                    ),
+                  };
+                }),
               );
               return;
             }
@@ -160,17 +207,22 @@ function ChatbotRuntimeProviderInner({ children }: React.PropsWithChildren) {
                 })
                 .filter((item): item is ChatSourceItem => item !== null);
 
-              setMessages((prev) =>
-                prev.map((item) => {
-                  if (item.id !== assistantId) return item;
-                  const content =
-                    errorText && !item.content.trim()
-                      ? `Lỗi từ hệ thống: ${errorText}`
-                      : item.content;
+              setSessions((prev) =>
+                prev.map((session) => {
+                  if (session.id !== activeThreadIdRef.current) return session;
                   return {
-                    ...item,
-                    content,
-                    sources: sources.length ? sources : [],
+                    ...session,
+                    messages: session.messages.map((item) => {
+                      if (item.id !== assistantId) return item;
+                      if (errorText) {
+                        setSystemError(CHAT_SYSTEM_BUSY_MESSAGE);
+                      }
+                      return {
+                        ...item,
+                        content: item.content,
+                        sources: sources.length ? sources : [],
+                      };
+                    }),
                   };
                 }),
               );
@@ -180,15 +232,17 @@ function ChatbotRuntimeProviderInner({ children }: React.PropsWithChildren) {
         );
       } catch (error) {
         if ((error as Error)?.name === "AbortError") return;
-        setMessages((prev) =>
-          prev.map((item) =>
-            item.id === assistantId
-              ? {
-                  ...item,
-                  content: `${ASSISTANT_ERROR_FALLBACK} (${String(error)})`,
-                }
-              : item,
-          ),
+        setSystemError(CHAT_SYSTEM_BUSY_MESSAGE);
+        setSessions((prev) =>
+          prev.map((session) => {
+            if (session.id !== activeThreadIdRef.current) return session;
+            return {
+              ...session,
+              messages: session.messages.map((item) =>
+                item.id === assistantId ? { ...item, content: "" } : item,
+              ),
+            };
+          }),
         );
       } finally {
         setIsRunning(false);
@@ -200,6 +254,7 @@ function ChatbotRuntimeProviderInner({ children }: React.PropsWithChildren) {
 
   const onNew = useCallback(
     async (message: AppendMessage) => {
+      setSystemError(null);
       const text = getAppendText(message).trim();
       if (!text) return;
 
@@ -208,11 +263,25 @@ function ChatbotRuntimeProviderInner({ children }: React.PropsWithChildren) {
       const assistantId = newId("assistant");
       const now = new Date().toISOString();
 
-      setMessages([
-        ...prior,
-        { id: userId, role: "user", content: text, createdAt: now },
-        { id: assistantId, role: "assistant", content: "", createdAt: now },
-      ]);
+      setSessions((prev) =>
+        prev.map((session) =>
+          session.id === activeThreadIdRef.current
+            ? {
+                ...session,
+                messages: [
+                  ...session.messages,
+                  { id: userId, role: "user", content: text, createdAt: now },
+                  {
+                    id: assistantId,
+                    role: "assistant",
+                    content: "",
+                    createdAt: now,
+                  },
+                ],
+              }
+            : session,
+        ),
+      );
 
       abortRef.current?.abort();
       abortRef.current = new AbortController();
@@ -230,14 +299,45 @@ function ChatbotRuntimeProviderInner({ children }: React.PropsWithChildren) {
   const runtime = useExternalStoreRuntime({
     messages,
     isRunning,
-    setMessages: (msgs) => setMessages([...msgs]),
+    setMessages: setThreadMessages,
     convertMessage,
     onNew,
     onCancel,
+    adapters: {
+      threadList: {
+        threadId: activeThreadId,
+        threads: sessions.map((s) => ({
+          id: s.id,
+          title: s.title,
+          status: "regular" as const,
+        })),
+        onSwitchToThread: async (threadId: string) => {
+          abortRef.current?.abort();
+          setSystemError(null);
+          setActiveThreadId(threadId);
+        },
+        onSwitchToNewThread: async () => {
+          abortRef.current?.abort();
+          setSystemError(null);
+          const id = newId("thread");
+          setSessions((prev) => [
+            { id, title: "Cuộc trò chuyện mới", messages: [] },
+            ...prev,
+          ]);
+          setActiveThreadId(id);
+        },
+      },
+    },
   });
 
   return (
-    <AssistantRuntimeProvider runtime={runtime}>{children}</AssistantRuntimeProvider>
+    <ChatbotShellProvider
+      value={{ errorMessage: systemError, clearError }}
+    >
+      <AssistantRuntimeProvider runtime={runtime}>
+        {children}
+      </AssistantRuntimeProvider>
+    </ChatbotShellProvider>
   );
 }
 

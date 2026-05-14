@@ -6,6 +6,7 @@ import type {
   GetClassRegistrationItemsParams,
   ItemStatus,
   OverviewSubjectGroup,
+  RegistrationAction,
   UpdateClassRegistrationItemDto,
 } from "@/types/classRegistration";
 import http from "../http";
@@ -56,7 +57,15 @@ class ClassRegistrationItemsService {
 
   async overview(
     parentId: number,
-    params?: { sentFrom?: string; sentTo?: string; messageStatuses?: string[] },
+    params?: {
+      sentFrom?: string;
+      sentTo?: string;
+      messageStatuses?: string[];
+      actions?: RegistrationAction[];
+      statuses?: ItemStatus[];
+      itemCreatedFrom?: string;
+      itemCreatedTo?: string;
+    },
   ): Promise<OverviewSubjectGroup[]> {
     const res = await http.get<OverviewSubjectGroup[]>(
       API_ENDPOINTS.classRegistration.registrations.itemsOverview(parentId),

@@ -10,11 +10,12 @@ import FAQsPage from "@/pages/documents/faqs";
 import ProposedFAQsPage from "@/pages/documents/faqs/candidates";
 import DocumentListPage from "@/pages/documents/list";
 import ChatbotPage from "@/pages/chatbot";
+import { ChatbotRuntimeProvider } from "@/pages/chatbot/ChatbotRuntimeProvider";
 import GmailConfigPage from "@/pages/emails/config";
 import InquiryStatisticsPage from "@/pages/inquiry/statistics";
 import routes from "@/routes";
 import { useEffect, useState } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 
 const DYNAMIC_DATA_KEYS = [
@@ -26,6 +27,11 @@ const DYNAMIC_DATA_KEYS = [
 ] as const;
 
 const AdminLayout: React.FC = () => {
+  const location = useLocation();
+  const isAdminChatbotRoute =
+    location.pathname === "/admin/chatbot" ||
+    location.pathname.startsWith("/admin/chatbot/");
+
   const [open, setOpen] = useState(() => window.innerWidth >= 1024);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -85,8 +91,8 @@ const AdminLayout: React.FC = () => {
     return "Admin";
   };
 
-  return (
-    <div className="bg-lightPrimary dark:bg-navy-900! flex min-h-screen w-full">
+  const layoutBody = (
+    <>
       <Sidebar
         open={open}
         onClose={() => setOpen(false)}
@@ -183,6 +189,16 @@ const AdminLayout: React.FC = () => {
           </Routes>
         </div>
       </div>
+    </>
+  );
+
+  return (
+    <div className="bg-lightPrimary dark:bg-navy-900! flex min-h-screen w-full">
+      {isAdminChatbotRoute ? (
+        <ChatbotRuntimeProvider>{layoutBody}</ChatbotRuntimeProvider>
+      ) : (
+        layoutBody
+      )}
     </div>
   );
 };

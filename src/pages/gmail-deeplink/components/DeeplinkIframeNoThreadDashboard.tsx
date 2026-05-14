@@ -472,9 +472,9 @@ const DeeplinkIframeNoThreadDashboard: React.FC<
     const hasTo = afterVn != null;
     const hasFrom = beforeVn != null;
     if (!hasTo && !hasFrom) return null;
-    if (hasFrom && !hasTo) return `từ ${beforeVn}`;
-    if (hasTo && !hasFrom) return `đến ${afterVn}`;
-    return `${beforeVn} - ${afterVn}`;
+    if (hasFrom && !hasTo) return `đến ${beforeVn}`;
+    if (hasTo && !hasFrom) return `từ ${afterVn}`;
+    return `${afterVn} - ${beforeVn} `;
   }, [afterVn, beforeVn]);
 
   const { data: inqNew, isLoading: inqNewLoading } = useQuery({

@@ -1,21 +1,36 @@
+import { Alert } from "antd";
 import React from "react";
+import "streamdown/styles.css";
 
-import { ChatbotRuntimeProvider } from "./ChatbotRuntimeProvider";
+import { useChatbotShell } from "./chatbotShellContext";
 import { GeminiThread } from "./components/GeminiThread";
-import { CHAT_LAYOUT_CLASSNAME } from "./constants";
 
-const ChatbotPage: React.FC = () => {
+function ChatbotPageInner() {
+  const { errorMessage, clearError } = useChatbotShell();
+
   return (
-    <div className={CHAT_LAYOUT_CLASSNAME}>
-      <ChatbotRuntimeProvider>
-        <div className="mx-auto flex h-full min-h-0 w-full max-w-5xl flex-col">
-          <div className="min-h-0 flex-1">
-            <GeminiThread />
-          </div>
+    <div className="flex h-screen min-h-0 flex-col bg-transparent">
+      <div className="mx-auto flex h-full min-h-0 w-full max-w-[800px] flex-col overflow-hidden px-4 py-4 md:px-5">
+        {errorMessage ? (
+          <Alert
+            type="error"
+            showIcon
+            closable
+            onClose={clearError}
+            message={errorMessage}
+            className="mb-4"
+          />
+        ) : null}
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <GeminiThread />
         </div>
-      </ChatbotRuntimeProvider>
+      </div>
     </div>
   );
+}
+
+const ChatbotPage: React.FC = () => {
+  return <ChatbotPageInner />;
 };
 
 export default ChatbotPage;

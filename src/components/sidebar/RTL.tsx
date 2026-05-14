@@ -1,5 +1,3 @@
-/* eslint-disable */
-
 import { HiX } from "react-icons/hi";
 import Links from "./components/Links";
 import { SidebarChatbotPanel } from "./components/SidebarChatbotPanel";
@@ -19,7 +17,7 @@ const Sidebar = (props: {
       }`}
     >
       <span
-        className="inset-e-4 absolute top-4 block cursor-pointer xl:hidden"
+        className="absolute inset-e-4 top-4 block cursor-pointer xl:hidden"
         onClick={onClose}
       >
         <HiX />

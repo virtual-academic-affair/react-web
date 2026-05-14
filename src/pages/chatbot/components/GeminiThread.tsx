@@ -1,234 +1,306 @@
 import {
   ComposerPrimitive,
-  MessagePartPrimitive,
   MessagePrimitive,
   ThreadPrimitive,
   useAuiState,
-  type ReasoningMessagePartProps,
-  type SourceMessagePartProps,
+  type PartState,
 } from "@assistant-ui/react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  MdAttachFile,
   MdAutoAwesome,
-  MdEditNote,
-  MdFactCheck,
+  MdImage,
   MdKeyboardArrowDown,
-  MdOutlineLightbulb,
-  MdOutlinePsychology,
+  MdMic,
+  MdSchool,
   MdSearch,
   MdSend,
   MdSquare,
+  MdTravelExplore,
 } from "react-icons/md";
 
-import { useAuthStore } from "@/stores/auth.store";
-import { authService } from "@/services/auth/auth.service";
-import { getUserInfoFromToken } from "@/utils/auth.util";
+import { MarkdownText } from "@/components/assistant-ui/markdown-text";
+import {
+  Reasoning,
+  ReasoningContent,
+  ReasoningRoot,
+  ReasoningText,
+  ReasoningTrigger,
+} from "@/components/assistant-ui/reasoning";
+import { Source, Sources } from "@/components/assistant-ui/sources";
+import { ToolFallback } from "@/components/assistant-ui/tool-fallback";
 
-import { CHAT_INPUT_PLACEHOLDER } from "../constants";
+const GEMINI_INPUT_PLACEHOLDER = "Ask Gemini";
 
-const STEP_ICONS = [
-  MdOutlineLightbulb,
-  MdSearch,
-  MdEditNote,
-  MdFactCheck,
-  MdOutlinePsychology,
-] as const;
-
-/** Không dùng useMessage trong part — tránh lỗi context; meta gắn trong parentId từ convertMessage. */
-function parseReasoningParentId(parentId: string | undefined) {
-  if (!parentId) return { stepIndex: 0, isLastReasoning: true };
-  const full = /^r-(\d+)-of-(\d+)$/.exec(parentId);
-  if (full) {
-    const index = Number(full[1]);
-    const total = Number(full[2]);
-    return {
-      stepIndex: Number.isFinite(index) ? index : 0,
-      isLastReasoning: total > 0 && index === total - 1,
-    };
-  }
-  const legacy = /^r-(\d+)$/.exec(parentId);
-  if (legacy) {
-    const index = Number(legacy[1]);
-    return { stepIndex: Number.isFinite(index) ? index : 0, isLastReasoning: true };
-  }
-  return { stepIndex: 0, isLastReasoning: true };
-}
-
-const messagePartComponents = {
-  Reasoning: function GeminiReasoningPart({
-    text,
-    status,
-    parentId,
-  }: ReasoningMessagePartProps) {
-    const { stepIndex, isLastReasoning } = parseReasoningParentId(parentId);
-    const [expanded, setExpanded] = useState(false);
-    const streaming = status.type === "running";
-    const open = (isLastReasoning && streaming) || expanded;
-
-    const preview = useMemo(() => {
-      const line = text.trim().split("\n")[0] ?? "";
-      if (line.length <= 96) return line || "Bước suy luận";
-      return `${line.slice(0, 93)}…`;
-    }, [text]);
-
-    const Icon = STEP_ICONS[stepIndex % STEP_ICONS.length];
-
-    if (!text.trim()) return null;
-
-    return (
-      <details
-        className="mb-2 border-b border-gray-200/80 pb-2 last:mb-0 last:border-b-0 last:pb-0 dark:border-white/10"
-        open={open}
-        onToggle={(e) => {
-          if (isLastReasoning && streaming) return;
-          setExpanded(e.currentTarget.open);
-        }}
-      >
-        <summary className="flex cursor-pointer list-none items-center gap-2 py-1 marker:content-none [&::-webkit-details-marker]:hidden">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gray-200/90 text-[#444746] dark:border-white/15 dark:text-[#c4c7c5]">
-            <Icon className="h-4 w-4" aria-hidden />
-          </span>
-          <span className="min-w-0 flex-1 text-left text-xs font-medium text-[#444746] dark:text-[#c4c7c5]">
-            {preview}
-          </span>
-          <MdKeyboardArrowDown
-            className={`h-5 w-5 shrink-0 text-[#444746] transition-transform dark:text-[#c4c7c5] ${open ? "rotate-180" : ""}`}
-            aria-hidden
-          />
-        </summary>
-        <div className="mt-1.5 pl-10 text-xs leading-relaxed text-[#444746] dark:text-[#c4c7c5]">
-          <pre className="font-sans whitespace-pre-wrap">{text}</pre>
-        </div>
-      </details>
-    );
-  },
-  Text: function GeminiAnswerText() {
-    return (
-      <MessagePartPrimitive.Text
-        component="div"
-        smooth
-        className="text-sm leading-relaxed whitespace-pre-wrap text-[#1f1f1f] dark:text-[#e3e3e3]"
-      />
-    );
-  },
-  Source: function GeminiSourcePart({ url, title }: SourceMessagePartProps) {
-    return (
-      <p className="mb-2 text-xs">
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[#0b57d0] underline underline-offset-2 dark:text-[#a8c7fa]"
-        >
-          {title?.trim() || url}
-        </a>
-      </p>
-    );
-  },
+const geminiUserMessagePartComponents = {
+  Reasoning: () => null,
+  Text: MarkdownText,
+  Source,
 };
 
 function GeminiUserMessage() {
   return (
     <MessagePrimitive.Root className="flex w-full justify-end pb-3">
-      <div className="max-w-[min(560px,88%)] rounded-3xl rounded-tr border border-gray-200/90 px-4 py-3 text-sm leading-relaxed text-[#1f1f1f] dark:border-white/15 dark:text-[#e3e3e3]">
-        <MessagePrimitive.Parts components={messagePartComponents} />
+      <div className="w-fit max-w-[66.666%] rounded-3xl rounded-tr bg-[#e9eef6] px-4 py-3 text-base leading-relaxed text-[#1f1f1f] dark:bg-[#282a2c] dark:text-[#e3e3e3]">
+        <MessagePrimitive.Parts
+          unstable_showEmptyOnNonTextEnd={false}
+          components={geminiUserMessagePartComponents}
+        />
       </div>
     </MessagePrimitive.Root>
   );
 }
 
 function GeminiAssistantMessage() {
+  const groupAssistantParts = useCallback((part: PartState) => {
+    if (part.type === "reasoning") return ["group-reasoning"] as const;
+    if (part.type === "source") return ["group-sources"] as const;
+    return null;
+  }, []);
+
   return (
-    <MessagePrimitive.Root className="flex w-full justify-start gap-3 pb-3">
+    <MessagePrimitive.Root className="grid w-full grid-cols-[auto_1fr] gap-3 pb-3">
       <div
-        className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gray-300/90 text-violet-600 dark:border-white/20 dark:text-violet-400"
+        className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#4285f4]/20 to-[#8ab4f8]/30 text-[#1a73e8] dark:from-[#8ab4f8]/25 dark:to-[#aecbfa]/20 dark:text-[#a8c7fa]"
         aria-hidden
       >
         <MdAutoAwesome className="h-4 w-4" />
       </div>
-      <div className="max-w-[min(640px,92%)] min-w-0 flex-1 space-y-2 text-sm leading-relaxed">
-        <MessagePrimitive.Parts components={messagePartComponents} />
+      <div className="w-full min-w-0 space-y-2 text-base leading-relaxed">
+        <MessagePrimitive.GroupedParts groupBy={groupAssistantParts}>
+          {({ part, children }) => {
+            switch (part.type) {
+              case "group-reasoning": {
+                const running = part.status.type === "running";
+                return (
+                  <ReasoningRoot
+                    key={part.indices.join("-")}
+                    defaultOpen={running}
+                    variant="ghost"
+                  >
+                    <ReasoningTrigger active={running} />
+                    <ReasoningContent aria-busy={running}>
+                      <ReasoningText>{children}</ReasoningText>
+                    </ReasoningContent>
+                  </ReasoningRoot>
+                );
+              }
+              case "group-sources":
+                return (
+                  <Sources key={part.indices.join("-")}>{children}</Sources>
+                );
+              case "text":
+                return <MarkdownText />;
+              case "reasoning":
+                return <Reasoning {...part} />;
+              case "tool-call":
+                return part.toolUI ?? <ToolFallback {...part} />;
+              case "source":
+                return <Source {...part} />;
+              default:
+                return null;
+            }
+          }}
+        </MessagePrimitive.GroupedParts>
       </div>
     </MessagePrimitive.Root>
   );
 }
 
-function useChatGreetingName() {
-  const accessToken = useAuthStore((s) => s.accessToken);
-
-  const fromToken = useMemo(() => {
-    const info = getUserInfoFromToken(accessToken);
-    return info.name?.trim() || info.email?.split("@")[0]?.trim() || "";
-  }, [accessToken]);
-
-  const [meForToken, setMeForToken] = useState<{
-    token: string | null;
-    name: string;
-  }>({ token: null, name: "" });
-
+function useDismissOnOutsideClick(
+  open: boolean,
+  setOpen: (value: boolean) => void,
+) {
+  const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!accessToken) return;
-    let cancelled = false;
-    authService
-      .getMe()
-      .then((me) => {
-        if (cancelled) return;
-        const n = me.name?.trim() || me.email?.split("@")[0]?.trim() || "";
-        setMeForToken({ token: accessToken, name: n });
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setMeForToken({ token: accessToken, name: "" });
-      });
-    return () => {
-      cancelled = true;
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
     };
-  }, [accessToken]);
-
-  if (!accessToken) return "bạn";
-  if (meForToken.token === accessToken && meForToken.name) return meForToken.name;
-  return fromToken || "bạn";
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open, setOpen]);
+  return ref;
 }
 
-function GeminiComposer({ placement = "footer" }: { placement?: "footer" | "empty" }) {
-  const isEmpty = useAuiState((s) => s.composer.isEmpty);
-  const isRunning = useAuiState((s) => s.thread.isRunning);
-  const outerClass =
-    placement === "footer"
-      ? "border-t border-gray-200/60 px-5 pt-4 pb-6 md:px-6 dark:border-white/10"
-      : "w-full pb-2";
+const TOOL_OPTIONS = [
+  { id: "deep", label: "Nghiên cứu sâu", Icon: MdTravelExplore },
+  { id: "image", label: "Tạo ảnh", Icon: MdImage },
+  { id: "web", label: "Tìm trên web", Icon: MdSearch },
+  { id: "learn", label: "Giúp tôi học", Icon: MdSchool },
+] as const;
+
+const MODEL_OPTIONS = [
+  {
+    id: "fast",
+    label: "Fast",
+    desc: "Phản hồi nhanh, phù hợp đa số câu hỏi thường gặp.",
+  },
+  {
+    id: "thinking",
+    label: "Thinking",
+    desc: "Cân nhắc kỹ hơn trước khi đưa ra câu trả lời.",
+  },
+  {
+    id: "pro",
+    label: "Pro",
+    desc: "Ưu tiên độ đầy đủ và chi tiết khi cần.",
+  },
+] as const;
+
+function GeminiToolsMenu() {
+  const [open, setOpen] = useState(false);
+  const [active, setActive] =
+    useState<(typeof TOOL_OPTIONS)[number]["id"]>("web");
+  const ref = useDismissOnOutsideClick(open, setOpen);
 
   return (
-    <div className={outerClass}>
-      <ComposerPrimitive.Root
-        className="group/composer w-full rounded-[28px] border border-gray-200/90 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-[#303030]"
-        data-empty={isEmpty}
-        data-running={isRunning}
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-0.5 rounded-full px-3 py-2 text-sm font-medium text-[#444746] transition hover:bg-black/[0.04] dark:text-[#c4c7c5] dark:hover:bg-white/[0.06]"
       >
-        <ComposerPrimitive.Input
-          placeholder={CHAT_INPUT_PLACEHOLDER}
-          rows={1}
-          className="mb-3 max-h-40 min-h-[44px] w-full resize-none bg-transparent px-2 pt-0.5 text-[15px] leading-snug text-[#1f1f1f] outline-none placeholder:text-[#444746] dark:text-[#e3e3e3] dark:placeholder:text-[#c4c7c5]"
+        Công cụ
+        <MdKeyboardArrowDown
+          className={`h-4 w-4 transition ${open ? "rotate-180" : ""}`}
+          aria-hidden
         />
-        <div className="flex items-center justify-end">
-          <div className="relative flex h-10 w-10 items-center justify-center">
+      </button>
+      {open ? (
+        <div className="absolute bottom-full left-0 z-50 mb-1 min-w-[220px] overflow-hidden rounded-xl border border-[#e3e3e3] bg-white py-1 shadow-lg dark:border-[#3c4043] dark:bg-[#282a2c]">
+          {TOOL_OPTIONS.map(({ id, label, Icon }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => {
+                setActive(id);
+                setOpen(false);
+              }}
+              className={`flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm transition hover:bg-[#f8f9fa] dark:hover:bg-[#323538] ${
+                active === id
+                  ? "bg-[#e8f0fe] text-[#062e6f] dark:bg-[#1f3760]/40 dark:text-[#e3e3e3]"
+                  : "text-[#1f1f1f] dark:text-[#e3e3e3]"
+              }`}
+            >
+              <Icon
+                className="h-4 w-4 shrink-0 text-[#444746] dark:text-[#c4c7c5]"
+                aria-hidden
+              />
+              {label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function GeminiModelPicker() {
+  const [open, setOpen] = useState(false);
+  const [active, setActive] =
+    useState<(typeof MODEL_OPTIONS)[number]["id"]>("fast");
+  const ref = useDismissOnOutsideClick(open, setOpen);
+  const current =
+    MODEL_OPTIONS.find((m) => m.id === active) ?? MODEL_OPTIONS[0];
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-0.5 rounded-full px-3 py-2 text-sm font-medium text-[#444746] transition hover:bg-black/[0.04] dark:text-[#c4c7c5] dark:hover:bg-white/[0.06]"
+      >
+        {current.label}
+        <MdKeyboardArrowDown
+          className={`h-4 w-4 transition ${open ? "rotate-180" : ""}`}
+          aria-hidden
+        />
+      </button>
+      {open ? (
+        <div className="absolute right-0 bottom-full z-50 mb-1 w-[min(100vw-2rem,280px)] overflow-hidden rounded-xl border border-[#e3e3e3] bg-white py-1 shadow-lg dark:border-[#3c4043] dark:bg-[#282a2c]">
+          {MODEL_OPTIONS.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => {
+                setActive(m.id);
+                setOpen(false);
+              }}
+              className={`flex w-full flex-col items-start gap-0.5 px-3 py-2.5 text-left transition hover:bg-[#f8f9fa] dark:hover:bg-[#323538] ${
+                active === m.id ? "bg-[#e8f0fe] dark:bg-[#1f3760]/40" : ""
+              }`}
+            >
+              <span className="text-sm font-medium text-[#1f1f1f] dark:text-[#e3e3e3]">
+                {m.label}
+              </span>
+              <span className="text-xs leading-snug text-[#444746] dark:text-[#c4c7c5]">
+                {m.desc}
+              </span>
+            </button>
+          ))}
+          <div className="border-t border-[#e3e3e3] px-3 py-2 text-xs text-[#444746] dark:border-[#3c4043] dark:text-[#c4c7c5]">
+            Nâng cấp Gemini Advanced để mở khóa thêm mô hình và tính năng.
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function GeminiComposer() {
+  const isEmpty = useAuiState((s) => s.composer.isEmpty);
+  const isRunning = useAuiState((s) => s.thread.isRunning);
+
+  return (
+    <ComposerPrimitive.Root
+      className="group/composer w-full rounded-4xl bg-white p-3 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.16)] dark:bg-[#1e1f20]"
+      data-empty={isEmpty}
+      data-running={isRunning}
+    >
+      <ComposerPrimitive.Input
+        placeholder={GEMINI_INPUT_PLACEHOLDER}
+        rows={1}
+        className="mb-2 max-h-40 min-h-[44px] w-full resize-none bg-transparent px-2 pt-0.5 text-base leading-snug text-[#1f1f1f] outline-none placeholder:text-[#444746] dark:text-[#e3e3e3] dark:placeholder:text-[#c4c7c5]"
+      />
+      <div className="flex items-center gap-0.5">
+        <ComposerPrimitive.AddAttachment className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#444746] transition hover:bg-black/[0.04] disabled:opacity-35 dark:text-[#c4c7c5] dark:hover:bg-white/[0.06]">
+          <MdAttachFile className="h-5 w-5" aria-hidden />
+        </ComposerPrimitive.AddAttachment>
+        <GeminiToolsMenu />
+        <div className="ml-auto flex items-center gap-1 sm:gap-2">
+          <GeminiModelPicker />
+          <div className="relative size-10 shrink-0">
+            <ComposerPrimitive.Dictate className="absolute inset-0 flex items-center justify-center rounded-full bg-[#d3e3fd] text-[#062e6f] transition-transform duration-200 ease-out group-data-[empty=false]/composer:pointer-events-none group-data-[empty=false]/composer:scale-0 group-data-[running=true]/composer:pointer-events-none group-data-[running=true]/composer:scale-0 dark:bg-[#1f3760] dark:text-[#e3e3e3]">
+              <MdMic className="h-5 w-5" aria-hidden />
+            </ComposerPrimitive.Dictate>
             <ComposerPrimitive.Send
-              className="absolute flex h-10 w-10 items-center justify-center rounded-full border border-[#0b57d0]/35 text-[#062e6f] transition group-data-[empty=true]/composer:scale-0 group-data-[running=true]/composer:scale-0 hover:opacity-90 disabled:opacity-40 dark:border-[#a8c7fa]/40 dark:text-[#d3e3fd]"
+              className="absolute inset-0 flex items-center justify-center rounded-full bg-[#d3e3fd] text-[#062e6f] transition-transform duration-200 ease-out group-data-[empty=true]/composer:pointer-events-none group-data-[empty=true]/composer:scale-0 group-data-[running=true]/composer:pointer-events-none group-data-[running=true]/composer:scale-0 hover:opacity-90 disabled:opacity-40 dark:bg-[#1f3760] dark:text-[#e3e3e3]"
               aria-label="Gửi"
             >
               <MdSend className="h-5 w-5" />
             </ComposerPrimitive.Send>
             <ComposerPrimitive.Cancel
-              className="absolute flex h-10 w-10 items-center justify-center rounded-full border border-[#0b57d0]/35 text-[#062e6f] transition group-data-[running=false]/composer:scale-0 hover:opacity-90 dark:border-[#a8c7fa]/40 dark:text-[#d3e3fd]"
+              className="absolute inset-0 flex items-center justify-center rounded-full bg-[#d3e3fd] text-[#062e6f] transition-transform duration-200 ease-out group-data-[running=false]/composer:pointer-events-none group-data-[running=false]/composer:scale-0 hover:opacity-90 dark:bg-[#1f3760] dark:text-[#e3e3e3]"
               aria-label="Dừng"
             >
               <MdSquare className="h-4 w-4" />
             </ComposerPrimitive.Cancel>
           </div>
         </div>
-      </ComposerPrimitive.Root>
-      <p className="mt-3 max-w-3xl text-left text-xs text-[#444746] dark:text-[#c4c7c5]">
-        Câu trả lời của AI chỉ mang tính chất tham khảo. Xác thực lại với các tài liệu gợi ý.
+      </div>
+    </ComposerPrimitive.Root>
+  );
+}
+
+function GeminiStickyComposer() {
+  return (
+    <div className="shrink-0 border-t border-[#e3e3e3]/60 bg-transparent pt-3 pb-2 dark:border-[#3c4043]/60">
+      <GeminiComposer />
+      <p className="mx-auto mt-2 max-w-lg px-2 text-center text-xs leading-snug text-[#444746] dark:text-[#c4c7c5]">
+        Câu trả lời của AI chỉ mang tính chất tham khảo. Xác thực lại với các
+        tài liệu gợi ý.
       </p>
     </div>
   );
@@ -236,37 +308,33 @@ function GeminiComposer({ placement = "footer" }: { placement?: "footer" | "empt
 
 /** Giao diện theo hướng [Gemini clone assistant-ui](https://www.assistant-ui.com/examples/gemini). */
 export function GeminiThread() {
-  const greetingName = useChatGreetingName();
+  const threadEmpty = useAuiState((s) => s.thread.isEmpty);
 
   return (
-    <ThreadPrimitive.Root className="flex h-full min-h-0 w-full flex-col bg-transparent text-[#1f1f1f] dark:text-[#e3e3e3]">
-      <ThreadPrimitive.If empty>
-        <div className="flex min-h-0 flex-1 flex-col justify-center">
-          <div className="mx-auto w-full max-w-3xl shrink-0 px-5 pt-8 pb-10 md:px-6 md:pt-10">
-            <p className="mb-6 text-left text-2xl font-normal tracking-tight text-[#1f1f1f] md:text-3xl dark:text-[#e3e3e3]">
-              Chào {greetingName}
-            </p>
-            <GeminiComposer placement="empty" />
+    <ThreadPrimitive.Root className="flex h-full min-h-0 w-full flex-col bg-transparent text-base text-[#1f1f1f] dark:text-[#e3e3e3]">
+      {threadEmpty ? (
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 py-8">
+          <div className="w-full">
+            <GeminiComposer />
           </div>
         </div>
-      </ThreadPrimitive.If>
-
-      <ThreadPrimitive.If empty={false}>
-        <ThreadPrimitive.Viewport className="min-h-0 flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-3xl px-5 pt-5 pb-4 md:px-6 md:pt-6">
-            <ThreadPrimitive.Messages
-              components={{
-                UserMessage: GeminiUserMessage,
-                AssistantMessage: GeminiAssistantMessage,
-              }}
-            />
+      ) : (
+        <>
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <ThreadPrimitive.Viewport className="min-h-0 w-full flex-1 overflow-y-auto overscroll-y-contain">
+              <div className="w-full pt-4 pb-2 md:pt-5">
+                <ThreadPrimitive.Messages
+                  components={{
+                    UserMessage: GeminiUserMessage,
+                    AssistantMessage: GeminiAssistantMessage,
+                  }}
+                />
+              </div>
+            </ThreadPrimitive.Viewport>
           </div>
-        </ThreadPrimitive.Viewport>
-      </ThreadPrimitive.If>
-
-      <ThreadPrimitive.If empty={false}>
-        <GeminiComposer placement="footer" />
-      </ThreadPrimitive.If>
+          <GeminiStickyComposer />
+        </>
+      )}
     </ThreadPrimitive.Root>
   );
 }

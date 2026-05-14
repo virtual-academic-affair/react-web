@@ -8,6 +8,21 @@ import { useQuery } from "@tanstack/react-query";
 
 const INQUIRY_TYPES = ["graduation", "training"] as const;
 
+function pad2(n: number): string {
+  return n < 10 ? `0${n}` : String(n);
+}
+
+/** Local calendar day as YYYY-MM-DD (ISO date); required for stable Map keys and Date parsing. */
+function toLocalDateKey(d: Date): string | null {
+  if (Number.isNaN(d.getTime())) return null;
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+function dateFromLocalDateKey(key: string): Date {
+  const [y, m, day] = key.split("-").map(Number);
+  return new Date(y, m - 1, day);
+}
+
 interface Summary {
   total: number;
   totalTypes: number;
@@ -65,7 +80,8 @@ export function useInquiryStatistics(): UseInquiryStatisticsReturn {
     Object.entries(data || {}).forEach(([isoKey, val]) => {
       const d = new Date(isoKey);
       // Use local date components to avoid UTC-offset mismatch (e.g. UTC+7)
-      const localKey = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+      const localKey = toLocalDateKey(d);
+      if (!localKey) return;
       map.set(localKey, {
         total: val.total || 0,
         types: {
@@ -106,8 +122,8 @@ export function useInquiryStatistics(): UseInquiryStatisticsReturn {
     });
 
     if (!peakKey || max <= 0) return null;
-    // Append T00:00:00 to force local-timezone parsing (bare "YYYY-M-D" parses as UTC)
-    const d = new Date(peakKey + "T00:00:00");
+    const d = dateFromLocalDateKey(peakKey);
+    if (Number.isNaN(d.getTime())) return null;
     return {
       date: d,
       total: max,
@@ -143,8 +159,8 @@ export function useInquiryStatistics(): UseInquiryStatisticsReturn {
     const current = new Date(start);
     while (current <= end) {
       categories.push(`${current.getDate()}/${current.getMonth() + 1}`);
-      const localKey = `${current.getFullYear()}-${current.getMonth() + 1}-${current.getDate()}`;
-      const item = dataByLocalDate.get(localKey);
+      const localKey = toLocalDateKey(current);
+      const item = localKey ? dataByLocalDate.get(localKey) : undefined;
 
       const g = item?.types.graduation || 0;
       const tr = item?.types.training || 0;

@@ -2,6 +2,9 @@ import type { ChatStreamSummary } from "./types";
 
 export const CHAT_INPUT_PLACEHOLDER = "Nhập nội dung cần hỗ trợ...";
 
+export const CHAT_SYSTEM_BUSY_MESSAGE =
+  "Hệ thống đang phản hồi chậm do lượng truy cập lớn. Bạn vui lòng đợi trong giây lát hoặc quay lại sau";
+
 export const ASSISTANT_THINKING_TEXT = "Đang xử lý";
 export const ASSISTANT_ERROR_FALLBACK = "Đã có lỗi xảy ra khi gọi chatbot.";
 
