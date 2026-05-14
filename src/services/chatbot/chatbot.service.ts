@@ -15,6 +15,10 @@ export interface ChatStreamHistoryItem {
 export interface ChatStreamRequest {
   question: string;
   chatHistory: ChatStreamHistoryItem[];
+  /** Tuỳ chọn; mặc định gửi true / "original" / true khi gọi API. */
+  resolveCitations?: boolean;
+  citationLinkType?: string;
+  toRichText?: boolean;
 }
 
 interface StreamBaseEvent {
@@ -96,7 +100,12 @@ export async function streamChat(
   const response = await fetch(buildStreamUrl(), {
     method: "POST",
     headers,
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      ...payload,
+      resolveCitations: payload.resolveCitations ?? true,
+      citationLinkType: payload.citationLinkType ?? "original",
+      toRichText: payload.toRichText ?? true,
+    }),
     signal,
   });
 

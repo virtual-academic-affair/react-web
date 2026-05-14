@@ -67,6 +67,10 @@ const AdminLayout: React.FC = () => {
   };
 
   const getActiveRoute = (routes: RoutesType[]): string => {
+    const path = window.location.pathname;
+    if (path === "/admin/chatbot" || path.startsWith("/admin/chatbot/")) {
+      return "Chatbot";
+    }
     for (const route of routes) {
       if (route.children?.length) {
         const childActive = getActiveRoute(route.children);

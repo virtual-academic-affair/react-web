@@ -130,7 +130,7 @@ const BusinessCardsView: React.FC<Props> = ({
       enabled:
         !!fullMessage.id &&
         detailFetched &&
-        (!classRegShell || !classRegHasItems),
+        (classRegShell?.id != null || !classRegHasItems),
     });
 
   const bumpMessageQueries = useCallback(() => {
@@ -277,17 +277,17 @@ const BusinessCardsView: React.FC<Props> = ({
             {/* <h2 className="text-rose-900 dark:text-rose-100 mb-1 text-sm font-semibold uppercase tracking-tight">
               Hồ sơ conflict (cùng thread)
             </h2> */}
-            {!conflictRegPending &&
-            !conflictInqPending &&
-            conflictRegsHydrated.length === 0 &&
-            conflictInquiries.length === 0 ? null : (
-              <p className="mt-2 mb-3 text-center text-xs leading-snug font-medium text-red-500 italic dark:text-rose-200/90">
-                Có tin nhắn mới sau khi hồ sơ đã tiếp nhận.
-              </p>
-            )}
             {conflictRegPending || conflictInqPending ? (
               <p className="text-xs text-rose-700 dark:text-rose-300">
                 Đang tải…
+              </p>
+            ) : null}
+            {!conflictRegPending &&
+            !conflictInqPending &&
+            (conflictRegsHydrated.length > 0 ||
+              conflictInquiries.length > 0) ? (
+              <p className="mt-2 mb-3 text-center text-xs leading-snug font-medium text-red-500 italic dark:text-rose-200/90">
+                Có tin nhắn mới sau khi hồ sơ đã tiếp nhận.
               </p>
             ) : null}
             {conflictRegsHydrated.map((cr) => (

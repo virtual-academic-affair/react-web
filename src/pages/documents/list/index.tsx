@@ -375,7 +375,7 @@ const DocumentListPage = () => {
       },
       {
         key: "applicableYears",
-        header: "Thời gian áp dụng",
+        header: "Phạm vi áp dụng",
         render: (x) => (
           <div className="flex flex-col gap-1 text-sm">
             <div className="text-navy-700 dark:text-white">

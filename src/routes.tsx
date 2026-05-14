@@ -3,13 +3,7 @@
  * Used by the Sidebar to render navigation links.
  */
 
-import {
-  MdDescription,
-  MdQuestionAnswer,
-  MdSchool,
-  MdSettings,
-  MdSmartToy,
-} from "react-icons/md";
+import { MdContactPage, MdDescription, MdSettings } from "react-icons/md";
 import { SiGmail } from "react-icons/si";
 
 const routes: RoutesType[] = [
@@ -20,28 +14,25 @@ const routes: RoutesType[] = [
     icon: <SiGmail className="h-6 w-6" />,
   },
   {
-    name: "Đăng ký lớp",
+    name: "Hồ sơ SV",
     layout: "/admin",
-    path: "/class-registration",
-    icon: <MdSchool className="h-6 w-6" />,
+    path: "student-records",
+    icon: <MdContactPage className="h-6 w-6" />,
     children: [
       {
-        name: "Thống kê",
+        name: "Thống kê đăng kí lớp",
         layout: "/admin",
         path: "class-registration/statistics",
       },
-    ],
-  },
-  {
-    name: "Thắc mắc",
-    layout: "/admin",
-    path: "/inquiry",
-    icon: <MdQuestionAnswer className="h-6 w-6" />,
-    children: [
       {
-        name: "Thống kê",
+        name: "Thống kê thắc mắc",
         layout: "/admin",
         path: "inquiry/statistics",
+      },
+      {
+        name: "DS Sinh viên",
+        layout: "/admin",
+        path: "auth/students",
       },
     ],
   },
@@ -57,27 +48,28 @@ const routes: RoutesType[] = [
         path: "documents/list",
       },
       {
-        name: "DS biểu mẫu, kênh thông tin",
+        name: "DS biểu mẫu, KTT",
         layout: "/admin",
         path: "documents/forms",
       },
       {
-        name: "DS câu hỏi thường gặp",
+        name: "Câu hỏi",
         layout: "/admin",
-        path: "documents/faqs",
-      },
-      {
-        name: "DS câu hỏi đề xuất",
-        layout: "/admin",
-        path: "documents/candidates",
+        path: "documents/questions",
+        children: [
+          {
+            name: "DS câu hỏi thường gặp",
+            layout: "/admin",
+            path: "documents/faqs",
+          },
+          {
+            name: "DS câu hỏi tổng hợp",
+            layout: "/admin",
+            path: "documents/candidates",
+          },
+        ],
       },
     ],
-  },
-  {
-    name: "Chatbot",
-    layout: "/admin",
-    path: "chatbot",
-    icon: <MdSmartToy className="h-6 w-6" />,
   },
   {
     name: "Quản trị",
@@ -89,11 +81,6 @@ const routes: RoutesType[] = [
         name: "DS tài khoản",
         layout: "/admin",
         path: "auth/accounts",
-      },
-      {
-        name: "DS sinh viên",
-        layout: "/admin",
-        path: "auth/students",
       },
     ],
   },
