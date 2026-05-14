@@ -147,8 +147,8 @@ const AcceptedOpenClassesCard: React.FC<AcceptedOpenClassesCardProps> = ({
         DS yêu cầu mở lớp
       </h3>
 
-      <div className="flex min-h-[200px] flex-col gap-4 lg:flex-row">
-        <div className="min-w-0 flex-1 overflow-x-auto">
+      <div className="flex min-h-[200px] flex-col lg:flex-row lg:items-stretch">
+        <div className="min-w-0 flex-1 overflow-x-auto pb-1 lg:pr-6 lg:pb-0">
           {overviewLoading ? (
             <p className="text-center text-sm text-gray-500 dark:text-gray-400">
               Đang tải…
@@ -158,95 +158,81 @@ const AcceptedOpenClassesCard: React.FC<AcceptedOpenClassesCardProps> = ({
               Không có dữ liệu.
             </p>
           ) : (
-            <table className="mt-5 w-full min-w-[280px] table-fixed border-collapse text-left text-xs">
-              <colgroup>
-                <col />
-                <col style={{ width: "4.5rem" }} />
-              </colgroup>
-              <tbody>
-                {sections.map((sec) => {
-                  const isSel = selected?.subjectName === sec.subjectName;
-                  return (
-                    <tr
-                      key={sec.sectionKey}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => {
+            <ul className="mt-5 flex min-w-[280px] flex-col gap-2.5">
+              {sections.map((sec) => {
+                const isSel = selected?.subjectName === sec.subjectName;
+                return (
+                  <li
+                    key={sec.sectionKey}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => {
+                      setSelected({ subjectName: sec.subjectName });
+                      setPage(1);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
                         setSelected({ subjectName: sec.subjectName });
                         setPage(1);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          setSelected({ subjectName: sec.subjectName });
-                          setPage(1);
-                        }
-                      }}
-                      className={`overflow-hidden rounded-full border-b border-gray-100 last:border-b-0 dark:border-white/10 ${
-                        isSel
-                          ? "bg-brand-50 dark:bg-brand-500/10"
-                          : "cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5"
-                      }`}
-                    >
-                      <td className="text-navy-900 px-3 py-2.5 align-middle text-sm dark:text-white">
-                        <div className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-1">
-                          {sec.subjectCode ? (
-                            <>
-                              <CopyableText
-                                text={sec.subjectCode}
-                                variant="field"
-                                tooltip="Sao chép mã môn"
-                              />
-                              <span className="shrink-0 text-gray-400 dark:text-gray-500">
-                                -
-                              </span>
-                              <CopyableText
-                                text={sec.subjectName}
-                                variant="field"
-                                className="min-w-0"
-                                tooltip="Sao chép tên môn"
-                              />
-                            </>
-                          ) : (
-                            <CopyableText
-                              text={sec.subjectName}
-                              variant="field"
-                              className="min-w-0"
-                              tooltip="Sao chép tên môn"
-                            />
-                          )}
-                        </div>
-                      </td>
-                      <td className="text-navy-800 px-3 py-2.5 text-right align-middle text-sm font-semibold whitespace-nowrap tabular-nums dark:text-gray-200">
-                        <Tooltip
-                          label="Mở lớp (tổng các lớp)"
-                          className="block"
-                        >
-                          <span>{sec.requestOpenTotal}</span>
-                        </Tooltip>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      }
+                    }}
+                    className={`flex w-full items-center gap-3 rounded-full px-4 py-2.5 text-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                      isSel
+                        ? "bg-brand-50 dark:border-brand-500/40 dark:bg-brand-500/15"
+                        : "border-gray-100 bg-white hover:bg-gray-50/90 dark:border-white/10 dark:bg-white/3 dark:hover:bg-white/10"
+                    } cursor-pointer`}
+                  >
+                    <div className="text-navy-900 flex min-w-0 flex-1 flex-wrap items-center gap-x-1 gap-y-1 dark:text-white">
+                      {sec.subjectCode ? (
+                        <>
+                          <CopyableText
+                            text={sec.subjectCode}
+                            variant="field"
+                            tooltip="Sao chép mã môn"
+                          />
+                          <span className="shrink-0 text-gray-400 dark:text-gray-500">
+                            -
+                          </span>
+                          <CopyableText
+                            text={sec.subjectName}
+                            variant="field"
+                            className="min-w-0"
+                            tooltip="Sao chép tên môn"
+                          />
+                        </>
+                      ) : (
+                        <CopyableText
+                          text={sec.subjectName}
+                          variant="field"
+                          className="min-w-0"
+                          tooltip="Sao chép tên môn"
+                        />
+                      )}
+                    </div>
+                    <Tooltip label="Mở lớp (tổng các lớp)" className="shrink-0">
+                      <span className="text-navy-800 font-semibold whitespace-nowrap tabular-nums dark:text-gray-200">
+                        {sec.requestOpenTotal}
+                      </span>
+                    </Tooltip>
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </div>
 
-        <div className="border-navy-100 dark:border-navy-600 flex w-full shrink-0 flex-col rounded-2xl border p-3 lg:max-w-sm">
+        <div className="flex w-full shrink-0 flex-col border-t border-gray-200 pt-4 max-lg:mt-1 lg:max-w-sm lg:border-t-0 lg:border-l lg:border-gray-200 lg:pt-0 lg:pl-6 dark:border-white/10">
           {!selected ? (
             <p className="m-auto text-center text-xs text-gray-500 dark:text-gray-400">
-              Chọn một lớp bên trái để xem danh sách MSSV.
+              Chọn một môn bên trái để xem danh sách MSSV.
             </p>
           ) : (
             <>
-              <span className="text-navy-800 mb-2 text-sm font-semibold dark:text-gray-200">
-                DS MSSV môn {selected.subjectName}
-              </span>
               {itemsLoading ? (
                 <p className="text-center text-xs text-gray-500">Đang tải…</p>
               ) : (
-                <ul className="max-h-[320px] space-y-1 overflow-y-auto text-xs">
+                <ul className="max-h-[320px] space-y-1 overflow-y-auto text-sm">
                   {(itemsPage?.items ?? []).map((it) => {
                     const gmailMessageId = getItemGmailMessageId(it);
                     const gmailUrl =
@@ -256,7 +242,7 @@ const AcceptedOpenClassesCard: React.FC<AcceptedOpenClassesCardProps> = ({
                     return (
                       <li
                         key={it.id}
-                        className="text-navy-800 flex items-center justify-between gap-2 font-mono dark:text-gray-100"
+                        className="text-navy-800 flex items-center justify-between gap-2 dark:text-gray-100"
                       >
                         <CopyableText
                           text={getItemStudentCode(it)}

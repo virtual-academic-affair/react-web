@@ -3,6 +3,7 @@ import React from "react";
 import "streamdown/styles.css";
 
 import { useChatbotShell } from "./chatbotShellContext";
+import { ChatbotThreadToolbar } from "./components/ChatbotThreadToolbar";
 import { GeminiThread } from "./components/GeminiThread";
 
 function ChatbotPageInner() {
@@ -22,6 +23,7 @@ function ChatbotPageInner() {
           />
         ) : null}
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <ChatbotThreadToolbar />
           <GeminiThread />
         </div>
       </div>
