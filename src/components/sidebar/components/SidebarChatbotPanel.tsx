@@ -21,15 +21,17 @@ export function SidebarChatbotPanel(props: {
         <Tooltip label="Chatbot" className="block w-full">
           <Link
             to={CHATBOT_HREF}
-            className={`my-0.75 flex w-full items-center justify-center px-1 py-1 text-center text-[11px] leading-tight ${
-              onChatbotPath
-                ? "text-brand-500 font-medium dark:text-white"
-                : "font-normal text-gray-600 dark:text-gray-300"
-            }`}
+            className="my-0.75 flex w-full cursor-pointer items-center justify-center py-0.5"
           >
-            Chat
-            <br />
-            bot
+            <span
+              className={`inline-flex shrink-0 [&>svg]:h-5 [&>svg]:w-5 ${
+                onChatbotPath
+                  ? "text-brand-500 dark:text-white"
+                  : "font-medium text-gray-600"
+              }`}
+            >
+              <MdChat className="h-6 w-6" aria-hidden />
+            </span>
           </Link>
         </Tooltip>
       </li>
