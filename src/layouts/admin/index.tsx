@@ -1,7 +1,6 @@
 import Navbar from "@/components/navbar";
 import Sidebar from "@/components/sidebar";
 import { useDynamicData } from "@/hooks/useDynamicData";
-import { useEmailSockets } from "@/hooks/useEmailSockets";
 import UsersPage from "@/pages/auth/accounts";
 import StudentsPage from "@/pages/auth/students";
 import ClassRegistrationStatisticsPage from "@/pages/class-registration/statistics";
@@ -49,8 +48,6 @@ const AdminLayout: React.FC = () => {
     refetch: onRefresh,
   } = useDynamicData(DYNAMIC_DATA_KEYS);
   const data = rawData ?? null;
-
-  useEmailSockets();
 
   const profile = data?.settings?.["email.superEmail"];
 
