@@ -148,6 +148,14 @@ export const API_ENDPOINTS = {
     },
     chat: {
       stream: "/api/chat/stream",
+      sessions: {
+        base: "/api/chat/sessions",
+        byId: (sessionId: string) => `/api/chat/sessions/${sessionId}`,
+        messages: (sessionId: string) =>
+          `/api/chat/sessions/${sessionId}/messages`,
+        archive: (sessionId: string) =>
+          `/api/chat/sessions/${sessionId}/archive`,
+      },
     },
   },
 } as const;

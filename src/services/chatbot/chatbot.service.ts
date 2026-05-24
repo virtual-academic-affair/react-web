@@ -19,6 +19,8 @@ export interface ChatStreamRequest {
   resolveCitations?: boolean;
   citationLinkType?: string;
   toRichText?: boolean;
+  /** Tiếp tục cuộc trò chuyện cũ; bỏ trống để backend tạo session mới. */
+  sessionId?: string;
 }
 
 interface StreamBaseEvent {
@@ -62,6 +64,8 @@ export interface StreamDoneEvent extends StreamBaseEvent {
   };
   processing_time_ms?: number;
   error?: string;
+  session_id?: string;
+  sessionId?: string;
 }
 
 export type ChatStreamEvent =
@@ -97,14 +101,17 @@ export async function streamChat(
     headers.Authorization = `Bearer ${token}`;
   }
 
+  const { sessionId, ...rest } = payload;
+
   const response = await fetch(buildStreamUrl(), {
     method: "POST",
     headers,
     body: JSON.stringify({
-      ...payload,
+      ...rest,
       resolveCitations: payload.resolveCitations ?? true,
       citationLinkType: payload.citationLinkType ?? "original",
       toRichText: payload.toRichText ?? true,
+      ...(sessionId ? { session_id: sessionId } : {}),
     }),
     signal,
   });
