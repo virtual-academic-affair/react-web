@@ -1,4 +1,3 @@
-import { Modal } from "antd";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   MdAdd,
@@ -7,29 +6,13 @@ import {
   MdClose,
   MdDelete,
   MdEdit,
-  MdKeyboardArrowDown,
+  MdHistory,
 } from "react-icons/md";
+
+import ConfirmModal from "@/components/modal/ConfirmModal";
 
 import { useChatbotShell } from "../chatbotShellContext";
 import type { ChatThreadSession } from "../types";
-
-function useDismissOnOutsideClick<T extends HTMLElement>(
-  open: boolean,
-  setOpen: (value: boolean) => void,
-) {
-  const ref = useRef<T>(null);
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (event: MouseEvent) => {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
-  }, [open, setOpen]);
-  return ref;
-}
 
 type RowProps = {
   session: ChatThreadSession;
@@ -78,10 +61,10 @@ function ThreadRow({
 
   return (
     <div
-      className={`group flex w-full items-center gap-2 px-3 py-2 text-sm transition ${
+      className={`group flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition ${
         isActive
-          ? "dark:bg-brand-500/20 bg-[#e8f0fe] text-[#062e6f] dark:text-white"
-          : "text-[#1f1f1f] hover:bg-[#f8f9fa] dark:text-gray-200 dark:hover:bg-white/10"
+          ? "bg-[#d3e3fd] text-[#062e6f] dark:bg-white/[0.12] dark:text-white"
+          : "text-[#1f1f1f] hover:bg-black/[0.04] dark:text-gray-200 dark:hover:bg-white/10"
       }`}
     >
       {isEditing ? (
@@ -129,7 +112,7 @@ function ThreadRow({
           <button
             type="button"
             onClick={onSwitch}
-            className="min-w-0 flex-1 truncate text-left"
+            className="min-w-0 flex-1 truncate text-left font-medium"
             title={session.title}
           >
             {session.title?.trim() || "Không có tiêu đề"}
@@ -190,28 +173,39 @@ export function ChatbotThreadToolbar() {
     deleteThread,
   } = useChatbotShell();
 
-  const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const containerRef = useDismissOnOutsideClick<HTMLDivElement>(open, (next) => {
-    if (!next) setEditingId(null);
-    setOpen(next);
-  });
-
-  const activeSession = useMemo(
-    () => sessions.find((s) => s.id === activeThreadId),
-    [sessions, activeThreadId],
+  const [deleteTarget, setDeleteTarget] = useState<ChatThreadSession | null>(
+    null,
   );
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const activeTitle = activeSession?.title?.trim() || "Cuộc trò chuyện mới";
+  const sortedSessions = useMemo(() => {
+    const getTime = (session: ChatThreadSession) => {
+      const newestMessage = session.messages.reduce<string | null>(
+        (latest, message) => {
+          if (!latest) return message.createdAt;
+          return new Date(message.createdAt).getTime() >
+            new Date(latest).getTime()
+            ? message.createdAt
+            : latest;
+        },
+        null,
+      );
+      const raw = session.lastMessageAt ?? session.updatedAt ?? newestMessage;
+      const time = raw ? Date.parse(raw) : Number.NaN;
+      if (Number.isFinite(time)) return time;
+      return session.id === activeThreadId ? Number.MAX_SAFE_INTEGER : 0;
+    };
+
+    return [...sessions].sort((a, b) => getTime(b) - getTime(a));
+  }, [activeThreadId, sessions]);
 
   const handleSwitch = (id: string) => {
-    setOpen(false);
     setEditingId(null);
     switchToThread(id);
   };
 
   const handleNewThread = () => {
-    setOpen(false);
     setEditingId(null);
     switchToNewThread();
   };
@@ -221,45 +215,51 @@ export function ChatbotThreadToolbar() {
   };
 
   const handleDelete = (session: ChatThreadSession) => {
-    Modal.confirm({
-      title: "Xoá cuộc trò chuyện?",
-      content: `"${session.title?.trim() || "Cuộc trò chuyện mới"}" sẽ bị xoá vĩnh viễn.`,
-      okText: "Xoá",
-      okButtonProps: { danger: true },
-      cancelText: "Huỷ",
-      onOk: () => deleteThread(session.id),
-    });
+    setDeleteTarget(session);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      await deleteThread(deleteTarget.id);
+      setDeleteTarget(null);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
-    <div className="mb-3 flex shrink-0 items-center gap-2">
-      <div ref={containerRef} className="relative min-w-0 flex-1">
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="dark:bg-navy-800 flex w-full items-center justify-between gap-2 rounded-xl border border-[#e3e3e3] bg-white px-3 py-2 text-left text-sm text-[#1f1f1f] outline-none transition hover:bg-[#f8f9fa] focus-visible:ring-2 focus-visible:ring-[#1a73e8]/30 dark:border-white/10 dark:text-white dark:hover:bg-white/10"
-          aria-haspopup="listbox"
-          aria-expanded={open}
-        >
-          <span className="truncate">
-            {isLoadingSessions ? "Đang tải..." : activeTitle}
-          </span>
-          <MdKeyboardArrowDown
-            className={`h-4 w-4 shrink-0 transition ${open ? "rotate-180" : ""}`}
-            aria-hidden
-          />
-        </button>
-        {open ? (
-          <div
-            role="listbox"
-            className="dark:bg-navy-800 absolute top-full left-0 z-50 mt-1 max-h-80 w-full overflow-y-auto overflow-x-hidden rounded-xl border border-[#e3e3e3] bg-white py-1 shadow-lg dark:border-white/10"
+    <>
+      <aside className="dark:bg-navy-800 flex max-h-[260px] min-h-0 w-full shrink-0 flex-col rounded-3xl bg-white/80 p-3 shadow-[0_2px_12px_-6px_rgba(0,0,0,0.28)] ring-1 ring-black/5 backdrop-blur dark:ring-white/10 lg:h-full lg:max-h-none lg:w-[280px]">
+        <div className="mb-3 flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={handleNewThread}
+            className="dark:bg-brand-500 inline-flex h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-[#d3e3fd] px-4 text-sm font-semibold text-[#062e6f] transition hover:bg-[#c2d7f7] dark:text-white dark:hover:bg-brand-400"
           >
-            {sessions.length === 0 ? (
-              <div className="px-3 py-2 text-sm text-[#444746] dark:text-gray-400">
-                Chưa có cuộc trò chuyện nào.
-              </div>
-            ) : (
-              sessions.map((session, i) => (
+            <MdAdd className="h-5 w-5 shrink-0" aria-hidden />
+            Tạo mới
+          </button>
+        </div>
+
+        <div className="mb-2 flex shrink-0 items-center gap-2 px-2 text-xs font-semibold uppercase tracking-wide text-[#5f6368] dark:text-gray-400">
+          <MdHistory className="h-4 w-4" aria-hidden />
+          Lịch sử chat
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1 pb-4">
+          {isLoadingSessions ? (
+            <div className="rounded-xl px-3 py-2 text-sm text-[#444746] dark:text-gray-400">
+              Đang tải...
+            </div>
+          ) : sortedSessions.length === 0 ? (
+            <div className="rounded-xl px-3 py-2 text-sm text-[#444746] dark:text-gray-400">
+              Chưa có cuộc trò chuyện nào.
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {sortedSessions.map((session, i) => (
                 <ThreadRow
                   key={session.id || `session-${i}`}
                   session={session}
@@ -275,19 +275,21 @@ export function ChatbotThreadToolbar() {
                   onArchive={() => handleArchive(session)}
                   onDelete={() => handleDelete(session)}
                 />
-              ))
-            )}
-          </div>
-        ) : null}
-      </div>
-      <button
-        type="button"
-        onClick={handleNewThread}
-        className="dark:bg-navy-800 inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[#e3e3e3] bg-white px-3 py-2 text-sm font-medium text-[#1f1f1f] hover:bg-gray-50 dark:border-white/10 dark:text-white dark:hover:bg-white/10"
-      >
-        <MdAdd className="h-4 w-4" aria-hidden />
-        Tạo mới
-      </button>
-    </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </aside>
+
+      <ConfirmModal
+        open={!!deleteTarget}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+        title="Xoá cuộc trò chuyện"
+        subTitle={`Bạn có chắc chắn muốn xoá cuộc trò chuyện "${deleteTarget?.title?.trim() || "Cuộc trò chuyện mới"}" không? Hành động này không thể hoàn tác.`}
+        confirmText="Xoá"
+        loading={isDeleting}
+      />
+    </>
   );
 }
