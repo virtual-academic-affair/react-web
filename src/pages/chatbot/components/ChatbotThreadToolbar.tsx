@@ -18,8 +18,10 @@ type RowProps = {
   session: ChatThreadSession;
   isActive: boolean;
   isEditing: boolean;
+  draft: string;
   onSwitch: () => void;
   onStartEdit: () => void;
+  onDraftChange: (next: string) => void;
   onCancelEdit: () => void;
   onSaveEdit: (next: string) => void;
   onArchive: () => void;
@@ -30,25 +32,25 @@ function ThreadRow({
   session,
   isActive,
   isEditing,
+  draft,
   onSwitch,
   onStartEdit,
+  onDraftChange,
   onCancelEdit,
   onSaveEdit,
   onArchive,
   onDelete,
 }: RowProps) {
-  const [draft, setDraft] = useState(session.title);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isEditing) {
-      setDraft(session.title);
       requestAnimationFrame(() => {
         inputRef.current?.focus();
         inputRef.current?.select();
       });
     }
-  }, [isEditing, session.title]);
+  }, [isEditing]);
 
   const commit = () => {
     const next = draft.trim();
@@ -72,7 +74,7 @@ function ThreadRow({
           <input
             ref={inputRef}
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e) => onDraftChange(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
@@ -173,7 +175,10 @@ export function ChatbotThreadToolbar() {
     deleteThread,
   } = useChatbotShell();
 
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingThread, setEditingThread] = useState<{
+    id: string;
+    draft: string;
+  } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ChatThreadSession | null>(
     null,
   );
@@ -201,12 +206,12 @@ export function ChatbotThreadToolbar() {
   }, [activeThreadId, sessions]);
 
   const handleSwitch = (id: string) => {
-    setEditingId(null);
+    setEditingThread(null);
     switchToThread(id);
   };
 
   const handleNewThread = () => {
-    setEditingId(null);
+    setEditingThread(null);
     switchToNewThread();
   };
 
@@ -264,12 +269,26 @@ export function ChatbotThreadToolbar() {
                   key={session.id || `session-${i}`}
                   session={session}
                   isActive={session.id === activeThreadId}
-                  isEditing={editingId === session.id}
+                  isEditing={editingThread?.id === session.id}
+                  draft={
+                    editingThread?.id === session.id
+                      ? editingThread.draft
+                      : session.title
+                  }
                   onSwitch={() => handleSwitch(session.id)}
-                  onStartEdit={() => setEditingId(session.id)}
-                  onCancelEdit={() => setEditingId(null)}
+                  onStartEdit={() =>
+                    setEditingThread({ id: session.id, draft: session.title })
+                  }
+                  onDraftChange={(next) =>
+                    setEditingThread((current) =>
+                      current?.id === session.id
+                        ? { ...current, draft: next }
+                        : current,
+                    )
+                  }
+                  onCancelEdit={() => setEditingThread(null)}
                   onSaveEdit={async (next) => {
-                    setEditingId(null);
+                    setEditingThread(null);
                     await renameThread(session.id, next);
                   }}
                   onArchive={() => handleArchive(session)}

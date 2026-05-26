@@ -307,21 +307,21 @@ function GeminiStickyComposer() {
 }
 
 /** Giao diện theo hướng [Gemini clone assistant-ui](https://www.assistant-ui.com/examples/gemini). */
-export function GeminiThread() {
+export function GeminiThread({ className = "" }: { className?: string }) {
   return (
-    <ThreadPrimitive.Root className="flex h-full min-h-0 w-full flex-col bg-transparent text-base text-[#1f1f1f] dark:text-white">
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <ThreadPrimitive.Viewport className="min-h-0 w-full flex-1 overflow-y-auto overscroll-y-contain">
-          <div className="w-full pt-4 pb-2 md:pt-5">
-            <ThreadPrimitive.Messages
-              components={{
-                UserMessage: GeminiUserMessage,
-                AssistantMessage: GeminiAssistantMessage,
-              }}
-            />
-          </div>
-        </ThreadPrimitive.Viewport>
-      </div>
+    <ThreadPrimitive.Root
+      className={`flex h-full min-h-0 w-full flex-col bg-transparent text-base text-[#1f1f1f] dark:text-white ${className}`.trim()}
+    >
+      <ThreadPrimitive.Viewport className="min-h-0 w-full flex-1 overflow-y-auto overscroll-y-contain">
+        <div className="w-full pt-4 pb-2 md:pt-5">
+          <ThreadPrimitive.Messages
+            components={{
+              UserMessage: GeminiUserMessage,
+              AssistantMessage: GeminiAssistantMessage,
+            }}
+          />
+        </div>
+      </ThreadPrimitive.Viewport>
       <GeminiStickyComposer />
     </ThreadPrimitive.Root>
   );
