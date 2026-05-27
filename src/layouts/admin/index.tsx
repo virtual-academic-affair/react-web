@@ -148,7 +148,7 @@ const AdminLayout: React.FC = () => {
             <Route path="documents/forms" element={<FormsPage />} />
             <Route path="documents/faqs" element={<FAQsPage />} />
             <Route path="documents/candidates" element={<ProposedFAQsPage />} />
-            <Route path="chatbot" element={<ChatbotPage />} />
+            <Route path="chatbot/*" element={<ChatbotPage />} />
             <Route
               path="class-registration"
               element={

@@ -95,7 +95,7 @@ const UserLayout: React.FC = () => {
           <Routes>
             <Route path="/documents" element={<UserDocumentsPage />} />
             <Route path="/forms" element={<FormsPage isReadOnly />} />
-            <Route path="/chatbot" element={<ChatbotPage />} />
+            <Route path="/chatbot/*" element={<ChatbotPage />} />
             <Route
               path="/"
               element={<Navigate to="/user/documents" replace />}

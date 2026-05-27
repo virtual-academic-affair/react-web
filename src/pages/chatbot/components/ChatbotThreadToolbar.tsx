@@ -1,180 +1,31 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  MdAdd,
-  MdArchive,
-  MdCheck,
-  MdClose,
-  MdDelete,
-  MdEdit,
-  MdHistory,
-} from "react-icons/md";
-
-import ConfirmModal from "@/components/modal/ConfirmModal";
+import { useEffect, useMemo, useState } from "react";
+import { MdAdd, MdArchive, MdHistory } from "react-icons/md";
 
 import { useChatbotShell } from "../chatbotShellContext";
+import { sortSessionsByActivity } from "../chatbotMappers";
+import { useChatbotSessionsQuery } from "../chatbotQueries";
 import type { ChatThreadSession } from "../types";
+import { ChatbotThreadDeleteConfirm } from "./ChatbotThreadDeleteConfirm";
+import { ChatbotThreadRow } from "./ChatbotThreadRow";
 
-type RowProps = {
-  session: ChatThreadSession;
-  isActive: boolean;
-  isEditing: boolean;
-  draft: string;
-  onSwitch: () => void;
-  onStartEdit: () => void;
-  onDraftChange: (next: string) => void;
-  onCancelEdit: () => void;
-  onSaveEdit: (next: string) => void;
-  onArchive: () => void;
-  onDelete: () => void;
-};
-
-function ThreadRow({
-  session,
-  isActive,
-  isEditing,
-  draft,
-  onSwitch,
-  onStartEdit,
-  onDraftChange,
-  onCancelEdit,
-  onSaveEdit,
-  onArchive,
-  onDelete,
-}: RowProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (isEditing) {
-      requestAnimationFrame(() => {
-        inputRef.current?.focus();
-        inputRef.current?.select();
-      });
-    }
-  }, [isEditing]);
-
-  const commit = () => {
-    const next = draft.trim();
-    if (!next || next === session.title) {
-      onCancelEdit();
-      return;
-    }
-    onSaveEdit(next);
-  };
-
-  return (
-    <div
-      className={`group flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition ${
-        isActive
-          ? "bg-[#d3e3fd] text-[#062e6f] dark:bg-white/[0.12] dark:text-white"
-          : "text-[#1f1f1f] hover:bg-black/[0.04] dark:text-gray-200 dark:hover:bg-white/10"
-      }`}
-    >
-      {isEditing ? (
-        <>
-          <input
-            ref={inputRef}
-            value={draft}
-            onChange={(e) => onDraftChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                commit();
-              } else if (e.key === "Escape") {
-                e.preventDefault();
-                onCancelEdit();
-              }
-            }}
-            className="dark:bg-navy-700 min-w-0 flex-1 rounded-md border border-[#1a73e8]/40 bg-white px-2 py-1 text-sm text-[#1f1f1f] outline-none focus-visible:ring-2 focus-visible:ring-[#1a73e8]/30 dark:text-white"
-          />
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              commit();
-            }}
-            className="flex h-7 w-7 items-center justify-center rounded-full text-[#1a73e8] hover:bg-black/[0.06] dark:text-[#a8c7fa] dark:hover:bg-white/10"
-            aria-label="Lưu tên mới"
-          >
-            <MdCheck className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onCancelEdit();
-            }}
-            className="flex h-7 w-7 items-center justify-center rounded-full text-[#444746] hover:bg-black/[0.06] dark:text-gray-300 dark:hover:bg-white/10"
-            aria-label="Huỷ đổi tên"
-          >
-            <MdClose className="h-4 w-4" />
-          </button>
-        </>
-      ) : (
-        <>
-          <button
-            type="button"
-            onClick={onSwitch}
-            className="min-w-0 flex-1 truncate text-left font-medium"
-            title={session.title}
-          >
-            {session.title?.trim() || "Không có tiêu đề"}
-          </button>
-          <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onStartEdit();
-              }}
-              className="flex h-7 w-7 items-center justify-center rounded-full text-[#444746] hover:bg-black/[0.06] dark:text-gray-300 dark:hover:bg-white/10"
-              aria-label="Đổi tên"
-              title="Đổi tên"
-            >
-              <MdEdit className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onArchive();
-              }}
-              className="flex h-7 w-7 items-center justify-center rounded-full text-[#444746] hover:bg-black/[0.06] dark:text-gray-300 dark:hover:bg-white/10"
-              aria-label="Lưu trữ"
-              title="Lưu trữ"
-            >
-              <MdArchive className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
-              }}
-              className="flex h-7 w-7 items-center justify-center rounded-full text-[#d93025] hover:bg-[#fce8e6] dark:text-[#f28b82] dark:hover:bg-white/10"
-              aria-label="Xoá"
-              title="Xoá"
-            >
-              <MdDelete className="h-4 w-4" />
-            </button>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
+type ThreadListMode = "active" | "archived";
 
 export function ChatbotThreadToolbar() {
   const {
     sessions,
     activeThreadId,
+    activeSessionStatus,
     isLoadingSessions,
     switchToThread,
+    viewArchivedThread,
     switchToNewThread,
     renameThread,
     archiveThread,
+    unarchiveThread,
     deleteThread,
   } = useChatbotShell();
 
+  const [mode, setMode] = useState<ThreadListMode>("active");
   const [editingThread, setEditingThread] = useState<{
     id: string;
     draft: string;
@@ -183,27 +34,33 @@ export function ChatbotThreadToolbar() {
     null,
   );
   const [isDeleting, setIsDeleting] = useState(false);
+  const archivedSessionsQuery = useChatbotSessionsQuery(
+    "archived",
+    mode === "archived" || activeSessionStatus === "archived",
+  );
 
-  const sortedSessions = useMemo(() => {
-    const getTime = (session: ChatThreadSession) => {
-      const newestMessage = session.messages.reduce<string | null>(
-        (latest, message) => {
-          if (!latest) return message.createdAt;
-          return new Date(message.createdAt).getTime() >
-            new Date(latest).getTime()
-            ? message.createdAt
-            : latest;
-        },
-        null,
-      );
-      const raw = session.lastMessageAt ?? session.updatedAt ?? newestMessage;
-      const time = raw ? Date.parse(raw) : Number.NaN;
-      if (Number.isFinite(time)) return time;
-      return session.id === activeThreadId ? Number.MAX_SAFE_INTEGER : 0;
-    };
+  useEffect(() => {
+    if (activeSessionStatus === "archived") {
+      setMode("archived");
+    }
+  }, [activeSessionStatus]);
 
-    return [...sessions].sort((a, b) => getTime(b) - getTime(a));
-  }, [activeThreadId, sessions]);
+  const activeSessions = useMemo(
+    () =>
+      sortSessionsByActivity(
+        sessions.filter((session) => session.status === "active"),
+        activeThreadId,
+      ),
+    [activeThreadId, sessions],
+  );
+
+  const archivedSessions = archivedSessionsQuery.data ?? [];
+  const visibleSessions = mode === "active" ? activeSessions : archivedSessions;
+  const isLoadingVisible =
+    mode === "active"
+      ? isLoadingSessions
+      : archivedSessionsQuery.isLoading ||
+        (archivedSessionsQuery.isFetching && !archivedSessionsQuery.data);
 
   const handleSwitch = (id: string) => {
     setEditingThread(null);
@@ -211,12 +68,17 @@ export function ChatbotThreadToolbar() {
   };
 
   const handleNewThread = () => {
+    setMode("active");
     setEditingThread(null);
     switchToNewThread();
   };
 
   const handleArchive = (session: ChatThreadSession) => {
     void archiveThread(session.id);
+  };
+
+  const handleUnarchive = async (session: ChatThreadSession) => {
+    await unarchiveThread(session);
   };
 
   const handleDelete = (session: ChatThreadSession) => {
@@ -227,7 +89,7 @@ export function ChatbotThreadToolbar() {
     if (!deleteTarget) return;
     setIsDeleting(true);
     try {
-      await deleteThread(deleteTarget.id);
+      await deleteThread(deleteTarget);
       setDeleteTarget(null);
     } finally {
       setIsDeleting(false);
@@ -248,34 +110,74 @@ export function ChatbotThreadToolbar() {
           </button>
         </div>
 
+        <div className="mb-3 grid shrink-0 grid-cols-2 rounded-2xl bg-gray-100 p-1 dark:bg-white/8">
+          <button
+            type="button"
+            onClick={() => setMode("active")}
+            className={`rounded-xl px-2 py-1.5 text-xs font-semibold transition ${
+              mode === "active"
+                ? "bg-white text-navy-700 shadow-sm dark:bg-navy-700 dark:text-white"
+                : "text-gray-600 hover:text-navy-700 dark:text-gray-300 dark:hover:text-white"
+            }`}
+          >
+            Đang hoạt động
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("archived")}
+            className={`rounded-xl px-2 py-1.5 text-xs font-semibold transition ${
+              mode === "archived"
+                ? "bg-white text-navy-700 shadow-sm dark:bg-navy-700 dark:text-white"
+                : "text-gray-600 hover:text-navy-700 dark:text-gray-300 dark:hover:text-white"
+            }`}
+          >
+            Lưu trữ
+          </button>
+        </div>
+
         <div className="mb-2 flex shrink-0 items-center gap-2 px-2 text-xs font-semibold uppercase tracking-wide text-[#5f6368] dark:text-gray-400">
-          <MdHistory className="h-4 w-4" aria-hidden />
-          Lịch sử chat
+          {mode === "active" ? (
+            <MdHistory className="h-4 w-4" aria-hidden />
+          ) : (
+            <MdArchive className="h-4 w-4" aria-hidden />
+          )}
+          {mode === "active" ? "Lịch sử chat" : "Chat lưu trữ"}
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1 pb-4">
-          {isLoadingSessions ? (
+          {isLoadingVisible ? (
             <div className="rounded-xl px-3 py-2 text-sm text-[#444746] dark:text-gray-400">
               Đang tải...
             </div>
-          ) : sortedSessions.length === 0 ? (
+          ) : visibleSessions.length === 0 ? (
             <div className="rounded-xl px-3 py-2 text-sm text-[#444746] dark:text-gray-400">
-              Chưa có cuộc trò chuyện nào.
+              {mode === "active"
+                ? "Chưa có cuộc trò chuyện nào."
+                : "Chưa có cuộc trò chuyện lưu trữ nào."}
             </div>
           ) : (
             <div className="space-y-1">
-              {sortedSessions.map((session, i) => (
-                <ThreadRow
+              {visibleSessions.map((session, i) => (
+                <ChatbotThreadRow
                   key={session.id || `session-${i}`}
                   session={session}
                   isActive={session.id === activeThreadId}
-                  isEditing={editingThread?.id === session.id}
+                  isEditing={
+                    mode === "active" && editingThread?.id === session.id
+                  }
                   draft={
                     editingThread?.id === session.id
                       ? editingThread.draft
                       : session.title
                   }
-                  onSwitch={() => handleSwitch(session.id)}
+                  canSwitch
+                  canEdit={mode === "active"}
+                  archiveAction={mode === "active" ? "archive" : "unarchive"}
+                  onSwitch={() =>
+                    mode === "active"
+                      ? handleSwitch(session.id)
+                      : void viewArchivedThread(session)
+                  }
                   onStartEdit={() =>
                     setEditingThread({ id: session.id, draft: session.title })
                   }
@@ -291,7 +193,11 @@ export function ChatbotThreadToolbar() {
                     setEditingThread(null);
                     await renameThread(session.id, next);
                   }}
-                  onArchive={() => handleArchive(session)}
+                  onArchive={() =>
+                    mode === "active"
+                      ? handleArchive(session)
+                      : void handleUnarchive(session)
+                  }
                   onDelete={() => handleDelete(session)}
                 />
               ))}
@@ -300,13 +206,10 @@ export function ChatbotThreadToolbar() {
         </div>
       </aside>
 
-      <ConfirmModal
-        open={!!deleteTarget}
+      <ChatbotThreadDeleteConfirm
+        target={deleteTarget}
         onCancel={() => setDeleteTarget(null)}
         onConfirm={confirmDelete}
-        title="Xoá cuộc trò chuyện"
-        subTitle={`Bạn có chắc chắn muốn xoá cuộc trò chuyện "${deleteTarget?.title?.trim() || "Cuộc trò chuyện mới"}" không? Hành động này không thể hoàn tác.`}
-        confirmText="Xoá"
         loading={isDeleting}
       />
     </>

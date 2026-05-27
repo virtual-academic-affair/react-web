@@ -1,4 +1,5 @@
 import { API_CONFIG, API_ENDPOINTS } from "@/config/api.config";
+import ragHttp from "../rag-http";
 import { useAuthStore } from "@/stores/auth.store";
 
 const SSE_EVENT_SEPARATOR = "\n\n";
@@ -15,12 +16,44 @@ export interface ChatStreamHistoryItem {
 export interface ChatStreamRequest {
   question: string;
   chatHistory: ChatStreamHistoryItem[];
-  /** Tuỳ chọn; mặc định gửi true / "original" / true khi gọi API. */
+  metadataFilter?: Record<string, unknown>;
+  /** Tuỳ chọn; mặc định theo tài liệu API: false / "markdown" / false. */
   resolveCitations?: boolean;
   citationLinkType?: string;
   toRichText?: boolean;
   /** Tiếp tục cuộc trò chuyện cũ; bỏ trống để backend tạo session mới. */
   sessionId?: string;
+}
+
+export interface ChatQueryRequest extends ChatStreamRequest {}
+
+export interface ChatQueryResponse {
+  answer: string;
+  sessionId: string;
+  source: string;
+  sources: unknown[];
+  processingTimeMs: number;
+}
+
+export interface ChatRetrievePreviewRequest {
+  question: string;
+  topK?: number;
+  minScore?: number;
+}
+
+export interface ChatRetrievePreviewItem {
+  rank: number;
+  score: number;
+  text: string;
+  fileName?: string;
+  [key: string]: unknown;
+}
+
+export interface ChatRetrievePreviewResponse {
+  query: string;
+  topK: number;
+  count: number;
+  items: ChatRetrievePreviewItem[];
 }
 
 interface StreamBaseEvent {
@@ -86,6 +119,26 @@ const buildStreamUrl = (): string => {
   return `${API_CONFIG.ragBaseURL}${API_ENDPOINTS.rag.chat.stream}`;
 };
 
+export async function queryChat(
+  payload: ChatQueryRequest,
+): Promise<ChatQueryResponse> {
+  const response = await ragHttp.post<ChatQueryResponse>(
+    API_ENDPOINTS.rag.chat.query,
+    payload,
+  );
+  return response.data;
+}
+
+export async function retrieveChatPreview(
+  payload: ChatRetrievePreviewRequest,
+): Promise<ChatRetrievePreviewResponse> {
+  const response = await ragHttp.post<ChatRetrievePreviewResponse>(
+    API_ENDPOINTS.rag.chat.retrievePreview,
+    payload,
+  );
+  return response.data;
+}
+
 export async function streamChat(
   payload: ChatStreamRequest,
   onEvent: (event: ChatStreamEvent) => void,
@@ -108,10 +161,10 @@ export async function streamChat(
     headers,
     body: JSON.stringify({
       ...rest,
-      resolveCitations: payload.resolveCitations ?? true,
-      citationLinkType: payload.citationLinkType ?? "original",
-      toRichText: payload.toRichText ?? true,
-      ...(sessionId ? { session_id: sessionId } : {}),
+      resolveCitations: payload.resolveCitations ?? false,
+      citationLinkType: payload.citationLinkType ?? "markdown",
+      toRichText: payload.toRichText ?? false,
+      ...(sessionId ? { sessionId } : {}),
     }),
     signal,
   });
