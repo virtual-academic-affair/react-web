@@ -34,6 +34,35 @@ type UseChatbotStreamingArgs = {
   invalidateSessionQueries: () => void;
 };
 
+function toArgsText(args: unknown) {
+  if (args === undefined) return "";
+  if (typeof args === "string") return args;
+  try {
+    return JSON.stringify(args, null, 2);
+  } catch {
+    return String(args);
+  }
+}
+
+function updateAssistantMessage(
+  setSessions: Dispatch<SetStateAction<ChatThreadSession[]>>,
+  threadId: string,
+  assistantId: string,
+  updater: (message: ChatStoreMessage) => ChatStoreMessage,
+) {
+  setSessions((prev) =>
+    prev.map((session) => {
+      if (session.id !== threadId) return session;
+      return {
+        ...session,
+        messages: session.messages.map((item) =>
+          item.id === assistantId ? updater(item) : item,
+        ),
+      };
+    }),
+  );
+}
+
 export function useChatbotStreaming({
   activeThreadIdRef,
   sessionsRef,
@@ -80,19 +109,81 @@ export function useChatbotStreaming({
                   ? ev.content
                   : "";
 
+            if (eventType === "call") {
+              const toolName =
+                typeof ev.name === "string" && ev.name.trim()
+                  ? ev.name.trim()
+                  : "tool";
+              const argsText = toArgsText(ev.args);
+              updateAssistantMessage(
+                setSessions,
+                threadId,
+                assistantId,
+                (item) => ({
+                  ...item,
+                  toolCalls: [
+                    ...(item.toolCalls ?? []),
+                    {
+                      toolCallId: newChatbotId("tool"),
+                      toolName,
+                      argsText,
+                    },
+                  ],
+                }),
+              );
+              return;
+            }
+
+            if (eventType === "tool_output") {
+              const toolName =
+                typeof ev.name === "string" && ev.name.trim()
+                  ? ev.name.trim()
+                  : "tool";
+              updateAssistantMessage(
+                setSessions,
+                threadId,
+                assistantId,
+                (item) => {
+                  const toolCalls = [...(item.toolCalls ?? [])];
+                  const idx = (() => {
+                    for (let i = toolCalls.length - 1; i >= 0; i -= 1) {
+                      if (
+                        toolCalls[i].toolName === toolName &&
+                        toolCalls[i].result === undefined
+                      ) {
+                        return i;
+                      }
+                    }
+                    return -1;
+                  })();
+                  if (idx >= 0) {
+                    toolCalls[idx] = {
+                      ...toolCalls[idx],
+                      result: ev.output,
+                    };
+                  } else {
+                    toolCalls.push({
+                      toolCallId: newChatbotId("tool"),
+                      toolName,
+                      argsText: "",
+                      result: ev.output,
+                    });
+                  }
+                  return { ...item, toolCalls };
+                },
+              );
+              return;
+            }
+
             if (eventType === "text" || (!eventType && textChunk && !ev.done)) {
               if (!textChunk) return;
-              setSessions((prev) =>
-                prev.map((session) => {
-                  if (session.id !== threadId) return session;
-                  return {
-                    ...session,
-                    messages: session.messages.map((item) =>
-                      item.id === assistantId
-                        ? { ...item, content: `${item.content}${textChunk}` }
-                        : item,
-                    ),
-                  };
+              updateAssistantMessage(
+                setSessions,
+                threadId,
+                assistantId,
+                (item) => ({
+                  ...item,
+                  content: `${item.content}${textChunk}`,
                 }),
               );
               return;
@@ -104,20 +195,13 @@ export function useChatbotStreaming({
                 (typeof ev.chunk === "string" && ev.chunk) ||
                 "";
               if (!rChunk) return;
-              setSessions((prev) =>
-                prev.map((session) => {
-                  if (session.id !== threadId) return session;
-                  return {
-                    ...session,
-                    messages: session.messages.map((item) =>
-                      item.id === assistantId
-                        ? {
-                            ...item,
-                            reasoning: `${item.reasoning ?? ""}${rChunk}`,
-                          }
-                        : item,
-                    ),
-                  };
+              updateAssistantMessage(
+                setSessions,
+                threadId,
+                assistantId,
+                (item) => ({
+                  ...item,
+                  reasoning: `${item.reasoning ?? ""}${rChunk}`,
                 }),
               );
               return;

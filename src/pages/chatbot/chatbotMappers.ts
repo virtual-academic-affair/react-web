@@ -86,9 +86,22 @@ export function historyMessageToStore(
           ? raw.url
           : "";
     if (!url) continue;
+    const pagesRaw = (raw as { pages?: unknown }).pages;
+    const pages = Array.isArray(pagesRaw)
+      ? pagesRaw.filter((page): page is string => typeof page === "string")
+      : undefined;
     sources.push({
       title: typeof raw.title === "string" && raw.title ? raw.title : url,
       url,
+      fileName:
+        typeof (raw as { file_name?: unknown }).file_name === "string"
+          ? (raw as { file_name: string }).file_name
+          : undefined,
+      pages: pages?.length ? pages : undefined,
+      markdownUrl:
+        typeof (raw as { markdown_url?: unknown }).markdown_url === "string"
+          ? (raw as { markdown_url: string }).markdown_url
+          : undefined,
     });
   }
 
@@ -135,6 +148,10 @@ export function convertMessage(m: ChatStoreMessage): ThreadMessageLike {
         id: string;
         url: string;
         title?: string;
+        fileName?: string;
+        pages?: string[];
+        markdownUrl?: string;
+        citationId?: number;
       }
     | {
         type: "tool-call";
@@ -171,6 +188,10 @@ export function convertMessage(m: ChatStoreMessage): ThreadMessageLike {
       id: s.url,
       url: s.url,
       title: s.title,
+      fileName: s.fileName,
+      pages: s.pages,
+      markdownUrl: s.markdownUrl,
+      citationId: s.citationId,
     });
   }
 
@@ -218,10 +239,28 @@ export function sourceItemsFromStream(rawSources: unknown[]) {
         candidate.file_name ??
         candidate.name ??
         candidate.filename;
+      const pagesRaw = candidate.pages;
+      const pages = Array.isArray(pagesRaw)
+        ? pagesRaw.filter((page): page is string => typeof page === "string")
+        : undefined;
       return {
         title:
           typeof titleRaw === "string" && titleRaw.trim() ? titleRaw : urlRaw,
         url: urlRaw,
+        citationId:
+          typeof candidate.citation_id === "number"
+            ? candidate.citation_id
+            : undefined,
+        fileName:
+          typeof candidate.file_name === "string" && candidate.file_name.trim()
+            ? candidate.file_name
+            : undefined,
+        pages: pages?.length ? pages : undefined,
+        markdownUrl:
+          typeof candidate.markdown_url === "string" &&
+          candidate.markdown_url.trim()
+            ? candidate.markdown_url
+            : undefined,
       };
     })
     .filter((item): item is ChatSourceItem => item !== null);

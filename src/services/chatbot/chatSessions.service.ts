@@ -37,6 +37,9 @@ export interface ChatHistoryMessage {
     score?: number;
     url?: string;
     original_url?: string;
+    file_name?: string;
+    pages?: string[];
+    markdown_url?: string;
   }> | null;
   processing_time_ms: number | null;
   createdAt?: string;

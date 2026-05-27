@@ -45,6 +45,7 @@ function GeminiUserMessage() {
 function GeminiAssistantMessage() {
   const groupAssistantParts = useCallback((part: PartState) => {
     if (part.type === "reasoning") return ["group-reasoning"] as const;
+    if (part.type === "tool-call") return ["group-reasoning"] as const;
     if (part.type === "source") return ["group-sources"] as const;
     return null;
   }, []);
@@ -62,7 +63,8 @@ function GeminiAssistantMessage() {
           {({ part, children }) => {
             switch (part.type) {
               case "group-reasoning": {
-                const running = part.status.type === "running";
+                const running =
+                  "status" in part && part.status?.type === "running";
                 return (
                   <ReasoningRoot
                     key={part.indices.join("-")}
