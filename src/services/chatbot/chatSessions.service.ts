@@ -35,6 +35,7 @@ export interface ChatHistoryMessage {
     document_id?: string;
     title?: string;
     score?: number;
+    citation_id?: number;
     url?: string;
     original_url?: string;
     file_name?: string;

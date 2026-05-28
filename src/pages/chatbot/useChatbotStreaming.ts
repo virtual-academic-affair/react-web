@@ -226,13 +226,14 @@ export function useChatbotStreaming({
                   doneEvent.sessionId) ||
                 null;
 
+              if (errorText) {
+                setSystemError(CHAT_SYSTEM_BUSY_MESSAGE);
+              }
+
+              const nowIso = new Date().toISOString();
               setSessions((prev) =>
                 prev.map((session) => {
                   if (session.id !== threadId) return session;
-                  if (errorText) {
-                    setSystemError(CHAT_SYSTEM_BUSY_MESSAGE);
-                  }
-                  const nowIso = new Date().toISOString();
                   const nextId =
                     !session.serverId && returnedSessionId
                       ? returnedSessionId
@@ -266,6 +267,7 @@ export function useChatbotStreaming({
                 navigateToThread(returnedSessionId, { replace: true });
               }
               invalidateSessionQueries();
+              return;
             }
           },
           abortRef.current?.signal,

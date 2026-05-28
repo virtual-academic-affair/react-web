@@ -93,6 +93,10 @@ export function historyMessageToStore(
     sources.push({
       title: typeof raw.title === "string" && raw.title ? raw.title : url,
       url,
+      citationId:
+        typeof (raw as { citation_id?: unknown }).citation_id === "number"
+          ? (raw as { citation_id: number }).citation_id
+          : undefined,
       fileName:
         typeof (raw as { file_name?: unknown }).file_name === "string"
           ? (raw as { file_name: string }).file_name
@@ -229,7 +233,7 @@ export function sortSessionsByActivity(
 
 export function sourceItemsFromStream(rawSources: unknown[]) {
   return rawSources
-    .map((source) => {
+    .map((source): ChatSourceItem | null => {
       if (!source || typeof source !== "object") return null;
       const candidate = source as Record<string, unknown>;
       const urlRaw = candidate.original_url;
@@ -243,25 +247,27 @@ export function sourceItemsFromStream(rawSources: unknown[]) {
       const pages = Array.isArray(pagesRaw)
         ? pagesRaw.filter((page): page is string => typeof page === "string")
         : undefined;
-      return {
+      const item: ChatSourceItem = {
         title:
           typeof titleRaw === "string" && titleRaw.trim() ? titleRaw : urlRaw,
         url: urlRaw,
-        citationId:
-          typeof candidate.citation_id === "number"
-            ? candidate.citation_id
-            : undefined,
-        fileName:
-          typeof candidate.file_name === "string" && candidate.file_name.trim()
-            ? candidate.file_name
-            : undefined,
-        pages: pages?.length ? pages : undefined,
-        markdownUrl:
-          typeof candidate.markdown_url === "string" &&
-          candidate.markdown_url.trim()
-            ? candidate.markdown_url
-            : undefined,
       };
+      if (typeof candidate.citation_id === "number") {
+        item.citationId = candidate.citation_id;
+      }
+      if (typeof candidate.file_name === "string" && candidate.file_name.trim()) {
+        item.fileName = candidate.file_name;
+      }
+      if (pages?.length) {
+        item.pages = pages;
+      }
+      if (
+        typeof candidate.markdown_url === "string" &&
+        candidate.markdown_url.trim()
+      ) {
+        item.markdownUrl = candidate.markdown_url;
+      }
+      return item;
     })
     .filter((item): item is ChatSourceItem => item !== null);
 }
