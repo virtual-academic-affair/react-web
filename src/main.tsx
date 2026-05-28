@@ -8,7 +8,21 @@ import "./index.css";
 // Restore dark mode preference before first render to avoid flash
 if (localStorage.getItem("theme") === "dark") {
   document.body.classList.add("dark");
+  document.documentElement.classList.add("dark");
 }
+
+const syncDocumentTheme = () => {
+  const isDark = document.body.classList.contains("dark");
+  document.documentElement.classList.toggle("dark", isDark);
+  document.documentElement.style.colorScheme = isDark ? "dark" : "light";
+};
+
+syncDocumentTheme();
+
+new MutationObserver(syncDocumentTheme).observe(document.body, {
+  attributes: true,
+  attributeFilter: ["class"],
+});
 
 const queryClient = new QueryClient({
   defaultOptions: {

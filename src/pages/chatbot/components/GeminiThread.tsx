@@ -80,7 +80,12 @@ function GeminiAssistantMessage() {
               }
               case "group-sources":
                 return (
-                  <Sources key={part.indices.join("-")}>{children}</Sources>
+                  <Sources
+                    key={part.indices.join("-")}
+                    sourceCount={part.indices.length}
+                  >
+                    {children}
+                  </Sources>
                 );
               case "text":
                 return <MarkdownText />;

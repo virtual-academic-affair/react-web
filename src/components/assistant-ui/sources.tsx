@@ -1,5 +1,7 @@
 import type { SourceMessagePartProps } from "@assistant-ui/react";
 import {
+  createContext,
+  useContext,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -10,6 +12,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { MdArticle, MdOpenInNew, MdPictureAsPdf } from "react-icons/md";
+import Tooltip from "../tooltip/Tooltip";
 
 type SourceMeta = {
   citationId?: number;
@@ -127,14 +130,25 @@ function findHighlightRange(
   return { start: -1, end: -1, reason: "none" };
 }
 
-export function Sources({ children }: { children: ReactNode }) {
+const SourceNumberContext = createContext({ hideCitationNumber: false });
+
+export function Sources({
+  children,
+  sourceCount,
+}: {
+  children: ReactNode;
+  sourceCount?: number;
+}) {
+  const hideCitationNumber = sourceCount === 1;
   return (
-    <div className="mt-3 space-y-2">
-      <p className="text-xs font-semibold tracking-wide text-[#5f6368] uppercase dark:text-gray-400">
-        Tài liệu tham khảo
-      </p>
-      <div className="space-y-2">{children}</div>
-    </div>
+    <SourceNumberContext.Provider value={{ hideCitationNumber }}>
+      <div className="mt-3 space-y-2">
+        <p className="text-xs font-semibold tracking-wide text-[#5f6368] uppercase dark:text-gray-400">
+          Tài liệu tham khảo
+        </p>
+        <div className="space-y-2">{children}</div>
+      </div>
+    </SourceNumberContext.Provider>
   );
 }
 
@@ -252,25 +266,29 @@ function SourcePreviewDrawer({
   const headerExtra = (
     <div className="flex items-center gap-2">
       {markdownUrl ? (
+        <Tooltip label={"Mở file markdown"} placement="topRight">
+          <a
+            href={markdownUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-[#1a73e8] dark:hover:bg-white/10 dark:hover:text-[#a8c7fa]"
+            aria-label="Mở file markdown"
+          >
+            <MdArticle className="h-5 w-5" />
+          </a>
+        </Tooltip>
+      ) : null}
+      <Tooltip label={"Mở file PDF"} placement="topRight">
         <a
-          href={markdownUrl}
+          href={pdfUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-[#1a73e8] dark:hover:bg-white/10 dark:hover:text-[#a8c7fa]"
-          aria-label="Mở file markdown"
+          aria-label="Mở file PDF"
         >
-          <MdArticle className="h-5 w-5" />
+          <MdOpenInNew className="h-5 w-5" />
         </a>
-      ) : null}
-      <a
-        href={pdfUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-[#1a73e8] dark:hover:bg-white/10 dark:hover:text-[#a8c7fa]"
-        aria-label="Mở file PDF"
-      >
-        <MdOpenInNew className="h-5 w-5" />
-      </a>
+      </Tooltip>
     </div>
   );
 
@@ -299,16 +317,18 @@ function SourcePreviewDrawer({
             </h2>
             <div className="flex shrink-0 items-center gap-3">
               {headerExtra}
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-white/10"
-                aria-label="Đóng"
-              >
-                <span className="text-xl leading-none" aria-hidden>
-                  ×
-                </span>
-              </button>
+              <Tooltip label={"Đóng"} placement="topRight">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-white/10"
+                  aria-label="Đóng"
+                >
+                  <span className="text-xl leading-none" aria-hidden>
+                    ×
+                  </span>
+                </button>
+              </Tooltip>
             </div>
           </div>
 
@@ -393,13 +413,15 @@ function SourcePreviewDrawer({
 export function Source(props: SourceMessagePartProps) {
   const { url, title } = props;
   const meta = props as SourceMessagePartProps & SourceMeta;
+  const { hideCitationNumber } = useContext(SourceNumberContext);
   const [previewOpen, setPreviewOpen] = useState(false);
   const fileName = meta.fileName?.trim();
   const label = title?.trim() || fileName || url;
   const pageLabel = getPageLabel(meta.pages);
-  const hostname = getHostname(url);
   const citationLabel =
-    typeof meta.citationId === "number" ? `#${meta.citationId}` : null;
+    !hideCitationNumber && typeof meta.citationId === "number"
+      ? `#${meta.citationId}`
+      : null;
 
   return (
     <>
@@ -435,8 +457,6 @@ export function Source(props: SourceMessagePartProps) {
 
           <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#5f6368] dark:text-gray-400">
             {pageLabel ? <span>{pageLabel}</span> : null}
-            {pageLabel && hostname ? <span aria-hidden>·</span> : null}
-            {hostname ? <span>{hostname}</span> : null}
           </span>
         </span>
 
