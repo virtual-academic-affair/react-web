@@ -29,6 +29,7 @@ type PageRange = {
 type HighlightRange = {
   start: number;
   end: number;
+  ranges: PageRange[];
   reason: "line" | "page" | "title" | "none";
 };
 
@@ -80,22 +81,34 @@ function findHighlightRange(
 ): HighlightRange {
   const pageRanges = parsePageRanges(pages);
   if (pageRanges.length) {
-    const startPage = Math.min(...pageRanges.map((range) => range.start));
-    const endPage = Math.max(...pageRanges.map((range) => range.end));
+    const lineRanges = pageRanges
+      .filter((range) => range.start >= 1 && range.start <= lines.length)
+      .map((range) => ({
+        start: range.start - 1,
+        end: Math.min(lines.length - 1, range.end - 1),
+      }))
+      .filter((range) => range.end >= range.start);
 
-    if (startPage >= 1 && startPage <= lines.length) {
+    if (lineRanges.length) {
+      const firstRange = lineRanges[0];
       return {
-        start: startPage - 1,
-        end: Math.min(lines.length - 1, endPage - 1),
+        start: firstRange.start,
+        end: firstRange.end,
+        ranges: lineRanges,
         reason: "line",
       };
     }
 
-    const startLine = findLineByPage(lines, startPage);
+    const firstPageRange = pageRanges[0];
+    const startLine = findLineByPage(lines, firstPageRange.start);
 
     if (startLine >= 0) {
       let endLine = -1;
-      for (let page = endPage + 1; page <= endPage + 3; page += 1) {
+      for (
+        let page = firstPageRange.end + 1;
+        page <= firstPageRange.end + 3;
+        page += 1
+      ) {
         const nextPageLine = findLineByPage(lines, page);
         if (nextPageLine > startLine) {
           endLine = nextPageLine - 1;
@@ -103,12 +116,14 @@ function findHighlightRange(
         }
       }
 
+      const end =
+        endLine >= startLine
+          ? endLine
+          : Math.min(lines.length - 1, startLine + 80);
       return {
         start: startLine,
-        end:
-          endLine >= startLine
-            ? endLine
-            : Math.min(lines.length - 1, startLine + 80),
+        end,
+        ranges: [{ start: startLine, end }],
         reason: "page",
       };
     }
@@ -120,14 +135,16 @@ function findHighlightRange(
       )
     : -1;
   if (titleLine >= 0) {
+    const end = Math.min(lines.length - 1, titleLine + 24);
     return {
       start: titleLine,
-      end: Math.min(lines.length - 1, titleLine + 24),
+      end,
+      ranges: [{ start: titleLine, end }],
       reason: "title",
     };
   }
 
-  return { start: -1, end: -1, reason: "none" };
+  return { start: -1, end: -1, ranges: [], reason: "none" };
 }
 
 const SourceNumberContext = createContext({ hideCitationNumber: false });
@@ -372,10 +389,9 @@ function SourcePreviewDrawer({
                     style={{ height: "min(560px, calc(100vh - 280px))" }}
                   >
                     {lines.map((line, index) => {
-                      const highlighted =
-                        highlight.start >= 0 &&
-                        index >= highlight.start &&
-                        index <= highlight.end;
+                      const highlighted = highlight.ranges.some(
+                        (range) => index >= range.start && index <= range.end,
+                      );
                       const isFirstHighlight = index === highlight.start;
 
                       return (
