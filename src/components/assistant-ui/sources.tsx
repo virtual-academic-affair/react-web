@@ -1,8 +1,8 @@
 import type { SourceMessagePartProps } from "@assistant-ui/react";
 import {
   createContext,
-  useContext,
   useCallback,
+  useContext,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -32,14 +32,6 @@ type HighlightRange = {
   ranges: PageRange[];
   reason: "line" | "page" | "title" | "none";
 };
-
-function getHostname(url: string) {
-  try {
-    return new URL(url).hostname;
-  } catch {
-    return "";
-  }
-}
 
 function getPageLabel(pages?: string[]) {
   if (!pages?.length) return "";
