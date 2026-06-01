@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React, { useEffect, useState } from "react";
-import { MdDeleteOutline, MdPreview, MdSave } from "react-icons/md";
+import { MdDeleteOutline, MdPreview, MdSave, MdFileDownload } from "react-icons/md";
 
 import Drawer from "@/components/drawer/Drawer";
 import ConfirmModal from "@/components/modal/ConfirmModal";
@@ -106,6 +106,7 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
   const [academicToYear, setAcademicToYear] = useState("");
   const [saving, setSaving] = useState(false);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+  const [isTocExpanded, setIsTocExpanded] = useState(false);
 
   // ── Fetch file detail ───────────────────────────────────────────────────────
   const {
@@ -144,6 +145,7 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
 
   // ── Reset when no file selected ─────────────────────────────────────────────
   useEffect(() => {
+    setIsTocExpanded(false);
     if (!fileId) {
       setDisplayName("");
       setDocType("");
@@ -230,6 +232,26 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
     }
   };
 
+  const handleDownload = async () => {
+    if (!fileDetail?.fileUrl) {
+      toast.error("Không thể tải xuống tệp.");
+      return;
+    }
+    try {
+      const res = await fetch(fileDetail.fileUrl);
+      if (!res.ok) throw new Error("Network response was not ok");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileDetail.originalFilename || "document";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Không thể tải xuống tệp.");
+    }
+  };
+
   // ── Footer ──────────────────────────────────────────────────────────────────
   const footerLeft = isReadOnly ? (
     <div className="flex items-center gap-3">
@@ -238,12 +260,22 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
           <button
             type="button"
             onClick={onPreview}
-            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500 text-white transition-colors hover:bg-blue-600"
+            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500 text-white transition-all hover:bg-blue-600 active:scale-95"
           >
             <MdPreview className="h-4 w-4" />
           </button>
         </Tooltip>
       )}
+      <Tooltip label="Tải xuống tệp">
+        <button
+          type="button"
+          onClick={handleDownload}
+          disabled={!fileDetail?.fileUrl}
+          className="flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500 text-white transition-all hover:bg-green-600 active:scale-95 disabled:opacity-50"
+        >
+          <MdFileDownload className="h-4 w-4" />
+        </button>
+      </Tooltip>
     </div>
   ) : (
     <div className="flex items-center gap-3">
@@ -253,18 +285,28 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
             type="button"
             disabled={saving}
             onClick={onPreview}
-            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500 text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
+            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500 text-white transition-all hover:bg-blue-600 active:scale-95 disabled:opacity-50"
           >
             <MdPreview className="h-4 w-4" />
           </button>
         </Tooltip>
       )}
+      <Tooltip label="Tải xuống tệp">
+        <button
+          type="button"
+          disabled={saving || !fileDetail?.fileUrl}
+          onClick={handleDownload}
+          className="flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500 text-white transition-all hover:bg-green-600 active:scale-95 disabled:opacity-50"
+        >
+          <MdFileDownload className="h-4 w-4" />
+        </button>
+      </Tooltip>
       <Tooltip label="Xóa tệp tin">
         <button
           type="button"
           disabled={saving}
           onClick={() => setIsConfirmDeleteOpen(true)}
-          className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-all hover:bg-red-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <MdDeleteOutline className="h-4 w-4" />
         </button>
@@ -452,13 +494,25 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
               <Row label="Mục lục">
                 {Array.isArray(fileDetail?.tableOfContents) &&
                 fileDetail.tableOfContents.length > 0 ? (
-                  <ul className="list-disc space-y-1 pl-5 text-sm text-gray-700 dark:text-gray-300">
-                    {fileDetail.tableOfContents.map(
-                      (item: string, idx: number) => (
+                  <div className="flex flex-col gap-2">
+                    <ul className="list-disc space-y-1 pl-5 text-sm text-gray-700 dark:text-gray-300">
+                      {(isTocExpanded
+                        ? fileDetail.tableOfContents
+                        : fileDetail.tableOfContents.slice(0, 5)
+                      ).map((item: string, idx: number) => (
                         <li key={`${idx}-${item}`}>{item}</li>
-                      ),
+                      ))}
+                    </ul>
+                    {fileDetail.tableOfContents.length > 5 && (
+                      <button
+                        type="button"
+                        onClick={() => setIsTocExpanded(!isTocExpanded)}
+                        className="text-brand-500 hover:text-brand-600 dark:hover:text-brand-400 self-start text-s underline underline-offset-2 transition-all active:scale-95"
+                      >
+                        {isTocExpanded ? "Thu gọn" : `Xem thêm (${fileDetail.tableOfContents.length - 5} mục)`}
+                      </button>
                     )}
-                  </ul>
+                  </div>
                 ) : (
                   <p className="text-sm text-gray-500">—</p>
                 )}
