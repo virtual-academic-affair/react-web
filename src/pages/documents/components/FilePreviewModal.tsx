@@ -463,7 +463,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
   const [numPages, setNumPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [scale, setScale] = useState(1.2);
-  const pdfScrollRef = useRef<(page: number) => void>();
+  const pdfScrollRef = useRef<(page: number) => void>(undefined);
 
   const handlePrevPage = useCallback(() => {
     if (currentPage <= 1) return;
