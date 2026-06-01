@@ -430,11 +430,11 @@ const DocumentListPage = () => {
         icon: <MdFileDownload className="h-4 w-4" />,
         label: "Tải xuống",
         onClick: async (x) => {
+          if (!x.fileUrl) { toast.error("Không thể tải xuống tệp."); return; }
           try {
-            const blob = await DocumentsService.downloadFile(
-              x.fileId,
-              DOWNLOAD_FORMAT_ORIGINAL,
-            );
+            const res = await fetch(x.fileUrl);
+            if (!res.ok) throw new Error("Network error");
+            const blob = await res.blob();
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
