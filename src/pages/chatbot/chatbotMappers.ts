@@ -6,12 +6,14 @@ import type {
 } from "@/services/chatbot/chatSessions.service";
 
 import type {
+  ChatReasoningStep,
   ChatSourceItem,
   ChatStoreMessage,
   ChatThreadSession,
 } from "./types";
 
 export const DEFAULT_NEW_TITLE = "Cuộc trò chuyện mới";
+export const STRUCTURED_REASONING_PREFIX = "__CHATBOT_REASONING_STEPS__";
 
 export function newChatbotId(prefix: string) {
   return `${prefix}-${crypto.randomUUID()}`;
@@ -142,6 +144,10 @@ function splitReasoningIntoSteps(raw: string | undefined): string[] {
   return paras.length ? paras : [t];
 }
 
+function encodeReasoningSteps(steps: ChatReasoningStep[]) {
+  return `${STRUCTURED_REASONING_PREFIX}${JSON.stringify(steps)}`;
+}
+
 export function convertMessage(m: ChatStoreMessage): ThreadMessageLike {
   const parts: Array<
     | { type: "text"; text: string }
@@ -178,11 +184,23 @@ export function convertMessage(m: ChatStoreMessage): ThreadMessageLike {
         isError: tc.isError,
       });
     }
-    const steps = splitReasoningIntoSteps(m.reasoning);
-    const n = steps.length;
-    steps.forEach((step, i) => {
-      parts.push({ type: "reasoning", text: step, parentId: `r-${i}-of-${n}` });
-    });
+    if (m.reasoningSteps?.length) {
+      parts.push({
+        type: "reasoning",
+        text: encodeReasoningSteps(m.reasoningSteps),
+        parentId: "structured-reasoning",
+      });
+    } else {
+      const steps = splitReasoningIntoSteps(m.reasoning);
+      const n = steps.length;
+      steps.forEach((step, i) => {
+        parts.push({
+          type: "reasoning",
+          text: step,
+          parentId: `r-${i}-of-${n}`,
+        });
+      });
+    }
   }
   parts.push({ type: "text", text: m.content });
   for (const s of m.sources ?? []) {

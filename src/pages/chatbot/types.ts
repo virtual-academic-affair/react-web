@@ -8,12 +8,28 @@ export type ChatStoreToolCall = {
   isError?: boolean;
 };
 
+export type ChatReasoningStepType =
+  | "query_analysis"
+  | "faq_check"
+  | "retrieval"
+  | "call"
+  | "tool_output"
+  | "reasoning"
+  | "thought";
+
+export type ChatReasoningStep = {
+  id: string;
+  type: ChatReasoningStepType;
+  content: string;
+};
+
 export type ChatStoreMessage = {
   id: string;
   role: ChatRole;
   content: string;
   createdAt: string;
   reasoning?: string;
+  reasoningSteps?: ChatReasoningStep[];
   sources?: ChatSourceItem[];
   toolCalls?: ChatStoreToolCall[];
 };

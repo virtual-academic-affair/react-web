@@ -68,7 +68,7 @@ function GeminiAssistantMessage() {
                 return (
                   <ReasoningRoot
                     key={part.indices.join("-")}
-                    defaultOpen={running}
+                    defaultOpen
                     variant="ghost"
                   >
                     <ReasoningTrigger active={running} />

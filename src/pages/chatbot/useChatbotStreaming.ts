@@ -15,7 +15,12 @@ import {
   sourceItemsFromStream,
 } from "./chatbotMappers";
 import { CHAT_SYSTEM_BUSY_MESSAGE } from "./constants";
-import type { ChatStoreMessage, ChatThreadSession } from "./types";
+import type {
+  ChatReasoningStep,
+  ChatReasoningStepType,
+  ChatStoreMessage,
+  ChatThreadSession,
+} from "./types";
 
 type MutableRef<T> = {
   current: T;
@@ -63,6 +68,74 @@ function updateAssistantMessage(
   );
 }
 
+const STREAM_REASONING_STEP_TYPES = new Set<string>([
+  "query_analysis",
+  "faq_check",
+  "retrieval",
+  "call",
+  "tool_output",
+  "reasoning",
+  "thought",
+]);
+
+function appendReasoningStep(
+  item: ChatStoreMessage,
+  type: ChatReasoningStepType,
+  content: string,
+) {
+  const steps = [...(item.reasoningSteps ?? [])];
+  const last = steps[steps.length - 1];
+
+  if (type === "reasoning" || type === "thought") {
+    if (last?.type === type) {
+      steps[steps.length - 1] = {
+        ...last,
+        content: `${last.content}${content}`,
+      };
+    } else {
+      steps.push({
+        id: newChatbotId("reasoning-step"),
+        type,
+        content,
+      });
+    }
+    return {
+      ...item,
+      reasoning: `${item.reasoning ?? ""}${content}`,
+      reasoningSteps: steps,
+    };
+  }
+
+  steps.push({
+    id: newChatbotId("reasoning-step"),
+    type,
+    content,
+  });
+  return { ...item, reasoningSteps: steps };
+}
+
+function reasoningStepsFromDoneEvent(rawSteps: unknown[]): ChatReasoningStep[] {
+  return rawSteps
+    .map((step): ChatReasoningStep | null => {
+      if (!step || typeof step !== "object") return null;
+      const candidate = step as Record<string, unknown>;
+      if (
+        typeof candidate.type !== "string" ||
+        !STREAM_REASONING_STEP_TYPES.has(candidate.type) ||
+        typeof candidate.content !== "string" ||
+        !candidate.content.trim()
+      ) {
+        return null;
+      }
+      return {
+        id: newChatbotId("reasoning-step"),
+        type: candidate.type as ChatReasoningStepType,
+        content: candidate.content,
+      };
+    })
+    .filter((step): step is ChatReasoningStep => step !== null);
+}
+
 export function useChatbotStreaming({
   activeThreadIdRef,
   sessionsRef,
@@ -108,6 +181,25 @@ export function useChatbotStreaming({
                 : typeof ev.content === "string"
                   ? ev.content
                   : "";
+
+            if (
+              eventType &&
+              STREAM_REASONING_STEP_TYPES.has(eventType) &&
+              textChunk
+            ) {
+              updateAssistantMessage(
+                setSessions,
+                threadId,
+                assistantId,
+                (item) =>
+                  appendReasoningStep(
+                    item,
+                    eventType as ChatReasoningStepType,
+                    textChunk,
+                  ),
+              );
+              return;
+            }
 
             if (eventType === "call") {
               const toolName =
@@ -210,6 +302,7 @@ export function useChatbotStreaming({
             if (ev.done) {
               const doneEvent = event as {
                 sources?: unknown[];
+                steps?: unknown[];
                 error?: unknown;
                 session_id?: string;
                 sessionId?: string;
@@ -249,6 +342,12 @@ export function useChatbotStreaming({
                       item.id === assistantId
                         ? {
                             ...item,
+                            reasoningSteps:
+                              item.reasoningSteps?.length
+                                ? item.reasoningSteps
+                                : reasoningStepsFromDoneEvent(
+                                    doneEvent.steps ?? [],
+                                  ),
                             sources: sources.length ? sources : [],
                           }
                         : item,
