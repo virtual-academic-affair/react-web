@@ -53,8 +53,6 @@ export function useChatbotRuntime() {
     [sessions, activeThreadId],
   );
 
-  const messagesRef = useRef(messages);
-  messagesRef.current = messages;
   const abortRef = useRef<AbortController | null>(null);
 
   const clearError = useCallback(() => setSystemError(null), []);
@@ -70,6 +68,16 @@ export function useChatbotRuntime() {
       queryClient.removeQueries({
         queryKey: chatbotQueryKeys.messages(sessionId),
       });
+      queryClient.setQueryData<ChatThreadSession[]>(
+        chatbotQueryKeys.sessions("active"),
+        (current) =>
+          current?.filter((session) => session.id !== sessionId) ?? current,
+      );
+      queryClient.setQueryData<ChatThreadSession[]>(
+        chatbotQueryKeys.sessions("archived"),
+        (current) =>
+          current?.filter((session) => session.id !== sessionId) ?? current,
+      );
     },
     [queryClient],
   );
@@ -219,7 +227,6 @@ export function useChatbotRuntime() {
   const { isRunning, onNew, onCancel } = useChatbotStreaming({
     activeThreadIdRef,
     sessionsRef,
-    messagesRef,
     abortRef,
     setSessions,
     setActiveThreadId,

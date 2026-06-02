@@ -102,23 +102,23 @@ function historyStepsToStore(
 
 function normalizeTokenUsage(msg: ChatHistoryMessage) {
   const camel = msg.tokenUsage;
-  const snake = msg.token_usage;
-  if (camel) return camel;
-  if (!snake) return undefined;
-
-  const tokenUsage: ChatStoreMessage["tokenUsage"] = {};
-  const promptTokens = snake.prompt_tokens ?? snake.input_tokens;
-  const completionTokens = snake.completion_tokens ?? snake.output_tokens;
-  if (typeof promptTokens === "number") {
-    tokenUsage.promptTokens = promptTokens;
+  if (camel) {
+    const tokenUsage: ChatStoreMessage["tokenUsage"] = {};
+    const promptTokens = camel.promptTokens ?? camel.promptTokenCount;
+    const completionTokens =
+      camel.completionTokens ?? camel.candidatesTokenCount;
+    if (typeof promptTokens === "number") {
+      tokenUsage.promptTokens = promptTokens;
+    }
+    if (typeof completionTokens === "number") {
+      tokenUsage.completionTokens = completionTokens;
+    }
+    if (typeof camel.totalTokens === "number") {
+      tokenUsage.totalTokens = camel.totalTokens;
+    }
+    return Object.keys(tokenUsage).length ? tokenUsage : undefined;
   }
-  if (typeof completionTokens === "number") {
-    tokenUsage.completionTokens = completionTokens;
-  }
-  if (typeof snake.total_tokens === "number") {
-    tokenUsage.totalTokens = snake.total_tokens;
-  }
-  return Object.keys(tokenUsage).length ? tokenUsage : undefined;
+  return undefined;
 }
 
 export function historyMessageToStore(
@@ -130,8 +130,8 @@ export function historyMessageToStore(
   for (const raw of msg.sources ?? []) {
     if (!raw) continue;
     const url =
-      typeof raw.original_url === "string" && raw.original_url
-        ? raw.original_url
+      typeof raw.originalUrl === "string" && raw.originalUrl
+        ? raw.originalUrl
         : typeof raw.url === "string" && raw.url
           ? raw.url
           : "";
@@ -144,31 +144,31 @@ export function historyMessageToStore(
       title: typeof raw.title === "string" && raw.title ? raw.title : url,
       url,
     };
-    if (typeof (raw as { citation_id?: unknown }).citation_id === "number") {
-      sourceItem.citationId = (raw as { citation_id: number }).citation_id;
+    if (typeof raw.citationId === "number") {
+      sourceItem.citationId = raw.citationId;
     }
-    if (typeof (raw as { file_name?: unknown }).file_name === "string") {
-      sourceItem.fileName = (raw as { file_name: string }).file_name;
+    if (typeof raw.fileName === "string") {
+      sourceItem.fileName = raw.fileName;
     }
     if (pages?.length) {
       sourceItem.pages = pages;
     }
-    if (typeof (raw as { markdown_url?: unknown }).markdown_url === "string") {
-      sourceItem.markdownUrl = (raw as { markdown_url: string }).markdown_url;
+    if (typeof raw.markdownUrl === "string") {
+      sourceItem.markdownUrl = raw.markdownUrl;
     }
     sources.push(sourceItem);
   }
-  const createdAt = msg.createdAt ?? msg.created_at ?? new Date().toISOString();
+  const createdAt = msg.createdAt ?? new Date().toISOString();
   const reasoningSteps = historyStepsToStore(msg.steps, sessionId, msg.sequence);
   const tokenUsage = normalizeTokenUsage(msg);
-  const processingTimeMs = msg.processingTimeMs ?? msg.processing_time_ms;
+  const processingTimeMs = msg.processingTimeMs;
 
   const storeMessage: ChatStoreMessage = {
     id: `${sessionId}-history-${msg.sequence}-${index}`,
     role: msg.role,
     content:
       msg.role === "assistant" &&
-      (msg.messageType ?? msg.message_type) === "thinking"
+      msg.messageType === "thinking"
         ? ""
         : msg.content,
     createdAt,
@@ -179,7 +179,7 @@ export function historyMessageToStore(
   }
   if (
     msg.role === "assistant" &&
-    (msg.messageType ?? msg.message_type) === "thinking"
+    msg.messageType === "thinking"
   ) {
     storeMessage.reasoning = msg.content;
   }
@@ -244,27 +244,9 @@ export function convertMessage(m: ChatStoreMessage): ThreadMessageLike {
         markdownUrl?: string;
         citationId?: number;
       }
-    | {
-        type: "tool-call";
-        toolCallId: string;
-        toolName: string;
-        argsText: string;
-        result?: unknown;
-        isError?: boolean;
-      }
   > = [];
 
   if (m.role === "assistant") {
-    for (const tc of m.toolCalls ?? []) {
-      parts.push({
-        type: "tool-call",
-        toolCallId: tc.toolCallId,
-        toolName: tc.toolName,
-        argsText: tc.argsText,
-        result: tc.result,
-        isError: tc.isError,
-      });
-    }
     if (m.reasoningSteps?.length) {
       parts.push({
         type: "reasoning",
@@ -335,10 +317,11 @@ export function sourceItemsFromStream(rawSources: unknown[]) {
     .map((source): ChatSourceItem | null => {
       if (!source || typeof source !== "object") return null;
       const candidate = source as Record<string, unknown>;
-      const urlRaw = candidate.original_url;
+      const urlRaw = candidate.originalUrl ?? candidate.original_url;
       if (typeof urlRaw !== "string" || !urlRaw.trim()) return null;
       const titleRaw =
         candidate.title ??
+        candidate.fileName ??
         candidate.file_name ??
         candidate.name ??
         candidate.filename;
@@ -351,20 +334,27 @@ export function sourceItemsFromStream(rawSources: unknown[]) {
           typeof titleRaw === "string" && titleRaw.trim() ? titleRaw : urlRaw,
         url: urlRaw,
       };
-      if (typeof candidate.citation_id === "number") {
-        item.citationId = candidate.citation_id;
+      const citationId = candidate.citationId ?? candidate.citation_id;
+      if (typeof citationId === "number") {
+        item.citationId = citationId;
       }
-      if (typeof candidate.file_name === "string" && candidate.file_name.trim()) {
-        item.fileName = candidate.file_name;
+      const fileName = candidate.fileName ?? candidate.file_name;
+      if (typeof fileName === "string" && fileName.trim()) {
+        item.fileName = fileName;
       }
       if (pages?.length) {
         item.pages = pages;
       }
       if (
-        typeof candidate.markdown_url === "string" &&
-        candidate.markdown_url.trim()
+        (typeof candidate.markdownUrl === "string" &&
+          candidate.markdownUrl.trim()) ||
+        (typeof candidate.markdown_url === "string" &&
+          candidate.markdown_url.trim())
       ) {
-        item.markdownUrl = candidate.markdown_url;
+        item.markdownUrl =
+          typeof candidate.markdownUrl === "string"
+            ? candidate.markdownUrl
+            : (candidate.markdown_url as string);
       }
       return item;
     })
