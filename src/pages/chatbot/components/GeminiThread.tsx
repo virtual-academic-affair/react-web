@@ -96,7 +96,17 @@ function GeminiAssistantMessage() {
   const messageId = useMessage((state) => state.id);
   const messageContent = useMessage((state) => state.content);
   const createdAt = useMessage((state) => state.createdAt);
+  const messageStatus = useMessage((state) => state.status?.type);
   const timestampText = formatAssistantTimestamp(createdAt);
+  const hasFinalContent = messageContent.some(
+    (part) =>
+      (part.type === "text" && part.text.trim()) || part.type === "source",
+  );
+  const showTimestamp =
+    timestampText &&
+    hasFinalContent &&
+    messageStatus !== "running" &&
+    messageStatus !== "requires-action";
   const groupAssistantParts = useCallback((part: PartState) => {
     if (part.type === "reasoning") return ["group-reasoning"] as const;
     if (part.type === "tool-call") return ["group-reasoning"] as const;
@@ -170,7 +180,7 @@ function GeminiAssistantMessage() {
             }
           }}
         </MessagePrimitive.GroupedParts>
-        {timestampText ? (
+        {showTimestamp ? (
           <div className="pt-1 text-right text-xs text-[#9aa0a6] dark:text-[#8f98aa]">
             Trả lời lúc {timestampText}
           </div>

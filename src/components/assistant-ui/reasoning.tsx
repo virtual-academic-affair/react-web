@@ -1,13 +1,21 @@
 import type { ReasoningMessagePartProps } from "@assistant-ui/react";
+import { Streamdown } from "streamdown";
 import {
   createContext,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
   type ComponentProps,
   type ReactNode,
 } from "react";
 import { MdKeyboardArrowDown, MdKeyboardArrowUp } from "react-icons/md";
+
+import {
+  STREAMDOWN_CONTROLS,
+  STREAMDOWN_LINK_SAFETY,
+} from "./markdown-text";
 
 type ReasoningVariant = "ghost" | "default";
 type StructuredReasoningStep = {
@@ -48,6 +56,19 @@ function ThinkingDots() {
   );
 }
 
+function ReasoningMarkdown({ text }: { text: string }) {
+  return (
+    <Streamdown
+      mode="streaming"
+      controls={STREAMDOWN_CONTROLS}
+      linkSafety={STREAMDOWN_LINK_SAFETY}
+      className="text-sm leading-relaxed text-[#3c4043] dark:text-[#d9e2ff]"
+    >
+      {text}
+    </Streamdown>
+  );
+}
+
 function StructuredReasoning({ steps }: { steps: StructuredReasoningStep[] }) {
   const busy = useContext(ReasoningBusyContext);
   return (
@@ -62,14 +83,14 @@ function StructuredReasoning({ steps }: { steps: StructuredReasoningStep[] }) {
               "border-[#d3e3fd]/70 bg-[#f8fafd] text-[#3c4043] dark:border-white/10 dark:bg-white/[0.04] dark:text-[#d9e2ff]",
             ].join(" ")}
           >
-            <p className="whitespace-pre-wrap text-sm leading-relaxed">
-              {step.content}
+            <div className="min-w-0">
+              <ReasoningMarkdown text={step.content} />
               {isCurrentStep ? (
                 <span className="ml-2 inline-flex align-middle text-[#1a73e8] dark:text-[#a8c7fa]">
                   <ThinkingDots />
                 </span>
               ) : null}
-            </p>
+            </div>
           </div>
         );
       })}
@@ -142,9 +163,30 @@ export function ReasoningTrigger({
   processingTimeMs,
 }: ReasoningTriggerProps) {
   const variant = useContext(ReasoningVariantContext);
+  const startTimeRef = useRef<number | null>(null);
+  const [elapsedMs, setElapsedMs] = useState(0);
+
+  useEffect(() => {
+    if (!active) {
+      startTimeRef.current = null;
+      return;
+    }
+
+    startTimeRef.current = Date.now();
+    const timerId = window.setInterval(() => {
+      const startTime = startTimeRef.current;
+      if (startTime) {
+        setElapsedMs(Date.now() - startTime);
+      }
+    }, 100);
+
+    return () => window.clearInterval(timerId);
+  }, [active]);
+
+  const displayTimeMs = active ? elapsedMs : processingTimeMs;
   const durationText =
-    typeof processingTimeMs === "number" && Number.isFinite(processingTimeMs)
-      ? `Suy nghĩ trong ${formatDuration(processingTimeMs)}`
+    typeof displayTimeMs === "number" && Number.isFinite(displayTimeMs)
+      ? `Suy nghĩ trong ${formatDuration(displayTimeMs)}`
       : "";
   if (variant === "ghost") {
     return (
@@ -244,5 +286,5 @@ export function Reasoning(part: ReasoningMessagePartProps) {
 
   if (structuredSteps) return <StructuredReasoning steps={structuredSteps} />;
   if (!part.text.trim()) return null;
-  return <pre className="font-sans whitespace-pre-wrap">{part.text}</pre>;
+  return <ReasoningMarkdown text={part.text} />;
 }
