@@ -12,30 +12,13 @@ import { MdKeyboardArrowDown, MdKeyboardArrowUp } from "react-icons/md";
 type ReasoningVariant = "ghost" | "default";
 type StructuredReasoningStep = {
   id: string;
-  type:
-    | "query_analysis"
-    | "faq_check"
-    | "retrieval"
-    | "call"
-    | "tool_output"
-    | "reasoning"
-    | "thought";
+  type: string;
   content: string;
 };
 
 const ReasoningVariantContext = createContext<ReasoningVariant>("default");
 const ReasoningBusyContext = createContext(false);
 const STRUCTURED_REASONING_PREFIX = "__CHATBOT_REASONING_STEPS__";
-
-const STEP_LABELS: Record<StructuredReasoningStep["type"], string> = {
-  query_analysis: "Phân tích câu hỏi",
-  faq_check: "Kiểm tra FAQ",
-  retrieval: "Tra cứu tài liệu",
-  call: "Công cụ",
-  tool_output: "Kết quả công cụ",
-  reasoning: "Suy luận",
-  thought: "Suy luận",
-};
 
 function parseStructuredReasoning(text: string) {
   if (!text.startsWith(STRUCTURED_REASONING_PREFIX)) return null;
@@ -70,41 +53,23 @@ function StructuredReasoning({ steps }: { steps: StructuredReasoningStep[] }) {
   return (
     <div className="space-y-2">
       {steps.map((step, index) => {
-        const isReasoning = step.type === "reasoning" || step.type === "thought";
         const isCurrentStep = busy && index === steps.length - 1;
         return (
           <div
             key={step.id}
             className={[
               "chat-message-enter rounded-lg border px-3 py-2 transition-all duration-300",
-              isReasoning
-                ? "border-transparent bg-transparent px-0 py-1"
-                : "border-[#d3e3fd]/70 bg-[#f8fafd] text-[#3c4043] dark:border-white/10 dark:bg-white/[0.04] dark:text-[#d9e2ff]",
+              "border-[#d3e3fd]/70 bg-[#f8fafd] text-[#3c4043] dark:border-white/10 dark:bg-white/[0.04] dark:text-[#d9e2ff]",
             ].join(" ")}
           >
-            {isReasoning ? (
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-[#5f6368] dark:text-[#c4c7c5]">
-                {step.content}
-                {isCurrentStep ? (
-                  <span className="ml-2 inline-flex align-middle text-[#1a73e8] dark:text-[#a8c7fa]">
-                    <ThinkingDots />
-                  </span>
-                ) : null}
-              </p>
-            ) : (
-              <div className="flex items-start gap-2">
-                <span className="mt-1.5 flex h-2 w-2 shrink-0 rounded-full bg-[#1a73e8] dark:bg-[#a8c7fa]" />
-                <div className="min-w-0 flex-1">
-                  <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold tracking-wide text-[#5f6368] uppercase dark:text-[#9aa0a6]">
-                    <span>{STEP_LABELS[step.type] ?? "Suy luận"}</span>
-                    {isCurrentStep ? <ThinkingDots /> : null}
-                  </div>
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                    {step.content}
-                  </p>
-                </div>
-              </div>
-            )}
+            <p className="whitespace-pre-wrap text-sm leading-relaxed">
+              {step.content}
+              {isCurrentStep ? (
+                <span className="ml-2 inline-flex align-middle text-[#1a73e8] dark:text-[#a8c7fa]">
+                  <ThinkingDots />
+                </span>
+              ) : null}
+            </p>
           </div>
         );
       })}
@@ -115,14 +80,36 @@ function StructuredReasoning({ steps }: { steps: StructuredReasoningStep[] }) {
 export type ReasoningRootProps = {
   children?: ReactNode;
   defaultOpen?: boolean;
+  resetKey?: string;
   variant?: ReasoningVariant;
 };
 
 export function ReasoningRoot({
   children,
   defaultOpen = false,
+  resetKey,
   variant = "default",
 }: ReasoningRootProps) {
+  return (
+    <ReasoningRootInner
+      key={`${resetKey ?? "static"}:${defaultOpen ? "open" : "closed"}`}
+      defaultOpen={defaultOpen}
+      variant={variant}
+    >
+      {children}
+    </ReasoningRootInner>
+  );
+}
+
+function ReasoningRootInner({
+  children,
+  defaultOpen,
+  variant,
+}: {
+  children?: ReactNode;
+  defaultOpen: boolean;
+  variant: ReasoningVariant;
+}) {
   const [open, setOpen] = useState(defaultOpen);
 
   const ghostRoot = variant === "ghost" ? "bg-transparent" : "";
@@ -140,10 +127,25 @@ export function ReasoningRoot({
   );
 }
 
-export type ReasoningTriggerProps = { active?: boolean };
+function formatDuration(ms: number) {
+  if (ms < 1000) return `${Math.round(ms)} ms`;
+  return `${(ms / 1000).toFixed(1)} giây`;
+}
 
-export function ReasoningTrigger({ active }: ReasoningTriggerProps) {
+export type ReasoningTriggerProps = {
+  active?: boolean;
+  processingTimeMs?: number;
+};
+
+export function ReasoningTrigger({
+  active,
+  processingTimeMs,
+}: ReasoningTriggerProps) {
   const variant = useContext(ReasoningVariantContext);
+  const durationText =
+    typeof processingTimeMs === "number" && Number.isFinite(processingTimeMs)
+      ? `Suy nghĩ trong ${formatDuration(processingTimeMs)}`
+      : "";
   if (variant === "ghost") {
     return (
       <summary
@@ -168,6 +170,11 @@ export function ReasoningTrigger({ active }: ReasoningTriggerProps) {
         <span className="text-xs font-medium text-[#80868b] dark:text-[#9aa0a6]">
           Suy luận
         </span>
+        {durationText ? (
+          <span className="text-xs text-[#9aa0a6] dark:text-[#8f98aa]">
+            {durationText}
+          </span>
+        ) : null}
       </summary>
     );
   }
@@ -191,6 +198,11 @@ export function ReasoningTrigger({ active }: ReasoningTriggerProps) {
       <span className="text-sm font-medium text-[#5f6368] dark:text-[#c4c7c5]">
         Suy luận
       </span>
+      {durationText ? (
+        <span className="text-xs text-[#80868b] dark:text-[#9aa0a6]">
+          {durationText}
+        </span>
+      ) : null}
     </summary>
   );
 }

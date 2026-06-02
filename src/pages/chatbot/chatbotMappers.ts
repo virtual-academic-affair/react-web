@@ -73,6 +73,54 @@ export function mergeFetchedSessions(
   return [...mergedFetched, ...preservedCurrent];
 }
 
+function historyStepsToStore(
+  rawSteps: ChatHistoryMessage["steps"],
+  sessionId: string,
+  sequence: number,
+) {
+  return (rawSteps ?? [])
+    .map((step, index): ChatReasoningStep | null => {
+      if (
+        !step ||
+        typeof step.type !== "string" ||
+        !step.type.trim() ||
+        typeof step.content !== "string" ||
+        !step.content.trim()
+      ) {
+        return null;
+      }
+
+      const reasoningStep: ChatReasoningStep = {
+        id: `${sessionId}-history-${sequence}-step-${index}`,
+        type: step.type.trim(),
+        content: step.content.trim(),
+      };
+      return reasoningStep;
+    })
+    .filter((step): step is ChatReasoningStep => step !== null);
+}
+
+function normalizeTokenUsage(msg: ChatHistoryMessage) {
+  const camel = msg.tokenUsage;
+  const snake = msg.token_usage;
+  if (camel) return camel;
+  if (!snake) return undefined;
+
+  const tokenUsage: ChatStoreMessage["tokenUsage"] = {};
+  const promptTokens = snake.prompt_tokens ?? snake.input_tokens;
+  const completionTokens = snake.completion_tokens ?? snake.output_tokens;
+  if (typeof promptTokens === "number") {
+    tokenUsage.promptTokens = promptTokens;
+  }
+  if (typeof completionTokens === "number") {
+    tokenUsage.completionTokens = completionTokens;
+  }
+  if (typeof snake.total_tokens === "number") {
+    tokenUsage.totalTokens = snake.total_tokens;
+  }
+  return Object.keys(tokenUsage).length ? tokenUsage : undefined;
+}
+
 export function historyMessageToStore(
   msg: ChatHistoryMessage,
   index: number,
@@ -92,26 +140,30 @@ export function historyMessageToStore(
     const pages = Array.isArray(pagesRaw)
       ? pagesRaw.filter((page): page is string => typeof page === "string")
       : undefined;
-    sources.push({
+    const sourceItem: ChatSourceItem = {
       title: typeof raw.title === "string" && raw.title ? raw.title : url,
       url,
-      citationId:
-        typeof (raw as { citation_id?: unknown }).citation_id === "number"
-          ? (raw as { citation_id: number }).citation_id
-          : undefined,
-      fileName:
-        typeof (raw as { file_name?: unknown }).file_name === "string"
-          ? (raw as { file_name: string }).file_name
-          : undefined,
-      pages: pages?.length ? pages : undefined,
-      markdownUrl:
-        typeof (raw as { markdown_url?: unknown }).markdown_url === "string"
-          ? (raw as { markdown_url: string }).markdown_url
-          : undefined,
-    });
+    };
+    if (typeof (raw as { citation_id?: unknown }).citation_id === "number") {
+      sourceItem.citationId = (raw as { citation_id: number }).citation_id;
+    }
+    if (typeof (raw as { file_name?: unknown }).file_name === "string") {
+      sourceItem.fileName = (raw as { file_name: string }).file_name;
+    }
+    if (pages?.length) {
+      sourceItem.pages = pages;
+    }
+    if (typeof (raw as { markdown_url?: unknown }).markdown_url === "string") {
+      sourceItem.markdownUrl = (raw as { markdown_url: string }).markdown_url;
+    }
+    sources.push(sourceItem);
   }
+  const createdAt = msg.createdAt ?? msg.created_at ?? new Date().toISOString();
+  const reasoningSteps = historyStepsToStore(msg.steps, sessionId, msg.sequence);
+  const tokenUsage = normalizeTokenUsage(msg);
+  const processingTimeMs = msg.processingTimeMs ?? msg.processing_time_ms;
 
-  return {
+  const storeMessage: ChatStoreMessage = {
     id: `${sessionId}-history-${msg.sequence}-${index}`,
     role: msg.role,
     content:
@@ -119,14 +171,32 @@ export function historyMessageToStore(
       (msg.messageType ?? msg.message_type) === "thinking"
         ? ""
         : msg.content,
-    createdAt: msg.createdAt ?? msg.created_at,
-    reasoning:
-      msg.role === "assistant" &&
-      (msg.messageType ?? msg.message_type) === "thinking"
-        ? msg.content
-        : undefined,
-    sources: sources.length ? sources : undefined,
+    createdAt,
   };
+
+  if (msg.role === "assistant") {
+    storeMessage.reasoningDefaultOpen = false;
+  }
+  if (
+    msg.role === "assistant" &&
+    (msg.messageType ?? msg.message_type) === "thinking"
+  ) {
+    storeMessage.reasoning = msg.content;
+  }
+  if (reasoningSteps.length) {
+    storeMessage.reasoningSteps = reasoningSteps;
+  }
+  if (tokenUsage) {
+    storeMessage.tokenUsage = tokenUsage;
+  }
+  if (typeof processingTimeMs === "number") {
+    storeMessage.processingTimeMs = processingTimeMs;
+  }
+  if (sources.length) {
+    storeMessage.sources = sources;
+  }
+
+  return storeMessage;
 }
 
 function splitReasoningIntoSteps(raw: string | undefined): string[] {
@@ -146,6 +216,17 @@ function splitReasoningIntoSteps(raw: string | undefined): string[] {
 
 function encodeReasoningSteps(steps: ChatReasoningStep[]) {
   return `${STRUCTURED_REASONING_PREFIX}${JSON.stringify(steps)}`;
+}
+
+function reasoningParentId(base: string, message: ChatStoreMessage) {
+  const openState =
+    message.reasoningDefaultOpen === false ? "closed" : "open";
+  const processingTime =
+    typeof message.processingTimeMs === "number" &&
+    Number.isFinite(message.processingTimeMs)
+      ? `:ms=${Math.round(message.processingTimeMs)}`
+      : "";
+  return `${base}:${openState}${processingTime}`;
 }
 
 export function convertMessage(m: ChatStoreMessage): ThreadMessageLike {
@@ -188,7 +269,7 @@ export function convertMessage(m: ChatStoreMessage): ThreadMessageLike {
       parts.push({
         type: "reasoning",
         text: encodeReasoningSteps(m.reasoningSteps),
-        parentId: "structured-reasoning",
+        parentId: reasoningParentId("structured-reasoning", m),
       });
     } else {
       const steps = splitReasoningIntoSteps(m.reasoning);
@@ -197,7 +278,7 @@ export function convertMessage(m: ChatStoreMessage): ThreadMessageLike {
         parts.push({
           type: "reasoning",
           text: step,
-          parentId: `r-${i}-of-${n}`,
+          parentId: reasoningParentId(`r-${i}-of-${n}`, m),
         });
       });
     }

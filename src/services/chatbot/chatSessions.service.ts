@@ -26,10 +26,17 @@ export interface ChatHistoryMessage {
   message_type?: "text" | "thinking";
   content: string;
   sequence: number;
-  token_usage: {
+  tokenUsage?: {
+    promptTokens?: number;
+    completionTokens?: number;
+    totalTokens?: number;
+  } | null;
+  token_usage?: {
     input_tokens?: number;
     output_tokens?: number;
     total_tokens?: number;
+    prompt_tokens?: number;
+    completion_tokens?: number;
   } | null;
   sources: Array<{
     document_id?: string;
@@ -42,9 +49,14 @@ export interface ChatHistoryMessage {
     pages?: string[];
     markdown_url?: string;
   }> | null;
-  processing_time_ms: number | null;
+  steps?: Array<{
+    type: string;
+    content?: string;
+  }> | null;
+  processingTimeMs?: number | null;
+  processing_time_ms?: number | null;
   createdAt?: string;
-  created_at: string;
+  created_at?: string;
 }
 
 export interface ChatSessionMessagesResponse {

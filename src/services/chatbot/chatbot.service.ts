@@ -56,34 +56,14 @@ export interface ChatRetrievePreviewResponse {
   items: ChatRetrievePreviewItem[];
 }
 
-interface StreamBaseEvent {
+export interface ChatStreamEvent {
+  type?: string;
   done?: boolean;
-}
-
-export interface StreamTextEvent extends StreamBaseEvent {
-  type: "text";
-  content: string;
-}
-
-export interface StreamReasoningEvent extends StreamBaseEvent {
-  type: "reasoning" | "thought";
   content?: string;
-}
-
-export interface StreamCallEvent extends StreamBaseEvent {
-  type: "call";
+  chunk?: string;
   name?: string;
   args?: unknown;
-}
-
-export interface StreamToolOutputEvent extends StreamBaseEvent {
-  type: "tool_output";
-  name?: string;
   output?: unknown;
-}
-
-export interface StreamDoneEvent extends StreamBaseEvent {
-  done: true;
   sources?: unknown[];
   tokenUsage?: {
     promptTokens?: number;
@@ -99,15 +79,9 @@ export interface StreamDoneEvent extends StreamBaseEvent {
   error?: string;
   session_id?: string;
   sessionId?: string;
+  steps?: unknown[];
+  [key: string]: unknown;
 }
-
-export type ChatStreamEvent =
-  | StreamTextEvent
-  | StreamReasoningEvent
-  | StreamCallEvent
-  | StreamToolOutputEvent
-  | StreamDoneEvent
-  | (Record<string, unknown> & StreamBaseEvent);
 
 const getAuthToken = (): string | null => {
   const storeToken = useAuthStore.getState().accessToken;

@@ -8,18 +8,9 @@ export type ChatStoreToolCall = {
   isError?: boolean;
 };
 
-export type ChatReasoningStepType =
-  | "query_analysis"
-  | "faq_check"
-  | "retrieval"
-  | "call"
-  | "tool_output"
-  | "reasoning"
-  | "thought";
-
 export type ChatReasoningStep = {
   id: string;
-  type: ChatReasoningStepType;
+  type: string;
   content: string;
 };
 
@@ -30,6 +21,13 @@ export type ChatStoreMessage = {
   createdAt: string;
   reasoning?: string;
   reasoningSteps?: ChatReasoningStep[];
+  reasoningDefaultOpen?: boolean;
+  tokenUsage?: {
+    promptTokens?: number;
+    completionTokens?: number;
+    totalTokens?: number;
+  };
+  processingTimeMs?: number;
   sources?: ChatSourceItem[];
   toolCalls?: ChatStoreToolCall[];
 };

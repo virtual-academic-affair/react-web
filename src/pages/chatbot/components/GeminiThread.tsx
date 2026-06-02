@@ -3,6 +3,7 @@ import {
   MessagePrimitive,
   ThreadPrimitive,
   useAuiState,
+  useMessage,
   type PartState,
 } from "@assistant-ui/react";
 import { useCallback } from "react";
@@ -22,6 +23,30 @@ import { ToolFallback } from "@/components/assistant-ui/tool-fallback";
 import { useChatbotShell } from "../chatbotShellContext";
 
 const GEMINI_INPUT_PLACEHOLDER = "Hỏi Chatbot giáo vụ";
+
+function parseReasoningParentId(parentId: string | undefined) {
+  return {
+    defaultOpen: !parentId?.includes(":closed"),
+    processingTimeMs: (() => {
+      const raw = parentId?.match(/:ms=(\d+)/)?.[1];
+      if (!raw) return undefined;
+      const value = Number(raw);
+      return Number.isFinite(value) ? value : undefined;
+    })(),
+  };
+}
+
+function formatAssistantTimestamp(raw: unknown) {
+  const date = raw instanceof Date ? raw : new Date(String(raw ?? ""));
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
 
 const geminiUserMessagePartComponents = {
   Reasoning: () => null,
@@ -43,6 +68,10 @@ function GeminiUserMessage() {
 }
 
 function GeminiAssistantMessage() {
+  const messageId = useMessage((state) => state.id);
+  const messageContent = useMessage((state) => state.content);
+  const createdAt = useMessage((state) => state.createdAt);
+  const timestampText = formatAssistantTimestamp(createdAt);
   const groupAssistantParts = useCallback((part: PartState) => {
     if (part.type === "reasoning") return ["group-reasoning"] as const;
     if (part.type === "tool-call") return ["group-reasoning"] as const;
@@ -65,13 +94,29 @@ function GeminiAssistantMessage() {
               case "group-reasoning": {
                 const running =
                   "status" in part && part.status?.type === "running";
+                const firstReasoningPart = part.indices
+                  .map((index) => messageContent[index])
+                  .find((item) => item?.type === "reasoning");
+                const reasoningMeta = parseReasoningParentId(
+                  firstReasoningPart &&
+                    "parentId" in firstReasoningPart &&
+                    typeof firstReasoningPart.parentId === "string"
+                    ? firstReasoningPart.parentId
+                    : undefined,
+                );
+                const defaultOpen =
+                  running || reasoningMeta.defaultOpen;
                 return (
                   <ReasoningRoot
                     key={part.indices.join("-")}
-                    defaultOpen
+                    defaultOpen={defaultOpen}
+                    resetKey={`${messageId}:${part.indices.join("-")}`}
                     variant="ghost"
                   >
-                    <ReasoningTrigger active={running} />
+                    <ReasoningTrigger
+                      active={running}
+                      processingTimeMs={reasoningMeta.processingTimeMs}
+                    />
                     <ReasoningContent aria-busy={running}>
                       <ReasoningText>{children}</ReasoningText>
                     </ReasoningContent>
@@ -100,6 +145,11 @@ function GeminiAssistantMessage() {
             }
           }}
         </MessagePrimitive.GroupedParts>
+        {timestampText ? (
+          <div className="pt-1 text-right text-xs text-[#9aa0a6] dark:text-[#8f98aa]">
+            Trả lời lúc {timestampText}
+          </div>
+        ) : null}
       </div>
     </MessagePrimitive.Root>
   );

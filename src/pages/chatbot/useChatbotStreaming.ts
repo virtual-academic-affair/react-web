@@ -17,7 +17,6 @@ import {
 import { CHAT_SYSTEM_BUSY_MESSAGE } from "./constants";
 import type {
   ChatReasoningStep,
-  ChatReasoningStepType,
   ChatStoreMessage,
   ChatThreadSession,
 } from "./types";
@@ -68,19 +67,9 @@ function updateAssistantMessage(
   );
 }
 
-const STREAM_REASONING_STEP_TYPES = new Set<string>([
-  "query_analysis",
-  "faq_check",
-  "retrieval",
-  "call",
-  "tool_output",
-  "reasoning",
-  "thought",
-]);
-
 function appendReasoningStep(
   item: ChatStoreMessage,
-  type: ChatReasoningStepType,
+  type: string,
   content: string,
 ) {
   const steps = [...(item.reasoningSteps ?? [])];
@@ -121,17 +110,18 @@ function reasoningStepsFromDoneEvent(rawSteps: unknown[]): ChatReasoningStep[] {
       const candidate = step as Record<string, unknown>;
       if (
         typeof candidate.type !== "string" ||
-        !STREAM_REASONING_STEP_TYPES.has(candidate.type) ||
+        !candidate.type.trim() ||
         typeof candidate.content !== "string" ||
         !candidate.content.trim()
       ) {
         return null;
       }
-      return {
+      const reasoningStep: ChatReasoningStep = {
         id: newChatbotId("reasoning-step"),
-        type: candidate.type as ChatReasoningStepType,
-        content: candidate.content,
+        type: candidate.type.trim(),
+        content: candidate.content.trim(),
       };
+      return reasoningStep;
     })
     .filter((step): step is ChatReasoningStep => step !== null);
 }
@@ -184,7 +174,7 @@ export function useChatbotStreaming({
 
             if (
               eventType &&
-              STREAM_REASONING_STEP_TYPES.has(eventType) &&
+              eventType !== "text" &&
               textChunk
             ) {
               updateAssistantMessage(
@@ -192,11 +182,7 @@ export function useChatbotStreaming({
                 threadId,
                 assistantId,
                 (item) =>
-                  appendReasoningStep(
-                    item,
-                    eventType as ChatReasoningStepType,
-                    textChunk,
-                  ),
+                  appendReasoningStep(item, eventType, textChunk),
               );
               return;
             }
@@ -306,6 +292,8 @@ export function useChatbotStreaming({
                 error?: unknown;
                 session_id?: string;
                 sessionId?: string;
+                processing_time_ms?: unknown;
+                processingTimeMs?: unknown;
               };
               const errorText =
                 typeof doneEvent.error === "string"
@@ -318,6 +306,12 @@ export function useChatbotStreaming({
                 (typeof doneEvent.sessionId === "string" &&
                   doneEvent.sessionId) ||
                 null;
+              const processingTimeMs =
+                typeof doneEvent.processing_time_ms === "number"
+                  ? doneEvent.processing_time_ms
+                  : typeof doneEvent.processingTimeMs === "number"
+                    ? doneEvent.processingTimeMs
+                    : undefined;
 
               if (errorText) {
                 setSystemError(CHAT_SYSTEM_BUSY_MESSAGE);
@@ -349,6 +343,7 @@ export function useChatbotStreaming({
                                     doneEvent.steps ?? [],
                                   ),
                             sources: sources.length ? sources : [],
+                            processingTimeMs,
                           }
                         : item,
                     ),
@@ -440,6 +435,7 @@ export function useChatbotStreaming({
                     role: "assistant",
                     content: "",
                     createdAt: now,
+                    reasoningDefaultOpen: true,
                   },
                 ],
               }
