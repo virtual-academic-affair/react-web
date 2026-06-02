@@ -418,30 +418,41 @@ export function useChatbotStreaming({
       const assistantId = newChatbotId("assistant");
       const now = new Date().toISOString();
 
-      setSessions((prev) =>
-        prev.map((session) =>
-          session.id === threadId
-            ? {
-                ...session,
-                title:
-                  session.title && session.title !== DEFAULT_NEW_TITLE
-                    ? session.title
-                    : text.slice(0, 60),
-                messages: [
-                  ...session.messages,
-                  { id: userId, role: "user", content: text, createdAt: now },
-                  {
-                    id: assistantId,
-                    role: "assistant",
-                    content: "",
-                    createdAt: now,
-                    reasoningDefaultOpen: true,
-                  },
-                ],
-              }
-            : session,
-        ),
-      );
+      setSessions((prev) => {
+        const existing = prev.find((session) => session.id === threadId);
+        const nextSession: ChatThreadSession = {
+          ...(existing ?? {
+            id: threadId,
+            serverId: null,
+            title: DEFAULT_NEW_TITLE,
+            status: "active",
+            messages: [],
+            messagesLoaded: true,
+            lastMessageAt: null,
+            updatedAt: null,
+          }),
+          title:
+            existing?.title && existing.title !== DEFAULT_NEW_TITLE
+              ? existing.title
+              : text.slice(0, 60),
+          messages: [
+            ...(existing?.messages ?? []),
+            { id: userId, role: "user", content: text, createdAt: now },
+            {
+              id: assistantId,
+              role: "assistant",
+              content: "",
+              createdAt: now,
+              reasoningDefaultOpen: true,
+            },
+          ],
+        };
+
+        if (!existing) return [nextSession, ...prev];
+        return prev.map((session) =>
+          session.id === threadId ? nextSession : session,
+        );
+      });
 
       abortRef.current?.abort();
       abortRef.current = new AbortController();

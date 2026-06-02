@@ -31,9 +31,7 @@ export function useChatbotRuntime() {
     draftRef.current = createDraftSession();
   }
 
-  const [sessions, setSessions] = useState<ChatThreadSession[]>([
-    draftRef.current,
-  ]);
+  const [sessions, setSessions] = useState<ChatThreadSession[]>([]);
   const [activeThreadId, setActiveThreadId] = useState(draftRef.current.id);
   const [systemError, setSystemError] = useState<string | null>(null);
   const [isResolvingInitial, setIsResolvingInitial] = useState(true);
@@ -168,7 +166,9 @@ export function useChatbotRuntime() {
         );
         const shouldKeepCurrentThread =
           !!selectedByUserId ||
-          (!!currentActive && currentActive.id !== draftRef.current?.id);
+          (!!currentActive &&
+            (currentActive.id !== draftRef.current?.id ||
+              currentActive.messages.length > 0));
         const sessionsFromServer = archivedRouteTarget
           ? mergeFetchedSessions([archivedRouteTarget], activeSessions)
           : activeSessions;
@@ -263,17 +263,11 @@ export function useChatbotRuntime() {
     abortRef.current?.abort();
     selectedByUserRef.current = null;
     setSystemError(null);
-    const existingDraft = sessionsRef.current.find(
-      (s) => !s.serverId && s.messages.length === 0,
-    );
-    if (existingDraft) {
-      setActiveThreadId(existingDraft.id);
-      navigateToChatbotRoot();
-      return;
-    }
     const draft = createDraftSession();
     draftRef.current = draft;
-    setSessions((prev) => [draft, ...prev]);
+    setSessions((prev) =>
+      prev.filter((session) => session.serverId || session.messages.length > 0),
+    );
     setActiveThreadId(draft.id);
     navigateToChatbotRoot();
   }, [navigateToChatbotRoot]);

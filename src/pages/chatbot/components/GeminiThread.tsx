@@ -7,7 +7,14 @@ import {
   type PartState,
 } from "@assistant-ui/react";
 import { useCallback } from "react";
-import { MdAutoAwesome, MdSend, MdSquare } from "react-icons/md";
+import {
+  MdAutoAwesome,
+  MdChecklist,
+  MdDescription,
+  MdSchool,
+  MdSend,
+  MdSquare,
+} from "react-icons/md";
 
 import { MarkdownText } from "@/components/assistant-ui/markdown-text";
 import {
@@ -23,6 +30,24 @@ import { ToolFallback } from "@/components/assistant-ui/tool-fallback";
 import { useChatbotShell } from "../chatbotShellContext";
 
 const GEMINI_INPUT_PLACEHOLDER = "Hỏi Chatbot giáo vụ";
+
+const EMPTY_PROMPTS = [
+  {
+    icon: MdSchool,
+    title: "Điều kiện tốt nghiệp",
+    text: "Hỏi về tín chỉ, chuẩn ngoại ngữ, chứng chỉ bắt buộc.",
+  },
+  {
+    icon: MdChecklist,
+    title: "Quy chế học vụ",
+    text: "Tra cứu quy định học lại, cải thiện điểm, cảnh báo học tập.",
+  },
+  {
+    icon: MdDescription,
+    title: "Tài liệu đào tạo",
+    text: "Tìm thông tin trong chương trình đào tạo và văn bản liên quan.",
+  },
+] as const;
 
 function parseReasoningParentId(parentId: string | undefined) {
   return {
@@ -211,14 +236,58 @@ function GeminiStickyComposer() {
   );
 }
 
+function ChatbotEmptyState() {
+  return (
+    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-4 py-10 text-center">
+      <div
+        className="mb-5 flex h-14 w-14 items-center justify-center rounded-full border border-[#d3e3fd]/60 bg-[#eef4ff] text-[#1a73e8] shadow-sm dark:border-white/10 dark:bg-white/[0.06] dark:text-[#a8c7fa]"
+        aria-hidden
+      >
+        <MdAutoAwesome className="h-6 w-6" />
+      </div>
+      <h1 className="text-2xl font-semibold tracking-normal text-[#202124] sm:text-3xl dark:text-white">
+        Bạn cần hỏi gì về học vụ?
+      </h1>
+      <p className="mt-3 max-w-xl text-sm leading-6 text-[#5f6368] dark:text-[#b8c0d6]">
+        Nhập câu hỏi bên dưới để tra cứu quy chế, chương trình đào tạo và các
+        tài liệu học vụ đã được bóc tách.
+      </p>
+      <div className="mt-7 grid w-full gap-3 sm:grid-cols-3">
+        {EMPTY_PROMPTS.map((item) => {
+          const Icon = item.icon;
+          return (
+            <div
+              key={item.title}
+              className="rounded-2xl border border-[#d3e3fd]/70 bg-white/80 p-4 text-left shadow-[0_8px_28px_-24px_rgba(26,115,232,0.5)] dark:border-white/10 dark:bg-white/[0.04]"
+            >
+              <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-[#d3e3fd] text-[#0b57d0] dark:bg-[#1f3760] dark:text-[#a8c7fa]">
+                <Icon className="h-5 w-5" />
+              </div>
+              <div className="text-sm font-semibold text-[#202124] dark:text-white">
+                {item.title}
+              </div>
+              <div className="mt-1 text-xs leading-5 text-[#5f6368] dark:text-[#9aa0a6]">
+                {item.text}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /** Giao diện theo hướng [Gemini clone assistant-ui](https://www.assistant-ui.com/examples/gemini). */
 export function GeminiThread({ className = "" }: { className?: string }) {
+  const hasMessages = useAuiState((s) => s.thread.messages.length > 0);
+
   return (
     <ThreadPrimitive.Root
       className={`flex h-full min-h-0 w-full flex-col bg-transparent text-base text-[#1f1f1f] dark:text-white ${className}`.trim()}
     >
       <ThreadPrimitive.Viewport className="min-h-0 w-full flex-1 overflow-y-auto overscroll-y-contain">
-        <div className="w-full pt-4 pb-2 md:pt-5">
+        <div className="flex min-h-full w-full flex-col pt-4 pb-2 md:pt-5">
+          {hasMessages ? null : <ChatbotEmptyState />}
           <ThreadPrimitive.Messages
             components={{
               UserMessage: GeminiUserMessage,

@@ -48,7 +48,9 @@ export function ChatbotThreadToolbar() {
   const activeSessions = useMemo(
     () =>
       sortSessionsByActivity(
-        sessions.filter((session) => session.status === "active"),
+        sessions.filter(
+          (session) => session.status === "active" && !!session.serverId,
+        ),
         activeThreadId,
       ),
     [activeThreadId, sessions],
