@@ -106,6 +106,7 @@ export function ChatbotThreadToolbar() {
     try {
       await deleteThread(deleteTarget);
       setDeleteTarget(null);
+      setMode("active");
     } finally {
       setIsDeleting(false);
     }

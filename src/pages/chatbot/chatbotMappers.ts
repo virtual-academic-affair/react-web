@@ -121,43 +121,50 @@ function normalizeTokenUsage(msg: ChatHistoryMessage) {
   return undefined;
 }
 
+function firstNonEmptyString(...values: unknown[]) {
+  return values.find(
+    (value): value is string => typeof value === "string" && !!value.trim(),
+  );
+}
+
+function historySourceToStore(raw: NonNullable<ChatHistoryMessage["sources"]>[number]) {
+  const url = firstNonEmptyString(raw.originalUrl, raw.original_url, raw.url);
+  if (!url) return null;
+
+  const pages = Array.isArray(raw.pages)
+    ? raw.pages.filter((page): page is string => typeof page === "string")
+    : undefined;
+  const citationId = raw.citationId ?? raw.citation_id;
+  const fileName = firstNonEmptyString(raw.fileName, raw.file_name);
+  const markdownUrl = firstNonEmptyString(raw.markdownUrl, raw.markdown_url);
+
+  const sourceItem: ChatSourceItem = {
+    title: firstNonEmptyString(raw.title) ?? url,
+    url,
+  };
+  if (typeof citationId === "number") {
+    sourceItem.citationId = citationId;
+  }
+  if (fileName) {
+    sourceItem.fileName = fileName;
+  }
+  if (pages?.length) {
+    sourceItem.pages = pages;
+  }
+  if (markdownUrl) {
+    sourceItem.markdownUrl = markdownUrl;
+  }
+  return sourceItem;
+}
+
 export function historyMessageToStore(
   msg: ChatHistoryMessage,
   index: number,
   sessionId: string,
 ): ChatStoreMessage {
-  const sources: ChatSourceItem[] = [];
-  for (const raw of msg.sources ?? []) {
-    if (!raw) continue;
-    const url =
-      typeof raw.originalUrl === "string" && raw.originalUrl
-        ? raw.originalUrl
-        : typeof raw.url === "string" && raw.url
-          ? raw.url
-          : "";
-    if (!url) continue;
-    const pagesRaw = (raw as { pages?: unknown }).pages;
-    const pages = Array.isArray(pagesRaw)
-      ? pagesRaw.filter((page): page is string => typeof page === "string")
-      : undefined;
-    const sourceItem: ChatSourceItem = {
-      title: typeof raw.title === "string" && raw.title ? raw.title : url,
-      url,
-    };
-    if (typeof raw.citationId === "number") {
-      sourceItem.citationId = raw.citationId;
-    }
-    if (typeof raw.fileName === "string") {
-      sourceItem.fileName = raw.fileName;
-    }
-    if (pages?.length) {
-      sourceItem.pages = pages;
-    }
-    if (typeof raw.markdownUrl === "string") {
-      sourceItem.markdownUrl = raw.markdownUrl;
-    }
-    sources.push(sourceItem);
-  }
+  const sources = (msg.sources ?? [])
+    .map(historySourceToStore)
+    .filter((source): source is ChatSourceItem => source !== null);
   const createdAt = msg.createdAt ?? new Date().toISOString();
   const reasoningSteps = historyStepsToStore(msg.steps, sessionId, msg.sequence);
   const tokenUsage = normalizeTokenUsage(msg);

@@ -36,11 +36,15 @@ export interface ChatHistoryMessage {
     title?: string;
     score?: number;
     citationId?: number;
+    citation_id?: number;
     url?: string;
     originalUrl?: string;
+    original_url?: string;
     fileName?: string;
+    file_name?: string;
     pages?: string[];
     markdownUrl?: string;
+    markdown_url?: string;
   }> | null;
   steps?: Array<{
     type: string;

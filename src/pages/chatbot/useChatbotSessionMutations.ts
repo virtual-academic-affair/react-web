@@ -179,14 +179,23 @@ export function useChatbotSessionMutations({
       const target =
         sessionsRef.current.find((s) => s.id === session.id) ?? session;
       if (!target) return;
+      const openNewChat = () => {
+        const draft = createDraftSession();
+        draftRef.current = draft;
+        setActiveThreadId(draft.id);
+        setSessions((prev) =>
+          prev.filter((item) => item.id !== target.id && !!item.serverId),
+        );
+        navigateToChatbotRoot({ replace: true });
+      };
       if (!target.serverId) {
-        removeThreadFromState(target.id);
+        openNewChat();
         return;
       }
       try {
         await deleteSession(target.serverId);
         removeSessionFromQueryCache(target.id);
-        removeThreadFromState(target.id);
+        openNewChat();
         await invalidateSessionQueries();
       } catch {
         setSystemError("Không xoá được cuộc trò chuyện.");
@@ -195,8 +204,11 @@ export function useChatbotSessionMutations({
     [
       invalidateSessionQueries,
       removeSessionFromQueryCache,
-      removeThreadFromState,
+      draftRef,
+      navigateToChatbotRoot,
       sessionsRef,
+      setActiveThreadId,
+      setSessions,
       setSystemError,
     ],
   );
