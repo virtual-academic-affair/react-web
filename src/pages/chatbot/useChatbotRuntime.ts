@@ -172,6 +172,10 @@ export function useChatbotRuntime() {
         initialResolvedRef.current = true;
         setIsResolvingInitial(false);
 
+        if (!initialRouteThreadId) {
+          return;
+        }
+
         if (shouldKeepCurrentThread) {
           if (currentActive) {
             await loadMessagesForSession(currentActive);
@@ -179,8 +183,7 @@ export function useChatbotRuntime() {
           return;
         }
 
-        const first =
-          archivedRouteTarget ?? activeRouteTarget ?? activeSessions[0];
+        const first = archivedRouteTarget ?? activeRouteTarget;
         if (!first) return;
 
         setActiveThreadId(first.id);

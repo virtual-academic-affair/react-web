@@ -172,17 +172,12 @@ export function useChatbotStreaming({
                   ? ev.content
                   : "";
 
-            if (
-              eventType &&
-              eventType !== "text" &&
-              textChunk
-            ) {
+            if (eventType && eventType !== "text" && textChunk) {
               updateAssistantMessage(
                 setSessions,
                 threadId,
                 assistantId,
-                (item) =>
-                  appendReasoningStep(item, eventType, textChunk),
+                (item) => appendReasoningStep(item, eventType, textChunk),
               );
               return;
             }
@@ -336,12 +331,11 @@ export function useChatbotStreaming({
                       item.id === assistantId
                         ? {
                             ...item,
-                            reasoningSteps:
-                              item.reasoningSteps?.length
-                                ? item.reasoningSteps
-                                : reasoningStepsFromDoneEvent(
-                                    doneEvent.steps ?? [],
-                                  ),
+                            reasoningSteps: item.reasoningSteps?.length
+                              ? item.reasoningSteps
+                              : reasoningStepsFromDoneEvent(
+                                  doneEvent.steps ?? [],
+                                ),
                             sources: sources.length ? sources : [],
                             processingTimeMs,
                           }

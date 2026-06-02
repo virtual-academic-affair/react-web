@@ -1,6 +1,6 @@
 import { API_CONFIG, API_ENDPOINTS } from "@/config/api.config";
-import ragHttp from "../rag-http";
 import { useAuthStore } from "@/stores/auth.store";
+import ragHttp from "../rag-http";
 
 const SSE_EVENT_SEPARATOR = "\n\n";
 const SSE_DATA_PREFIX = "data: ";
@@ -182,4 +182,3 @@ export async function streamChat(
     }
   }
 }
-

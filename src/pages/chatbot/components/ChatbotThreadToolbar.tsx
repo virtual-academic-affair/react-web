@@ -113,7 +113,7 @@ export function ChatbotThreadToolbar() {
 
   return (
     <>
-      <aside className="dark:bg-navy-800 flex max-h-[260px] min-h-0 w-full shrink-0 flex-col rounded-3xl bg-white/80 p-3 shadow-[0_2px_12px_-6px_rgba(0,0,0,0.28)] ring-1 ring-black/5 backdrop-blur dark:ring-white/10 lg:h-full lg:max-h-none lg:w-[280px]">
+      <aside className="dark:bg-navy-800 flex max-h-[260px] min-h-0 w-full shrink-0 flex-col rounded-3xl bg-white/80 p-3 shadow-[0_2px_12px_-6px_rgba(0,0,0,0.28)] ring-1 ring-black/5 backdrop-blur dark:ring-white/10 lg:sticky lg:top-5 lg:h-[calc(100vh-2.5rem)] lg:max-h-[calc(100vh-2.5rem)] lg:w-[280px]">
         <div className="mb-3 flex shrink-0 items-center gap-2">
           <button
             type="button"
