@@ -235,7 +235,7 @@ function GeminiComposer() {
 
 function GeminiStickyComposer() {
   return (
-    <div className="sticky bottom-0 z-20 shrink-0 bg-lightPrimary/95 pt-3 pb-5 backdrop-blur dark:border-white/10 dark:bg-navy-900/95">
+    <div className="bg-lightPrimary/95 dark:bg-navy-900/95 sticky bottom-0 z-20 shrink-0 pt-3 pb-5 backdrop-blur dark:border-white/10">
       <GeminiComposer />
       <p className="mx-auto mt-2 max-w-lg px-2 text-center text-xs leading-snug text-[#444746] dark:text-gray-400">
         Câu trả lời của AI chỉ mang tính chất tham khảo. Xác thực lại với các

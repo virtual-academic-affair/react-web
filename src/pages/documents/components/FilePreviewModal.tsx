@@ -163,18 +163,32 @@ interface FilePreviewModalProps {
 
 // ── Sub-components ───────────────────────────────────────────────────────────
 
-const PdfPreview: React.FC<{ url: string; initialPage?: number }> = ({
+interface PdfPreviewProps {
+  url: string;
+  initialPage?: number;
+  scale: number;
+  currentPage: number;
+  numPages: number;
+  setNumPages: (n: number) => void;
+  setCurrentPage: (p: number) => void;
+  pdfScrollRef: React.MutableRefObject<((page: number) => void) | undefined>;
+}
+
+const PdfPreview: React.FC<PdfPreviewProps> = ({
   url,
   initialPage = 1,
+  scale,
+  currentPage,
+  numPages,
+  setNumPages,
+  setCurrentPage,
+  pdfScrollRef,
 }) => {
-  const [numPages, setNumPages] = useState<number>(0);
-  const [currentPage, setCurrentPage] = useState(initialPage);
-  const [scale, setScale] = useState(1.2);
   const containerRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const handleScroll = () => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || numPages === 0) return;
     const { scrollTop, clientHeight } = containerRef.current;
 
     // Tìm trang nào đang chiếm phần lớn diện tích nhìn thấy (viewport)
@@ -202,73 +216,23 @@ const PdfPreview: React.FC<{ url: string; initialPage?: number }> = ({
     }
   };
 
-  const handlePrevPage = () => {
-    if (currentPage <= 1 || !containerRef.current) return;
-    const prevPageRef = pageRefs.current[currentPage - 2];
-    if (prevPageRef) {
-      containerRef.current.scrollTo({
-        top: prevPageRef.offsetTop - 32, // trừ hao padding
-        behavior: "smooth",
-      });
-      setCurrentPage((prev) => prev - 1);
-    }
-  };
-
-  const handleNextPage = () => {
-    if (currentPage >= numPages || !containerRef.current) return;
-    const nextPageRef = pageRefs.current[currentPage];
-    if (nextPageRef) {
-      containerRef.current.scrollTo({
-        top: nextPageRef.offsetTop - 32,
-        behavior: "smooth",
-      });
-      setCurrentPage((prev) => prev + 1);
-    }
-  };
+  useEffect(() => {
+    pdfScrollRef.current = (page: number) => {
+      const target = pageRefs.current[page - 1];
+      if (containerRef.current && target) {
+        containerRef.current.scrollTo({
+          top: target.offsetTop - 32, // trừ hao padding
+          behavior: "smooth",
+        });
+      }
+    };
+    return () => {
+      pdfScrollRef.current = undefined;
+    };
+  }, [numPages]);
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {/* PDF toolbar */}
-      <div className="z-10 flex shrink-0 items-center justify-center gap-3 border-b border-white/8 bg-[#202124]/80 px-4 py-2">
-        <button
-          type="button"
-          onClick={handlePrevPage}
-          disabled={currentPage <= 1}
-          className="rounded-lg p-1.5 text-white/70 transition-colors hover:bg-white/10 disabled:opacity-30"
-        >
-          <MdChevronLeft className="h-5 w-5" />
-        </button>
-        <span className="w-16 text-center text-sm text-white/80">
-          {currentPage} / {numPages || "–"}
-        </span>
-        <button
-          type="button"
-          onClick={handleNextPage}
-          disabled={currentPage >= numPages}
-          className="rounded-lg p-1.5 text-white/70 transition-colors hover:bg-white/10 disabled:opacity-30"
-        >
-          <MdChevronRight className="h-5 w-5" />
-        </button>
-        <span className="mx-2 h-5 w-px bg-white/20" />
-        <button
-          type="button"
-          onClick={() => setScale((s) => Math.max(0.5, s - 0.2))}
-          className="rounded-lg px-2 py-1 text-sm text-white/70 transition-colors hover:bg-white/10"
-        >
-          −
-        </button>
-        <span className="w-12 text-center text-sm text-white/80">
-          {Math.round(scale * 100)}%
-        </span>
-        <button
-          type="button"
-          onClick={() => setScale((s) => Math.min(3, s + 0.2))}
-          className="rounded-lg px-2 py-1 text-sm text-white/70 transition-colors hover:bg-white/10"
-        >
-          +
-        </button>
-      </div>
-
       {/* PDF content */}
       <div
         ref={containerRef}
@@ -333,25 +297,29 @@ const PdfPreview: React.FC<{ url: string; initialPage?: number }> = ({
   );
 };
 
-const TextPreview: React.FC<{ blob: Blob; fileName: string }> = ({
-  blob,
+const TextPreview: React.FC<{ url: string; fileName: string }> = ({
+  url,
   fileName,
 }) => {
   const [content, setContent] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      setContent(reader.result as string);
-      setLoading(false);
+    const fetchText = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Failed to fetch text");
+        const text = await res.text();
+        setContent(text);
+      } catch {
+        setContent("Không thể đọc nội dung tệp.");
+      } finally {
+        setLoading(false);
+      }
     };
-    reader.onerror = () => {
-      setContent("Không thể đọc nội dung tệp.");
-      setLoading(false);
-    };
-    reader.readAsText(blob, "utf-8");
-  }, [blob]);
+    fetchText();
+  }, [url]);
 
   if (loading) {
     return (
@@ -389,7 +357,7 @@ const ImagePreview: React.FC<{ url: string }> = ({ url }) => (
   </div>
 );
 
-const DocxPreview: React.FC<{ blob: Blob }> = ({ blob }) => {
+const DocxPreview: React.FC<{ url: string }> = ({ url }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -399,6 +367,10 @@ const DocxPreview: React.FC<{ blob: Blob }> = ({ blob }) => {
       try {
         if (!containerRef.current) return;
         setLoading(true);
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Failed to fetch docx file");
+        const blob = await res.blob();
+
         // docx-preview natively renders word document pages with formatting preserved
         // Tắt inWrapper để không sinh ra lớp nền trắng/xám dư thừa của thư viện
         await docx.renderAsync(blob, containerRef.current, undefined, {
@@ -419,7 +391,7 @@ const DocxPreview: React.FC<{ blob: Blob }> = ({ blob }) => {
       }
     };
     renderDocx();
-  }, [blob]);
+  }, [url]);
 
   return (
     <div className="flex-1 overflow-auto bg-gray-800/50 p-8">
@@ -487,30 +459,51 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
 }) => {
   const category = useMemo(() => categorizeFile(fileName), [fileName]);
 
-  // Fetch the file blob
+  // Lifted PDF states for toolbar rendering on modal header
+  const [numPages, setNumPages] = useState<number>(0);
+  const [currentPage, setCurrentPage] = useState(initialPage);
+  const [scale, setScale] = useState(1.2);
+  const pdfScrollRef = useRef<(page: number) => void>(undefined);
+
+  const handlePrevPage = useCallback(() => {
+    if (currentPage <= 1) return;
+    const prev = currentPage - 1;
+    pdfScrollRef.current?.(prev);
+    setCurrentPage(prev);
+  }, [currentPage]);
+
+  const handleNextPage = useCallback(() => {
+    if (currentPage >= numPages) return;
+    const next = currentPage + 1;
+    pdfScrollRef.current?.(next);
+    setCurrentPage(next);
+  }, [currentPage, numPages]);
+
+  const handleZoomOut = useCallback(() => {
+    setScale((s) => Math.max(0.5, s - 0.2));
+  }, []);
+
+  const handleZoomIn = useCallback(() => {
+    setScale((s) => Math.min(3, s + 0.2));
+  }, []);
+
+  // Fetch the file detail metadata instead of downloading the whole blob via Python RAG proxy
   const {
-    data: blob,
+    data: fileDetail,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["file-preview", fileId, downloadFormat],
-    queryFn: () => DocumentsService.downloadFile(fileId!, downloadFormat),
+    queryKey: ["file-detail-preview", fileId],
+    queryFn: () => DocumentsService.getFileDetail(fileId!),
     enabled: isOpen && Boolean(fileId),
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 
-  // Object URL management
-  const objectUrl = useMemo(() => {
-    if (!blob) return null;
-    return URL.createObjectURL(blob);
-  }, [blob]);
-
-  useEffect(() => {
-    return () => {
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [objectUrl]);
+  const publicUrl = useMemo(() => {
+    if (!fileDetail) return null;
+    return downloadFormat === "markdown" ? fileDetail.markdownFileUrl : fileDetail.fileUrl;
+  }, [fileDetail, downloadFormat]);
 
   // Keyboard handler
   useEffect(() => {
@@ -533,11 +526,12 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
   }, [isOpen]);
 
   const handleDownload = useCallback(async () => {
+    if (!publicUrl) return;
     try {
-      const downloadBlob =
-        blob || (await DocumentsService.downloadFile(fileId!, downloadFormat));
-
-      const url = URL.createObjectURL(downloadBlob);
+      const res = await fetch(publicUrl);
+      if (!res.ok) throw new Error("Network response was not ok");
+      const dlBlob = await res.blob();
+      const url = URL.createObjectURL(dlBlob);
       const a = document.createElement("a");
       a.href = url;
       a.download = fileName;
@@ -546,7 +540,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
     } catch {
       toast.error("Không thể tải xuống tệp.");
     }
-  }, [blob, fileId, fileName, downloadFormat]);
+  }, [publicUrl, fileName]);
 
   if (!isOpen) return null;
 
@@ -560,7 +554,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
       );
     }
 
-    if (error || !blob) {
+    if (error || !publicUrl) {
       return (
         <div className="flex h-full flex-col items-center justify-center gap-3 text-gray-400">
           <MdErrorOutline className="h-12 w-12" />
@@ -578,15 +572,24 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
 
     switch (category) {
       case "pdf":
-        return objectUrl ? (
-          <PdfPreview url={objectUrl} initialPage={initialPage} />
-        ) : null;
+        return (
+          <PdfPreview
+            url={publicUrl}
+            initialPage={initialPage}
+            scale={scale}
+            currentPage={currentPage}
+            numPages={numPages}
+            setNumPages={setNumPages}
+            setCurrentPage={setCurrentPage}
+            pdfScrollRef={pdfScrollRef}
+          />
+        );
       case "text":
-        return <TextPreview blob={blob} fileName={fileName} />;
+        return <TextPreview url={publicUrl} fileName={fileName} />;
       case "image":
-        return objectUrl ? <ImagePreview url={objectUrl} /> : null;
+        return <ImagePreview url={publicUrl} />;
       case "docx":
-        return <DocxPreview blob={blob} />;
+        return <DocxPreview url={publicUrl} />;
       case "unsupported":
         return (
           <UnsupportedPreview fileName={fileName} onDownload={handleDownload} />
@@ -606,12 +609,13 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
         <div className="relative flex h-full w-full flex-col">
           {/* Header */}
           <div className="z-1 flex shrink-0 items-center justify-between border-b border-white/8 bg-[#202124]/95 px-5 py-3">
-            <div className="flex min-w-0 items-center gap-3">
+            {/* File info */}
+            <div className="flex min-w-0 flex-1 items-center gap-3">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10">
                 <MdDescription className="h-5 w-5 text-gray-300" />
               </div>
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-white">
+                <p className="truncate text-sm font-semibold text-white max-w-[240px] sm:max-w-[360px] md:max-w-[480px]">
                   {fileName}
                 </p>
                 <p className="text-xs text-gray-400 uppercase">
@@ -620,7 +624,55 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center gap-1">
+            {/* PDF Toolbar in the middle */}
+            {category === "pdf" && numPages > 0 && (
+              <div className="mx-4 flex shrink-0 items-center gap-2 rounded-xl bg-white/5 px-3 py-1 border border-white/8">
+                <button
+                  type="button"
+                  onClick={handlePrevPage}
+                  disabled={currentPage <= 1}
+                  className="rounded-lg p-1 text-white/70 transition-colors hover:bg-white/10 disabled:opacity-30"
+                  title="Trang trước"
+                >
+                  <MdChevronLeft className="h-4 w-4" />
+                </button>
+                <span className="min-w-[45px] text-center text-xs font-semibold text-white/80">
+                  {currentPage} / {numPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleNextPage}
+                  disabled={currentPage >= numPages}
+                  className="rounded-lg p-1 text-white/70 transition-colors hover:bg-white/10 disabled:opacity-30"
+                  title="Trang sau"
+                >
+                  <MdChevronRight className="h-4 w-4" />
+                </button>
+                <span className="h-4 w-px bg-white/15 mx-1" />
+                <button
+                  type="button"
+                  onClick={handleZoomOut}
+                  className="rounded-lg px-2 py-0.5 text-xs font-medium text-white/70 transition-colors hover:bg-white/10"
+                  title="Thu nhỏ"
+                >
+                  −
+                </button>
+                <span className="min-w-[35px] text-center text-xs font-semibold text-white/80">
+                  {Math.round(scale * 100)}%
+                </span>
+                <button
+                  type="button"
+                  onClick={handleZoomIn}
+                  className="rounded-lg px-2 py-0.5 text-xs font-medium text-white/70 transition-colors hover:bg-white/10"
+                  title="Phóng to"
+                >
+                  +
+                </button>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex flex-1 justify-end items-center gap-1">
               <button
                 type="button"
                 onClick={handleDownload}

@@ -307,8 +307,11 @@ const UserDocumentsPage: React.FC = () => {
   }, [searchParams, setSearchParams]);
 
   const handleDownload = useCallback(async (file: any) => {
+    if (!file.fileUrl) { toast.error("Không thể tải xuống tệp."); return; }
     try {
-      const blob = await DocumentsService.downloadFile(file.fileId);
+      const res = await fetch(file.fileUrl);
+      if (!res.ok) throw new Error("Network error");
+      const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;

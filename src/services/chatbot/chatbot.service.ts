@@ -1,4 +1,5 @@
 import { API_CONFIG, API_ENDPOINTS } from "@/config/api.config";
+import ragHttp from "../rag-http";
 import { useAuthStore } from "@/stores/auth.store";
 import ragHttp from "../rag-http";
 

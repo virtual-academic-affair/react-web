@@ -1,7 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import type { ChatbotShellContextValue } from "./chatbotShellContext";
 import {
   convertMessage,
   createDraftSession,
@@ -14,6 +13,7 @@ import {
   useChatbotSessionsQuery,
 } from "./chatbotQueries";
 import { useChatbotRoutes } from "./chatbotRoutes";
+import type { ChatbotShellContextValue } from "./chatbotShellContext";
 import type { ChatStoreMessage, ChatThreadSession } from "./types";
 import { useChatbotSessionMutations } from "./useChatbotSessionMutations";
 import { useChatbotStreaming } from "./useChatbotStreaming";
@@ -137,7 +137,9 @@ export function useChatbotRuntime() {
       try {
         const initialRouteThreadId = initialRouteThreadIdRef.current;
         const activeRouteTarget = initialRouteThreadId
-          ? activeSessions.find((session) => session.id === initialRouteThreadId)
+          ? activeSessions.find(
+              (session) => session.id === initialRouteThreadId,
+            )
           : undefined;
         const archivedSessions =
           initialRouteThreadId && !activeRouteTarget
