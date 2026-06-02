@@ -1,5 +1,4 @@
 import type { ReasoningMessagePartProps } from "@assistant-ui/react";
-import { Streamdown } from "streamdown";
 import {
   createContext,
   useContext,
@@ -11,11 +10,9 @@ import {
   type ReactNode,
 } from "react";
 import { MdKeyboardArrowDown, MdKeyboardArrowUp } from "react-icons/md";
+import { Streamdown } from "streamdown";
 
-import {
-  STREAMDOWN_CONTROLS,
-  STREAMDOWN_LINK_SAFETY,
-} from "./markdown-text";
+import { STREAMDOWN_CONTROLS, STREAMDOWN_LINK_SAFETY } from "./markdown-text";
 
 type ReasoningVariant = "ghost" | "default";
 type StructuredReasoningStep = {
@@ -150,7 +147,7 @@ function ReasoningRootInner({
 
 function formatDuration(ms: number) {
   if (ms < 1000) return `${Math.round(ms)} ms`;
-  return `${(ms / 1000).toFixed(1)} giây`;
+  return `${(ms / 1000).toFixed(1)}s`;
 }
 
 export type ReasoningTriggerProps = {
@@ -186,7 +183,7 @@ export function ReasoningTrigger({
   const displayTimeMs = active ? elapsedMs : processingTimeMs;
   const durationText =
     typeof displayTimeMs === "number" && Number.isFinite(displayTimeMs)
-      ? `Suy nghĩ trong ${formatDuration(displayTimeMs)}`
+      ? `${formatDuration(displayTimeMs)}`
       : "";
   if (variant === "ghost") {
     return (

@@ -67,12 +67,6 @@ export function useChatbotRuntime() {
 
   const removeSessionFromQueryCache = useCallback(
     (sessionId: string) => {
-      for (const status of ["active", "archived"] as const) {
-        queryClient.setQueryData<ChatThreadSession[]>(
-          chatbotQueryKeys.sessions(status),
-          (old) => old?.filter((session) => session.id !== sessionId),
-        );
-      }
       queryClient.removeQueries({
         queryKey: chatbotQueryKeys.messages(sessionId),
       });
@@ -147,9 +141,10 @@ export function useChatbotRuntime() {
           : undefined;
         const archivedSessions =
           initialRouteThreadId && !activeRouteTarget
-            ? await queryClient.ensureQueryData({
+            ? await queryClient.fetchQuery({
                 queryKey: chatbotQueryKeys.sessions("archived"),
                 queryFn: () => fetchChatbotSessions("archived"),
+                staleTime: 0,
               })
             : [];
         if (cancelled) return;

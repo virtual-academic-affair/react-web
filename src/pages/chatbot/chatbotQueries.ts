@@ -65,5 +65,10 @@ export function useChatbotSessionsQuery(
     queryKey: chatbotQueryKeys.sessions(statusFilter),
     queryFn: () => fetchChatbotSessions(statusFilter),
     enabled,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 }

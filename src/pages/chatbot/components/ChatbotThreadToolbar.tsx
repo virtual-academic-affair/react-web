@@ -34,6 +34,10 @@ export function ChatbotThreadToolbar() {
     null,
   );
   const [isDeleting, setIsDeleting] = useState(false);
+  const activeSessionsQuery = useChatbotSessionsQuery(
+    "active",
+    mode === "active",
+  );
   const archivedSessionsQuery = useChatbotSessionsQuery(
     "archived",
     mode === "archived" || activeSessionStatus === "archived",
@@ -60,7 +64,8 @@ export function ChatbotThreadToolbar() {
   const visibleSessions = mode === "active" ? activeSessions : archivedSessions;
   const isLoadingVisible =
     mode === "active"
-      ? isLoadingSessions
+      ? isLoadingSessions ||
+        (activeSessionsQuery.isFetching && !activeSessions.length)
       : archivedSessionsQuery.isLoading ||
         (archivedSessionsQuery.isFetching && !archivedSessionsQuery.data);
 
@@ -73,6 +78,14 @@ export function ChatbotThreadToolbar() {
     setMode("active");
     setEditingThread(null);
     switchToNewThread();
+  };
+
+  const handleModeChange = (nextMode: ThreadListMode) => {
+    setMode(nextMode);
+    setEditingThread(null);
+    if (nextMode === "active") {
+      void activeSessionsQuery.refetch();
+    }
   };
 
   const handleArchive = (session: ChatThreadSession) => {
@@ -115,7 +128,7 @@ export function ChatbotThreadToolbar() {
         <div className="mb-3 grid shrink-0 grid-cols-2 rounded-2xl bg-gray-100 p-1 dark:bg-white/8">
           <button
             type="button"
-            onClick={() => setMode("active")}
+            onClick={() => handleModeChange("active")}
             className={`rounded-xl px-2 py-1.5 text-xs font-semibold transition ${
               mode === "active"
                 ? "bg-white text-navy-700 shadow-sm dark:bg-navy-700 dark:text-white"
@@ -126,7 +139,7 @@ export function ChatbotThreadToolbar() {
           </button>
           <button
             type="button"
-            onClick={() => setMode("archived")}
+            onClick={() => handleModeChange("archived")}
             className={`rounded-xl px-2 py-1.5 text-xs font-semibold transition ${
               mode === "archived"
                 ? "bg-white text-navy-700 shadow-sm dark:bg-navy-700 dark:text-white"
