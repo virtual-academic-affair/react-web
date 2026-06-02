@@ -3,20 +3,17 @@ import {
   MessagePrimitive,
   ThreadPrimitive,
   useAuiState,
+  useMessage,
   type PartState,
 } from "@assistant-ui/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback } from "react";
 import {
-  MdAttachFile,
   MdAutoAwesome,
-  MdImage,
-  MdKeyboardArrowDown,
-  MdMic,
+  MdChecklist,
+  MdDescription,
   MdSchool,
-  MdSearch,
   MdSend,
   MdSquare,
-  MdTravelExplore,
 } from "react-icons/md";
 
 import { MarkdownText } from "@/components/assistant-ui/markdown-text";
@@ -30,7 +27,51 @@ import {
 import { Source, Sources } from "@/components/assistant-ui/sources";
 import { ToolFallback } from "@/components/assistant-ui/tool-fallback";
 
+import { useChatbotShell } from "../chatbotShellContext";
+
 const GEMINI_INPUT_PLACEHOLDER = "Hỏi Chatbot giáo vụ";
+
+const EMPTY_PROMPTS = [
+  {
+    icon: MdSchool,
+    title: "Điều kiện tốt nghiệp",
+    text: "Hỏi về tín chỉ, chuẩn ngoại ngữ, chứng chỉ bắt buộc.",
+  },
+  {
+    icon: MdChecklist,
+    title: "Quy chế học vụ",
+    text: "Tra cứu quy định học lại, cải thiện điểm, cảnh báo học tập.",
+  },
+  {
+    icon: MdDescription,
+    title: "Tài liệu đào tạo",
+    text: "Tìm thông tin trong chương trình đào tạo và văn bản liên quan.",
+  },
+] as const;
+
+function parseReasoningParentId(parentId: string | undefined) {
+  return {
+    defaultOpen: !parentId?.includes(":closed"),
+    processingTimeMs: (() => {
+      const raw = parentId?.match(/:ms=(\d+)/)?.[1];
+      if (!raw) return undefined;
+      const value = Number(raw);
+      return Number.isFinite(value) ? value : undefined;
+    })(),
+  };
+}
+
+function formatAssistantTimestamp(raw: unknown) {
+  const date = raw instanceof Date ? raw : new Date(String(raw ?? ""));
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
 
 const geminiUserMessagePartComponents = {
   Reasoning: () => null,
@@ -52,8 +93,23 @@ function GeminiUserMessage() {
 }
 
 function GeminiAssistantMessage() {
+  const messageId = useMessage((state) => state.id);
+  const messageContent = useMessage((state) => state.content);
+  const createdAt = useMessage((state) => state.createdAt);
+  const messageStatus = useMessage((state) => state.status?.type);
+  const timestampText = formatAssistantTimestamp(createdAt);
+  const hasFinalContent = messageContent.some(
+    (part) =>
+      (part.type === "text" && part.text.trim()) || part.type === "source",
+  );
+  const showTimestamp =
+    timestampText &&
+    hasFinalContent &&
+    messageStatus !== "running" &&
+    messageStatus !== "requires-action";
   const groupAssistantParts = useCallback((part: PartState) => {
     if (part.type === "reasoning") return ["group-reasoning"] as const;
+    if (part.type === "tool-call") return ["group-reasoning"] as const;
     if (part.type === "source") return ["group-sources"] as const;
     return null;
   }, []);
@@ -71,14 +127,31 @@ function GeminiAssistantMessage() {
           {({ part, children }) => {
             switch (part.type) {
               case "group-reasoning": {
-                const running = part.status.type === "running";
+                const running =
+                  "status" in part && part.status?.type === "running";
+                const firstReasoningPart = part.indices
+                  .map((index) => messageContent[index])
+                  .find((item) => item?.type === "reasoning");
+                const reasoningMeta = parseReasoningParentId(
+                  firstReasoningPart &&
+                    "parentId" in firstReasoningPart &&
+                    typeof firstReasoningPart.parentId === "string"
+                    ? firstReasoningPart.parentId
+                    : undefined,
+                );
+                const defaultOpen =
+                  running || reasoningMeta.defaultOpen;
                 return (
                   <ReasoningRoot
                     key={part.indices.join("-")}
-                    defaultOpen={running}
+                    defaultOpen={defaultOpen}
+                    resetKey={`${messageId}:${part.indices.join("-")}`}
                     variant="ghost"
                   >
-                    <ReasoningTrigger active={running} />
+                    <ReasoningTrigger
+                      active={running}
+                      processingTimeMs={reasoningMeta.processingTimeMs}
+                    />
                     <ReasoningContent aria-busy={running}>
                       <ReasoningText>{children}</ReasoningText>
                     </ReasoningContent>
@@ -87,7 +160,12 @@ function GeminiAssistantMessage() {
               }
               case "group-sources":
                 return (
-                  <Sources key={part.indices.join("-")}>{children}</Sources>
+                  <Sources
+                    key={part.indices.join("-")}
+                    sourceCount={part.indices.length}
+                  >
+                    {children}
+                  </Sources>
                 );
               case "text":
                 return <MarkdownText />;
@@ -102,194 +180,56 @@ function GeminiAssistantMessage() {
             }
           }}
         </MessagePrimitive.GroupedParts>
+        {showTimestamp ? (
+          <div className="pt-1 text-right text-xs text-[#9aa0a6] dark:text-[#8f98aa]">
+            Trả lời lúc {timestampText}
+          </div>
+        ) : null}
       </div>
     </MessagePrimitive.Root>
-  );
-}
-
-function useDismissOnOutsideClick(
-  open: boolean,
-  setOpen: (value: boolean) => void,
-) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node))
-        setOpen(false);
-    };
-    document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
-  }, [open, setOpen]);
-  return ref;
-}
-
-const TOOL_OPTIONS = [
-  { id: "deep", label: "Nghiên cứu sâu", Icon: MdTravelExplore },
-  { id: "image", label: "Tạo ảnh", Icon: MdImage },
-  { id: "web", label: "Tìm trên web", Icon: MdSearch },
-  { id: "learn", label: "Giúp tôi học", Icon: MdSchool },
-] as const;
-
-const MODEL_OPTIONS = [
-  {
-    id: "fast",
-    label: "Fast",
-    desc: "Phản hồi nhanh, phù hợp đa số câu hỏi thường gặp.",
-  },
-  {
-    id: "thinking",
-    label: "Thinking",
-    desc: "Cân nhắc kỹ hơn trước khi đưa ra câu trả lời.",
-  },
-  {
-    id: "pro",
-    label: "Pro",
-    desc: "Ưu tiên độ đầy đủ và chi tiết khi cần.",
-  },
-] as const;
-
-function GeminiToolsMenu() {
-  const [open, setOpen] = useState(false);
-  const [active, setActive] =
-    useState<(typeof TOOL_OPTIONS)[number]["id"]>("web");
-  const ref = useDismissOnOutsideClick(open, setOpen);
-
-  return (
-    <div className="relative" ref={ref}>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-0.5 rounded-full px-3 py-2 text-sm font-medium text-[#444746] transition hover:bg-black/[0.04] dark:text-gray-300 dark:hover:bg-white/10"
-      >
-        Công cụ
-        <MdKeyboardArrowDown
-          className={`h-4 w-4 transition ${open ? "rotate-180" : ""}`}
-          aria-hidden
-        />
-      </button>
-      {open ? (
-        <div className="dark:bg-navy-800 absolute bottom-full left-0 z-50 mb-1 min-w-[220px] overflow-hidden rounded-xl border border-[#e3e3e3] bg-white py-1 shadow-lg dark:border-white/10">
-          {TOOL_OPTIONS.map(({ id, label, Icon }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => {
-                setActive(id);
-                setOpen(false);
-              }}
-              className={`flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm transition hover:bg-[#f8f9fa] dark:hover:bg-white/10 ${
-                active === id
-                  ? "dark:bg-brand-500/20 bg-[#e8f0fe] text-[#062e6f] dark:text-white"
-                  : "text-[#1f1f1f] dark:text-gray-200"
-              }`}
-            >
-              <Icon
-                className="h-4 w-4 shrink-0 text-[#444746] dark:text-gray-400"
-                aria-hidden
-              />
-              {label}
-            </button>
-          ))}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function GeminiModelPicker() {
-  const [open, setOpen] = useState(false);
-  const [active, setActive] =
-    useState<(typeof MODEL_OPTIONS)[number]["id"]>("fast");
-  const ref = useDismissOnOutsideClick(open, setOpen);
-  const current =
-    MODEL_OPTIONS.find((m) => m.id === active) ?? MODEL_OPTIONS[0];
-
-  return (
-    <div className="relative" ref={ref}>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-0.5 rounded-full px-3 py-2 text-sm font-medium text-[#444746] transition hover:bg-black/[0.04] dark:text-gray-300 dark:hover:bg-white/10"
-      >
-        {current.label}
-        <MdKeyboardArrowDown
-          className={`h-4 w-4 transition ${open ? "rotate-180" : ""}`}
-          aria-hidden
-        />
-      </button>
-      {open ? (
-        <div className="dark:bg-navy-800 absolute right-0 bottom-full z-50 mb-1 w-[min(100vw-2rem,280px)] overflow-hidden rounded-xl border border-[#e3e3e3] bg-white py-1 shadow-lg dark:border-white/10">
-          {MODEL_OPTIONS.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => {
-                setActive(m.id);
-                setOpen(false);
-              }}
-              className={`flex w-full flex-col items-start gap-0.5 px-3 py-2.5 text-left transition hover:bg-[#f8f9fa] dark:hover:bg-white/10 ${
-                active === m.id ? "dark:bg-brand-500/20 bg-[#e8f0fe]" : ""
-              }`}
-            >
-              <span className="text-sm font-medium text-[#1f1f1f] dark:text-white">
-                {m.label}
-              </span>
-              <span className="text-xs leading-snug text-[#444746] dark:text-gray-400">
-                {m.desc}
-              </span>
-            </button>
-          ))}
-          <div className="border-t border-[#e3e3e3] px-3 py-2 text-xs text-[#444746] dark:border-white/10 dark:text-gray-400">
-            Nâng cấp Gemini Advanced để mở khóa thêm mô hình và tính năng.
-          </div>
-        </div>
-      ) : null}
-    </div>
   );
 }
 
 function GeminiComposer() {
   const isEmpty = useAuiState((s) => s.composer.isEmpty);
   const isRunning = useAuiState((s) => s.thread.isRunning);
+  const { activeSessionStatus } = useChatbotShell();
+  const isArchived = activeSessionStatus === "archived";
 
   return (
     <ComposerPrimitive.Root
-      className="group/composer dark:bg-navy-800 w-full rounded-4xl bg-white p-3 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.16)]"
+      className={`group/composer dark:bg-navy-800 relative w-full rounded-4xl bg-white p-3 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.16)] ${
+        isArchived ? "opacity-80" : ""
+      }`}
       data-empty={isEmpty}
       data-running={isRunning}
     >
       <ComposerPrimitive.Input
-        placeholder={GEMINI_INPUT_PLACEHOLDER}
+        placeholder={
+          isArchived
+            ? "Cuộc trò chuyện đã lưu trữ chỉ có thể xem lại"
+            : GEMINI_INPUT_PLACEHOLDER
+        }
         rows={1}
-        className="mb-2 max-h-40 min-h-[44px] w-full resize-none bg-transparent px-2 pt-0.5 text-base leading-snug text-[#1f1f1f] outline-none placeholder:text-[#444746] dark:text-white dark:placeholder:text-gray-400"
+        disabled={isArchived}
+        className="max-h-40 w-full resize-none bg-transparent py-2 pr-14 pl-2 text-base leading-snug text-[#1f1f1f] outline-none placeholder:text-[#444746] dark:text-white dark:placeholder:text-gray-400"
       />
-      <div className="flex items-center gap-0.5">
-        <ComposerPrimitive.AddAttachment className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#444746] transition hover:bg-black/[0.04] disabled:opacity-35 dark:text-gray-300 dark:hover:bg-white/10">
-          <MdAttachFile className="h-5 w-5" aria-hidden />
-        </ComposerPrimitive.AddAttachment>
-        <GeminiToolsMenu />
-        <div className="ml-auto flex items-center gap-1 sm:gap-2">
-          <GeminiModelPicker />
-          <div className="relative size-10 shrink-0">
-            <ComposerPrimitive.Dictate className="absolute inset-0 flex items-center justify-center rounded-full bg-[#d3e3fd] text-[#062e6f] transition-transform duration-200 ease-out group-data-[empty=false]/composer:pointer-events-none group-data-[empty=false]/composer:scale-0 group-data-[running=true]/composer:pointer-events-none group-data-[running=true]/composer:scale-0 dark:bg-white/10 dark:text-gray-300">
-              <MdMic className="h-5 w-5" aria-hidden />
-            </ComposerPrimitive.Dictate>
-            <ComposerPrimitive.Send
-              className="dark:bg-brand-500 absolute inset-0 flex items-center justify-center rounded-full bg-[#d3e3fd] text-[#062e6f] transition-transform duration-200 ease-out group-data-[empty=true]/composer:pointer-events-none group-data-[empty=true]/composer:scale-0 group-data-[running=true]/composer:pointer-events-none group-data-[running=true]/composer:scale-0 hover:opacity-90 disabled:opacity-40 dark:text-white"
-              aria-label="Gửi"
-            >
-              <MdSend className="h-5 w-5" />
-            </ComposerPrimitive.Send>
-            <ComposerPrimitive.Cancel
-              className="dark:bg-navy-700 absolute inset-0 flex items-center justify-center rounded-full bg-[#d3e3fd] text-[#062e6f] transition-transform duration-200 ease-out group-data-[running=false]/composer:pointer-events-none group-data-[running=false]/composer:scale-0 hover:opacity-90 dark:text-white"
-              aria-label="Dừng"
-            >
-              <MdSquare className="h-4 w-4" />
-            </ComposerPrimitive.Cancel>
-          </div>
+      {isArchived ? null : (
+        <div className="absolute top-1/2 right-3 size-10 -translate-y-1/2">
+          <ComposerPrimitive.Send
+            className="dark:bg-brand-500 absolute inset-0 flex items-center justify-center rounded-full bg-[#d3e3fd] text-[#062e6f] transition-transform duration-200 ease-out group-data-[empty=true]/composer:pointer-events-none group-data-[empty=true]/composer:scale-0 group-data-[running=true]/composer:pointer-events-none group-data-[running=true]/composer:scale-0 hover:opacity-90 disabled:opacity-40 dark:text-white"
+            aria-label="Gửi"
+          >
+            <MdSend className="h-5 w-5" />
+          </ComposerPrimitive.Send>
+          <ComposerPrimitive.Cancel
+            className="dark:bg-navy-700 absolute inset-0 flex items-center justify-center rounded-full bg-[#d3e3fd] text-[#062e6f] transition-transform duration-200 ease-out group-data-[running=false]/composer:pointer-events-none group-data-[running=false]/composer:scale-0 hover:opacity-90 dark:text-white"
+            aria-label="Dừng"
+          >
+            <MdSquare className="h-4 w-4" />
+          </ComposerPrimitive.Cancel>
         </div>
-      </div>
+      )}
     </ComposerPrimitive.Root>
   );
 }
@@ -306,22 +246,66 @@ function GeminiStickyComposer() {
   );
 }
 
-/** Giao diện theo hướng [Gemini clone assistant-ui](https://www.assistant-ui.com/examples/gemini). */
-export function GeminiThread() {
+function ChatbotEmptyState() {
   return (
-    <ThreadPrimitive.Root className="flex h-full min-h-0 w-full flex-col bg-transparent text-base text-[#1f1f1f] dark:text-white">
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <ThreadPrimitive.Viewport className="min-h-0 w-full flex-1 overflow-y-auto overscroll-y-contain">
-          <div className="w-full pt-4 pb-2 md:pt-5">
-            <ThreadPrimitive.Messages
-              components={{
-                UserMessage: GeminiUserMessage,
-                AssistantMessage: GeminiAssistantMessage,
-              }}
-            />
-          </div>
-        </ThreadPrimitive.Viewport>
+    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-4 py-10 text-center">
+      <div
+        className="mb-5 flex h-14 w-14 items-center justify-center rounded-full border border-[#d3e3fd]/60 bg-[#eef4ff] text-[#1a73e8] shadow-sm dark:border-white/10 dark:bg-white/[0.06] dark:text-[#a8c7fa]"
+        aria-hidden
+      >
+        <MdAutoAwesome className="h-6 w-6" />
       </div>
+      <h1 className="text-2xl font-semibold tracking-normal text-[#202124] sm:text-3xl dark:text-white">
+        Bạn cần hỏi gì về học vụ?
+      </h1>
+      <p className="mt-3 max-w-xl text-sm leading-6 text-[#5f6368] dark:text-[#b8c0d6]">
+        Nhập câu hỏi bên dưới để tra cứu quy chế, chương trình đào tạo và các
+        tài liệu học vụ đã được bóc tách.
+      </p>
+      <div className="mt-7 grid w-full gap-3 sm:grid-cols-3">
+        {EMPTY_PROMPTS.map((item) => {
+          const Icon = item.icon;
+          return (
+            <div
+              key={item.title}
+              className="rounded-2xl border border-[#d3e3fd]/70 bg-white/80 p-4 text-left shadow-[0_8px_28px_-24px_rgba(26,115,232,0.5)] dark:border-white/10 dark:bg-white/[0.04]"
+            >
+              <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-[#d3e3fd] text-[#0b57d0] dark:bg-[#1f3760] dark:text-[#a8c7fa]">
+                <Icon className="h-5 w-5" />
+              </div>
+              <div className="text-sm font-semibold text-[#202124] dark:text-white">
+                {item.title}
+              </div>
+              <div className="mt-1 text-xs leading-5 text-[#5f6368] dark:text-[#9aa0a6]">
+                {item.text}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** Giao diện theo hướng [Gemini clone assistant-ui](https://www.assistant-ui.com/examples/gemini). */
+export function GeminiThread({ className = "" }: { className?: string }) {
+  const hasMessages = useAuiState((s) => s.thread.messages.length > 0);
+
+  return (
+    <ThreadPrimitive.Root
+      className={`flex h-full min-h-0 w-full flex-col bg-transparent text-base text-[#1f1f1f] dark:text-white ${className}`.trim()}
+    >
+      <ThreadPrimitive.Viewport className="min-h-0 w-full flex-1 overflow-y-auto overscroll-y-contain">
+        <div className="flex min-h-full w-full flex-col pt-4 pb-2 md:pt-5">
+          {hasMessages ? null : <ChatbotEmptyState />}
+          <ThreadPrimitive.Messages
+            components={{
+              UserMessage: GeminiUserMessage,
+              AssistantMessage: GeminiAssistantMessage,
+            }}
+          />
+        </div>
+      </ThreadPrimitive.Viewport>
       <GeminiStickyComposer />
     </ThreadPrimitive.Root>
   );

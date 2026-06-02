@@ -147,7 +147,9 @@ export const API_ENDPOINTS = {
       importPreview: "/api/forms/import-preview",
     },
     chat: {
+      query: "/api/chat/query",
       stream: "/api/chat/stream",
+      retrievePreview: "/api/chat/retrieve-preview",
       sessions: {
         base: "/api/chat/sessions",
         byId: (sessionId: string) => `/api/chat/sessions/${sessionId}`,
@@ -155,6 +157,8 @@ export const API_ENDPOINTS = {
           `/api/chat/sessions/${sessionId}/messages`,
         archive: (sessionId: string) =>
           `/api/chat/sessions/${sessionId}/archive`,
+        unarchive: (sessionId: string) =>
+          `/api/chat/sessions/${sessionId}/unarchive`,
       },
     },
   },

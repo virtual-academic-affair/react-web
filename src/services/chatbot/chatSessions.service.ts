@@ -22,49 +22,73 @@ export interface ChatSessionListResponse {
 
 export interface ChatHistoryMessage {
   role: "user" | "assistant";
+  messageType?: "text" | "thinking";
+  message_type?: "text" | "thinking";
   content: string;
   sequence: number;
-  token_usage: {
+  tokenUsage?: {
+    promptTokens?: number;
+    completionTokens?: number;
+    totalTokens?: number;
+  } | null;
+  token_usage?: {
     input_tokens?: number;
     output_tokens?: number;
     total_tokens?: number;
+    prompt_tokens?: number;
+    completion_tokens?: number;
   } | null;
-  sources:
-    | Array<{
-        document_id?: string;
-        title?: string;
-        score?: number;
-        url?: string;
-        original_url?: string;
-      }>
-    | null;
-  processing_time_ms: number | null;
-  created_at: string;
+  sources: Array<{
+    document_id?: string;
+    title?: string;
+    score?: number;
+    citation_id?: number;
+    url?: string;
+    original_url?: string;
+    file_name?: string;
+    pages?: string[];
+    markdown_url?: string;
+  }> | null;
+  steps?: Array<{
+    type: string;
+    content?: string;
+  }> | null;
+  processingTimeMs?: number | null;
+  processing_time_ms?: number | null;
+  createdAt?: string;
+  created_at?: string;
 }
 
 export interface ChatSessionMessagesResponse {
+  sessionId?: string;
   session_id: string;
   page: number;
+  pageSize?: number;
   page_size: number;
   total: number;
   items: ChatHistoryMessage[];
 }
 
 export interface ChatSessionMutationResponse {
+  sessionId?: string;
   session_id: string;
   success: boolean;
 }
 
-export async function listSessions(params: {
-  page?: number;
-  pageSize?: number;
-} = {}) {
+export async function listSessions(
+  params: {
+    page?: number;
+    pageSize?: number;
+    statusFilter?: ChatSessionStatus;
+  } = {},
+) {
   const response = await ragHttp.get<ChatSessionListResponse>(
     API_ENDPOINTS.rag.chat.sessions.base,
     {
       params: {
         page: params.page ?? 1,
-        page_size: params.pageSize ?? 20,
+        page_size: params.pageSize ?? 50,
+        ...(params.statusFilter ? { status_filter: params.statusFilter } : {}),
       },
     },
   );
@@ -98,6 +122,13 @@ export async function renameSession(sessionId: string, title: string) {
 export async function archiveSession(sessionId: string) {
   const response = await ragHttp.post<ChatSessionMutationResponse>(
     API_ENDPOINTS.rag.chat.sessions.archive(sessionId),
+  );
+  return response.data;
+}
+
+export async function unarchiveSession(sessionId: string) {
+  const response = await ragHttp.post<ChatSessionMutationResponse>(
+    API_ENDPOINTS.rag.chat.sessions.unarchive(sessionId),
   );
   return response.data;
 }

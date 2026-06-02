@@ -10,11 +10,14 @@ export type ChatbotShellContextValue = {
   isLoadingMessages: boolean;
   sessions: ChatThreadSession[];
   activeThreadId: string;
+  activeSessionStatus: ChatThreadSession["status"] | null;
   switchToThread: (threadId: string) => void;
+  viewArchivedThread: (session: ChatThreadSession) => Promise<void>;
   switchToNewThread: () => void;
   renameThread: (threadId: string, title: string) => Promise<void>;
   archiveThread: (threadId: string) => Promise<void>;
-  deleteThread: (threadId: string) => Promise<void>;
+  unarchiveThread: (session: ChatThreadSession) => Promise<void>;
+  deleteThread: (session: ChatThreadSession) => Promise<void>;
 };
 
 const ChatbotShellContext = createContext<ChatbotShellContextValue | null>(

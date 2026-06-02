@@ -8,12 +8,26 @@ export type ChatStoreToolCall = {
   isError?: boolean;
 };
 
+export type ChatReasoningStep = {
+  id: string;
+  type: string;
+  content: string;
+};
+
 export type ChatStoreMessage = {
   id: string;
   role: ChatRole;
   content: string;
   createdAt: string;
   reasoning?: string;
+  reasoningSteps?: ChatReasoningStep[];
+  reasoningDefaultOpen?: boolean;
+  tokenUsage?: {
+    promptTokens?: number;
+    completionTokens?: number;
+    totalTokens?: number;
+  };
+  processingTimeMs?: number;
   sources?: ChatSourceItem[];
   toolCalls?: ChatStoreToolCall[];
 };
@@ -37,38 +51,8 @@ export type ChatThreadSession = {
 export interface ChatSourceItem {
   title: string;
   url: string;
-}
-
-export interface ChatMessage {
-  id: string;
-  role: ChatRole;
-  content: string;
-  createdAt: string;
-  reasoning?: string;
-  sources?: ChatSourceItem[];
-}
-
-export interface ChatStreamStats {
-  promptTokens?: number;
-  completionTokens?: number;
-  totalTokens?: number;
-}
-
-export interface ChatStreamSummary {
-  sources: unknown[];
-  tokenUsage: ChatStreamStats | null;
-  processingTimeMs: number | null;
-  error: string | null;
-}
-
-export interface ChatConversationItem {
-  id: string;
-  title: string;
-  updatedAt: string;
-}
-
-export interface ContentSegment {
-  type: "text" | "code";
-  content: string;
-  language?: string;
+  citationId?: number;
+  fileName?: string;
+  pages?: string[];
+  markdownUrl?: string;
 }

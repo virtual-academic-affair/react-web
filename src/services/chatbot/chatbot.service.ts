@@ -1,4 +1,5 @@
 import { API_CONFIG, API_ENDPOINTS } from "@/config/api.config";
+import ragHttp from "../rag-http";
 import { useAuthStore } from "@/stores/auth.store";
 
 const SSE_EVENT_SEPARATOR = "\n\n";
@@ -15,7 +16,8 @@ export interface ChatStreamHistoryItem {
 export interface ChatStreamRequest {
   question: string;
   chatHistory: ChatStreamHistoryItem[];
-  /** Tuỳ chọn; mặc định gửi true / "original" / true khi gọi API. */
+  metadataFilter?: Record<string, unknown>;
+  /** Tuỳ chọn; mặc định theo tài liệu API: false / "markdown" / false. */
   resolveCitations?: boolean;
   citationLinkType?: string;
   toRichText?: boolean;
@@ -23,34 +25,45 @@ export interface ChatStreamRequest {
   sessionId?: string;
 }
 
-interface StreamBaseEvent {
+export interface ChatQueryRequest extends ChatStreamRequest {}
+
+export interface ChatQueryResponse {
+  answer: string;
+  sessionId: string;
+  source: string;
+  sources: unknown[];
+  processingTimeMs: number;
+}
+
+export interface ChatRetrievePreviewRequest {
+  question: string;
+  topK?: number;
+  minScore?: number;
+}
+
+export interface ChatRetrievePreviewItem {
+  rank: number;
+  score: number;
+  text: string;
+  fileName?: string;
+  [key: string]: unknown;
+}
+
+export interface ChatRetrievePreviewResponse {
+  query: string;
+  topK: number;
+  count: number;
+  items: ChatRetrievePreviewItem[];
+}
+
+export interface ChatStreamEvent {
+  type?: string;
   done?: boolean;
-}
-
-export interface StreamTextEvent extends StreamBaseEvent {
-  type: "text";
-  content: string;
-}
-
-export interface StreamReasoningEvent extends StreamBaseEvent {
-  type: "reasoning" | "thought";
   content?: string;
-}
-
-export interface StreamCallEvent extends StreamBaseEvent {
-  type: "call";
+  chunk?: string;
   name?: string;
   args?: unknown;
-}
-
-export interface StreamToolOutputEvent extends StreamBaseEvent {
-  type: "tool_output";
-  name?: string;
   output?: unknown;
-}
-
-export interface StreamDoneEvent extends StreamBaseEvent {
-  done: true;
   sources?: unknown[];
   tokenUsage?: {
     promptTokens?: number;
@@ -66,15 +79,9 @@ export interface StreamDoneEvent extends StreamBaseEvent {
   error?: string;
   session_id?: string;
   sessionId?: string;
+  steps?: unknown[];
+  [key: string]: unknown;
 }
-
-export type ChatStreamEvent =
-  | StreamTextEvent
-  | StreamReasoningEvent
-  | StreamCallEvent
-  | StreamToolOutputEvent
-  | StreamDoneEvent
-  | (Record<string, unknown> & StreamBaseEvent);
 
 const getAuthToken = (): string | null => {
   const storeToken = useAuthStore.getState().accessToken;
@@ -85,6 +92,26 @@ const getAuthToken = (): string | null => {
 const buildStreamUrl = (): string => {
   return `${API_CONFIG.ragBaseURL}${API_ENDPOINTS.rag.chat.stream}`;
 };
+
+export async function queryChat(
+  payload: ChatQueryRequest,
+): Promise<ChatQueryResponse> {
+  const response = await ragHttp.post<ChatQueryResponse>(
+    API_ENDPOINTS.rag.chat.query,
+    payload,
+  );
+  return response.data;
+}
+
+export async function retrieveChatPreview(
+  payload: ChatRetrievePreviewRequest,
+): Promise<ChatRetrievePreviewResponse> {
+  const response = await ragHttp.post<ChatRetrievePreviewResponse>(
+    API_ENDPOINTS.rag.chat.retrievePreview,
+    payload,
+  );
+  return response.data;
+}
 
 export async function streamChat(
   payload: ChatStreamRequest,
@@ -108,10 +135,10 @@ export async function streamChat(
     headers,
     body: JSON.stringify({
       ...rest,
-      resolveCitations: payload.resolveCitations ?? true,
-      citationLinkType: payload.citationLinkType ?? "original",
-      toRichText: payload.toRichText ?? true,
-      ...(sessionId ? { session_id: sessionId } : {}),
+      resolveCitations: payload.resolveCitations ?? false,
+      citationLinkType: payload.citationLinkType ?? "markdown",
+      toRichText: payload.toRichText ?? false,
+      ...(sessionId ? { sessionId } : {}),
     }),
     signal,
   });
