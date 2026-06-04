@@ -20,38 +20,37 @@ export interface ChatSessionListResponse {
   items: ChatSessionItem[];
 }
 
+export interface ChatHistoryTokenUsage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+}
+
+export interface ChatHistorySource {
+  citationId: number;
+  fileName: string;
+  title: string;
+  fileId: string;
+  pages: string[];
+  originalUrl: string;
+  markdownUrl: string;
+}
+
+export interface ChatHistoryStep {
+  type: string;
+  content: string;
+}
+
 export interface ChatHistoryMessage {
   role: "user" | "assistant";
-  messageType?: "text" | "thinking";
+  messageType: "text" | "thinking";
   content: string;
   sequence: number;
-  tokenUsage?: {
-    promptTokens?: number;
-    completionTokens?: number;
-    totalTokens?: number;
-    promptTokenCount?: number;
-    candidatesTokenCount?: number;
-  } | null;
-  sources: Array<{
-    title?: string;
-    score?: number;
-    citationId?: number;
-    citation_id?: number;
-    url?: string;
-    originalUrl?: string;
-    original_url?: string;
-    fileName?: string;
-    file_name?: string;
-    pages?: string[];
-    markdownUrl?: string;
-    markdown_url?: string;
-  }> | null;
-  steps?: Array<{
-    type: string;
-    content: string;
-  }> | null;
-  processingTimeMs?: number | null;
-  createdAt?: string;
+  tokenUsage: ChatHistoryTokenUsage | null;
+  sources: ChatHistorySource[];
+  steps: ChatHistoryStep[] | null;
+  processingTimeMs: number | null;
+  createdAt: string;
 }
 
 export interface ChatSessionMessagesResponse {

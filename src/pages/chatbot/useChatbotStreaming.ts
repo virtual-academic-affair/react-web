@@ -175,9 +175,7 @@ export function useChatbotStreaming({
                 sources?: unknown[];
                 steps?: unknown[];
                 error?: unknown;
-                session_id?: string;
                 sessionId?: string;
-                processing_time_ms?: unknown;
                 processingTimeMs?: unknown;
               };
               const errorText =
@@ -186,17 +184,13 @@ export function useChatbotStreaming({
                   : "";
               const sources = sourceItemsFromStream(doneEvent.sources ?? []);
               const returnedSessionId =
-                (typeof doneEvent.session_id === "string" &&
-                  doneEvent.session_id) ||
                 (typeof doneEvent.sessionId === "string" &&
                   doneEvent.sessionId) ||
                 null;
               const processingTimeMs =
-                typeof doneEvent.processing_time_ms === "number"
-                  ? doneEvent.processing_time_ms
-                  : typeof doneEvent.processingTimeMs === "number"
-                    ? doneEvent.processingTimeMs
-                    : undefined;
+                typeof doneEvent.processingTimeMs === "number"
+                  ? doneEvent.processingTimeMs
+                  : undefined;
 
               if (errorText) {
                 setSystemError(CHAT_SYSTEM_BUSY_MESSAGE);

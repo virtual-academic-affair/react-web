@@ -104,14 +104,11 @@ function normalizeTokenUsage(msg: ChatHistoryMessage) {
   const camel = msg.tokenUsage;
   if (camel) {
     const tokenUsage: ChatStoreMessage["tokenUsage"] = {};
-    const promptTokens = camel.promptTokens ?? camel.promptTokenCount;
-    const completionTokens =
-      camel.completionTokens ?? camel.candidatesTokenCount;
-    if (typeof promptTokens === "number") {
-      tokenUsage.promptTokens = promptTokens;
+    if (typeof camel.promptTokens === "number") {
+      tokenUsage.promptTokens = camel.promptTokens;
     }
-    if (typeof completionTokens === "number") {
-      tokenUsage.completionTokens = completionTokens;
+    if (typeof camel.completionTokens === "number") {
+      tokenUsage.completionTokens = camel.completionTokens;
     }
     if (typeof camel.totalTokens === "number") {
       tokenUsage.totalTokens = camel.totalTokens;
@@ -127,23 +124,24 @@ function firstNonEmptyString(...values: unknown[]) {
   );
 }
 
-function historySourceToStore(raw: NonNullable<ChatHistoryMessage["sources"]>[number]) {
-  const url = firstNonEmptyString(raw.originalUrl, raw.original_url, raw.url);
+function historySourceToStore(
+  raw: NonNullable<ChatHistoryMessage["sources"]>[number],
+) {
+  const url = firstNonEmptyString(raw.originalUrl);
   if (!url) return null;
 
   const pages = Array.isArray(raw.pages)
     ? raw.pages.filter((page): page is string => typeof page === "string")
     : undefined;
-  const citationId = raw.citationId ?? raw.citation_id;
-  const fileName = firstNonEmptyString(raw.fileName, raw.file_name);
-  const markdownUrl = firstNonEmptyString(raw.markdownUrl, raw.markdown_url);
+  const fileName = firstNonEmptyString(raw.fileName);
+  const markdownUrl = firstNonEmptyString(raw.markdownUrl);
 
   const sourceItem: ChatSourceItem = {
     title: firstNonEmptyString(raw.title) ?? url,
     url,
   };
-  if (typeof citationId === "number") {
-    sourceItem.citationId = citationId;
+  if (typeof raw.citationId === "number") {
+    sourceItem.citationId = raw.citationId;
   }
   if (fileName) {
     sourceItem.fileName = fileName;
@@ -324,14 +322,9 @@ export function sourceItemsFromStream(rawSources: unknown[]) {
     .map((source): ChatSourceItem | null => {
       if (!source || typeof source !== "object") return null;
       const candidate = source as Record<string, unknown>;
-      const urlRaw = candidate.originalUrl ?? candidate.original_url;
+      const urlRaw = candidate.originalUrl;
       if (typeof urlRaw !== "string" || !urlRaw.trim()) return null;
-      const titleRaw =
-        candidate.title ??
-        candidate.fileName ??
-        candidate.file_name ??
-        candidate.name ??
-        candidate.filename;
+      const titleRaw = candidate.title ?? candidate.fileName;
       const pagesRaw = candidate.pages;
       const pages = Array.isArray(pagesRaw)
         ? pagesRaw.filter((page): page is string => typeof page === "string")
@@ -341,27 +334,20 @@ export function sourceItemsFromStream(rawSources: unknown[]) {
           typeof titleRaw === "string" && titleRaw.trim() ? titleRaw : urlRaw,
         url: urlRaw,
       };
-      const citationId = candidate.citationId ?? candidate.citation_id;
-      if (typeof citationId === "number") {
-        item.citationId = citationId;
+      if (typeof candidate.citationId === "number") {
+        item.citationId = candidate.citationId;
       }
-      const fileName = candidate.fileName ?? candidate.file_name;
-      if (typeof fileName === "string" && fileName.trim()) {
-        item.fileName = fileName;
+      if (typeof candidate.fileName === "string" && candidate.fileName.trim()) {
+        item.fileName = candidate.fileName;
       }
       if (pages?.length) {
         item.pages = pages;
       }
       if (
-        (typeof candidate.markdownUrl === "string" &&
-          candidate.markdownUrl.trim()) ||
-        (typeof candidate.markdown_url === "string" &&
-          candidate.markdown_url.trim())
+        typeof candidate.markdownUrl === "string" &&
+        candidate.markdownUrl.trim()
       ) {
-        item.markdownUrl =
-          typeof candidate.markdownUrl === "string"
-            ? candidate.markdownUrl
-            : (candidate.markdown_url as string);
+        item.markdownUrl = candidate.markdownUrl;
       }
       return item;
     })

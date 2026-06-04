@@ -14,9 +14,7 @@ export interface ChatStreamRequest {
   sessionId?: string;
 }
 
-export interface ChatQueryRequest extends ChatStreamRequest {
-  toRichText?: boolean;
-}
+export type ChatQueryRequest = ChatStreamRequest;
 
 export interface ChatPipelineStep {
   type: string;
@@ -63,9 +61,8 @@ export interface ChatStreamEvent {
     completionTokens?: number;
     totalTokens?: number;
   };
-  processing_time_ms?: number;
+  processingTimeMs?: number;
   error?: string;
-  session_id?: string;
   sessionId?: string;
   steps?: ChatPipelineStep[];
   [key: string]: unknown;
