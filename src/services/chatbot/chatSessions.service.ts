@@ -20,58 +20,49 @@ export interface ChatSessionListResponse {
   items: ChatSessionItem[];
 }
 
+export interface ChatHistoryTokenUsage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+}
+
+export interface ChatHistorySource {
+  citationId: number;
+  fileName: string;
+  title: string;
+  fileId: string;
+  pages: string[];
+  originalUrl: string;
+  markdownUrl: string;
+}
+
+export interface ChatHistoryStep {
+  type: string;
+  content: string;
+}
+
 export interface ChatHistoryMessage {
   role: "user" | "assistant";
-  messageType?: "text" | "thinking";
-  message_type?: "text" | "thinking";
+  messageType: "text" | "thinking";
   content: string;
   sequence: number;
-  tokenUsage?: {
-    promptTokens?: number;
-    completionTokens?: number;
-    totalTokens?: number;
-  } | null;
-  token_usage?: {
-    input_tokens?: number;
-    output_tokens?: number;
-    total_tokens?: number;
-    prompt_tokens?: number;
-    completion_tokens?: number;
-  } | null;
-  sources: Array<{
-    document_id?: string;
-    title?: string;
-    score?: number;
-    citation_id?: number;
-    url?: string;
-    original_url?: string;
-    file_name?: string;
-    pages?: string[];
-    markdown_url?: string;
-  }> | null;
-  steps?: Array<{
-    type: string;
-    content?: string;
-  }> | null;
-  processingTimeMs?: number | null;
-  processing_time_ms?: number | null;
-  createdAt?: string;
-  created_at?: string;
+  tokenUsage: ChatHistoryTokenUsage | null;
+  sources: ChatHistorySource[];
+  steps: ChatHistoryStep[] | null;
+  processingTimeMs: number | null;
+  createdAt: string;
 }
 
 export interface ChatSessionMessagesResponse {
-  sessionId?: string;
-  session_id: string;
+  sessionId: string;
   page: number;
-  pageSize?: number;
-  page_size: number;
+  pageSize: number;
   total: number;
   items: ChatHistoryMessage[];
 }
 
 export interface ChatSessionMutationResponse {
-  sessionId?: string;
-  session_id: string;
+  sessionId: string;
   success: boolean;
 }
 
@@ -87,8 +78,8 @@ export async function listSessions(
     {
       params: {
         page: params.page ?? 1,
-        page_size: params.pageSize ?? 50,
-        ...(params.statusFilter ? { status_filter: params.statusFilter } : {}),
+        pageSize: params.pageSize ?? 50,
+        ...(params.statusFilter ? { statusFilter: params.statusFilter } : {}),
       },
     },
   );
@@ -104,7 +95,7 @@ export async function listSessionMessages(
     {
       params: {
         page: params.page ?? 1,
-        page_size: params.pageSize ?? 50,
+        pageSize: params.pageSize ?? 50,
       },
     },
   );

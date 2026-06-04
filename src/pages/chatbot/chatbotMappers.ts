@@ -102,23 +102,57 @@ function historyStepsToStore(
 
 function normalizeTokenUsage(msg: ChatHistoryMessage) {
   const camel = msg.tokenUsage;
-  const snake = msg.token_usage;
-  if (camel) return camel;
-  if (!snake) return undefined;
+  if (camel) {
+    const tokenUsage: ChatStoreMessage["tokenUsage"] = {};
+    if (typeof camel.promptTokens === "number") {
+      tokenUsage.promptTokens = camel.promptTokens;
+    }
+    if (typeof camel.completionTokens === "number") {
+      tokenUsage.completionTokens = camel.completionTokens;
+    }
+    if (typeof camel.totalTokens === "number") {
+      tokenUsage.totalTokens = camel.totalTokens;
+    }
+    return Object.keys(tokenUsage).length ? tokenUsage : undefined;
+  }
+  return undefined;
+}
 
-  const tokenUsage: ChatStoreMessage["tokenUsage"] = {};
-  const promptTokens = snake.prompt_tokens ?? snake.input_tokens;
-  const completionTokens = snake.completion_tokens ?? snake.output_tokens;
-  if (typeof promptTokens === "number") {
-    tokenUsage.promptTokens = promptTokens;
+function firstNonEmptyString(...values: unknown[]) {
+  return values.find(
+    (value): value is string => typeof value === "string" && !!value.trim(),
+  );
+}
+
+function historySourceToStore(
+  raw: NonNullable<ChatHistoryMessage["sources"]>[number],
+) {
+  const url = firstNonEmptyString(raw.originalUrl);
+  if (!url) return null;
+
+  const pages = Array.isArray(raw.pages)
+    ? raw.pages.filter((page): page is string => typeof page === "string")
+    : undefined;
+  const fileName = firstNonEmptyString(raw.fileName);
+  const markdownUrl = firstNonEmptyString(raw.markdownUrl);
+
+  const sourceItem: ChatSourceItem = {
+    title: firstNonEmptyString(raw.title) ?? url,
+    url,
+  };
+  if (typeof raw.citationId === "number") {
+    sourceItem.citationId = raw.citationId;
   }
-  if (typeof completionTokens === "number") {
-    tokenUsage.completionTokens = completionTokens;
+  if (fileName) {
+    sourceItem.fileName = fileName;
   }
-  if (typeof snake.total_tokens === "number") {
-    tokenUsage.totalTokens = snake.total_tokens;
+  if (pages?.length) {
+    sourceItem.pages = pages;
   }
-  return Object.keys(tokenUsage).length ? tokenUsage : undefined;
+  if (markdownUrl) {
+    sourceItem.markdownUrl = markdownUrl;
+  }
+  return sourceItem;
 }
 
 export function historyMessageToStore(
@@ -126,49 +160,20 @@ export function historyMessageToStore(
   index: number,
   sessionId: string,
 ): ChatStoreMessage {
-  const sources: ChatSourceItem[] = [];
-  for (const raw of msg.sources ?? []) {
-    if (!raw) continue;
-    const url =
-      typeof raw.original_url === "string" && raw.original_url
-        ? raw.original_url
-        : typeof raw.url === "string" && raw.url
-          ? raw.url
-          : "";
-    if (!url) continue;
-    const pagesRaw = (raw as { pages?: unknown }).pages;
-    const pages = Array.isArray(pagesRaw)
-      ? pagesRaw.filter((page): page is string => typeof page === "string")
-      : undefined;
-    const sourceItem: ChatSourceItem = {
-      title: typeof raw.title === "string" && raw.title ? raw.title : url,
-      url,
-    };
-    if (typeof (raw as { citation_id?: unknown }).citation_id === "number") {
-      sourceItem.citationId = (raw as { citation_id: number }).citation_id;
-    }
-    if (typeof (raw as { file_name?: unknown }).file_name === "string") {
-      sourceItem.fileName = (raw as { file_name: string }).file_name;
-    }
-    if (pages?.length) {
-      sourceItem.pages = pages;
-    }
-    if (typeof (raw as { markdown_url?: unknown }).markdown_url === "string") {
-      sourceItem.markdownUrl = (raw as { markdown_url: string }).markdown_url;
-    }
-    sources.push(sourceItem);
-  }
-  const createdAt = msg.createdAt ?? msg.created_at ?? new Date().toISOString();
+  const sources = (msg.sources ?? [])
+    .map(historySourceToStore)
+    .filter((source): source is ChatSourceItem => source !== null);
+  const createdAt = msg.createdAt ?? new Date().toISOString();
   const reasoningSteps = historyStepsToStore(msg.steps, sessionId, msg.sequence);
   const tokenUsage = normalizeTokenUsage(msg);
-  const processingTimeMs = msg.processingTimeMs ?? msg.processing_time_ms;
+  const processingTimeMs = msg.processingTimeMs;
 
   const storeMessage: ChatStoreMessage = {
     id: `${sessionId}-history-${msg.sequence}-${index}`,
     role: msg.role,
     content:
       msg.role === "assistant" &&
-      (msg.messageType ?? msg.message_type) === "thinking"
+      msg.messageType === "thinking"
         ? ""
         : msg.content,
     createdAt,
@@ -179,7 +184,7 @@ export function historyMessageToStore(
   }
   if (
     msg.role === "assistant" &&
-    (msg.messageType ?? msg.message_type) === "thinking"
+    msg.messageType === "thinking"
   ) {
     storeMessage.reasoning = msg.content;
   }
@@ -244,27 +249,9 @@ export function convertMessage(m: ChatStoreMessage): ThreadMessageLike {
         markdownUrl?: string;
         citationId?: number;
       }
-    | {
-        type: "tool-call";
-        toolCallId: string;
-        toolName: string;
-        argsText: string;
-        result?: unknown;
-        isError?: boolean;
-      }
   > = [];
 
   if (m.role === "assistant") {
-    for (const tc of m.toolCalls ?? []) {
-      parts.push({
-        type: "tool-call",
-        toolCallId: tc.toolCallId,
-        toolName: tc.toolName,
-        argsText: tc.argsText,
-        result: tc.result,
-        isError: tc.isError,
-      });
-    }
     if (m.reasoningSteps?.length) {
       parts.push({
         type: "reasoning",
@@ -335,13 +322,9 @@ export function sourceItemsFromStream(rawSources: unknown[]) {
     .map((source): ChatSourceItem | null => {
       if (!source || typeof source !== "object") return null;
       const candidate = source as Record<string, unknown>;
-      const urlRaw = candidate.original_url;
+      const urlRaw = candidate.originalUrl;
       if (typeof urlRaw !== "string" || !urlRaw.trim()) return null;
-      const titleRaw =
-        candidate.title ??
-        candidate.file_name ??
-        candidate.name ??
-        candidate.filename;
+      const titleRaw = candidate.title ?? candidate.fileName;
       const pagesRaw = candidate.pages;
       const pages = Array.isArray(pagesRaw)
         ? pagesRaw.filter((page): page is string => typeof page === "string")
@@ -351,20 +334,20 @@ export function sourceItemsFromStream(rawSources: unknown[]) {
           typeof titleRaw === "string" && titleRaw.trim() ? titleRaw : urlRaw,
         url: urlRaw,
       };
-      if (typeof candidate.citation_id === "number") {
-        item.citationId = candidate.citation_id;
+      if (typeof candidate.citationId === "number") {
+        item.citationId = candidate.citationId;
       }
-      if (typeof candidate.file_name === "string" && candidate.file_name.trim()) {
-        item.fileName = candidate.file_name;
+      if (typeof candidate.fileName === "string" && candidate.fileName.trim()) {
+        item.fileName = candidate.fileName;
       }
       if (pages?.length) {
         item.pages = pages;
       }
       if (
-        typeof candidate.markdown_url === "string" &&
-        candidate.markdown_url.trim()
+        typeof candidate.markdownUrl === "string" &&
+        candidate.markdownUrl.trim()
       ) {
-        item.markdownUrl = candidate.markdown_url;
+        item.markdownUrl = candidate.markdownUrl;
       }
       return item;
     })

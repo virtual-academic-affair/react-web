@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { MdAdd, MdArchive, MdHistory } from "react-icons/md";
 
-import { useChatbotShell } from "../chatbotShellContext";
 import { sortSessionsByActivity } from "../chatbotMappers";
 import { useChatbotSessionsQuery } from "../chatbotQueries";
+import { useChatbotShell } from "../chatbotShellContext";
 import type { ChatThreadSession } from "../types";
 import { ChatbotThreadDeleteConfirm } from "./ChatbotThreadDeleteConfirm";
 import { ChatbotThreadRow } from "./ChatbotThreadRow";
@@ -106,6 +106,7 @@ export function ChatbotThreadToolbar() {
     try {
       await deleteThread(deleteTarget);
       setDeleteTarget(null);
+      setMode("active");
     } finally {
       setIsDeleting(false);
     }
@@ -113,12 +114,12 @@ export function ChatbotThreadToolbar() {
 
   return (
     <>
-      <aside className="dark:bg-navy-800 flex max-h-[260px] min-h-0 w-full shrink-0 flex-col rounded-3xl bg-white/80 p-3 shadow-[0_2px_12px_-6px_rgba(0,0,0,0.28)] ring-1 ring-black/5 backdrop-blur dark:ring-white/10 lg:h-full lg:max-h-none lg:w-[280px]">
+      <aside className="dark:bg-navy-800 flex max-h-[260px] min-h-0 w-full shrink-0 flex-col rounded-3xl bg-white/80 p-3 shadow-[0_2px_12px_-6px_rgba(0,0,0,0.28)] ring-1 ring-black/5 backdrop-blur lg:sticky lg:top-5 lg:h-[calc(100vh-2.5rem)] lg:max-h-[calc(100vh-2.5rem)] lg:w-[280px] dark:ring-white/10">
         <div className="mb-3 flex shrink-0 items-center gap-2">
           <button
             type="button"
             onClick={handleNewThread}
-            className="dark:bg-brand-500 inline-flex h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-[#d3e3fd] px-4 text-sm font-semibold text-[#062e6f] transition hover:bg-[#c2d7f7] dark:text-white dark:hover:bg-brand-400"
+            className="dark:bg-brand-500 dark:hover:bg-brand-400 inline-flex h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-[#d3e3fd] px-4 text-sm font-semibold text-[#062e6f] transition hover:bg-[#c2d7f7] dark:text-white"
           >
             <MdAdd className="h-5 w-5 shrink-0" aria-hidden />
             Tạo mới
@@ -131,8 +132,8 @@ export function ChatbotThreadToolbar() {
             onClick={() => handleModeChange("active")}
             className={`rounded-xl px-2 py-1.5 text-xs font-semibold transition ${
               mode === "active"
-                ? "bg-white text-navy-700 shadow-sm dark:bg-navy-700 dark:text-white"
-                : "text-gray-600 hover:text-navy-700 dark:text-gray-300 dark:hover:text-white"
+                ? "text-navy-700 dark:bg-navy-700 bg-white shadow-sm dark:text-white"
+                : "hover:text-navy-700 text-gray-600 dark:text-gray-300 dark:hover:text-white"
             }`}
           >
             Đang hoạt động
@@ -142,15 +143,15 @@ export function ChatbotThreadToolbar() {
             onClick={() => handleModeChange("archived")}
             className={`rounded-xl px-2 py-1.5 text-xs font-semibold transition ${
               mode === "archived"
-                ? "bg-white text-navy-700 shadow-sm dark:bg-navy-700 dark:text-white"
-                : "text-gray-600 hover:text-navy-700 dark:text-gray-300 dark:hover:text-white"
+                ? "text-navy-700 dark:bg-navy-700 bg-white shadow-sm dark:text-white"
+                : "hover:text-navy-700 text-gray-600 dark:text-gray-300 dark:hover:text-white"
             }`}
           >
             Lưu trữ
           </button>
         </div>
 
-        <div className="mb-2 flex shrink-0 items-center gap-2 px-2 text-xs font-semibold uppercase tracking-wide text-[#5f6368] dark:text-gray-400">
+        <div className="mb-2 flex shrink-0 items-center gap-2 px-2 text-xs font-semibold tracking-wide text-[#5f6368] uppercase dark:text-gray-400">
           {mode === "active" ? (
             <MdHistory className="h-4 w-4" aria-hidden />
           ) : (
@@ -159,7 +160,7 @@ export function ChatbotThreadToolbar() {
           {mode === "active" ? "Lịch sử chat" : "Chat lưu trữ"}
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1 pb-4">
+        <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto pr-1 pb-4">
           {isLoadingVisible ? (
             <div className="rounded-xl px-3 py-2 text-sm text-[#444746] dark:text-gray-400">
               Đang tải...

@@ -1,37 +1,32 @@
 import { API_CONFIG, API_ENDPOINTS } from "@/config/api.config";
-import ragHttp from "../rag-http";
 import { useAuthStore } from "@/stores/auth.store";
+import ragHttp from "../rag-http";
 
 const SSE_EVENT_SEPARATOR = "\n\n";
 const SSE_DATA_PREFIX = "data: ";
 
-export type ChatStreamRole = "user" | "assistant";
-
-export interface ChatStreamHistoryItem {
-  role: ChatStreamRole;
-  content: string;
-  timestamp?: string;
-}
-
 export interface ChatStreamRequest {
   question: string;
-  chatHistory: ChatStreamHistoryItem[];
-  metadataFilter?: Record<string, unknown>;
-  /** Tuỳ chọn; mặc định theo tài liệu API: false / "markdown" / false. */
+  /** Tuỳ chọn; mặc định theo tài liệu API: false / "markdown". */
   resolveCitations?: boolean;
   citationLinkType?: string;
-  toRichText?: boolean;
   /** Tiếp tục cuộc trò chuyện cũ; bỏ trống để backend tạo session mới. */
   sessionId?: string;
 }
 
-export interface ChatQueryRequest extends ChatStreamRequest {}
+export type ChatQueryRequest = ChatStreamRequest;
+
+export interface ChatPipelineStep {
+  type: string;
+  content: string;
+}
 
 export interface ChatQueryResponse {
   answer: string;
   sessionId: string;
-  source: string;
+  source: "llm" | "faq" | "bypass" | string;
   sources: unknown[];
+  steps?: ChatPipelineStep[];
   processingTimeMs: number;
 }
 
@@ -60,26 +55,16 @@ export interface ChatStreamEvent {
   type?: string;
   done?: boolean;
   content?: string;
-  chunk?: string;
-  name?: string;
-  args?: unknown;
-  output?: unknown;
   sources?: unknown[];
   tokenUsage?: {
     promptTokens?: number;
     completionTokens?: number;
     totalTokens?: number;
   };
-  token_usage?: {
-    prompt_tokens?: number;
-    completion_tokens?: number;
-    total_tokens?: number;
-  };
-  processing_time_ms?: number;
+  processingTimeMs?: number;
   error?: string;
-  session_id?: string;
   sessionId?: string;
-  steps?: unknown[];
+  steps?: ChatPipelineStep[];
   [key: string]: unknown;
 }
 
@@ -128,17 +113,14 @@ export async function streamChat(
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const { sessionId, ...rest } = payload;
-
   const response = await fetch(buildStreamUrl(), {
     method: "POST",
     headers,
     body: JSON.stringify({
-      ...rest,
+      question: payload.question,
       resolveCitations: payload.resolveCitations ?? false,
       citationLinkType: payload.citationLinkType ?? "markdown",
-      toRichText: payload.toRichText ?? false,
-      ...(sessionId ? { sessionId } : {}),
+      ...(payload.sessionId ? { sessionId: payload.sessionId } : {}),
     }),
     signal,
   });
@@ -182,4 +164,3 @@ export async function streamChat(
     }
   }
 }
-

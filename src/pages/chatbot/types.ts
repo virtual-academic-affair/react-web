@@ -1,13 +1,5 @@
 export type ChatRole = "user" | "assistant";
 
-export type ChatStoreToolCall = {
-  toolCallId: string;
-  toolName: string;
-  argsText: string;
-  result?: unknown;
-  isError?: boolean;
-};
-
 export type ChatReasoningStep = {
   id: string;
   type: string;
@@ -29,7 +21,6 @@ export type ChatStoreMessage = {
   };
   processingTimeMs?: number;
   sources?: ChatSourceItem[];
-  toolCalls?: ChatStoreToolCall[];
 };
 
 export type ChatSessionStatus = "active" | "archived";
@@ -37,7 +28,7 @@ export type ChatSessionStatus = "active" | "archived";
 export type ChatThreadSession = {
   /** Local thread id used by assistant-ui runtime. Equal to serverId once persisted. */
   id: string;
-  /** Server-side session_id once the conversation has been persisted. */
+  /** Server-side session id once the conversation has been persisted. */
   serverId: string | null;
   title: string;
   status: ChatSessionStatus;

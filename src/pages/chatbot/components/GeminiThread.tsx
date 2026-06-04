@@ -6,7 +6,7 @@ import {
   useMessage,
   type PartState,
 } from "@assistant-ui/react";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import {
   MdAutoAwesome,
   MdChecklist,
@@ -139,8 +139,7 @@ function GeminiAssistantMessage() {
                     ? firstReasoningPart.parentId
                     : undefined,
                 );
-                const defaultOpen =
-                  running || reasoningMeta.defaultOpen;
+                const defaultOpen = running || reasoningMeta.defaultOpen;
                 return (
                   <ReasoningRoot
                     key={part.indices.join("-")}
@@ -236,7 +235,7 @@ function GeminiComposer() {
 
 function GeminiStickyComposer() {
   return (
-    <div className="shrink-0 bg-transparent pt-3 pb-5 dark:border-white/10">
+    <div className="bg-lightPrimary/95 dark:bg-navy-900/95 sticky bottom-0 z-20 shrink-0 pt-3 pb-5 backdrop-blur dark:border-white/10">
       <GeminiComposer />
       <p className="mx-auto mt-2 max-w-lg px-2 text-center text-xs leading-snug text-[#444746] dark:text-gray-400">
         Câu trả lời của AI chỉ mang tính chất tham khảo. Xác thực lại với các
@@ -290,13 +289,41 @@ function ChatbotEmptyState() {
 /** Giao diện theo hướng [Gemini clone assistant-ui](https://www.assistant-ui.com/examples/gemini). */
 export function GeminiThread({ className = "" }: { className?: string }) {
   const hasMessages = useAuiState((s) => s.thread.messages.length > 0);
+  const messageCount = useAuiState((s) => s.thread.messages.length);
+  const isRunning = useAuiState((s) => s.thread.isRunning);
+
+  useEffect(() => {
+    if (!hasMessages) return;
+
+    window.requestAnimationFrame(() => {
+      window.scrollTo({
+        top: document.documentElement.scrollHeight,
+        behavior: isRunning ? "auto" : "smooth",
+      });
+    });
+  }, [hasMessages, isRunning, messageCount]);
+
+  useEffect(() => {
+    if (!hasMessages || !isRunning) return;
+
+    const scrollToBottom = () => {
+      window.scrollTo({
+        top: document.documentElement.scrollHeight,
+        behavior: "auto",
+      });
+    };
+
+    scrollToBottom();
+    const intervalId = window.setInterval(scrollToBottom, 250);
+    return () => window.clearInterval(intervalId);
+  }, [hasMessages, isRunning]);
 
   return (
     <ThreadPrimitive.Root
-      className={`flex h-full min-h-0 w-full flex-col bg-transparent text-base text-[#1f1f1f] dark:text-white ${className}`.trim()}
+      className={`flex min-h-[calc(100vh-8rem)] w-full flex-col bg-transparent text-base text-[#1f1f1f] dark:text-white ${className}`.trim()}
     >
-      <ThreadPrimitive.Viewport className="min-h-0 w-full flex-1 overflow-y-auto overscroll-y-contain">
-        <div className="flex min-h-full w-full flex-col pt-4 pb-2 md:pt-5">
+      <ThreadPrimitive.Viewport className="w-full flex-1 overflow-visible">
+        <div className="flex min-h-[calc(100vh-15rem)] w-full flex-col pt-4 pb-28 md:pt-5">
           {hasMessages ? null : <ChatbotEmptyState />}
           <ThreadPrimitive.Messages
             components={{

@@ -1,7 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import type { ChatbotShellContextValue } from "./chatbotShellContext";
 import {
   convertMessage,
   createDraftSession,
@@ -14,6 +13,7 @@ import {
   useChatbotSessionsQuery,
 } from "./chatbotQueries";
 import { useChatbotRoutes } from "./chatbotRoutes";
+import type { ChatbotShellContextValue } from "./chatbotShellContext";
 import type { ChatStoreMessage, ChatThreadSession } from "./types";
 import { useChatbotSessionMutations } from "./useChatbotSessionMutations";
 import { useChatbotStreaming } from "./useChatbotStreaming";
@@ -53,8 +53,6 @@ export function useChatbotRuntime() {
     [sessions, activeThreadId],
   );
 
-  const messagesRef = useRef(messages);
-  messagesRef.current = messages;
   const abortRef = useRef<AbortController | null>(null);
 
   const clearError = useCallback(() => setSystemError(null), []);
@@ -70,6 +68,16 @@ export function useChatbotRuntime() {
       queryClient.removeQueries({
         queryKey: chatbotQueryKeys.messages(sessionId),
       });
+      queryClient.setQueryData<ChatThreadSession[]>(
+        chatbotQueryKeys.sessions("active"),
+        (current) =>
+          current?.filter((session) => session.id !== sessionId) ?? current,
+      );
+      queryClient.setQueryData<ChatThreadSession[]>(
+        chatbotQueryKeys.sessions("archived"),
+        (current) =>
+          current?.filter((session) => session.id !== sessionId) ?? current,
+      );
     },
     [queryClient],
   );
@@ -137,7 +145,9 @@ export function useChatbotRuntime() {
       try {
         const initialRouteThreadId = initialRouteThreadIdRef.current;
         const activeRouteTarget = initialRouteThreadId
-          ? activeSessions.find((session) => session.id === initialRouteThreadId)
+          ? activeSessions.find(
+              (session) => session.id === initialRouteThreadId,
+            )
           : undefined;
         const archivedSessions =
           initialRouteThreadId && !activeRouteTarget
@@ -172,6 +182,10 @@ export function useChatbotRuntime() {
         initialResolvedRef.current = true;
         setIsResolvingInitial(false);
 
+        if (!initialRouteThreadId) {
+          return;
+        }
+
         if (shouldKeepCurrentThread) {
           if (currentActive) {
             await loadMessagesForSession(currentActive);
@@ -179,8 +193,7 @@ export function useChatbotRuntime() {
           return;
         }
 
-        const first =
-          archivedRouteTarget ?? activeRouteTarget ?? activeSessions[0];
+        const first = archivedRouteTarget ?? activeRouteTarget;
         if (!first) return;
 
         setActiveThreadId(first.id);
@@ -214,7 +227,6 @@ export function useChatbotRuntime() {
   const { isRunning, onNew, onCancel } = useChatbotStreaming({
     activeThreadIdRef,
     sessionsRef,
-    messagesRef,
     abortRef,
     setSessions,
     setActiveThreadId,

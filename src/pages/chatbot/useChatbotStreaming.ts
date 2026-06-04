@@ -28,7 +28,6 @@ type MutableRef<T> = {
 type UseChatbotStreamingArgs = {
   activeThreadIdRef: MutableRef<string>;
   sessionsRef: MutableRef<ChatThreadSession[]>;
-  messagesRef: MutableRef<ChatStoreMessage[]>;
   abortRef: MutableRef<AbortController | null>;
   setSessions: Dispatch<SetStateAction<ChatThreadSession[]>>;
   setActiveThreadId: Dispatch<SetStateAction<string>>;
@@ -37,16 +36,6 @@ type UseChatbotStreamingArgs = {
   navigateToThread: (threadId: string, options?: { replace?: boolean }) => void;
   invalidateSessionQueries: () => void;
 };
-
-function toArgsText(args: unknown) {
-  if (args === undefined) return "";
-  if (typeof args === "string") return args;
-  try {
-    return JSON.stringify(args, null, 2);
-  } catch {
-    return String(args);
-  }
-}
 
 function updateAssistantMessage(
   setSessions: Dispatch<SetStateAction<ChatThreadSession[]>>,
@@ -129,7 +118,6 @@ function reasoningStepsFromDoneEvent(rawSteps: unknown[]): ChatReasoningStep[] {
 export function useChatbotStreaming({
   activeThreadIdRef,
   sessionsRef,
-  messagesRef,
   abortRef,
   setSessions,
   setActiveThreadId,
@@ -141,12 +129,7 @@ export function useChatbotStreaming({
   const [isRunning, setIsRunning] = useState(false);
 
   const runStreamForAssistant = useCallback(
-    async (
-      userText: string,
-      assistantId: string,
-      prior: ChatStoreMessage[],
-      threadId: string,
-    ) => {
+    async (userText: string, assistantId: string, threadId: string) => {
       try {
         const sessionAtSendTime =
           sessionsRef.current.find((s) => s.id === threadId) ?? null;
@@ -155,100 +138,20 @@ export function useChatbotStreaming({
         await streamChat(
           {
             question: userText,
-            chatHistory: prior.map((item) => ({
-              role: item.role,
-              content: item.content,
-              timestamp: item.createdAt,
-            })),
             sessionId: sessionIdToSend,
+            resolveCitations: true,
           },
           (event) => {
             const ev = event as Record<string, unknown>;
             const eventType = typeof ev.type === "string" ? ev.type : undefined;
-            const textChunk =
-              typeof ev.chunk === "string" && ev.chunk
-                ? ev.chunk
-                : typeof ev.content === "string"
-                  ? ev.content
-                  : "";
+            const textChunk = typeof ev.content === "string" ? ev.content : "";
 
-            if (
-              eventType &&
-              eventType !== "text" &&
-              textChunk
-            ) {
+            if (eventType && eventType !== "text" && textChunk) {
               updateAssistantMessage(
                 setSessions,
                 threadId,
                 assistantId,
-                (item) =>
-                  appendReasoningStep(item, eventType, textChunk),
-              );
-              return;
-            }
-
-            if (eventType === "call") {
-              const toolName =
-                typeof ev.name === "string" && ev.name.trim()
-                  ? ev.name.trim()
-                  : "tool";
-              const argsText = toArgsText(ev.args);
-              updateAssistantMessage(
-                setSessions,
-                threadId,
-                assistantId,
-                (item) => ({
-                  ...item,
-                  toolCalls: [
-                    ...(item.toolCalls ?? []),
-                    {
-                      toolCallId: newChatbotId("tool"),
-                      toolName,
-                      argsText,
-                    },
-                  ],
-                }),
-              );
-              return;
-            }
-
-            if (eventType === "tool_output") {
-              const toolName =
-                typeof ev.name === "string" && ev.name.trim()
-                  ? ev.name.trim()
-                  : "tool";
-              updateAssistantMessage(
-                setSessions,
-                threadId,
-                assistantId,
-                (item) => {
-                  const toolCalls = [...(item.toolCalls ?? [])];
-                  const idx = (() => {
-                    for (let i = toolCalls.length - 1; i >= 0; i -= 1) {
-                      if (
-                        toolCalls[i].toolName === toolName &&
-                        toolCalls[i].result === undefined
-                      ) {
-                        return i;
-                      }
-                    }
-                    return -1;
-                  })();
-                  if (idx >= 0) {
-                    toolCalls[idx] = {
-                      ...toolCalls[idx],
-                      result: ev.output,
-                    };
-                  } else {
-                    toolCalls.push({
-                      toolCallId: newChatbotId("tool"),
-                      toolName,
-                      argsText: "",
-                      result: ev.output,
-                    });
-                  }
-                  return { ...item, toolCalls };
-                },
+                (item) => appendReasoningStep(item, eventType, textChunk),
               );
               return;
             }
@@ -267,32 +170,12 @@ export function useChatbotStreaming({
               return;
             }
 
-            if (eventType === "reasoning" || eventType === "thought") {
-              const rChunk =
-                (typeof ev.content === "string" && ev.content) ||
-                (typeof ev.chunk === "string" && ev.chunk) ||
-                "";
-              if (!rChunk) return;
-              updateAssistantMessage(
-                setSessions,
-                threadId,
-                assistantId,
-                (item) => ({
-                  ...item,
-                  reasoning: `${item.reasoning ?? ""}${rChunk}`,
-                }),
-              );
-              return;
-            }
-
             if (ev.done) {
               const doneEvent = event as {
                 sources?: unknown[];
                 steps?: unknown[];
                 error?: unknown;
-                session_id?: string;
                 sessionId?: string;
-                processing_time_ms?: unknown;
                 processingTimeMs?: unknown;
               };
               const errorText =
@@ -301,17 +184,13 @@ export function useChatbotStreaming({
                   : "";
               const sources = sourceItemsFromStream(doneEvent.sources ?? []);
               const returnedSessionId =
-                (typeof doneEvent.session_id === "string" &&
-                  doneEvent.session_id) ||
                 (typeof doneEvent.sessionId === "string" &&
                   doneEvent.sessionId) ||
                 null;
               const processingTimeMs =
-                typeof doneEvent.processing_time_ms === "number"
-                  ? doneEvent.processing_time_ms
-                  : typeof doneEvent.processingTimeMs === "number"
-                    ? doneEvent.processingTimeMs
-                    : undefined;
+                typeof doneEvent.processingTimeMs === "number"
+                  ? doneEvent.processingTimeMs
+                  : undefined;
 
               if (errorText) {
                 setSystemError(CHAT_SYSTEM_BUSY_MESSAGE);
@@ -336,12 +215,11 @@ export function useChatbotStreaming({
                       item.id === assistantId
                         ? {
                             ...item,
-                            reasoningSteps:
-                              item.reasoningSteps?.length
-                                ? item.reasoningSteps
-                                : reasoningStepsFromDoneEvent(
-                                    doneEvent.steps ?? [],
-                                  ),
+                            reasoningSteps: item.reasoningSteps?.length
+                              ? item.reasoningSteps
+                              : reasoningStepsFromDoneEvent(
+                                  doneEvent.steps ?? [],
+                                ),
                             sources: sources.length ? sources : [],
                             processingTimeMs,
                           }
@@ -389,7 +267,6 @@ export function useChatbotStreaming({
       abortRef,
       activeThreadIdRef,
       invalidateSessionQueries,
-      messagesRef,
       navigateToThread,
       selectedByUserRef,
       sessionsRef,
@@ -413,7 +290,6 @@ export function useChatbotStreaming({
         return;
       }
 
-      const prior = messagesRef.current;
       const userId = newChatbotId("user");
       const assistantId = newChatbotId("assistant");
       const now = new Date().toISOString();
@@ -458,12 +334,11 @@ export function useChatbotStreaming({
       abortRef.current = new AbortController();
       setIsRunning(true);
 
-      await runStreamForAssistant(text, assistantId, prior, threadId);
+      await runStreamForAssistant(text, assistantId, threadId);
     },
     [
       abortRef,
       activeThreadIdRef,
-      messagesRef,
       runStreamForAssistant,
       sessionsRef,
       setSessions,
