@@ -1,7 +1,6 @@
 import Navbar from "@/components/navbar";
 import Sidebar from "@/components/sidebar";
 import { useDynamicData } from "@/hooks/useDynamicData";
-import { useMobileSidebarSwipe } from "@/hooks/useMobileSidebarSwipe";
 import UsersPage from "@/pages/auth/accounts";
 import StudentsPage from "@/pages/auth/students";
 import ChatbotPage from "@/pages/chatbot";
@@ -65,12 +64,6 @@ const AdminLayout: React.FC = () => {
 
   const showChatbotSidebar = isAdminChatbotRoute && sidebarMode === "chatbot";
   const effectiveCollapsed = showChatbotSidebar ? false : collapsed;
-
-  useMobileSidebarSwipe({
-    open,
-    onOpen: () => setOpen(true),
-    onClose: () => setOpen(false),
-  });
 
   const layoutBody = (
     <>

@@ -7,6 +7,7 @@ import React from "react";
 import {
   RiArrowLeftSLine,
   RiArrowRightSLine,
+  RiCloseLine,
   RiMoonFill,
   RiSunFill,
 } from "react-icons/ri";
@@ -22,8 +23,13 @@ const Sidebar = (props: {
   onToggleCollapse?: () => void;
   onShowChatbotPanel?: () => void;
 }) => {
-  const { open, collapsed = false, onToggleCollapse, onShowChatbotPanel } =
-    props;
+  const {
+    open,
+    onClose,
+    collapsed = false,
+    onToggleCollapse,
+    onShowChatbotPanel,
+  } = props;
   const navigate = useNavigate();
   const clearAuth = useAuthStore((s) => s.clearAuth);
   const [userInfo, setUserInfo] = React.useState<UserInfo>({});
@@ -76,12 +82,12 @@ const Sidebar = (props: {
             <Links
               routes={routes}
               collapsed={collapsed}
-              onNavigate={props.onClose}
+              onNavigate={onClose}
             />
             <SidebarChatbotPanel
               collapsed={collapsed}
               onShowChatbotPanel={onShowChatbotPanel}
-              onNavigate={props.onClose}
+              onNavigate={onClose}
             />
           </ul>
         </div>
@@ -142,7 +148,7 @@ const Sidebar = (props: {
 
           {/* Dark mode — hidden when collapsed */}
           {!collapsed && (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <button
                 className="dark:bg-navy-700 flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-600 dark:text-white"
                 onClick={() => {
@@ -162,6 +168,15 @@ const Sidebar = (props: {
                 ) : (
                   <RiMoonFill className="h-4 w-4" />
                 )}
+              </button>
+              <button
+                type="button"
+                aria-label="Đóng menu"
+                title="Đóng menu"
+                onClick={onClose}
+                className="dark:bg-navy-700 flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-600 transition-colors hover:bg-gray-200 lg:hidden dark:text-white dark:hover:bg-white/10"
+              >
+                <RiCloseLine className="h-5 w-5" />
               </button>
             </div>
           )}
