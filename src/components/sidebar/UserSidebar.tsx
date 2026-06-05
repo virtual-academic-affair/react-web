@@ -14,6 +14,7 @@ import React, { useEffect, useState } from "react";
 import {
   RiArrowLeftSLine,
   RiArrowRightSLine,
+  RiCloseLine,
   RiMoonFill,
   RiSunFill,
 } from "react-icons/ri";
@@ -208,7 +209,7 @@ const UserSidebar: React.FC<UserSidebarProps> = ({
 
           {/* Dark mode toggle */}
           {!collapsed && (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <button
                 className="dark:bg-navy-700 flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-600 dark:text-white"
                 onClick={() => {
@@ -228,6 +229,15 @@ const UserSidebar: React.FC<UserSidebarProps> = ({
                 ) : (
                   <RiMoonFill className="h-4 w-4" />
                 )}
+              </button>
+              <button
+                type="button"
+                aria-label="Đóng menu"
+                title="Đóng menu"
+                onClick={onClose}
+                className="dark:bg-navy-700 flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-600 transition-colors hover:bg-gray-200 lg:hidden dark:text-white dark:hover:bg-white/10"
+              >
+                <RiCloseLine className="h-5 w-5" />
               </button>
             </div>
           )}
