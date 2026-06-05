@@ -181,7 +181,7 @@ function GeminiAssistantMessage() {
         </MessagePrimitive.GroupedParts>
         {showTimestamp ? (
           <div className="pt-1 text-right text-xs text-[#9aa0a6] dark:text-[#8f98aa]">
-            Trả lời lúc {timestampText}
+            {timestampText}
           </div>
         ) : null}
       </div>
@@ -301,7 +301,7 @@ export function GeminiThread({ className = "" }: { className?: string }) {
 
     window.requestAnimationFrame(() => {
       window.scrollTo({
-        top: document.documentElement.scrollHeight,
+        top: document.documentElement.scrollHeight - 500,
         behavior: "auto",
       });
     });
