@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 interface TooltipProps {
   label: ReactNode;
@@ -10,6 +10,20 @@ interface TooltipProps {
 const Tooltip: React.FC<TooltipProps> = ({ label, children, className }) => {
   const wrapperClass =
     "group relative inline-flex " + (className ? className : "");
+  const [tooltipEnabled, setTooltipEnabled] = useState(true);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(hover: none), (pointer: coarse)");
+    const syncTooltipMode = () => setTooltipEnabled(!mediaQuery.matches);
+
+    syncTooltipMode();
+    mediaQuery.addEventListener("change", syncTooltipMode);
+    return () => mediaQuery.removeEventListener("change", syncTooltipMode);
+  }, []);
+
+  if (!tooltipEnabled) {
+    return <div className={className}>{children}</div>;
+  }
 
   return (
     <div className={wrapperClass}>

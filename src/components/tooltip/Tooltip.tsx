@@ -1,7 +1,7 @@
 import { Tooltip as AntdTooltip } from "antd";
 import type { AdjustOverflow, TooltipPlacement } from "antd/es/tooltip";
 import type { ReactNode } from "react";
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 interface TooltipProps {
   label: ReactNode;
@@ -26,6 +26,20 @@ const Tooltip: React.FC<TooltipProps> = ({
   autoAdjustOverflow,
 }) => {
   const wrapperClass = className !== undefined ? className : "inline-flex";
+  const [tooltipEnabled, setTooltipEnabled] = useState(true);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(hover: none), (pointer: coarse)");
+    const syncTooltipMode = () => setTooltipEnabled(!mediaQuery.matches);
+
+    syncTooltipMode();
+    mediaQuery.addEventListener("change", syncTooltipMode);
+    return () => mediaQuery.removeEventListener("change", syncTooltipMode);
+  }, []);
+
+  if (!tooltipEnabled) {
+    return <span className={wrapperClass}>{children}</span>;
+  }
 
   return (
     <AntdTooltip
