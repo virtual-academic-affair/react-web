@@ -9,6 +9,7 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import Navbar from "@/components/navbar";
 import UserSidebar from "@/components/sidebar/UserSidebar";
+import { useMobileBodyScrollLock } from "@/hooks/useMobileBodyScrollLock";
 import ChatbotPage from "@/pages/chatbot";
 import { ChatbotRuntimeProvider } from "@/pages/chatbot/ChatbotRuntimeProvider";
 import { ChatbotThreadToolbar } from "@/pages/chatbot/components/ChatbotThreadToolbar";
@@ -48,6 +49,7 @@ const UserLayout: React.FC = () => {
 
   const showChatbotSidebar = isUserChatbotRoute && sidebarMode === "chatbot";
   const effectiveCollapsed = showChatbotSidebar ? false : collapsed;
+  useMobileBodyScrollLock(open);
 
   const layoutBody = (
     <>

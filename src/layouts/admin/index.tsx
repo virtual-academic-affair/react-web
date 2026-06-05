@@ -1,5 +1,6 @@
 import Navbar from "@/components/navbar";
 import Sidebar from "@/components/sidebar";
+import { useMobileBodyScrollLock } from "@/hooks/useMobileBodyScrollLock";
 import { useDynamicData } from "@/hooks/useDynamicData";
 import UsersPage from "@/pages/auth/accounts";
 import StudentsPage from "@/pages/auth/students";
@@ -64,6 +65,7 @@ const AdminLayout: React.FC = () => {
 
   const showChatbotSidebar = isAdminChatbotRoute && sidebarMode === "chatbot";
   const effectiveCollapsed = showChatbotSidebar ? false : collapsed;
+  useMobileBodyScrollLock(open);
 
   const layoutBody = (
     <>
