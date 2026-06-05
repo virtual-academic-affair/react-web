@@ -35,18 +35,19 @@ type HighlightRange = {
 
 function getPageLabel(pages?: string[]) {
   if (!pages?.length) return "";
-  return pages.length === 1 ? `Trang ${pages[0]}` : `Trang ${pages.join(", ")}`;
+  return pages.length === 1 ? `Dòng ${pages[0]}` : `Dòng ${pages.join(", ")}`;
 }
 
 function parsePageRanges(pages?: string[]) {
   const ranges: PageRange[] = [];
   for (const page of pages ?? []) {
-    const match = page.match(/(\d+)(?:\s*[-–]\s*(\d+))?/);
-    if (!match) continue;
-    const start = Number(match[1]);
-    const end = Number(match[2] ?? match[1]);
-    if (!Number.isFinite(start) || !Number.isFinite(end)) continue;
-    ranges.push({ start: Math.min(start, end), end: Math.max(start, end) });
+    const matches = page.matchAll(/(\d+)(?:\s*[-–]\s*(\d+))?/g);
+    for (const match of matches) {
+      const start = Number(match[1]);
+      const end = Number(match[2] ?? match[1]);
+      if (!Number.isFinite(start) || !Number.isFinite(end)) continue;
+      ranges.push({ start: Math.min(start, end), end: Math.max(start, end) });
+    }
   }
   return ranges;
 }
@@ -354,7 +355,7 @@ function SourcePreviewDrawer({
                   <div className="min-w-0">
                     <p className="text-sm font-semibold">{title}</p>
                     <p className="mt-1 text-xs text-[#5f6368] dark:text-gray-400">
-                      {pageLabel || "Không có thông tin trang"}
+                      {pageLabel || "Không có thông tin dòng"}
                     </p>
                   </div>
                 </div>

@@ -6,7 +6,7 @@ import {
   useMessage,
   type PartState,
 } from "@assistant-ui/react";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import {
   MdAutoAwesome,
   MdChecklist,
@@ -181,7 +181,7 @@ function GeminiAssistantMessage() {
         </MessagePrimitive.GroupedParts>
         {showTimestamp ? (
           <div className="pt-1 text-right text-xs text-[#9aa0a6] dark:text-[#8f98aa]">
-            Trả lời lúc {timestampText}
+            {timestampText}
           </div>
         ) : null}
       </div>
@@ -235,9 +235,9 @@ function GeminiComposer() {
 
 function GeminiStickyComposer() {
   return (
-    <div className="bg-lightPrimary/95 dark:bg-navy-900/95 sticky bottom-0 z-20 shrink-0 pt-3 pb-5 backdrop-blur dark:border-white/10">
+    <div className="bg-lightPrimary/95 dark:bg-navy-900/95 sticky bottom-0 z-20 shrink-0 pb-4 backdrop-blur dark:border-white/10">
       <GeminiComposer />
-      <p className="mx-auto mt-2 max-w-lg px-2 text-center text-xs leading-snug text-[#444746] dark:text-gray-400">
+      <p className="mx-auto mt-2 max-w-lg text-center text-xs leading-snug text-[#444746] dark:text-gray-400">
         Câu trả lời của AI chỉ mang tính chất tham khảo. Xác thực lại với các
         tài liệu gợi ý.
       </p>
@@ -289,41 +289,30 @@ function ChatbotEmptyState() {
 /** Giao diện theo hướng [Gemini clone assistant-ui](https://www.assistant-ui.com/examples/gemini). */
 export function GeminiThread({ className = "" }: { className?: string }) {
   const hasMessages = useAuiState((s) => s.thread.messages.length > 0);
-  const messageCount = useAuiState((s) => s.thread.messages.length);
-  const isRunning = useAuiState((s) => s.thread.isRunning);
+  const { activeThreadId } = useChatbotShell();
+  const autoScrolledThreadRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!hasMessages) return;
+    if (!hasMessages || autoScrolledThreadRef.current === activeThreadId) {
+      return;
+    }
+
+    autoScrolledThreadRef.current = activeThreadId;
 
     window.requestAnimationFrame(() => {
       window.scrollTo({
         top: document.documentElement.scrollHeight,
-        behavior: isRunning ? "auto" : "smooth",
-      });
-    });
-  }, [hasMessages, isRunning, messageCount]);
-
-  useEffect(() => {
-    if (!hasMessages || !isRunning) return;
-
-    const scrollToBottom = () => {
-      window.scrollTo({
-        top: document.documentElement.scrollHeight,
         behavior: "auto",
       });
-    };
-
-    scrollToBottom();
-    const intervalId = window.setInterval(scrollToBottom, 250);
-    return () => window.clearInterval(intervalId);
-  }, [hasMessages, isRunning]);
+    });
+  }, [activeThreadId, hasMessages]);
 
   return (
     <ThreadPrimitive.Root
       className={`flex min-h-[calc(100vh-8rem)] w-full flex-col bg-transparent text-base text-[#1f1f1f] dark:text-white ${className}`.trim()}
     >
       <ThreadPrimitive.Viewport className="w-full flex-1 overflow-visible">
-        <div className="flex min-h-[calc(100vh-15rem)] w-full flex-col pt-4 pb-28 md:pt-5">
+        <div className="flex min-h-[calc(100vh-15rem)] w-full flex-col py-4">
           {hasMessages ? null : <ChatbotEmptyState />}
           <ThreadPrimitive.Messages
             components={{

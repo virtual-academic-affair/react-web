@@ -190,7 +190,7 @@ export function ReasoningTrigger({
       <summary
         data-active={active ? true : undefined}
         className="inline-flex cursor-pointer list-none items-center gap-2 rounded-full marker:content-none [&::-webkit-details-marker]:hidden"
-        aria-label="Bật tắt suy luận"
+        aria-label="Bật tắt suy nghĩ"
       >
         <span
           data-active={active ? true : undefined}
@@ -204,10 +204,10 @@ export function ReasoningTrigger({
             className="hidden h-5 w-5 group-open:block"
             aria-hidden
           />
-          <span className="sr-only">Suy luận</span>
+          <span className="sr-only">Suy nghĩ</span>
         </span>
         <span className="text-xs font-medium text-[#80868b] dark:text-[#9aa0a6]">
-          Suy luận
+          Suy nghĩ
         </span>
         {durationText ? (
           <span className="text-xs text-[#9aa0a6] dark:text-[#8f98aa]">
@@ -221,7 +221,7 @@ export function ReasoningTrigger({
     <summary
       data-active={active || undefined}
       className="inline-flex cursor-pointer list-none items-center gap-2 py-1 marker:content-none [&::-webkit-details-marker]:hidden"
-      aria-label="Bật tắt suy luận"
+      aria-label="Bật tắt suy nghĩ"
     >
       <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#dadce0] bg-white text-[#1a73e8] shadow-sm transition-colors hover:bg-[#f1f3f4] dark:border-[#3c4043] dark:bg-white/10 dark:text-[#a8c7fa] dark:hover:bg-white/15">
         <MdKeyboardArrowDown
@@ -232,10 +232,10 @@ export function ReasoningTrigger({
           className="hidden h-5 w-5 group-open:block"
           aria-hidden
         />
-        <span className="sr-only">Suy luận</span>
+        <span className="sr-only">Suy nghĩ</span>
       </span>
       <span className="text-sm font-medium text-[#5f6368] dark:text-[#c4c7c5]">
-        Suy luận
+        Suy nghĩ
       </span>
       {durationText ? (
         <span className="text-xs text-[#80868b] dark:text-[#9aa0a6]">

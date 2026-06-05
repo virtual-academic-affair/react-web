@@ -79,6 +79,19 @@ export function useChatbotSessionMutations({
     ],
   );
 
+  const removeThreadAndOpenNewChat = useCallback(
+    (threadId: string) => {
+      const draft = createDraftSession();
+      draftRef.current = draft;
+      setActiveThreadId(draft.id);
+      setSessions((prev) =>
+        prev.filter((item) => item.id !== threadId && !!item.serverId),
+      );
+      navigateToChatbotRoot({ replace: true });
+    },
+    [draftRef, navigateToChatbotRoot, setActiveThreadId, setSessions],
+  );
+
   const renameThread = useCallback(
     async (threadId: string, nextTitle: string) => {
       const trimmed = nextTitle.trim();
@@ -115,21 +128,32 @@ export function useChatbotSessionMutations({
     async (threadId: string) => {
       const target = sessionsRef.current.find((s) => s.id === threadId);
       if (!target) return;
+      const wasActive = activeThreadIdRef.current === threadId;
       if (!target.serverId) {
-        removeThreadFromState(threadId);
+        if (wasActive) {
+          removeThreadAndOpenNewChat(threadId);
+        } else {
+          removeThreadFromState(threadId);
+        }
         return;
       }
       try {
         await archiveSession(target.serverId);
         removeSessionFromQueryCache(target.id);
-        removeThreadFromState(threadId);
+        if (wasActive) {
+          removeThreadAndOpenNewChat(threadId);
+        } else {
+          removeThreadFromState(threadId);
+        }
         await invalidateSessionQueries();
       } catch {
         setSystemError("Không lưu được cuộc trò chuyện.");
       }
     },
     [
+      activeThreadIdRef,
       invalidateSessionQueries,
+      removeThreadAndOpenNewChat,
       removeSessionFromQueryCache,
       removeThreadFromState,
       sessionsRef,
