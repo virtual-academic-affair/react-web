@@ -17,7 +17,7 @@ import { SidebarLinks as Links } from "./components/Links";
 
 const Sidebar = (props: {
   open: boolean;
-  onClose: React.MouseEventHandler<HTMLSpanElement>;
+  onClose: () => void;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
   onShowChatbotPanel?: () => void;
@@ -52,15 +52,15 @@ const Sidebar = (props: {
   };
   return (
     <div
-      className={`sm:none fixed top-5 bottom-5 left-5 z-50! flex flex-col gap-4 transition-all duration-300 lg:z-0! ${
+      className={`fixed inset-0 z-50! flex flex-col gap-4 bg-lightPrimary p-4 transition-all duration-300 dark:bg-navy-900 lg:inset-auto lg:top-5 lg:bottom-5 lg:left-5 lg:bg-transparent lg:p-0 lg:z-0! ${
         open ? "translate-x-0" : "-translate-x-[120%] lg:translate-x-0"
-      } ${collapsed ? "w-[70px]" : "w-78.25"}`}
+      } ${collapsed ? "lg:w-[70px]" : "w-full lg:w-78.25"}`}
     >
       {/* Collapse toggle button — visible on xl+ */}
       <button
         onClick={onToggleCollapse}
         title={collapsed ? "Mở rộng" : "Thu gọn"}
-        className="hover:text-brand-500 dark:border-navy-600 dark:bg-navy-800 dark:hover:bg-navy-700 absolute top-8 -right-3.5 z-10 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-md hover:bg-gray-50 dark:text-gray-300"
+        className="hover:text-brand-500 dark:border-navy-600 dark:bg-navy-800 dark:hover:bg-navy-700 absolute top-8 -right-3.5 z-10 hidden h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-md hover:bg-gray-50 dark:text-gray-300 lg:flex"
       >
         {collapsed ? (
           <RiArrowRightSLine className="h-4 w-4" />
@@ -73,10 +73,15 @@ const Sidebar = (props: {
       <Card extra="flex-1 overflow-hidden rounded-[30px] pb-4">
         <div className="h-full overflow-y-auto pt-6">
           <ul className={`mt-5 ${collapsed ? "px-2" : "px-4"}`}>
-            <Links routes={routes} collapsed={collapsed} />
+            <Links
+              routes={routes}
+              collapsed={collapsed}
+              onNavigate={props.onClose}
+            />
             <SidebarChatbotPanel
               collapsed={collapsed}
               onShowChatbotPanel={onShowChatbotPanel}
+              onNavigate={props.onClose}
             />
           </ul>
         </div>

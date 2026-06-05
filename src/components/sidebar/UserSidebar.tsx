@@ -34,6 +34,7 @@ interface UserSidebarProps {
 
 const UserSidebar: React.FC<UserSidebarProps> = ({
   open,
+  onClose,
   collapsed,
   onToggleCollapse,
   onShowChatbotPanel,
@@ -79,15 +80,15 @@ const UserSidebar: React.FC<UserSidebarProps> = ({
 
   return (
     <div
-      className={`sm:none fixed top-5 bottom-5 left-5 z-50! flex flex-col gap-4 transition-all duration-300 lg:z-0! ${
+      className={`fixed inset-0 z-50! flex flex-col gap-4 bg-lightPrimary p-4 transition-all duration-300 dark:bg-navy-900 lg:inset-auto lg:top-5 lg:bottom-5 lg:left-5 lg:bg-transparent lg:p-0 lg:z-0! ${
         open ? "translate-x-0" : "-translate-x-[120%] lg:translate-x-0"
-      } ${collapsed ? "w-[70px]" : "w-78.25"}`}
+      } ${collapsed ? "lg:w-[70px]" : "w-full lg:w-78.25"}`}
     >
       {/* Collapse toggle */}
       <button
         onClick={onToggleCollapse}
         title={collapsed ? "Mở rộng" : "Thu gọn"}
-        className="hover:text-brand-500 dark:border-navy-600 dark:bg-navy-800 dark:hover:bg-navy-700 absolute top-8 -right-3.5 z-10 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-md hover:bg-gray-50 dark:text-gray-300"
+        className="hover:text-brand-500 dark:border-navy-600 dark:bg-navy-800 dark:hover:bg-navy-700 absolute top-8 -right-3.5 z-10 hidden h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-md hover:bg-gray-50 dark:text-gray-300 lg:flex"
       >
         {collapsed ? (
           <RiArrowRightSLine className="h-4 w-4" />
@@ -109,10 +110,12 @@ const UserSidebar: React.FC<UserSidebarProps> = ({
                   to={routeHref(route)}
                   onClick={(event) => {
                     if (!active || !isChatbotRoute || !onShowChatbotPanel) {
+                      onClose();
                       return;
                     }
                     event.preventDefault();
                     onShowChatbotPanel();
+                    onClose();
                   }}
                 >
                   <div className="mb-4 flex hover:cursor-pointer">

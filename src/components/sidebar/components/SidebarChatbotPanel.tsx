@@ -8,17 +8,22 @@ const CHATBOT_HREF = "/admin/chatbot";
 export function SidebarChatbotPanel(props: {
   collapsed?: boolean;
   onShowChatbotPanel?: () => void;
+  onNavigate?: () => void;
 }): JSX.Element {
-  const { collapsed = false, onShowChatbotPanel } = props;
+  const { collapsed = false, onShowChatbotPanel, onNavigate } = props;
   const location = useLocation();
 
   const onChatbotPath =
     location.pathname === CHATBOT_HREF ||
     location.pathname.startsWith(`${CHATBOT_HREF}/`);
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
-    if (!onChatbotPath || !onShowChatbotPanel) return;
+    if (!onChatbotPath || !onShowChatbotPanel) {
+      onNavigate?.();
+      return;
+    }
     event.preventDefault();
     onShowChatbotPanel();
+    onNavigate?.();
   };
 
   if (collapsed) {

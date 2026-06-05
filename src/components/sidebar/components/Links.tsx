@@ -9,12 +9,13 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 export const SidebarLinks = (props: {
   routes: RoutesType[];
   collapsed?: boolean;
+  onNavigate?: () => void;
 }): JSX.Element => {
   const location = useLocation();
   const navigate = useNavigate();
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
-  const { routes, collapsed = false } = props;
+  const { routes, collapsed = false, onNavigate } = props;
 
   /** Recursively finds the href of the first child with a non-empty path. */
   const firstChildHref = (route: RoutesType): string | null => {
@@ -110,7 +111,10 @@ export const SidebarLinks = (props: {
                     type="button"
                     onClick={() => {
                       const href = firstChildHref(route);
-                      if (href) navigate(href);
+                      if (href) {
+                        navigate(href);
+                        onNavigate?.();
+                      }
                     }}
                     className="my-0.75 flex w-full items-center justify-center py-0.5"
                   >
@@ -229,6 +233,7 @@ export const SidebarLinks = (props: {
                                 >
                                   <Link
                                     to={routeHref(grandchild)}
+                                    onClick={onNavigate}
                                     className={`mt-1 flex items-center gap-2 rounded-lg py-0.5 text-sm transition-colors ${
                                       grandchildActive
                                         ? "text-navy-700 dark:text-white"
@@ -255,6 +260,7 @@ export const SidebarLinks = (props: {
                     <li key={`${index}-${childIndex}`} className="relative">
                       <Link
                         to={routeHref(child)}
+                        onClick={onNavigate}
                         className={`mt-1 ml-1 block rounded-lg py-0.5 text-sm font-medium transition-colors ${
                           childActive
                             ? "text-navy-700 dark:text-white"
@@ -301,7 +307,7 @@ export const SidebarLinks = (props: {
           </div>
         );
         return (
-          <Link key={index} to={routeHref(route)}>
+          <Link key={index} to={routeHref(route)} onClick={onNavigate}>
             {collapsed ? (
               <Tooltip label={route.name} className="block w-full">
                 {iconNode}

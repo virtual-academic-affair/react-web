@@ -4,27 +4,19 @@
  * Mirrors the admin layout structure with collapsible sidebar support.
  */
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import Navbar from "@/components/navbar";
 import UserSidebar from "@/components/sidebar/UserSidebar";
+import { useMobileSidebarSwipe } from "@/hooks/useMobileSidebarSwipe";
 import ChatbotPage from "@/pages/chatbot";
 import { ChatbotRuntimeProvider } from "@/pages/chatbot/ChatbotRuntimeProvider";
 import { ChatbotThreadToolbar } from "@/pages/chatbot/components/ChatbotThreadToolbar";
 import FormsPage from "@/pages/documents/forms";
 import UserDocumentsPage from "@/pages/user/documents";
-import { useAuthStore } from "@/stores/auth.store";
-import { getUserInfoFromToken } from "@/utils/auth.util";
-import userRoutes from "@/userRoutes";
 
 const UserLayout: React.FC = () => {
-  const accessToken = useAuthStore((s) => s.accessToken);
-  const userInfo = useMemo(
-    () => getUserInfoFromToken(accessToken),
-    [accessToken],
-  );
-
   const [open, setOpen] = useState(() => window.innerWidth >= 1024);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -55,27 +47,20 @@ const UserLayout: React.FC = () => {
     wasChatbotRouteRef.current = isUserChatbotRoute;
   }, [isUserChatbotRoute]);
 
-  const getActiveRoute = (): string => {
-    for (const route of userRoutes) {
-      const href = `${route.layout}/${route.path}`.replace(/\/+/g, "/");
-      if (
-        location.pathname === href ||
-        location.pathname.startsWith(`${href}/`)
-      ) {
-        return route.name;
-      }
-    }
-    return "Trang chủ";
-  };
-
   const showChatbotSidebar = isUserChatbotRoute && sidebarMode === "chatbot";
   const effectiveCollapsed = showChatbotSidebar ? false : collapsed;
+
+  useMobileSidebarSwipe({
+    open,
+    onOpen: () => setOpen(true),
+    onClose: () => setOpen(false),
+  });
 
   const layoutBody = (
     <>
       {showChatbotSidebar ? (
         <div
-          className={`sm:none fixed top-5 bottom-5 left-5 z-50! flex w-78.25 flex-col transition-all duration-300 lg:z-0! ${
+          className={`bg-lightPrimary dark:bg-navy-900 fixed inset-0 z-50! flex w-full flex-col p-4 transition-all duration-300 lg:inset-auto lg:top-5 lg:bottom-5 lg:left-5 lg:z-0! lg:w-78.25 lg:bg-transparent lg:p-0 ${
             open ? "translate-x-0" : "-translate-x-[120%] lg:translate-x-0"
           }`}
         >
@@ -107,12 +92,7 @@ const UserLayout: React.FC = () => {
               : "lg:w-[calc(100vw-405px)]"
           }`}
         >
-          <Navbar
-            onOpenSidenav={() => setOpen(true)}
-            brandText={getActiveRoute()}
-            avatarUrl={userInfo.picture}
-            userName={userInfo.name}
-          />
+          <Navbar onOpenSidenav={() => setOpen(true)} />
         </div>
 
         {/* Page content */}
