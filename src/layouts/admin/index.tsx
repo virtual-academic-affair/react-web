@@ -3,6 +3,7 @@ import Sidebar from "@/components/sidebar";
 import { useDynamicData } from "@/hooks/useDynamicData";
 import UsersPage from "@/pages/auth/accounts";
 import StudentsPage from "@/pages/auth/students";
+import { ChatbotThreadToolbar } from "@/pages/chatbot/components/ChatbotThreadToolbar";
 import ClassRegistrationStatisticsPage from "@/pages/class-registration/statistics";
 import FormsPage from "@/pages/documents/forms";
 import FAQsPage from "@/pages/documents/faqs";
@@ -13,7 +14,7 @@ import { ChatbotRuntimeProvider } from "@/pages/chatbot/ChatbotRuntimeProvider";
 import GmailConfigPage from "@/pages/emails/config";
 import InquiryStatisticsPage from "@/pages/inquiry/statistics";
 import routes from "@/routes";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 
@@ -33,6 +34,20 @@ const AdminLayout: React.FC = () => {
 
   const [open, setOpen] = useState(() => window.innerWidth >= 1024);
   const [collapsed, setCollapsed] = useState(false);
+  const [sidebarMode, setSidebarMode] = useState<"app" | "chatbot">(() =>
+    isAdminChatbotRoute ? "chatbot" : "app",
+  );
+  const wasChatbotRouteRef = useRef(isAdminChatbotRoute);
+
+  useEffect(() => {
+    if (isAdminChatbotRoute && !wasChatbotRouteRef.current) {
+      setSidebarMode("chatbot");
+    }
+    if (!isAdminChatbotRoute) {
+      setSidebarMode("app");
+    }
+    wasChatbotRouteRef.current = isAdminChatbotRoute;
+  }, [isAdminChatbotRoute]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -88,29 +103,48 @@ const AdminLayout: React.FC = () => {
     return "Admin";
   };
 
+  const showChatbotSidebar =
+    isAdminChatbotRoute && sidebarMode === "chatbot";
+  const effectiveCollapsed = showChatbotSidebar ? false : collapsed;
+
   const layoutBody = (
     <>
-      <Sidebar
-        open={open}
-        onClose={() => setOpen(false)}
-        collapsed={collapsed}
-        onToggleCollapse={() => setCollapsed((c) => !c)}
-      />
+      {showChatbotSidebar ? (
+        <div
+          className={`sm:none fixed top-5 bottom-5 left-5 z-50! flex w-78.25 flex-col transition-all duration-300 lg:z-0! ${
+            open ? "translate-x-0" : "-translate-x-[120%] lg:translate-x-0"
+          }`}
+        >
+          <ChatbotThreadToolbar onShowMenu={() => setSidebarMode("app")} />
+        </div>
+      ) : (
+        <Sidebar
+          open={open}
+          onClose={() => setOpen(false)}
+          collapsed={effectiveCollapsed}
+          onToggleCollapse={() => setCollapsed((c) => !c)}
+          onShowChatbotPanel={
+            isAdminChatbotRoute ? () => setSidebarMode("chatbot") : undefined
+          }
+        />
+      )}
 
       {/* Main content */}
       <div
         className={`relative flex min-h-screen w-full flex-col transition-all duration-300 ${
-          collapsed ? "lg:ml-[100px]" : "lg:ml-[343px]"
+          effectiveCollapsed ? "lg:ml-[100px]" : "lg:ml-[343px]"
         }`}
       >
         {/* Navbar */}
         <div
           className={`mx-auto w-[calc(100vw-6%)] transition-all duration-300 md:w-[calc(100vw-8%)] ${
-            collapsed ? "lg:w-[calc(100vw-162px)]" : "lg:w-[calc(100vw-405px)]"
+            effectiveCollapsed
+              ? "lg:w-[calc(100vw-162px)]"
+              : "lg:w-[calc(100vw-405px)]"
           }`}
         >
           <Navbar
-            onOpenSidenav={() => setOpen(true)}
+          onOpenSidenav={() => setOpen(true)}
             brandText={getActiveRoute(routes)}
             avatarUrl={profile?.picture || undefined}
             userName={profile?.name || undefined}
@@ -120,7 +154,9 @@ const AdminLayout: React.FC = () => {
         {/* Page content */}
         <div
           className={`mx-auto mb-auto h-full min-h-[84vh] w-[calc(100vw-6%)] pt-5 transition-all duration-300 md:w-[calc(100vw-8%)] ${
-            collapsed ? "lg:w-[calc(100vw-162px)]" : "lg:w-[calc(100vw-405px)]"
+            effectiveCollapsed
+              ? "lg:w-[calc(100vw-162px)]"
+              : "lg:w-[calc(100vw-405px)]"
           }`}
         >
           <Routes>

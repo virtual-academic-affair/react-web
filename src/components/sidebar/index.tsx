@@ -20,8 +20,10 @@ const Sidebar = (props: {
   onClose: React.MouseEventHandler<HTMLSpanElement>;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
+  onShowChatbotPanel?: () => void;
 }) => {
-  const { open, collapsed = false, onToggleCollapse } = props;
+  const { open, collapsed = false, onToggleCollapse, onShowChatbotPanel } =
+    props;
   const navigate = useNavigate();
   const clearAuth = useAuthStore((s) => s.clearAuth);
   const [userInfo, setUserInfo] = React.useState<UserInfo>({});
@@ -72,7 +74,10 @@ const Sidebar = (props: {
         <div className="h-full overflow-y-auto pt-6">
           <ul className={`mt-5 ${collapsed ? "px-2" : "px-4"}`}>
             <Links routes={routes} collapsed={collapsed} />
-            <SidebarChatbotPanel collapsed={collapsed} />
+            <SidebarChatbotPanel
+              collapsed={collapsed}
+              onShowChatbotPanel={onShowChatbotPanel}
+            />
           </ul>
         </div>
       </Card>

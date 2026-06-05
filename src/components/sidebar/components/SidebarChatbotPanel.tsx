@@ -1,5 +1,5 @@
 import Tooltip from "@/components/tooltip/Tooltip.tsx";
-import { type JSX } from "react";
+import type { JSX, MouseEvent } from "react";
 import { MdChat } from "react-icons/md";
 import { Link, useLocation } from "react-router-dom";
 
@@ -7,13 +7,19 @@ const CHATBOT_HREF = "/admin/chatbot";
 
 export function SidebarChatbotPanel(props: {
   collapsed?: boolean;
+  onShowChatbotPanel?: () => void;
 }): JSX.Element {
-  const { collapsed = false } = props;
+  const { collapsed = false, onShowChatbotPanel } = props;
   const location = useLocation();
 
   const onChatbotPath =
     location.pathname === CHATBOT_HREF ||
     location.pathname.startsWith(`${CHATBOT_HREF}/`);
+  const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (!onChatbotPath || !onShowChatbotPanel) return;
+    event.preventDefault();
+    onShowChatbotPanel();
+  };
 
   if (collapsed) {
     return (
@@ -21,6 +27,7 @@ export function SidebarChatbotPanel(props: {
         <Tooltip label="Chatbot" className="block w-full">
           <Link
             to={CHATBOT_HREF}
+            onClick={handleClick}
             className="my-0.75 flex w-full cursor-pointer items-center justify-center py-0.5"
           >
             <span
@@ -42,6 +49,7 @@ export function SidebarChatbotPanel(props: {
     <li className="mb-4">
       <Link
         to={CHATBOT_HREF}
+        onClick={handleClick}
         className="my-0.75 flex w-full items-center px-4 py-0.5 text-left"
       >
         <span

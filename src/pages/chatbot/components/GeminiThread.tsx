@@ -235,7 +235,7 @@ function GeminiComposer() {
 
 function GeminiStickyComposer() {
   return (
-    <div className="bg-lightPrimary/95 dark:bg-navy-900/95 sticky bottom-0 z-20 shrink-0 pb-2 backdrop-blur dark:border-white/10">
+    <div className="bg-lightPrimary/95 dark:bg-navy-900/95 sticky bottom-0 z-20 shrink-0 pb-4 backdrop-blur dark:border-white/10">
       <GeminiComposer />
       <p className="mx-auto mt-2 max-w-lg text-center text-xs leading-snug text-[#444746] dark:text-gray-400">
         Câu trả lời của AI chỉ mang tính chất tham khảo. Xác thực lại với các
@@ -312,7 +312,7 @@ export function GeminiThread({ className = "" }: { className?: string }) {
       className={`flex min-h-[calc(100vh-8rem)] w-full flex-col bg-transparent text-base text-[#1f1f1f] dark:text-white ${className}`.trim()}
     >
       <ThreadPrimitive.Viewport className="w-full flex-1 overflow-visible">
-        <div className="flex min-h-[calc(100vh-15rem)] w-full flex-col pt-4 pb-8 md:pt-5">
+        <div className="flex min-h-[calc(100vh-15rem)] w-full flex-col py-4">
           {hasMessages ? null : <ChatbotEmptyState />}
           <ThreadPrimitive.Messages
             components={{

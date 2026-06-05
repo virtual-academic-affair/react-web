@@ -4,13 +4,14 @@
  * Mirrors the admin layout structure with collapsible sidebar support.
  */
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import Navbar from "@/components/navbar";
 import UserSidebar from "@/components/sidebar/UserSidebar";
 import ChatbotPage from "@/pages/chatbot";
 import { ChatbotRuntimeProvider } from "@/pages/chatbot/ChatbotRuntimeProvider";
+import { ChatbotThreadToolbar } from "@/pages/chatbot/components/ChatbotThreadToolbar";
 import FormsPage from "@/pages/documents/forms";
 import UserDocumentsPage from "@/pages/user/documents";
 import { useAuthStore } from "@/stores/auth.store";
@@ -39,6 +40,20 @@ const UserLayout: React.FC = () => {
   const isUserChatbotRoute =
     location.pathname === "/user/chatbot" ||
     location.pathname.startsWith("/user/chatbot/");
+  const [sidebarMode, setSidebarMode] = useState<"app" | "chatbot">(() =>
+    isUserChatbotRoute ? "chatbot" : "app",
+  );
+  const wasChatbotRouteRef = useRef(isUserChatbotRoute);
+
+  useEffect(() => {
+    if (isUserChatbotRoute && !wasChatbotRouteRef.current) {
+      setSidebarMode("chatbot");
+    }
+    if (!isUserChatbotRoute) {
+      setSidebarMode("app");
+    }
+    wasChatbotRouteRef.current = isUserChatbotRoute;
+  }, [isUserChatbotRoute]);
 
   const getActiveRoute = (): string => {
     for (const route of userRoutes) {
@@ -53,25 +68,41 @@ const UserLayout: React.FC = () => {
     return "Trang chủ";
   };
 
+  const showChatbotSidebar = isUserChatbotRoute && sidebarMode === "chatbot";
+  const effectiveCollapsed = showChatbotSidebar ? false : collapsed;
+
   const layoutBody = (
     <>
-      <UserSidebar
-        open={open}
-        onClose={() => setOpen(false)}
-        collapsed={collapsed}
-        onToggleCollapse={() => setCollapsed((c) => !c)}
-      />
+      {showChatbotSidebar ? (
+        <div
+          className={`sm:none fixed top-5 bottom-5 left-5 z-50! flex w-78.25 flex-col transition-all duration-300 lg:z-0! ${
+            open ? "translate-x-0" : "-translate-x-[120%] lg:translate-x-0"
+          }`}
+        >
+          <ChatbotThreadToolbar onShowMenu={() => setSidebarMode("app")} />
+        </div>
+      ) : (
+        <UserSidebar
+          open={open}
+          onClose={() => setOpen(false)}
+          collapsed={effectiveCollapsed}
+          onToggleCollapse={() => setCollapsed((c) => !c)}
+          onShowChatbotPanel={
+            isUserChatbotRoute ? () => setSidebarMode("chatbot") : undefined
+          }
+        />
+      )}
 
       {/* Main content */}
       <div
         className={`relative flex min-h-screen w-full flex-col transition-all duration-300 ${
-          collapsed ? "lg:ml-[100px]" : "lg:ml-[343px]"
+          effectiveCollapsed ? "lg:ml-[100px]" : "lg:ml-[343px]"
         }`}
       >
         {/* Navbar */}
         <div
           className={`mx-auto w-[calc(100vw-6%)] transition-all duration-300 md:w-[calc(100vw-8%)] ${
-            collapsed
+            effectiveCollapsed
               ? "lg:w-[calc(100vw-162px)]"
               : "lg:w-[calc(100vw-405px)]"
           }`}
@@ -87,7 +118,7 @@ const UserLayout: React.FC = () => {
         {/* Page content */}
         <div
           className={`mx-auto mb-auto h-full min-h-[84vh] w-[calc(100vw-6%)] pt-5 transition-all duration-300 md:w-[calc(100vw-8%)] ${
-            collapsed
+            effectiveCollapsed
               ? "lg:w-[calc(100vw-162px)]"
               : "lg:w-[calc(100vw-405px)]"
           }`}

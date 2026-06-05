@@ -27,6 +27,7 @@ interface UserSidebarProps {
   onClose: () => void;
   collapsed: boolean;
   onToggleCollapse: () => void;
+  onShowChatbotPanel?: () => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -35,6 +36,7 @@ const UserSidebar: React.FC<UserSidebarProps> = ({
   open,
   collapsed,
   onToggleCollapse,
+  onShowChatbotPanel,
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -100,8 +102,19 @@ const UserSidebar: React.FC<UserSidebarProps> = ({
           <ul className={`mt-5 ${collapsed ? "px-2" : "px-4"}`}>
             {userRoutes.map((route, index) => {
               const active = isActive(route);
+              const isChatbotRoute = route.path === "chatbot";
               return (
-                <Link key={index} to={routeHref(route)}>
+                <Link
+                  key={index}
+                  to={routeHref(route)}
+                  onClick={(event) => {
+                    if (!active || !isChatbotRoute || !onShowChatbotPanel) {
+                      return;
+                    }
+                    event.preventDefault();
+                    onShowChatbotPanel();
+                  }}
+                >
                   <div className="mb-4 flex hover:cursor-pointer">
                     <li
                       className={`my-0.75 flex cursor-pointer items-center py-0.5 ${
