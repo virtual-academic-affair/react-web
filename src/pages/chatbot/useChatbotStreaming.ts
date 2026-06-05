@@ -140,6 +140,7 @@ export function useChatbotStreaming({
             question: userText,
             sessionId: sessionIdToSend,
             resolveCitations: true,
+            citationLinkType: "original",
           },
           (event) => {
             const ev = event as Record<string, unknown>;

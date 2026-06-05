@@ -6,7 +6,7 @@ import {
   useMessage,
   type PartState,
 } from "@assistant-ui/react";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import {
   MdAutoAwesome,
   MdChecklist,
@@ -289,34 +289,23 @@ function ChatbotEmptyState() {
 /** Giao diện theo hướng [Gemini clone assistant-ui](https://www.assistant-ui.com/examples/gemini). */
 export function GeminiThread({ className = "" }: { className?: string }) {
   const hasMessages = useAuiState((s) => s.thread.messages.length > 0);
-  const messageCount = useAuiState((s) => s.thread.messages.length);
-  const isRunning = useAuiState((s) => s.thread.isRunning);
+  const { activeThreadId } = useChatbotShell();
+  const autoScrolledThreadRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!hasMessages) return;
+    if (!hasMessages || autoScrolledThreadRef.current === activeThreadId) {
+      return;
+    }
+
+    autoScrolledThreadRef.current = activeThreadId;
 
     window.requestAnimationFrame(() => {
       window.scrollTo({
         top: document.documentElement.scrollHeight,
-        behavior: isRunning ? "auto" : "smooth",
-      });
-    });
-  }, [hasMessages, isRunning, messageCount]);
-
-  useEffect(() => {
-    if (!hasMessages || !isRunning) return;
-
-    const scrollToBottom = () => {
-      window.scrollTo({
-        top: document.documentElement.scrollHeight,
         behavior: "auto",
       });
-    };
-
-    scrollToBottom();
-    const intervalId = window.setInterval(scrollToBottom, 250);
-    return () => window.clearInterval(intervalId);
-  }, [hasMessages, isRunning]);
+    });
+  }, [activeThreadId, hasMessages]);
 
   return (
     <ThreadPrimitive.Root
