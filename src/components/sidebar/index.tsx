@@ -1,7 +1,7 @@
 import routes from "routes";
+import { SidebarLinks as Links } from "./components/Links";
 import { SidebarChatbotPanel } from "./components/SidebarChatbotPanel";
 import SidebarShell from "./components/SidebarShell";
-import { SidebarLinks as Links } from "./components/Links";
 
 const Sidebar = (props: {
   open: boolean;
