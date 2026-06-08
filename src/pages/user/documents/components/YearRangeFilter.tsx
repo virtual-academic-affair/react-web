@@ -1,6 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { MdClose, MdExpandMore } from "react-icons/md";
+import {
+  getFloatingDropdownPosition,
+  type FloatingPosition,
+} from "@/utils/floatingPosition";
 
 export interface YearRange {
   fromYear: string;
@@ -23,7 +27,7 @@ const YearRangeFilter: React.FC<YearRangeFilterProps> = ({
   onChange,
 }) => {
   const [open, setOpen] = useState(false);
-  const [dropPos, setDropPos] = useState({ top: 0, left: 0 });
+  const [dropPos, setDropPos] = useState<FloatingPosition>({ left: 0 });
   const [localValue, setLocalValue] = useState<YearRange>(value);
 
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -36,10 +40,7 @@ const YearRangeFilter: React.FC<YearRangeFilterProps> = ({
   const handleToggle = () => {
     if (!open && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
-      setDropPos({
-        top: rect.bottom + 8,
-        left: rect.left,
-      });
+      setDropPos(getFloatingDropdownPosition(rect, { gap: 8, width: 280 }));
     }
     setOpen((p) => !p);
   };
@@ -121,7 +122,11 @@ const YearRangeFilter: React.FC<YearRangeFilterProps> = ({
         createPortal(
           <div
             ref={dropdownRef}
-            style={{ top: dropPos.top, left: dropPos.left }}
+            style={{
+              top: dropPos.top,
+              bottom: dropPos.bottom,
+              left: dropPos.left,
+            }}
             className="dark:bg-navy-900 fixed z-9999 w-[280px] max-w-[calc(100vw-24px)] rounded-2xl border border-gray-100 bg-white p-4 shadow-xl dark:border-white/10"
           >
             <div className="flex items-center gap-2">

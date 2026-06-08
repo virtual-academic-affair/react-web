@@ -13,6 +13,10 @@ import {
 import { SiGmail } from "react-icons/si";
 
 import Tag from "@/components/tag/Tag";
+import {
+  getFloatingDropdownPosition,
+  type FloatingPosition,
+} from "@/utils/floatingPosition";
 import Tooltip from "../../../../components/tooltip/Tooltip.tsx";
 import { formatDate, getLabelColor, getLabelVi } from "../labelUtils";
 import SystemLabelSelector from "./SystemLabelSelector";
@@ -43,13 +47,15 @@ const EmailsTable: React.FC<EmailsTableProps> = ({
   // ── inline label editor state ──────────────────────────────────────────────
   const [editingId, setEditingId] = React.useState<number | null>(null);
   const [draftLabels, setDraftLabels] = React.useState<SystemLabel[]>([]);
-  const [dropdownPos, setDropdownPos] = React.useState({ top: 0, left: 0 });
+  const [dropdownPos, setDropdownPos] = React.useState<FloatingPosition>({
+    left: 0,
+  });
   const [saving, setSaving] = React.useState(false);
 
   const openEdit = (e: React.MouseEvent, msg: Message) => {
     e.stopPropagation();
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setDropdownPos({ top: rect.bottom + 4, left: rect.left });
+    setDropdownPos(getFloatingDropdownPosition(rect, { width: 280 }));
     setEditingId(msg.id);
     setDraftLabels([...msg.systemLabels]);
   };
@@ -300,8 +306,12 @@ const EmailsTable: React.FC<EmailsTableProps> = ({
           <div className="fixed inset-0 z-40" onClick={closeEdit} />
           {/* Dropdown panel */}
           <div
-            style={{ top: dropdownPos.top, left: dropdownPos.left }}
-            className="dark:bg-navy-900 fixed z-50 min-w-44 rounded-2xl border border-gray-100 bg-white p-3 shadow-lg dark:border-white/10"
+            style={{
+              top: dropdownPos.top,
+              bottom: dropdownPos.bottom,
+              left: dropdownPos.left,
+            }}
+            className="dark:bg-navy-900 fixed z-50 w-70 max-w-[calc(100vw-24px)] rounded-2xl border border-gray-100 bg-white p-3 shadow-lg dark:border-white/10"
           >
             <p className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
               Nhãn hệ thống

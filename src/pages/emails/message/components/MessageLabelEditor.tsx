@@ -1,6 +1,10 @@
 import Checkbox from "@/components/checkbox";
 import StandardModal from "@/components/modal/StandardModal";
 import Tag from "@/components/tag/Tag";
+import {
+  getFloatingDropdownPosition,
+  type FloatingPosition,
+} from "@/utils/floatingPosition";
 import { messagesService } from "@/services/email";
 import type { Message, SystemLabel } from "@/types/email";
 import type { SystemLabelEnumData } from "@/types/shared";
@@ -34,7 +38,9 @@ const MessageLabelEditor: React.FC<MessageLabelEditorProps> = ({
   const navigate = useNavigate();
   const [editingId, setEditingId] = React.useState<number | null>(null);
   const [draftLabels, setDraftLabels] = React.useState<SystemLabel[]>([]);
-  const [dropdownPos, setDropdownPos] = React.useState({ top: 0, left: 0 });
+  const [dropdownPos, setDropdownPos] = React.useState<FloatingPosition>({
+    left: 0,
+  });
   const [saving, setSaving] = React.useState(false);
 
   // Warning Modal State
@@ -68,7 +74,7 @@ const MessageLabelEditor: React.FC<MessageLabelEditorProps> = ({
   const openEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setDropdownPos({ top: rect.bottom + 4, left: rect.left });
+    setDropdownPos(getFloatingDropdownPosition(rect, { width: 280 }));
     setEditingId(message.id);
     setDraftLabels([...(message.systemLabels ?? [])]);
   };
@@ -245,7 +251,11 @@ const MessageLabelEditor: React.FC<MessageLabelEditorProps> = ({
           <>
             <div className="fixed inset-0 z-200" onClick={closeEdit} />
             <div
-              style={{ top: dropdownPos.top, left: dropdownPos.left }}
+              style={{
+                top: dropdownPos.top,
+                bottom: dropdownPos.bottom,
+                left: dropdownPos.left,
+              }}
               className="dark:bg-navy-900 fixed z-210 w-70 max-w-[calc(100vw-24px)] rounded-2xl border border-gray-100 bg-white p-3 shadow-lg dark:border-white/10"
             >
               <p className="mb-2 pl-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">

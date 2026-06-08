@@ -1,6 +1,10 @@
 import Tag from "@/components/tag/Tag";
 import type { InquiryType } from "@/types/inquiry";
 import { InquiryTypeColors, InquiryTypeLabels } from "@/types/inquiry";
+import {
+  getFloatingDropdownPosition,
+  type FloatingPosition,
+} from "@/utils/floatingPosition";
 import React from "react";
 import { createPortal } from "react-dom";
 import { MdExpandMore } from "react-icons/md";
@@ -18,7 +22,9 @@ const InquiryTypeEditor: React.FC<InquiryTypeEditorProps> = ({
 }) => {
   const [open, setOpen] = React.useState(false);
   const [draft, setDraft] = React.useState<InquiryType[]>([]);
-  const [dropdownPos, setDropdownPos] = React.useState({ top: 0, left: 0 });
+  const [dropdownPos, setDropdownPos] = React.useState<FloatingPosition>({
+    left: 0,
+  });
   const containerRef = React.useRef<HTMLDivElement>(null);
 
   const options: InquiryType[] = ["graduation", "training"];
@@ -27,7 +33,7 @@ const InquiryTypeEditor: React.FC<InquiryTypeEditorProps> = ({
     e.stopPropagation();
     if (disabled) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    setDropdownPos({ top: rect.bottom + 4, left: rect.left });
+    setDropdownPos(getFloatingDropdownPosition(rect, { width: 240 }));
     setDraft([...(value ?? [])]);
     setOpen(true);
   };
@@ -79,7 +85,11 @@ const InquiryTypeEditor: React.FC<InquiryTypeEditorProps> = ({
           <>
             <div className="fixed inset-0 z-200" onClick={handleClose} />
             <div
-              style={{ top: dropdownPos.top, left: dropdownPos.left }}
+              style={{
+                top: dropdownPos.top,
+                bottom: dropdownPos.bottom,
+                left: dropdownPos.left,
+              }}
               className="dark:bg-navy-900 fixed z-210 w-60 max-w-[calc(100vw-24px)] rounded-2xl border border-gray-100 bg-white p-3 shadow-lg dark:border-white/10"
             >
               <p className="mb-2 pl-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
