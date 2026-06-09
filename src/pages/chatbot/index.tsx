@@ -1,5 +1,6 @@
 import { Alert } from "antd";
 import React from "react";
+import "katex/dist/katex.min.css";
 import "streamdown/styles.css";
 
 import { ChatbotErrorBoundary } from "./ChatbotErrorBoundary";
