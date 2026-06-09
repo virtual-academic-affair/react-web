@@ -1,6 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { MdCheck, MdExpandMore } from "react-icons/md";
+import {
+  getFloatingDropdownPosition,
+  type FloatingPosition,
+} from "@/utils/floatingPosition";
 
 export interface FilterOption {
   value: string;
@@ -29,7 +33,7 @@ const FilterGroup: React.FC<FilterGroupProps> = ({
   onChange,
 }) => {
   const [open, setOpen] = useState(false);
-  const [dropPos, setDropPos] = useState({ top: 0, left: 0 });
+  const [dropPos, setDropPos] = useState<FloatingPosition>({ left: 0 });
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -38,10 +42,7 @@ const FilterGroup: React.FC<FilterGroupProps> = ({
   const handleToggle = () => {
     if (!open && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
-      setDropPos({
-        top: rect.bottom + 8,
-        left: rect.left,
-      });
+      setDropPos(getFloatingDropdownPosition(rect, { gap: 8, width: 280 }));
     }
     setOpen((p) => !p);
   };
@@ -113,7 +114,11 @@ const FilterGroup: React.FC<FilterGroupProps> = ({
         createPortal(
           <div
             ref={dropdownRef}
-            style={{ top: dropPos.top, left: dropPos.left }}
+            style={{
+              top: dropPos.top,
+              bottom: dropPos.bottom,
+              left: dropPos.left,
+            }}
             className="dark:bg-navy-900 fixed z-9999 w-[280px] max-w-[calc(100vw-24px)] rounded-2xl border border-gray-100 bg-white px-1 shadow-xl dark:border-white/10"
           >
             <div className="flex flex-col py-1">

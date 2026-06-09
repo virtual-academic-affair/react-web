@@ -9,6 +9,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { MdCheck, MdExpandMore } from "react-icons/md";
+import { getFloatingDropdownPosition } from "@/utils/floatingPosition";
 
 export interface TagOption {
   value: string;
@@ -69,18 +70,13 @@ const Tag: FC<TagProps> = ({
   const updatePos = useCallback(() => {
     const rect = triggerRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const spaceAbove = rect.top;
-    if (spaceBelow < DROPDOWN_MAX_H && spaceAbove > spaceBelow) {
-      // Flip upward
-      setDropdownPos({
-        bottom: window.innerHeight - rect.top + 4,
-        left: rect.left,
-      });
-    } else {
-      // Default: open downward
-      setDropdownPos({ top: rect.bottom + 4, left: rect.left });
-    }
+    setDropdownPos(
+      getFloatingDropdownPosition(rect, {
+        gap: 4,
+        minWidth: 140,
+        maxHeight: DROPDOWN_MAX_H,
+      }),
+    );
   }, [DROPDOWN_MAX_H]);
 
   // Re-anchor the dropdown on every scroll / resize while it is open
@@ -157,7 +153,7 @@ const Tag: FC<TagProps> = ({
                   bottom: dropdownPos.bottom,
                   left: dropdownPos.left,
                 }}
-                className="dark:bg-navy-900 fixed z-210 max-h-[280px] min-w-[140px] overflow-y-auto rounded-2xl border border-gray-100 bg-white py-1.5 shadow-xl dark:border-white/10 dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
+                className="dark:bg-navy-900 fixed z-210 max-h-[280px] min-w-[140px] max-w-[calc(100vw-24px)] overflow-y-auto rounded-2xl border border-gray-100 bg-white py-1.5 shadow-xl dark:border-white/10 dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
               >
                 {options.map((opt) => {
                   const isActive = opt.value === value;

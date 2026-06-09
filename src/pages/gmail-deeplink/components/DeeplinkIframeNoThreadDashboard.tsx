@@ -1,6 +1,7 @@
 import { CopyableText } from "@/components/copyable/CopyableText";
 import Tag from "@/components/tag/Tag";
 import Tooltip from "@/components/tooltip/Tooltip";
+import { getFloatingDropdownPosition } from "@/utils/floatingPosition";
 import {
   CLASS_REGISTRATION_ITEMS_GLOBAL_PARENT_ID,
   classRegistrationItemsService,
@@ -250,21 +251,13 @@ function ItemFilterDropdown({
   const updatePos = useCallback(() => {
     const rect = triggerRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const spaceAbove = rect.top;
-    const panelW = 260;
-    const left = Math.max(
-      8,
-      Math.min(rect.left, window.innerWidth - panelW - 8),
+    setDropdownPos(
+      getFloatingDropdownPosition(rect, {
+        width: 260,
+        viewportPadding: 8,
+        maxHeight: FILTER_DROPDOWN_MAX_H,
+      }),
     );
-    if (spaceBelow < FILTER_DROPDOWN_MAX_H && spaceAbove > spaceBelow) {
-      setDropdownPos({
-        bottom: window.innerHeight - rect.top + 4,
-        left,
-      });
-    } else {
-      setDropdownPos({ top: rect.bottom + 4, left });
-    }
   }, []);
 
   useEffect(() => {

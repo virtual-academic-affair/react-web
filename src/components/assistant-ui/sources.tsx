@@ -459,7 +459,7 @@ export function Source(props: SourceMessagePartProps) {
           </span>
 
           {fileName && label !== fileName ? (
-            <span className="mt-0.5 block text-sm leading-5 text-[#444746] dark:text-gray-300">
+            <span className="mt-0.5 block text-sm leading-5 wrap-break-word text-[#444746] dark:text-gray-300">
               {label}
             </span>
           ) : null}
