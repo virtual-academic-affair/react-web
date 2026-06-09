@@ -16,7 +16,7 @@ import {
   STREAMDOWN_CONTROLS,
   STREAMDOWN_LINK_SAFETY,
   STREAMDOWN_PLUGINS,
-} from "./markdown-text";
+} from "@/components/markdown/streamdown-config";
 
 type ReasoningVariant = "ghost" | "default";
 type StructuredReasoningStep = {

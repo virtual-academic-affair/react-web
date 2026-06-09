@@ -115,13 +115,7 @@ function GeminiAssistantMessage() {
   }, []);
 
   return (
-    <MessagePrimitive.Root className="grid w-full grid-cols-[auto_1fr] gap-3">
-      <div
-        className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#4285f4]/20 to-[#8ab4f8]/30 text-[#1a73e8] dark:from-[#8ab4f8]/25 dark:to-[#aecbfa]/20 dark:text-[#a8c7fa]"
-        aria-hidden
-      >
-        <MdAutoAwesome className="h-4 w-4" />
-      </div>
+    <MessagePrimitive.Root>
       <div className="w-full min-w-0 space-y-2 text-base leading-relaxed">
         <MessagePrimitive.GroupedParts groupBy={groupAssistantParts}>
           {({ part, children }) => {
@@ -325,7 +319,7 @@ export function GeminiThread({ className = "" }: { className?: string }) {
     <ThreadPrimitive.Root
       className={`flex min-h-[calc(100vh-8rem)] w-full flex-col bg-transparent text-base text-[#1f1f1f] dark:text-white ${className}`.trim()}
     >
-      <ThreadPrimitive.Viewport className="w-full flex-1 -translate-x-5.5 overflow-visible">
+      <ThreadPrimitive.Viewport className="w-full flex-1 overflow-visible">
         <div className="flex min-h-[calc(100vh-15rem)] w-full flex-col pt-4">
           {hasMessages ? null : <ChatbotEmptyState />}
           <ThreadPrimitive.Messages

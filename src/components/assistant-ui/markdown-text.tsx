@@ -1,18 +1,10 @@
 import type { StreamdownTextComponents } from "@assistant-ui/react-streamdown";
 import { StreamdownTextPrimitive } from "@assistant-ui/react-streamdown";
-import { createMathPlugin } from "@streamdown/math";
-
-export const STREAMDOWN_CONTROLS = { table: false as const };
-
-/** Tắt hộp thoại “Open external link?” của Streamdown. */
-export const STREAMDOWN_LINK_SAFETY = { enabled: false } as const;
-
-export const STREAMDOWN_PLUGINS = {
-  math: createMathPlugin({
-    singleDollarTextMath: true,
-    errorColor: "var(--color-red-600, #dc2626)",
-  }),
-} as const;
+import {
+  STREAMDOWN_CONTROLS,
+  STREAMDOWN_LINK_SAFETY,
+  STREAMDOWN_PLUGINS,
+} from "@/components/markdown/streamdown-config";
 
 const MARKDOWN_COMPONENTS = {
   table: ({ children, ...props }) => (

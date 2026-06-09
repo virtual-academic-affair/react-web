@@ -18,12 +18,20 @@ import {
   MdFileDownload,
 } from "react-icons/md";
 import { Document, Page, pdfjs } from "react-pdf";
+import { Streamdown } from "streamdown";
 
+import {
+  STREAMDOWN_CONTROLS,
+  STREAMDOWN_LINK_SAFETY,
+  STREAMDOWN_PLUGINS,
+} from "@/components/markdown/streamdown-config";
 import {
   type DownloadFileFormat,
   DocumentsService,
 } from "@/services/documents";
 
+import "katex/dist/katex.min.css";
+import "streamdown/styles.css";
 import "./FilePreviewModal.css";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -74,69 +82,6 @@ const IMAGE_EXTENSIONS = [
 
 function getExtension(filename: string): string {
   return (filename.split(".").pop() || "").toLowerCase();
-}
-
-function escapeHtml(input: string): string {
-  return input
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
-
-function renderInlineMarkdown(input: string): string {
-  let out = escapeHtml(input);
-  out = out.replace(/`([^`]+)`/g, "<code>$1</code>");
-  out = out.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-  out = out.replace(/\*([^*]+)\*/g, "<em>$1</em>");
-  out = out.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>');
-  return out;
-}
-
-function markdownToHtml(markdown: string): string {
-  const lines = markdown.replaceAll("\r\n", "\n").split("\n");
-  const html: string[] = [];
-  let inList = false;
-
-  const closeListIfNeeded = () => {
-    if (inList) {
-      html.push("</ul>");
-      inList = false;
-    }
-  };
-
-  lines.forEach((line) => {
-    const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
-    const listMatch = line.match(/^[-*]\s+(.+)$/);
-
-    if (!line.trim()) {
-      closeListIfNeeded();
-      return;
-    }
-
-    if (headingMatch) {
-      closeListIfNeeded();
-      const level = headingMatch[1].length;
-      html.push(`<h${level}>${renderInlineMarkdown(headingMatch[2])}</h${level}>`);
-      return;
-    }
-
-    if (listMatch) {
-      if (!inList) {
-        html.push("<ul>");
-        inList = true;
-      }
-      html.push(`<li>${renderInlineMarkdown(listMatch[1])}</li>`);
-      return;
-    }
-
-    closeListIfNeeded();
-    html.push(`<p>${renderInlineMarkdown(line)}</p>`);
-  });
-
-  closeListIfNeeded();
-  return html.join("\n");
 }
 
 type FileCategory = "pdf" | "text" | "image" | "docx" | "unsupported";
@@ -334,10 +279,35 @@ const TextPreview: React.FC<{ url: string; fileName: string }> = ({
   return (
     <div className="h-full overflow-auto bg-gray-800/50 p-8">
       {isMarkdown ? (
-        <article
-          className="mx-auto min-h-[80vh] max-w-[816px] rounded bg-white p-12 text-gray-800 shadow-lg [&_a]:text-blue-600 [&_a]:underline [&_code]:rounded [&_code]:bg-gray-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_h1]:mb-4 [&_h1]:text-3xl [&_h1]:font-bold [&_h2]:mb-3 [&_h2]:text-2xl [&_h2]:font-semibold [&_h3]:mb-2 [&_h3]:text-xl [&_h3]:font-semibold [&_li]:mb-1 [&_p]:mb-3 [&_ul]:mb-3 [&_ul]:list-disc [&_ul]:pl-6"
-          dangerouslySetInnerHTML={{ __html: markdownToHtml(content) }}
-        />
+        <article className="mx-auto min-h-[80vh] max-w-[816px] rounded bg-white p-12 text-gray-800 shadow-lg">
+          <Streamdown
+            mode="static"
+            isAnimating={false}
+            lineNumbers={false}
+            controls={STREAMDOWN_CONTROLS}
+            linkSafety={STREAMDOWN_LINK_SAFETY}
+            plugins={STREAMDOWN_PLUGINS}
+            className={[
+              "text-base leading-relaxed",
+              "[&_a]:text-blue-600 [&_a]:underline",
+              "[&_blockquote]:border-l-4 [&_blockquote]:border-gray-300 [&_blockquote]:pl-4 [&_blockquote]:text-gray-600",
+              "[&_code]:rounded [&_code]:bg-gray-100 [&_code]:px-1.5 [&_code]:py-0.5",
+              "[&_h1]:mb-4 [&_h1]:text-3xl [&_h1]:font-bold",
+              "[&_h2]:mb-3 [&_h2]:text-2xl [&_h2]:font-semibold",
+              "[&_h3]:mb-2 [&_h3]:text-xl [&_h3]:font-semibold",
+              "[&_li]:mb-1 [&_ol]:mb-3 [&_ol]:list-decimal [&_ol]:pl-6",
+              "[&_p]:mb-3 [&_ul]:mb-3 [&_ul]:list-disc [&_ul]:pl-6",
+              "[&_pre]:mb-4 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-gray-950 [&_pre]:p-4 [&_pre]:text-gray-100",
+              "[&_pre_code]:bg-transparent [&_pre_code]:p-0",
+              "[&_table]:my-4 [&_table]:w-full [&_table]:border-collapse [&_table]:text-left [&_table]:text-sm",
+              "[&_tbody_tr:nth-child(even)]:bg-gray-50",
+              "[&_td]:border [&_td]:border-gray-300 [&_td]:px-3 [&_td]:py-2 [&_td]:align-top",
+              "[&_th]:border [&_th]:border-gray-300 [&_th]:bg-gray-100 [&_th]:px-3 [&_th]:py-2 [&_th]:font-semibold",
+            ].join(" ")}
+          >
+            {content}
+          </Streamdown>
+        </article>
       ) : (
         <pre className="mx-auto min-h-[80vh] max-w-[816px] rounded bg-white p-12 font-mono text-[13px] leading-relaxed break-all whitespace-pre-wrap text-gray-800 shadow-lg">
           {content}

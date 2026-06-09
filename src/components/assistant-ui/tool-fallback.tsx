@@ -7,7 +7,7 @@ import {
   STREAMDOWN_CONTROLS,
   STREAMDOWN_LINK_SAFETY,
   STREAMDOWN_PLUGINS,
-} from "./markdown-text";
+} from "@/components/markdown/streamdown-config";
 
 function toolArgsToMarkdown(argsText: string): string {
   const t = argsText.trim();
