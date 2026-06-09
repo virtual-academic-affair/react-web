@@ -1,10 +1,10 @@
 import type { StreamdownTextComponents } from "@assistant-ui/react-streamdown";
 import { StreamdownTextPrimitive } from "@assistant-ui/react-streamdown";
-
-export const STREAMDOWN_CONTROLS = { table: false as const };
-
-/** Tắt hộp thoại “Open external link?” của Streamdown. */
-export const STREAMDOWN_LINK_SAFETY = { enabled: false } as const;
+import {
+  STREAMDOWN_CONTROLS,
+  STREAMDOWN_LINK_SAFETY,
+  STREAMDOWN_PLUGINS,
+} from "@/components/markdown/streamdown-config";
 
 const MARKDOWN_COMPONENTS = {
   table: ({ children, ...props }) => (
@@ -52,6 +52,7 @@ export function MarkdownText() {
       mode="streaming"
       controls={STREAMDOWN_CONTROLS}
       linkSafety={STREAMDOWN_LINK_SAFETY}
+      plugins={STREAMDOWN_PLUGINS}
       components={MARKDOWN_COMPONENTS}
       className="text-[#1f1f1f] dark:text-[#e3e3e3]"
       containerClassName="min-w-0 text-base leading-relaxed"

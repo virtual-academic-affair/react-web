@@ -115,13 +115,7 @@ function GeminiAssistantMessage() {
   }, []);
 
   return (
-    <MessagePrimitive.Root className="grid w-full grid-cols-[auto_1fr] gap-3 pb-3">
-      <div
-        className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#4285f4]/20 to-[#8ab4f8]/30 text-[#1a73e8] dark:from-[#8ab4f8]/25 dark:to-[#aecbfa]/20 dark:text-[#a8c7fa]"
-        aria-hidden
-      >
-        <MdAutoAwesome className="h-4 w-4" />
-      </div>
+    <MessagePrimitive.Root>
       <div className="w-full min-w-0 space-y-2 text-base leading-relaxed">
         <MessagePrimitive.GroupedParts groupBy={groupAssistantParts}>
           {({ part, children }) => {
@@ -233,28 +227,14 @@ function GeminiComposer() {
   );
 }
 
-function GeminiStickyComposer({ glassActive }: { glassActive: boolean }) {
+function GeminiStickyComposer() {
   return (
-    <div
-      className={`sticky bottom-0 z-20 shrink-0 transition-[padding] duration-200 ease-out ${
-        glassActive ? "pt-[50px]" : "pt-0"
-      }`}
-    >
-      <div
-        className={`pointer-events-none absolute inset-x-0 top-0 z-0 h-[100px] transition-opacity duration-200 ease-out ${
-          glassActive ? "opacity-100" : "opacity-0"
-        }`}
-        aria-hidden
-      >
-        <div className="from-lightPrimary/0 via-lightPrimary/85 to-lightPrimary dark:from-navy-900/0 dark:via-navy-900/88 dark:to-navy-900 absolute inset-0 bg-linear-to-b [mask-image:linear-gradient(to_bottom,transparent_0%,black_30%,black_100%)] backdrop-blur-lg" />
-      </div>
-      <div className="bg-lightPrimary dark:bg-navy-900 relative z-10 pb-4">
-        <GeminiComposer />
-        <p className="mx-auto mt-2 max-w-lg text-center text-xs leading-snug text-[#444746] dark:text-gray-400">
-          Câu trả lời của AI chỉ mang tính chất tham khảo. Xác thực lại với các
-          tài liệu gợi ý.
-        </p>
-      </div>
+    <div className="bg-lightPrimary dark:bg-navy-900 sticky bottom-0 z-20 isolate shrink-0 pt-2 pb-4">
+      <GeminiComposer />
+      <p className="mx-auto mt-2 max-w-lg text-center text-xs leading-snug text-[#444746] dark:text-gray-400">
+        Câu trả lời của AI chỉ mang tính chất tham khảo. Xác thực lại với các
+        tài liệu gợi ý.
+      </p>
     </div>
   );
 }
@@ -326,7 +306,7 @@ export function GeminiThread({ className = "" }: { className?: string }) {
       className={`flex min-h-[calc(100vh-8rem)] w-full flex-col bg-transparent text-base text-[#1f1f1f] dark:text-white ${className}`.trim()}
     >
       <ThreadPrimitive.Viewport className="w-full flex-1 overflow-visible">
-        <div className="flex min-h-[calc(100vh-15rem)] w-full flex-col py-4">
+        <div className="flex min-h-[calc(100vh-15rem)] w-full flex-col pt-4">
           {hasMessages ? null : <ChatbotEmptyState />}
           <ThreadPrimitive.Messages
             components={{
@@ -336,7 +316,7 @@ export function GeminiThread({ className = "" }: { className?: string }) {
           />
         </div>
       </ThreadPrimitive.Viewport>
-      <GeminiStickyComposer glassActive={hasMessages} />
+      <GeminiStickyComposer />
     </ThreadPrimitive.Root>
   );
 }

@@ -3,7 +3,11 @@ import { useMemo } from "react";
 import { MdBuild } from "react-icons/md";
 import { Streamdown } from "streamdown";
 
-import { STREAMDOWN_CONTROLS, STREAMDOWN_LINK_SAFETY } from "./markdown-text";
+import {
+  STREAMDOWN_CONTROLS,
+  STREAMDOWN_LINK_SAFETY,
+  STREAMDOWN_PLUGINS,
+} from "@/components/markdown/streamdown-config";
 
 function toolArgsToMarkdown(argsText: string): string {
   const t = argsText.trim();
@@ -65,6 +69,7 @@ function ToolMarkdownBlock({
           lineNumbers={false}
           controls={STREAMDOWN_CONTROLS}
           linkSafety={STREAMDOWN_LINK_SAFETY}
+          plugins={STREAMDOWN_PLUGINS}
           className="text-sm text-[#1f1f1f] dark:text-[#e3e3e3]"
         >
           {markdown}
