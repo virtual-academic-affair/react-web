@@ -6,10 +6,12 @@ import {
   useMessage,
   type PartState,
 } from "@assistant-ui/react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   MdAutoAwesome,
+  MdCheck,
   MdChecklist,
+  MdContentCopy,
   MdDescription,
   MdSchool,
   MdSend,
@@ -25,7 +27,6 @@ import {
   ReasoningTrigger,
 } from "@/components/assistant-ui/reasoning";
 import { Source, Sources } from "@/components/assistant-ui/sources";
-import { ToolFallback } from "@/components/assistant-ui/tool-fallback";
 
 import { useChatbotShell } from "../chatbotShellContext";
 
@@ -109,75 +110,130 @@ function GeminiAssistantMessage() {
     messageStatus !== "requires-action";
   const groupAssistantParts = useCallback((part: PartState) => {
     if (part.type === "reasoning") return ["group-reasoning"] as const;
-    if (part.type === "tool-call") return ["group-reasoning"] as const;
     if (part.type === "source") return ["group-sources"] as const;
     return null;
   }, []);
 
+  const messageRef = useRef<HTMLDivElement>(null);
+  const [copied, setCopied] = useState(false);
+  const [showCopyBtn, setShowCopyBtn] = useState(true);
+
+  const handleCopy = useCallback(() => {
+    const text = messageContent
+      .filter(
+        (part): part is Extract<typeof part, { type: "text" }> =>
+          part.type === "text",
+      )
+      .map((part) => part.text)
+      .join("\n\n");
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [messageContent]);
+
+  useEffect(() => {
+    const el = messageRef.current;
+    if (!el) return;
+
+    const check = () => {
+      const rect = el.getBoundingClientRect();
+      setShowCopyBtn(rect.bottom > 300);
+    };
+
+    window.addEventListener("scroll", check, { passive: true });
+    check();
+    return () => window.removeEventListener("scroll", check);
+  }, []);
+
   return (
     <MessagePrimitive.Root>
-      <div className="w-full min-w-0 space-y-2 text-base leading-relaxed">
-        <MessagePrimitive.GroupedParts groupBy={groupAssistantParts}>
-          {({ part, children }) => {
-            switch (part.type) {
-              case "group-reasoning": {
-                const running =
-                  "status" in part && part.status?.type === "running";
-                const firstReasoningPart = part.indices
-                  .map((index) => messageContent[index])
-                  .find((item) => item?.type === "reasoning");
-                const reasoningMeta = parseReasoningParentId(
-                  firstReasoningPart &&
-                    "parentId" in firstReasoningPart &&
-                    typeof firstReasoningPart.parentId === "string"
-                    ? firstReasoningPart.parentId
-                    : undefined,
-                );
-                const defaultOpen = running || reasoningMeta.defaultOpen;
-                return (
-                  <ReasoningRoot
-                    key={part.indices.join("-")}
-                    defaultOpen={defaultOpen}
-                    resetKey={`${messageId}:${part.indices.join("-")}`}
-                    variant="ghost"
-                  >
-                    <ReasoningTrigger
-                      active={running}
-                      processingTimeMs={reasoningMeta.processingTimeMs}
-                    />
-                    <ReasoningContent aria-busy={running}>
-                      <ReasoningText>{children}</ReasoningText>
-                    </ReasoningContent>
-                  </ReasoningRoot>
-                );
-              }
-              case "group-sources":
-                return (
-                  <Sources
-                    key={part.indices.join("-")}
-                    sourceCount={part.indices.length}
-                  >
-                    {children}
-                  </Sources>
-                );
-              case "text":
-                return <MarkdownText />;
-              case "reasoning":
-                return <Reasoning {...part} />;
-              case "tool-call":
-                return part.toolUI ?? <ToolFallback {...part} />;
-              case "source":
-                return <Source {...part} />;
-              default:
-                return null;
-            }
-          }}
-        </MessagePrimitive.GroupedParts>
-        {showTimestamp ? (
-          <div className="pt-1 text-right text-xs text-[#9aa0a6] dark:text-[#8f98aa]">
-            {timestampText}
+      <div
+        ref={messageRef}
+        className="relative w-full min-w-0 text-base leading-relaxed"
+      >
+        {hasFinalContent && (
+          <div
+            className={`sticky top-3 z-10 flex h-0 justify-end transition-opacity duration-200 ${
+              showCopyBtn ? "opacity-100" : "pointer-events-none opacity-0"
+            }`}
+          >
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-[#5f6368] transition-colors hover:bg-gray-100 hover:text-[#202124] dark:text-[#9aa0a6] dark:hover:bg-white/10 dark:hover:text-white"
+              aria-label={copied ? "Đã sao chép" : "Sao chép"}
+              title={copied ? "Đã sao chép" : "Sao chép"}
+            >
+              {copied ? (
+                <MdCheck className="h-[18px] w-[18px] text-green-500" />
+              ) : (
+                <MdContentCopy className="h-[18px] w-[18px]" />
+              )}
+            </button>
           </div>
-        ) : null}
+        )}
+        <div className="space-y-2 pr-9">
+          <MessagePrimitive.GroupedParts groupBy={groupAssistantParts}>
+            {({ part, children }) => {
+              switch (part.type) {
+                case "group-reasoning": {
+                  const running =
+                    "status" in part && part.status?.type === "running";
+                  const firstReasoningPart = part.indices
+                    .map((index) => messageContent[index])
+                    .find((item) => item?.type === "reasoning");
+                  const reasoningMeta = parseReasoningParentId(
+                    firstReasoningPart &&
+                      "parentId" in firstReasoningPart &&
+                      typeof firstReasoningPart.parentId === "string"
+                      ? firstReasoningPart.parentId
+                      : undefined,
+                  );
+                  const defaultOpen = running || reasoningMeta.defaultOpen;
+                  return (
+                    <ReasoningRoot
+                      key={part.indices.join("-")}
+                      defaultOpen={defaultOpen}
+                      resetKey={`${messageId}:${part.indices.join("-")}`}
+                      variant="ghost"
+                    >
+                      <ReasoningTrigger
+                        active={running}
+                        processingTimeMs={reasoningMeta.processingTimeMs}
+                      />
+                      <ReasoningContent aria-busy={running}>
+                        <ReasoningText>{children}</ReasoningText>
+                      </ReasoningContent>
+                    </ReasoningRoot>
+                  );
+                }
+                case "group-sources":
+                  return (
+                    <Sources
+                      key={part.indices.join("-")}
+                      sourceCount={part.indices.length}
+                    >
+                      {children}
+                    </Sources>
+                  );
+                case "text":
+                  return <MarkdownText />;
+                case "reasoning":
+                  return <Reasoning {...part} />;
+                case "source":
+                  return <Source {...part} />;
+                default:
+                  return null;
+              }
+            }}
+          </MessagePrimitive.GroupedParts>
+          {showTimestamp ? (
+            <div className="pt-1 text-right text-xs text-[#9aa0a6] dark:text-[#8f98aa]">
+              {timestampText}
+            </div>
+          ) : null}
+        </div>
       </div>
     </MessagePrimitive.Root>
   );
@@ -229,7 +285,7 @@ function GeminiComposer() {
 
 function GeminiStickyComposer() {
   return (
-    <div className="bg-lightPrimary dark:bg-navy-900 sticky bottom-0 z-20 isolate shrink-0 pt-2 pb-4">
+    <div className="bg-lightPrimary dark:bg-navy-900 sticky bottom-0 isolate z-20 shrink-0 pt-2 pb-4">
       <GeminiComposer />
       <p className="mx-auto mt-2 max-w-lg text-center text-xs leading-snug text-[#444746] dark:text-gray-400">
         Câu trả lời của AI chỉ mang tính chất tham khảo. Xác thực lại với các
