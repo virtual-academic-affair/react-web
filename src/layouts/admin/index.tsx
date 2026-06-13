@@ -1,21 +1,33 @@
 import Navbar from "@/components/navbar";
+import PageLoader from "@/components/loading/PageLoader";
 import Sidebar from "@/components/sidebar";
 import { useMobileBodyScrollLock } from "@/hooks/useMobileBodyScrollLock";
 import { useDynamicData } from "@/hooks/useDynamicData";
-import UsersPage from "@/pages/auth/accounts";
-import StudentsPage from "@/pages/auth/students";
-import ChatbotPage from "@/pages/chatbot";
-import { ChatbotRuntimeProvider } from "@/pages/chatbot/ChatbotRuntimeProvider";
-import { ChatbotThreadToolbar } from "@/pages/chatbot/components/ChatbotThreadToolbar";
-import ClassRegistrationStatisticsPage from "@/pages/class-registration/statistics";
-import FAQsPage from "@/pages/documents/faqs";
-import ProposedFAQsPage from "@/pages/documents/faqs/candidates";
-import FormsPage from "@/pages/documents/forms";
-import DocumentListPage from "@/pages/documents/list";
-import GmailConfigPage from "@/pages/emails/config";
-import InquiryStatisticsPage from "@/pages/inquiry/statistics";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+
+const UsersPage = lazy(() => import("@/pages/auth/accounts"));
+const StudentsPage = lazy(() => import("@/pages/auth/students"));
+const ChatbotPage = lazy(() => import("@/pages/chatbot"));
+const ChatbotRuntimeProvider = lazy(() =>
+  import("@/pages/chatbot/ChatbotRuntimeProvider").then((module) => ({
+    default: module.ChatbotRuntimeProvider,
+  })),
+);
+const ChatbotThreadToolbar = lazy(() =>
+  import("@/pages/chatbot/components/ChatbotThreadToolbar").then((module) => ({
+    default: module.ChatbotThreadToolbar,
+  })),
+);
+const ClassRegistrationStatisticsPage = lazy(
+  () => import("@/pages/class-registration/statistics"),
+);
+const FAQsPage = lazy(() => import("@/pages/documents/faqs"));
+const ProposedFAQsPage = lazy(() => import("@/pages/documents/faqs/candidates"));
+const FormsPage = lazy(() => import("@/pages/documents/forms"));
+const DocumentListPage = lazy(() => import("@/pages/documents/list"));
+const GmailConfigPage = lazy(() => import("@/pages/emails/config"));
+const InquiryStatisticsPage = lazy(() => import("@/pages/inquiry/statistics"));
 
 const DYNAMIC_DATA_KEYS = [
   "auth.roleDomains",
@@ -75,7 +87,9 @@ const AdminLayout: React.FC = () => {
             open ? "translate-x-0" : "-translate-x-[120%] lg:translate-x-0"
           }`}
         >
-          <ChatbotThreadToolbar onShowMenu={() => setSidebarMode("app")} />
+          <Suspense fallback={<PageLoader />}>
+            <ChatbotThreadToolbar onShowMenu={() => setSidebarMode("app")} />
+          </Suspense>
         </div>
       ) : (
         <Sidebar
@@ -114,67 +128,72 @@ const AdminLayout: React.FC = () => {
               : "lg:w-[calc(100vw-405px)]"
           }`}
         >
-          <Routes>
-            <Route
-              path="email/config"
-              element={
-                <GmailConfigPage
-                  data={data}
-                  dataLoading={dataLoading}
-                  onRefresh={onRefresh}
-                />
-              }
-            />
-            <Route path="auth/accounts" element={<UsersPage data={data} />} />
-            <Route path="auth/students" element={<StudentsPage />} />
-            <Route
-              path="class-registration/statistics"
-              element={<ClassRegistrationStatisticsPage />}
-            />
-            <Route
-              path="inquiry/statistics"
-              element={<InquiryStatisticsPage />}
-            />
-            <Route path="documents/list" element={<DocumentListPage />} />
-            <Route path="documents/forms" element={<FormsPage />} />
-            <Route path="documents/faqs" element={<FAQsPage />} />
-            <Route path="documents/candidates" element={<ProposedFAQsPage />} />
-            <Route path="chatbot/*" element={<ChatbotPage />} />
-            <Route
-              path="class-registration"
-              element={
-                <Navigate to="/admin/class-registration/statistics" replace />
-              }
-            />
-            <Route
-              path="inquiry"
-              element={<Navigate to="/admin/inquiry/statistics" replace />}
-            />
-            <Route
-              path="tasks/*"
-              element={<Navigate to="/admin/email/config" replace />}
-            />
-            <Route
-              path="/"
-              element={<Navigate to="/admin/email/config" replace />}
-            />
-            <Route
-              path="email"
-              element={<Navigate to="/admin/email/config" replace />}
-            />
-            <Route
-              path="email/message"
-              element={<Navigate to="/admin/email/config" replace />}
-            />
-            <Route
-              path="emails/*"
-              element={<Navigate to="/admin/email/config" replace />}
-            />
-            <Route
-              path="*"
-              element={<Navigate to="/admin/email/config" replace />}
-            />
-          </Routes>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route
+                path="email/config"
+                element={
+                  <GmailConfigPage
+                    data={data}
+                    dataLoading={dataLoading}
+                    onRefresh={onRefresh}
+                  />
+                }
+              />
+              <Route path="auth/accounts" element={<UsersPage data={data} />} />
+              <Route path="auth/students" element={<StudentsPage />} />
+              <Route
+                path="class-registration/statistics"
+                element={<ClassRegistrationStatisticsPage />}
+              />
+              <Route
+                path="inquiry/statistics"
+                element={<InquiryStatisticsPage />}
+              />
+              <Route path="documents/list" element={<DocumentListPage />} />
+              <Route path="documents/forms" element={<FormsPage />} />
+              <Route path="documents/faqs" element={<FAQsPage />} />
+              <Route
+                path="documents/candidates"
+                element={<ProposedFAQsPage />}
+              />
+              <Route path="chatbot/*" element={<ChatbotPage />} />
+              <Route
+                path="class-registration"
+                element={
+                  <Navigate to="/admin/class-registration/statistics" replace />
+                }
+              />
+              <Route
+                path="inquiry"
+                element={<Navigate to="/admin/inquiry/statistics" replace />}
+              />
+              <Route
+                path="tasks/*"
+                element={<Navigate to="/admin/email/config" replace />}
+              />
+              <Route
+                path="/"
+                element={<Navigate to="/admin/email/config" replace />}
+              />
+              <Route
+                path="email"
+                element={<Navigate to="/admin/email/config" replace />}
+              />
+              <Route
+                path="email/message"
+                element={<Navigate to="/admin/email/config" replace />}
+              />
+              <Route
+                path="emails/*"
+                element={<Navigate to="/admin/email/config" replace />}
+              />
+              <Route
+                path="*"
+                element={<Navigate to="/admin/email/config" replace />}
+              />
+            </Routes>
+          </Suspense>
         </div>
       </div>
     </>
@@ -183,7 +202,9 @@ const AdminLayout: React.FC = () => {
   return (
     <div className="bg-lightPrimary dark:bg-navy-900! flex min-h-screen w-full">
       {isAdminChatbotRoute ? (
-        <ChatbotRuntimeProvider>{layoutBody}</ChatbotRuntimeProvider>
+        <Suspense fallback={<PageLoader />}>
+          <ChatbotRuntimeProvider>{layoutBody}</ChatbotRuntimeProvider>
+        </Suspense>
       ) : (
         layoutBody
       )}

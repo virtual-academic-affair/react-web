@@ -6,8 +6,8 @@ import { Streamdown } from "streamdown";
 import {
   STREAMDOWN_CONTROLS,
   STREAMDOWN_LINK_SAFETY,
-  STREAMDOWN_PLUGINS,
 } from "@/components/markdown/streamdown-config";
+import { useStreamdownMathPlugins } from "@/components/markdown/useStreamdownMathPlugins";
 
 function toolArgsToMarkdown(argsText: string): string {
   const t = argsText.trim();
@@ -57,6 +57,8 @@ function ToolMarkdownBlock({
   label: string;
   markdown: string;
 }) {
+  const plugins = useStreamdownMathPlugins();
+
   return (
     <div className="mt-2">
       <p className="mb-1 text-xs font-medium tracking-wide text-[#444746] uppercase dark:text-[#c4c7c5]">
@@ -69,7 +71,7 @@ function ToolMarkdownBlock({
           lineNumbers={false}
           controls={STREAMDOWN_CONTROLS}
           linkSafety={STREAMDOWN_LINK_SAFETY}
-          plugins={STREAMDOWN_PLUGINS}
+          plugins={plugins}
           className="text-sm text-[#1f1f1f] dark:text-[#e3e3e3]"
         >
           {markdown}

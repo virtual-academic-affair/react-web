@@ -4,7 +4,7 @@
  * decorative panel on the right.
  */
 
-import authImg from "@/assets/img/auth/auth.png";
+import authImg from "@/assets/img/auth/auth.webp";
 import LogoBgWhite from "@/assets/img/logo/logo-bg-white-circle.svg";
 import { refreshTokens } from "@/services/http";
 import { isMarkedAuthenticated, useAuthStore } from "@/stores/auth.store";

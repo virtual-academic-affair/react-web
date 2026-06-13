@@ -4,19 +4,29 @@
  * Mirrors the admin layout structure with collapsible sidebar support.
  */
 
-import React, { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
+import PageLoader from "@/components/loading/PageLoader";
 import Navbar from "@/components/navbar";
 import UserSidebar from "@/components/sidebar/UserSidebar";
 import { useMobileBodyScrollLock } from "@/hooks/useMobileBodyScrollLock";
-import ChatbotPage from "@/pages/chatbot";
-import { ChatbotRuntimeProvider } from "@/pages/chatbot/ChatbotRuntimeProvider";
-import { ChatbotThreadToolbar } from "@/pages/chatbot/components/ChatbotThreadToolbar";
-import FormsPage from "@/pages/documents/forms";
-import UserDocumentsPage from "@/pages/user/documents";
 
-const UserLayout: React.FC = () => {
+const ChatbotPage = lazy(() => import("@/pages/chatbot"));
+const ChatbotRuntimeProvider = lazy(() =>
+  import("@/pages/chatbot/ChatbotRuntimeProvider").then((module) => ({
+    default: module.ChatbotRuntimeProvider,
+  })),
+);
+const ChatbotThreadToolbar = lazy(() =>
+  import("@/pages/chatbot/components/ChatbotThreadToolbar").then((module) => ({
+    default: module.ChatbotThreadToolbar,
+  })),
+);
+const FormsPage = lazy(() => import("@/pages/documents/forms"));
+const UserDocumentsPage = lazy(() => import("@/pages/user/documents"));
+
+const UserLayout = () => {
   const [open, setOpen] = useState(() => window.innerWidth >= 1024);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -59,7 +69,9 @@ const UserLayout: React.FC = () => {
             open ? "translate-x-0" : "-translate-x-[120%] lg:translate-x-0"
           }`}
         >
-          <ChatbotThreadToolbar onShowMenu={() => setSidebarMode("app")} />
+          <Suspense fallback={<PageLoader />}>
+            <ChatbotThreadToolbar onShowMenu={() => setSidebarMode("app")} />
+          </Suspense>
         </div>
       ) : (
         <UserSidebar
@@ -98,19 +110,21 @@ const UserLayout: React.FC = () => {
               : "lg:w-[calc(100vw-405px)]"
           }`}
         >
-          <Routes>
-            <Route path="/documents" element={<UserDocumentsPage />} />
-            <Route path="/forms" element={<FormsPage isReadOnly />} />
-            <Route path="/chatbot/*" element={<ChatbotPage />} />
-            <Route
-              path="/"
-              element={<Navigate to="/user/documents" replace />}
-            />
-            <Route
-              path="*"
-              element={<Navigate to="/user/documents" replace />}
-            />
-          </Routes>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/documents" element={<UserDocumentsPage />} />
+              <Route path="/forms" element={<FormsPage isReadOnly />} />
+              <Route path="/chatbot/*" element={<ChatbotPage />} />
+              <Route
+                path="/"
+                element={<Navigate to="/user/documents" replace />}
+              />
+              <Route
+                path="*"
+                element={<Navigate to="/user/documents" replace />}
+              />
+            </Routes>
+          </Suspense>
         </div>
       </div>
     </>
@@ -119,7 +133,9 @@ const UserLayout: React.FC = () => {
   return (
     <div className="bg-lightPrimary dark:bg-navy-900! flex min-h-screen w-full">
       {isUserChatbotRoute ? (
-        <ChatbotRuntimeProvider>{layoutBody}</ChatbotRuntimeProvider>
+        <Suspense fallback={<PageLoader />}>
+          <ChatbotRuntimeProvider>{layoutBody}</ChatbotRuntimeProvider>
+        </Suspense>
       ) : (
         layoutBody
       )}

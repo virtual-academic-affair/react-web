@@ -1,14 +1,6 @@
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import PageLoader from "@/components/loading/PageLoader";
 import RoleRoute from "@/components/auth/RoleRoute";
-import AdminLayout from "@/layouts/admin";
-import AuthLayout from "@/layouts/auth";
-import UserLayout from "@/layouts/user";
-import BannedPage from "@/pages/auth/banned";
-import GmailGrantFromAddonPage from "@/pages/auth/gmail-grant";
-import LoginPage from "@/pages/auth/login";
-import GoogleCallbackPage from "@/pages/auth/login/callback";
-import GmailDeeplinkPage from "@/pages/gmail-deeplink";
-import UserDashboard from "@/pages/user";
 import { refreshTokens } from "@/services/http";
 import { useAuthStore } from "@/stores/auth.store";
 import { ConfigProvider, message as toast, theme } from "antd";
@@ -16,7 +8,7 @@ import viVN from "antd/locale/vi_VN";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
 import "driver.js/dist/driver.css";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import {
   BrowserRouter,
   Navigate,
@@ -26,6 +18,16 @@ import {
 } from "react-router-dom";
 
 dayjs.locale("vi");
+
+const AdminLayout = lazy(() => import("@/layouts/admin"));
+const AuthLayout = lazy(() => import("@/layouts/auth"));
+const UserLayout = lazy(() => import("@/layouts/user"));
+const BannedPage = lazy(() => import("@/pages/auth/banned"));
+const GmailGrantFromAddonPage = lazy(() => import("@/pages/auth/gmail-grant"));
+const LoginPage = lazy(() => import("@/pages/auth/login"));
+const GoogleCallbackPage = lazy(() => import("@/pages/auth/login/callback"));
+const GmailDeeplinkPage = lazy(() => import("@/pages/gmail-deeplink"));
+const UserDashboard = lazy(() => import("@/pages/user"));
 
 /**
  * On fresh page load the Zustand store has no token (in-memory only).
@@ -144,37 +146,39 @@ export default function App() {
       }}
     >
       <BrowserRouter>
-        <Routes>
-          {/* ── Auth ── */}
-          <Route path="/auth" element={<AuthLayout />}>
-            <Route path="login" element={<LoginPage />} />
-            <Route path="callback" element={<GoogleCallbackPage />} />
-            <Route path="gmail-grant" element={<GmailGrantFromAddonPage />} />
-            <Route path="banned" element={<BannedPage />} />
-          </Route>
-
-          {/* ── Root: landing for guests, redirect for authenticated users ── */}
-          <Route path="/" element={<RootRedirect />} />
-
-          {/* ── Gmail deep-link page (public) ── */}
-          <Route path="/gmail-deeplink" element={<GmailDeeplinkPage />} />
-
-          {/* ── Protected routes ── */}
-          <Route element={<ProtectedRoute />}>
-            <Route element={<RoleRoute allowedRoles={["admin"]} />}>
-              <Route path="/admin/*" element={<AdminLayout />} />
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            {/* ── Auth ── */}
+            <Route path="/auth" element={<AuthLayout />}>
+              <Route path="login" element={<LoginPage />} />
+              <Route path="callback" element={<GoogleCallbackPage />} />
+              <Route path="gmail-grant" element={<GmailGrantFromAddonPage />} />
+              <Route path="banned" element={<BannedPage />} />
             </Route>
 
-            <Route
-              element={<RoleRoute allowedRoles={["student", "lecture"]} />}
-            >
-              <Route path="/user/*" element={<UserLayout />} />
-            </Route>
-          </Route>
+            {/* ── Root: landing for guests, redirect for authenticated users ── */}
+            <Route path="/" element={<RootRedirect />} />
 
-          {/* ── Fallback ── */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+            {/* ── Gmail deep-link page (public) ── */}
+            <Route path="/gmail-deeplink" element={<GmailDeeplinkPage />} />
+
+            {/* ── Protected routes ── */}
+            <Route element={<ProtectedRoute />}>
+              <Route element={<RoleRoute allowedRoles={["admin"]} />}>
+                <Route path="/admin/*" element={<AdminLayout />} />
+              </Route>
+
+              <Route
+                element={<RoleRoute allowedRoles={["student", "lecture"]} />}
+              >
+                <Route path="/user/*" element={<UserLayout />} />
+              </Route>
+            </Route>
+
+            {/* ── Fallback ── */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </ConfigProvider>
   );

@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React, {
+  lazy,
+  Suspense,
   useCallback,
   useEffect,
   useMemo,
@@ -16,7 +18,6 @@ import {
 import { useSearchParams } from "react-router-dom";
 
 import DocumentDetailDrawer from "@/pages/documents/components/DocumentDetailDrawer";
-import FilePreviewModal from "@/pages/documents/components/FilePreviewModal";
 import { DOCUMENT_TYPES } from "@/pages/documents/components/UploadDrawer";
 import { DocumentsService, MetadataService } from "@/services/documents";
 
@@ -24,6 +25,10 @@ import { FileCard, FileRow } from "./components/FileItems";
 import FilterGroup from "./components/FilterGroup";
 import { GridSkeleton, ListSkeleton } from "./components/Skeletons";
 import YearRangeFilter, { type YearRange } from "./components/YearRangeFilter";
+
+const FilePreviewModal = lazy(
+  () => import("@/pages/documents/components/FilePreviewModal"),
+);
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -618,13 +623,17 @@ const UserDocumentsPage: React.FC = () => {
       />
 
       {/* ── File Preview Modal ──────────────────────────────────────────── */}
-      <FilePreviewModal
-        fileId={previewFileId}
-        fileName={previewFileName}
-        downloadFormat={previewDownloadFormat}
-        isOpen={previewFileId !== null}
-        onClose={handleClosePreview}
-      />
+      {previewFileId !== null ? (
+        <Suspense fallback={null}>
+          <FilePreviewModal
+            fileId={previewFileId}
+            fileName={previewFileName}
+            downloadFormat={previewDownloadFormat}
+            isOpen
+            onClose={handleClosePreview}
+          />
+        </Suspense>
+      ) : null}
     </div>
   );
 };

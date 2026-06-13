@@ -1,6 +1,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   MdDeleteOutline,
   MdFileDownload,
@@ -24,12 +32,13 @@ import YearRangeFilter, {
   type YearRange,
 } from "@/pages/user/documents/components/YearRangeFilter";
 import DocumentDetailDrawer from "../components/DocumentDetailDrawer";
-import FilePreviewModal from "../components/FilePreviewModal";
 import UploadDrawer, {
   DOCUMENT_TYPE_COLOR_MAP,
   DOCUMENT_TYPE_MAP,
   DOCUMENT_TYPES,
 } from "../components/UploadDrawer";
+
+const FilePreviewModal = lazy(() => import("../components/FilePreviewModal"));
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -578,23 +587,27 @@ const DocumentListPage = () => {
         }}
       />
 
-      <FilePreviewModal
-        fileId={previewFileId}
-        fileName={previewFileName}
-        downloadFormat={previewDownloadFormat}
-        isOpen={previewFileId !== null}
-        initialPage={previewPage}
-        onClose={() => {
-          const next = new URLSearchParams(searchParams);
-          next.delete("preview");
-          next.delete("previewPage");
-          next.delete("previewTarget");
-          if (!wasDrawerOpenBeforePreview.current) {
-            next.delete("id");
-          }
-          setSearchParams(next, { replace: true });
-        }}
-      />
+      {previewFileId !== null ? (
+        <Suspense fallback={null}>
+          <FilePreviewModal
+            fileId={previewFileId}
+            fileName={previewFileName}
+            downloadFormat={previewDownloadFormat}
+            isOpen
+            initialPage={previewPage}
+            onClose={() => {
+              const next = new URLSearchParams(searchParams);
+              next.delete("preview");
+              next.delete("previewPage");
+              next.delete("previewTarget");
+              if (!wasDrawerOpenBeforePreview.current) {
+                next.delete("id");
+              }
+              setSearchParams(next, { replace: true });
+            }}
+          />
+        </Suspense>
+      ) : null}
 
       <ConfirmModal
         open={Boolean(deletingItem)}

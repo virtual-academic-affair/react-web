@@ -7,7 +7,7 @@
  */
 
 import logoBgColor from "@/assets/img/logo/logo-bg-color.svg";
-import heroVideo from "@/assets/video/home.mp4";
+import heroVideo from "@/assets/video/home-optimized.mp4";
 import { useAuthStore } from "@/stores/auth.store";
 import React from "react";
 import { LuLogIn } from "react-icons/lu";

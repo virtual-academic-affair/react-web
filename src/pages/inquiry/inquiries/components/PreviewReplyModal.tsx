@@ -6,8 +6,11 @@ import { message as toast } from "antd";
 import React from "react";
 import { MdClose, MdEdit, MdSend } from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
-import FilePreviewModal from "@/pages/documents/components/FilePreviewModal";
 import InquiryReplyRichTextEditor from "./InquiryReplyRichTextEditor";
+
+const FilePreviewModal = React.lazy(
+  () => import("@/pages/documents/components/FilePreviewModal"),
+);
 
 interface PreviewReplyModalProps {
   inquiryId: number | null;
@@ -248,12 +251,16 @@ const PreviewReplyModal: React.FC<PreviewReplyModalProps> = ({
         </Card>
       </div>
 
-      <FilePreviewModal
-        fileId={previewDoc?.fileId ?? null}
-        fileName={previewDocFileName || "Tài liệu"}
-        isOpen={Boolean(previewDoc?.fileId)}
-        onClose={() => setPreviewDoc(null)}
-      />
+      {previewDoc?.fileId ? (
+        <React.Suspense fallback={null}>
+          <FilePreviewModal
+            fileId={previewDoc.fileId}
+            fileName={previewDocFileName || "Tài liệu"}
+            isOpen
+            onClose={() => setPreviewDoc(null)}
+          />
+        </React.Suspense>
+      ) : null}
     </>
   );
 };

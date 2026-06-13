@@ -19,8 +19,8 @@ import { Streamdown } from "streamdown";
 import {
   STREAMDOWN_CONTROLS,
   STREAMDOWN_LINK_SAFETY,
-  STREAMDOWN_PLUGINS,
 } from "@/components/markdown/streamdown-config";
+import { useStreamdownMathPlugins } from "@/components/markdown/useStreamdownMathPlugins";
 
 type ReasoningVariant = "ghost" | "default";
 type StructuredReasoningStep = {
@@ -62,12 +62,14 @@ function ThinkingDots() {
 }
 
 function ReasoningMarkdown({ text }: { text: string }) {
+  const plugins = useStreamdownMathPlugins();
+
   return (
     <Streamdown
       mode="streaming"
       controls={STREAMDOWN_CONTROLS}
       linkSafety={STREAMDOWN_LINK_SAFETY}
-      plugins={STREAMDOWN_PLUGINS}
+      plugins={plugins}
       className="text-sm leading-relaxed text-[#3c4043] dark:text-[#d9e2ff]"
     >
       {text}
