@@ -1,6 +1,7 @@
 import React from "react";
 import type { ApexOptions } from "apexcharts";
 import LineChart from "@/components/charts/LineChart";
+import { LineChartSkeleton } from "@/components/charts/ChartSkeletons";
 
 interface TaskLineChartProps {
   loading: boolean;
@@ -48,9 +49,7 @@ const TaskLineChart: React.FC<TaskLineChartProps> = ({
             </div>
           )
         ) : (
-          <div className="flex h-full items-center justify-center text-sm text-gray-500">
-            Đang tải...
-          </div>
+          <LineChartSkeleton />
         )}
       </div>
     </div>

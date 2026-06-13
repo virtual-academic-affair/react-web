@@ -280,10 +280,47 @@ function ChatbotEmptyState() {
   );
 }
 
+const SKELETON_ROWS = [
+  { side: "right", widths: ["72%"] },
+  { side: "left", widths: ["88%", "64%", "40%"] },
+  { side: "right", widths: ["55%"] },
+  { side: "left", widths: ["80%", "52%"] },
+] as const;
+
+function ChatMessagesSkeletonLoader() {
+  return (
+    <div
+      className="flex w-full flex-col gap-6 px-1 pt-4"
+      aria-hidden
+      aria-label="Đang tải tin nhắn…"
+    >
+      {SKELETON_ROWS.map((row, rowIdx) => (
+        <div
+          key={rowIdx}
+          className={`flex w-full flex-col gap-2 ${
+            row.side === "right" ? "items-end" : "items-start"
+          }`}
+        >
+          {row.widths.map((width, lineIdx) => (
+            <div
+              key={lineIdx}
+              style={{ width }}
+              className={`h-4 animate-pulse rounded-full bg-[#e9eef6] dark:bg-white/10 ${
+                row.side === "right" ? "rounded-tr-sm" : "rounded-tl-sm"
+              }`}
+            />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /** Giao diện theo hướng [Gemini clone assistant-ui](https://www.assistant-ui.com/examples/gemini). */
 export function GeminiThread({ className = "" }: { className?: string }) {
   const hasMessages = useAuiState((s) => s.thread.messages.length > 0);
-  const { activeThreadId } = useChatbotShell();
+  const { activeThreadId, isLoadingMessages, sessions } = useChatbotShell();
+  const isNewThread = !sessions.find((s) => s.id === activeThreadId)?.serverId;
   const autoScrolledThreadRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -307,13 +344,19 @@ export function GeminiThread({ className = "" }: { className?: string }) {
     >
       <ThreadPrimitive.Viewport className="w-full flex-1 overflow-visible">
         <div className="flex min-h-[calc(100vh-15rem)] w-full flex-col pt-4">
-          {hasMessages ? null : <ChatbotEmptyState />}
-          <ThreadPrimitive.Messages
-            components={{
-              UserMessage: GeminiUserMessage,
-              AssistantMessage: GeminiAssistantMessage,
-            }}
-          />
+          {isLoadingMessages ? (
+            <ChatMessagesSkeletonLoader />
+          ) : isNewThread && !hasMessages ? (
+            <ChatbotEmptyState />
+          ) : null}
+          {!isLoadingMessages && (
+            <ThreadPrimitive.Messages
+              components={{
+                UserMessage: GeminiUserMessage,
+                AssistantMessage: GeminiAssistantMessage,
+              }}
+            />
+          )}
         </div>
       </ThreadPrimitive.Viewport>
       <GeminiStickyComposer />

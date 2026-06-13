@@ -31,6 +31,7 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
   const navigate = useNavigate();
   const clearAuth = useAuthStore((s) => s.clearAuth);
   const [userInfo, setUserInfo] = React.useState<UserInfo>({});
+  const [isLoadingUser, setIsLoadingUser] = React.useState(true);
   const [darkmode, setDarkmode] = React.useState(
     document.body.classList.contains("dark"),
   );
@@ -39,7 +40,8 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
     authService
       .getMe()
       .then(setUserInfo)
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setIsLoadingUser(false));
   }, []);
 
   const { name: userName, picture: avatarUrl, email: userEmail } = userInfo;
@@ -112,7 +114,9 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
           <Dropdown
             button={
               <div className="flex items-center gap-3">
-                {avatarUrl ? (
+                {isLoadingUser ? (
+                  <div className="h-10 w-10 shrink-0 animate-pulse rounded-full bg-gray-200 dark:bg-white/10" />
+                ) : avatarUrl ? (
                   <img
                     className="h-10 w-10 shrink-0 rounded-full object-cover"
                     src={avatarUrl}
@@ -125,9 +129,13 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
                   </div>
                 )}
                 {!collapsed && (
-                  <span className="text-navy-700 text-sm font-medium dark:text-white">
-                    {userName ?? "Tài khoản"}
-                  </span>
+                  isLoadingUser ? (
+                    <div className="h-3.5 w-24 animate-pulse rounded-full bg-gray-200 dark:bg-white/10" />
+                  ) : (
+                    <span className="text-navy-700 text-sm font-medium dark:text-white">
+                      {userName ?? "—"}
+                    </span>
+                  )
                 )}
               </div>
             }

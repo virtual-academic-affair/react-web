@@ -1,6 +1,7 @@
 import React from "react";
 import type { ApexOptions } from "apexcharts";
 import BarChart from "@/components/charts/BarChart";
+import { BarChartSkeleton } from "@/components/charts/ChartSkeletons";
 
 interface DetailedStatsChartProps {
   loading: boolean;
@@ -43,9 +44,7 @@ const DetailedStatsChart: React.FC<DetailedStatsChartProps> = ({
             </div>
           )
         ) : (
-          <div className="flex h-full items-center justify-center text-sm text-gray-500">
-            Đang tải...
-          </div>
+          <BarChartSkeleton />
         )}
       </div>
     </div>
