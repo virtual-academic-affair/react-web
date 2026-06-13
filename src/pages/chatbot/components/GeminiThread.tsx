@@ -8,6 +8,7 @@ import {
 } from "@assistant-ui/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  MdArrowDownward,
   MdAutoAwesome,
   MdCheck,
   MdChecklist,
@@ -283,9 +284,31 @@ function GeminiComposer() {
   );
 }
 
-function GeminiStickyComposer() {
+function GeminiStickyComposer({
+  showScrollBottom,
+}: {
+  showScrollBottom?: boolean;
+}) {
   return (
-    <div className="bg-lightPrimary dark:bg-navy-900 sticky bottom-0 isolate z-20 shrink-0 pt-2 pb-4">
+    <div className="sticky bottom-0 isolate z-20 shrink-0 bg-[#eef4ff] pb-4 pt-2 dark:bg-navy-900">
+      {/* Nút cuộn xuống cuối */}
+      {showScrollBottom && (
+        <div className="absolute bottom-full left-0 right-0 mb-4 flex justify-center">
+          <button
+            onClick={() => {
+              window.scrollTo({
+                top: document.documentElement.scrollHeight,
+                behavior: "smooth",
+              });
+            }}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-900/80 text-white shadow-md backdrop-blur transition-all hover:bg-gray-900 dark:bg-[#1f3760] dark:text-[#a8c7fa] dark:hover:bg-[#1a73e8] dark:hover:text-white"
+            aria-label="Cuộn xuống cuối đoạn chat"
+          >
+            <MdArrowDownward className="h-5 w-5" />
+          </button>
+        </div>
+      )}
+
       <GeminiComposer />
       <p className="mx-auto mt-2 max-w-lg text-center text-xs leading-snug text-[#444746] dark:text-gray-400">
         Câu trả lời của AI chỉ mang tính chất tham khảo. Xác thực lại với các
@@ -377,6 +400,7 @@ export function GeminiThread({ className = "" }: { className?: string }) {
   const messagesCount = useAuiState((s) => s.thread.messages.length);
   const { activeThreadId, isLoadingMessages, sessions } = useChatbotShell();
   const isNewThread = !sessions.find((s) => s.id === activeThreadId)?.serverId;
+  const [showScrollBottom, setShowScrollBottom] = useState(false);
 
   useEffect(() => {
     if (messagesCount === 0) return;
@@ -388,6 +412,25 @@ export function GeminiThread({ className = "" }: { className?: string }) {
       });
     });
   }, [activeThreadId, messagesCount]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+
+      // Cách đáy khoảng 150px thì hiện nút
+      if (documentHeight - scrollY - windowHeight > 150) {
+        setShowScrollBottom(true);
+      } else {
+        setShowScrollBottom(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
     <ThreadPrimitive.Root
@@ -410,7 +453,8 @@ export function GeminiThread({ className = "" }: { className?: string }) {
           )}
         </div>
       </ThreadPrimitive.Viewport>
-      <GeminiStickyComposer />
+
+      <GeminiStickyComposer showScrollBottom={showScrollBottom} />
     </ThreadPrimitive.Root>
   );
 }

@@ -11,7 +11,13 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { MdArticle, MdOpenInNew, MdPictureAsPdf } from "react-icons/md";
+import {
+  MdArrowDownward,
+  MdArrowUpward,
+  MdArticle,
+  MdOpenInNew,
+  MdPictureAsPdf,
+} from "react-icons/md";
 import Tooltip from "../tooltip/Tooltip";
 
 type SourceMeta = {
@@ -186,6 +192,11 @@ function SourcePreviewDrawer({
   const [error, setError] = useState("");
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const highlightRef = useRef<HTMLDivElement | null>(null);
+  const scrollRafRef = useRef<number | null>(null);
+  const [jumpState, setJumpState] = useState<{
+    up: PageRange | null;
+    down: PageRange | null;
+  }>({ up: null, down: null });
 
   useEffect(() => {
     if (!open || !markdownUrl) return;
@@ -222,17 +233,15 @@ function SourcePreviewDrawer({
     [lines, pages, title],
   );
 
-  const scrollToHighlight = useCallback(() => {
+  const scrollToRange = useCallback((range: PageRange) => {
     const root = scrollContainerRef.current;
-    const target =
-      highlightRef.current ??
-      (root?.querySelector(
-        `[data-line-number="${highlight.start + 1}"]`,
-      ) as HTMLDivElement | null);
-    const endTarget = root?.querySelector(
-      `[data-line-number="${highlight.end + 1}"]`,
+    const target = root?.querySelector(
+      `[data-line-number="${range.start + 1}"]`,
     ) as HTMLDivElement | null;
-    if (!root || !target || highlight.start < 0) return;
+    const endTarget = root?.querySelector(
+      `[data-line-number="${range.end + 1}"]`,
+    ) as HTMLDivElement | null;
+    if (!root || !target || range.start < 0) return;
 
     const rootRect = root.getBoundingClientRect();
     const targetRect = target.getBoundingClientRect();
@@ -246,23 +255,77 @@ function SourcePreviewDrawer({
       top: nextScrollTop,
       behavior: "smooth",
     });
-  }, [highlight]);
+  }, []);
+
+  const scrollToHighlight = useCallback(() => {
+    if (highlight.start >= 0) {
+      scrollToRange({ start: highlight.start, end: highlight.end });
+    }
+  }, [highlight, scrollToRange]);
+
+  const handleScroll = useCallback(() => {
+    if (scrollRafRef.current) return;
+    scrollRafRef.current = requestAnimationFrame(() => {
+      scrollRafRef.current = null;
+      const root = scrollContainerRef.current;
+      if (!root || highlight.ranges.length === 0) {
+        setJumpState({ up: null, down: null });
+        return;
+      }
+
+      const rootRect = root.getBoundingClientRect();
+      let upTarget: PageRange | null = null;
+      let downTarget: PageRange | null = null;
+
+      for (const range of highlight.ranges) {
+        const startEl = root.querySelector(
+          `[data-line-number="${range.start + 1}"]`,
+        );
+        const endEl = root.querySelector(
+          `[data-line-number="${range.end + 1}"]`,
+        );
+        if (!startEl) continue;
+
+        const startRect = startEl.getBoundingClientRect();
+        const endRect = (endEl || startEl).getBoundingClientRect();
+
+        if (endRect.bottom < rootRect.top + 10) {
+          upTarget = range;
+        } else if (startRect.top > rootRect.bottom - 10) {
+          if (downTarget === null) {
+            downTarget = range;
+          }
+        }
+      }
+
+      setJumpState((prev) =>
+        prev.up?.start === upTarget?.start && prev.down?.start === downTarget?.start
+          ? prev
+          : { up: upTarget, down: downTarget },
+      );
+    });
+  }, [highlight.ranges]);
 
   useLayoutEffect(() => {
     if (!open || loading || !content || highlight.start < 0) return;
     scrollToHighlight();
-  }, [content, highlight, loading, open, scrollToHighlight]);
+    handleScroll();
+  }, [content, highlight, loading, open, scrollToHighlight, handleScroll]);
 
   useEffect(() => {
     if (!open || loading || !content || highlight.start < 0) return;
     const frames: number[] = [];
     const timers = [0, 100, 300, 500, 800, 1200].map((delay) =>
-      window.setTimeout(scrollToHighlight, delay),
+      window.setTimeout(() => {
+        scrollToHighlight();
+        handleScroll();
+      }, delay),
     );
 
     frames.push(
       requestAnimationFrame(() => {
         scrollToHighlight();
+        handleScroll();
         frames.push(requestAnimationFrame(scrollToHighlight));
       }),
     );
@@ -375,9 +438,10 @@ function SourcePreviewDrawer({
                   {error}
                 </div>
               ) : content ? (
-                <div className="overflow-hidden rounded-2xl border border-[#dadce0] bg-white dark:border-white/10 dark:bg-[#080f2f]">
+                <div className="relative overflow-hidden rounded-2xl border border-[#dadce0] bg-white dark:border-white/10 dark:bg-[#080f2f]">
                   <div
                     ref={scrollContainerRef}
+                    onScroll={handleScroll}
                     className="min-h-[280px] overflow-y-auto py-2 font-mono text-xs leading-5"
                     style={{ height: "min(560px, calc(100vh - 280px))" }}
                   >
@@ -408,6 +472,26 @@ function SourcePreviewDrawer({
                       );
                     })}
                   </div>
+
+                  {/* Floating jump buttons */}
+                  {jumpState.up && (
+                    <button
+                      onClick={() => scrollToRange(jumpState.up!)}
+                      className="absolute left-1/2 top-4 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full bg-gray-900/80 text-white shadow-md backdrop-blur transition-all hover:bg-gray-900 dark:bg-[#1f3760] dark:text-[#a8c7fa] dark:hover:bg-[#1a73e8] dark:hover:text-white"
+                      aria-label="Đoạn đánh dấu trước đó"
+                    >
+                      <MdArrowUpward className="h-5 w-5" />
+                    </button>
+                  )}
+                  {jumpState.down && (
+                    <button
+                      onClick={() => scrollToRange(jumpState.down!)}
+                      className="absolute bottom-4 left-1/2 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full bg-gray-900/80 text-white shadow-md backdrop-blur transition-all hover:bg-gray-900 dark:bg-[#1f3760] dark:text-[#a8c7fa] dark:hover:bg-[#1a73e8] dark:hover:text-white"
+                      aria-label="Đoạn đánh dấu tiếp theo"
+                    >
+                      <MdArrowDownward className="h-5 w-5" />
+                    </button>
+                  )}
                 </div>
               ) : null}
             </div>
