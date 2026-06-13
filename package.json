@@ -36,7 +36,7 @@
     "@tiptap/suggestion": "^3.22.2",
     "antd": "^6.3.0",
     "apexcharts": "^3.35.5",
-    "axios": "^1.13.5",
+    "axios": "^1.16.0",
     "babel-plugin-react-compiler": "^1.0.0",
     "docx-preview": "^0.3.7",
     "driver.js": "^1.4.0",
