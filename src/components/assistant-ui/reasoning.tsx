@@ -9,7 +9,11 @@ import {
   type ComponentProps,
   type ReactNode,
 } from "react";
-import { MdKeyboardArrowDown, MdKeyboardArrowUp } from "react-icons/md";
+import {
+  MdCheck,
+  MdKeyboardArrowDown,
+  MdKeyboardArrowUp,
+} from "react-icons/md";
 import { Streamdown } from "streamdown";
 
 import {
@@ -71,27 +75,67 @@ function ReasoningMarkdown({ text }: { text: string }) {
   );
 }
 
+function StepIcon({ isActive }: { isActive: boolean }) {
+  return (
+    <div className="relative flex h-6 w-6 shrink-0 items-center justify-center">
+      {/* Completed State */}
+      <div
+        className={`absolute inset-0 flex items-center justify-center rounded-full bg-[#1a73e8] text-white transition-all duration-300 dark:bg-[#4285f4] ${
+          isActive ? "scale-0 opacity-0" : "scale-100 opacity-100"
+        }`}
+      >
+        <MdCheck className="h-3.5 w-3.5" />
+      </div>
+
+      {/* Active State */}
+      <div
+        className={`absolute inset-0 transition-all duration-300 ${
+          isActive ? "scale-100 opacity-100" : "scale-0 opacity-0"
+        }`}
+      >
+        <div
+          className="absolute inset-0 rounded-full border-[1.5px] border-dashed border-[#1a73e8] dark:border-[#6dabf7]"
+          style={{ animation: "spin 3s linear infinite" }}
+        />
+        <div className="absolute top-1/2 left-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#1a73e8] dark:bg-[#6dabf7]" />
+      </div>
+    </div>
+  );
+}
+
+function StepConnector({ dashed }: { dashed?: boolean }) {
+  return (
+    <div
+      className={
+        "my-1.5 w-px flex-1 border-l border-[#d3e3fd] dark:border-[#3d4f76] " +
+        (dashed ? "border-dashed" : "border-solid")
+      }
+    />
+  );
+}
+
 function StructuredReasoning({ steps }: { steps: StructuredReasoningStep[] }) {
   const busy = useContext(ReasoningBusyContext);
   return (
-    <div className="space-y-2">
+    <div>
       {steps.map((step, index) => {
-        const isCurrentStep = busy && index === steps.length - 1;
+        const isLast = index === steps.length - 1;
+        const isActive = busy && isLast;
+        const isNextActive = busy && index === steps.length - 2;
+
         return (
-          <div
-            key={step.id}
-            className={[
-              "chat-message-enter rounded-lg border px-3 py-2 transition-all duration-300",
-              "border-[#d3e3fd]/70 bg-[#f8fafd] text-[#3c4043] dark:border-white/10 dark:bg-white/[0.04] dark:text-[#d9e2ff]",
-            ].join(" ")}
-          >
-            <div className="min-w-0">
+          <div key={step.id} className="chat-message-enter flex gap-3">
+            <div className="flex flex-col items-center">
+              <StepIcon isActive={isActive} />
+              {!isLast && <StepConnector dashed={isNextActive} />}
+            </div>
+            <div className="min-w-0 flex-1 pb-10">
               <ReasoningMarkdown text={step.content} />
-              {isCurrentStep ? (
-                <span className="ml-2 inline-flex align-middle text-[#1a73e8] dark:text-[#a8c7fa]">
+              {isActive && (
+                <span className="ml-1 inline-flex align-middle text-[#1a73e8] dark:text-[#6dabf7]">
                   <ThinkingDots />
                 </span>
-              ) : null}
+              )}
             </div>
           </div>
         );
@@ -255,10 +299,7 @@ export function ReasoningContent(props: ComponentProps<"div">) {
   const variant = useContext(ReasoningVariantContext);
   const { className, children, ...rest } = props;
   const busy = props["aria-busy"] === true || props["aria-busy"] === "true";
-  const ghost =
-    variant === "ghost"
-      ? "mt-2 rounded-xl border border-dashed border-[#dadce0]/70 px-3 py-3 dark:border-[#5f6368]/40"
-      : "";
+  const ghost = variant === "ghost" ? "ml-1 mt-6" : "";
   return (
     <ReasoningBusyContext.Provider value={busy}>
       <div className={[ghost, className].filter(Boolean).join(" ")} {...rest}>
