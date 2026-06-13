@@ -180,12 +180,12 @@ function SourcePreviewDrawer({
 }: {
   open: boolean;
   onClose: () => void;
-  title: string;
+  title: string | undefined;
   fileName?: string;
   pageLabel: string;
   pages?: string[];
   markdownUrl?: string;
-  pdfUrl: string;
+  pdfUrl: string | undefined;
 }) {
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
@@ -229,7 +229,7 @@ function SourcePreviewDrawer({
 
   const lines = useMemo(() => content.split(/\r?\n/), [content]);
   const highlight = useMemo(
-    () => findHighlightRange(lines, pages, title),
+    () => findHighlightRange(lines, pages, title ?? ""),
     [lines, pages, title],
   );
 
