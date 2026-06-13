@@ -9,7 +9,10 @@ import type { InquiryReferenceFileItem } from "./InquiryReferenceSuggestionList"
 
 type BaseProps = React.ComponentProps<typeof RichTextEditor>;
 
-export type InquiryReplyRichTextEditorProps = Omit<BaseProps, "extraExtensions">;
+export type InquiryReplyRichTextEditorProps = Omit<
+  BaseProps,
+  "extraExtensions"
+>;
 
 const InquiryReplyRichTextEditor = React.forwardRef<
   RichTextEditorHandle,
@@ -30,7 +33,9 @@ const InquiryReplyRichTextEditor = React.forwardRef<
     return files
       .map((file) => {
         const fileId = String(file?.fileId ?? "").trim();
-        const label = String(file?.displayName || file?.originalFilename || "").trim();
+        const label = String(
+          file?.displayName || file?.originalFilename || "",
+        ).trim();
         if (!fileId || !label) return null;
         return {
           id: fileId,
@@ -51,10 +56,11 @@ const InquiryReplyRichTextEditor = React.forwardRef<
     [],
   );
 
-  return <RichTextEditor ref={ref} {...props} extraExtensions={extraExtensions} />;
+  return (
+    <RichTextEditor ref={ref} {...props} extraExtensions={extraExtensions} />
+  );
 });
 
 InquiryReplyRichTextEditor.displayName = "InquiryReplyRichTextEditor";
 
 export default InquiryReplyRichTextEditor;
-

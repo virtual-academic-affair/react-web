@@ -3,7 +3,13 @@ import type {
   SuggestionKeyDownProps,
   SuggestionProps,
 } from "@tiptap/suggestion";
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useState,
+} from "react";
 
 export type InquiryReferenceFileItem = {
   id: string;
@@ -46,9 +52,8 @@ const InquiryReferenceSuggestionList = forwardRef<
   Props
 >(({ items, command }, ref) => {
   const [selected, setSelected] = useState(0);
-  const [selectedFile, setSelectedFile] = useState<InquiryReferenceFileItem | null>(
-    null,
-  );
+  const [selectedFile, setSelectedFile] =
+    useState<InquiryReferenceFileItem | null>(null);
   const [fileDetail, setFileDetail] = useState<FileDetailLike | null>(null);
   const [loadingToc, setLoadingToc] = useState(false);
 
@@ -119,30 +124,42 @@ const InquiryReferenceSuggestionList = forwardRef<
 
         if (event.key === "ArrowDown") {
           event.preventDefault();
-          setSelected((i) => (activeItems.length ? (i + 1) % activeItems.length : 0));
-          return true;
-        }
-        if (event.key === "ArrowUp") {
-          event.preventDefault();
           setSelected((i) =>
-            activeItems.length ? (i - 1 + activeItems.length) % activeItems.length : 0,
+            activeItems.length ? (i + 1) % activeItems.length : 0,
           );
           return true;
         }
+
+        if (event.key === "ArrowUp") {
+          event.preventDefault();
+          setSelected((i) =>
+            activeItems.length
+              ? (i - 1 + activeItems.length) % activeItems.length
+              : 0,
+          );
+          return true;
+        }
+
         if (event.key === "Enter") {
           event.preventDefault();
           if (!selectedFile) {
-            const file = activeItems[selected] as InquiryReferenceFileItem | undefined;
+            const file = activeItems[
+              selected
+            ] as InquiryReferenceFileItem | undefined;
             if (file) {
               setSelectedFile(file);
               setSelected(0);
             }
             return true;
           }
-          const toc = activeItems[selected] as InquiryReferenceSuggestionItem | undefined;
+
+          const toc = activeItems[
+            selected
+          ] as InquiryReferenceSuggestionItem | undefined;
           if (toc) command(toc);
           return true;
         }
+
         return false;
       },
     }),
@@ -171,9 +188,13 @@ const InquiryReferenceSuggestionList = forwardRef<
       </div>
 
       {loadingToc ? (
-        <div className="px-3 py-2 text-sm text-gray-500">Đang tải mục lục...</div>
+        <div className="px-3 py-2 text-sm text-gray-500">
+          Đang tải mục lục...
+        </div>
       ) : activeItems.length === 0 ? (
-        <div className="px-3 py-2 text-sm text-gray-500">Không có lựa chọn</div>
+        <div className="px-3 py-2 text-sm text-gray-500">
+          Không có lựa chọn
+        </div>
       ) : (
         activeItems.map((item, index) => {
           const selectedCls =
@@ -206,4 +227,3 @@ const InquiryReferenceSuggestionList = forwardRef<
 InquiryReferenceSuggestionList.displayName = "InquiryReferenceSuggestionList";
 
 export default InquiryReferenceSuggestionList;
-

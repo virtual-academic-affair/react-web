@@ -5,8 +5,8 @@ import Suggestion from "@tiptap/suggestion";
 import type { RefObject } from "react";
 import InquiryReferenceSuggestionList, {
   type InquiryReferenceFileItem,
-  type InquiryReferenceSuggestionListHandle,
   type InquiryReferenceSuggestionItem,
+  type InquiryReferenceSuggestionListHandle,
 } from "./InquiryReferenceSuggestionList";
 
 export const inquiryReferenceSuggestionPluginKey = new PluginKey(
@@ -39,7 +39,11 @@ export function createInquiryReferenceSuggestionExtension(
           allowSpaces: true,
           command: ({ editor: ed, range, props }) => {
             const item = props as InquiryReferenceSuggestionItem;
-            ed.chain().focus().deleteRange(range).insertContent(`${item.insertHtml} `).run();
+            ed.chain()
+              .focus()
+              .deleteRange(range)
+              .insertContent(`${item.insertHtml} `)
+              .run();
           },
           items: ({ query }) => filterItems(itemsRef.current, query),
           allowedPrefixes: null,
@@ -94,7 +98,8 @@ export function createInquiryReferenceSuggestionExtension(
                 renderer?.destroy();
                 renderer = null;
               },
-              onKeyDown: (keyProps) => renderer?.ref?.onKeyDown(keyProps) ?? false,
+              onKeyDown: (keyProps) =>
+                renderer?.ref?.onKeyDown(keyProps) ?? false,
             };
           },
         }),
@@ -102,4 +107,3 @@ export function createInquiryReferenceSuggestionExtension(
     },
   });
 }
-

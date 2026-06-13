@@ -5,5 +5,4 @@ export * from "./inquiry";
 export * from "./messageStatus";
 export * from "./routes";
 export * from "./shared";
-export * from "./task";
 export * from "./users";

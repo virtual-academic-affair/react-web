@@ -229,25 +229,3 @@ export interface GetStatsParams {
   to: string;
   isDetail?: boolean;
 }
-
-export interface CancelReason {
-  id: number;
-  content: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface GetCancelReasonsParams extends ResourceQueryDto {
-  isActive?: boolean;
-}
-
-export interface CreateCancelReasonDto {
-  content: string;
-  isActive?: boolean;
-}
-
-export interface UpdateCancelReasonDto {
-  content?: string;
-  isActive?: boolean;
-}

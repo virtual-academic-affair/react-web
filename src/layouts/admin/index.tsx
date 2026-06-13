@@ -169,19 +169,11 @@ const AdminLayout: React.FC = () => {
                 element={<Navigate to="/admin/inquiry/statistics" replace />}
               />
               <Route
-                path="tasks/*"
-                element={<Navigate to="/admin/email/config" replace />}
-              />
-              <Route
                 path="/"
                 element={<Navigate to="/admin/email/config" replace />}
               />
               <Route
                 path="email"
-                element={<Navigate to="/admin/email/config" replace />}
-              />
-              <Route
-                path="email/message"
                 element={<Navigate to="/admin/email/config" replace />}
               />
               <Route
