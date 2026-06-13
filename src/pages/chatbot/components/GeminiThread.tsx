@@ -374,17 +374,12 @@ function ChatMessagesSkeletonLoader() {
 
 /** Giao diện theo hướng [Gemini clone assistant-ui](https://www.assistant-ui.com/examples/gemini). */
 export function GeminiThread({ className = "" }: { className?: string }) {
-  const hasMessages = useAuiState((s) => s.thread.messages.length > 0);
+  const messagesCount = useAuiState((s) => s.thread.messages.length);
   const { activeThreadId, isLoadingMessages, sessions } = useChatbotShell();
   const isNewThread = !sessions.find((s) => s.id === activeThreadId)?.serverId;
-  const autoScrolledThreadRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!hasMessages || autoScrolledThreadRef.current === activeThreadId) {
-      return;
-    }
-
-    autoScrolledThreadRef.current = activeThreadId;
+    if (messagesCount === 0) return;
 
     window.requestAnimationFrame(() => {
       window.scrollTo({
@@ -392,7 +387,7 @@ export function GeminiThread({ className = "" }: { className?: string }) {
         behavior: "auto",
       });
     });
-  }, [activeThreadId, hasMessages]);
+  }, [activeThreadId, messagesCount]);
 
   return (
     <ThreadPrimitive.Root
@@ -402,7 +397,7 @@ export function GeminiThread({ className = "" }: { className?: string }) {
         <div className="flex min-h-[calc(100vh-15rem)] w-full flex-col pt-4">
           {isLoadingMessages ? (
             <ChatMessagesSkeletonLoader />
-          ) : isNewThread && !hasMessages ? (
+          ) : isNewThread && messagesCount === 0 ? (
             <ChatbotEmptyState />
           ) : null}
           {!isLoadingMessages && (
