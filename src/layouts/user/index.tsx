@@ -55,7 +55,7 @@ const UserLayout: React.FC = () => {
     <>
       {showChatbotSidebar ? (
         <div
-          className={`bg-lightPrimary dark:bg-navy-900 fixed inset-0 z-50! flex w-full flex-col p-4 transition-all duration-300 lg:inset-auto lg:top-5 lg:bottom-5 lg:left-5 lg:z-0! lg:w-78.25 lg:bg-transparent lg:p-0 ${
+          className={`bg-lightPrimary dark:bg-navy-900 fixed inset-0 z-50! flex w-full flex-col p-4 transition-all duration-200 lg:inset-auto lg:top-5 lg:bottom-5 lg:left-5 lg:z-0! lg:w-78.25 lg:bg-transparent lg:p-0 lg:dark:bg-transparent ${
             open ? "translate-x-0" : "-translate-x-[120%] lg:translate-x-0"
           }`}
         >
@@ -75,13 +75,13 @@ const UserLayout: React.FC = () => {
 
       {/* Main content */}
       <div
-        className={`relative flex min-h-screen w-full flex-col transition-all duration-300 ${
+        className={`relative flex min-h-screen w-full flex-col transition-all duration-200 ${
           effectiveCollapsed ? "lg:ml-[100px]" : "lg:ml-[343px]"
         }`}
       >
         {/* Navbar */}
         <div
-          className={`mx-auto w-[calc(100vw-6%)] transition-all duration-300 md:w-[calc(100vw-8%)] ${
+          className={`mx-auto w-[calc(100vw-6%)] transition-all duration-200 md:w-[calc(100vw-8%)] ${
             effectiveCollapsed
               ? "lg:w-[calc(100vw-162px)]"
               : "lg:w-[calc(100vw-405px)]"
@@ -92,7 +92,7 @@ const UserLayout: React.FC = () => {
 
         {/* Page content */}
         <div
-          className={`mx-auto mb-auto h-full min-h-[84vh] w-[calc(100vw-6%)] pt-5 transition-all duration-300 md:w-[calc(100vw-8%)] ${
+          className={`mx-auto mb-auto h-full min-h-[84vh] w-[calc(100vw-6%)] pt-5 transition-all duration-200 md:w-[calc(100vw-8%)] ${
             effectiveCollapsed
               ? "lg:w-[calc(100vw-162px)]"
               : "lg:w-[calc(100vw-405px)]"

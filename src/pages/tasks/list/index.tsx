@@ -399,7 +399,7 @@ const TasksPage: React.FC = () => {
         <div className="dark:bg-navy-900 relative flex shrink-0 items-center rounded-full border border-gray-200 bg-white p-1 dark:border-[#ffffff33]">
           {/* Sliding highlight */}
           <div
-            className="bg-brand-50 dark:bg-brand-500/20 absolute h-[calc(100%-8px)] rounded-full transition-all duration-300 ease-in-out"
+            className="bg-brand-50 dark:bg-brand-500/20 absolute h-[calc(100%-8px)] rounded-full transition-all duration-200 ease-in-out"
             style={{
               width: "calc((100% - 8px) / 3)",
               left: "4px",
@@ -420,7 +420,7 @@ const TasksPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setView(item.id)}
-                className={`relative z-10 flex w-full items-center justify-center px-4 py-2 transition-colors duration-300 ${
+                className={`relative z-10 flex w-full items-center justify-center px-4 py-2 transition-colors duration-200 ${
                   view === item.id
                     ? "text-brand-500"
                     : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white"

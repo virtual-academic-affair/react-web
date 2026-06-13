@@ -67,7 +67,7 @@ const Drawer: React.FC<DrawerProps> = ({
       >
         {/* Desktop drawer (side panel) */}
         <div
-          className={`dark:bg-navy-800 pointer-events-auto my-6 hidden h-[calc(100%-48px)] w-full ${width} flex-col rounded-[30px] bg-white shadow-2xl transition-transform duration-300 ${marginClass} md:flex ${
+          className={`dark:bg-navy-800 pointer-events-auto my-6 hidden h-[calc(100%-48px)] w-full ${width} flex-col rounded-[30px] bg-white shadow-2xl transition-transform duration-200 ${marginClass} md:flex ${
             isOpen ? "translate-x-0" : offTransform
           }`}
         >
@@ -105,7 +105,7 @@ const Drawer: React.FC<DrawerProps> = ({
 
         {/* Mobile bottom sheet */}
         <div
-          className={`dark:bg-navy-800 pointer-events-auto fixed right-0 bottom-0 left-0 flex h-[90vh] flex-col rounded-t-[30px] bg-white shadow-2xl transition-transform duration-300 md:hidden ${
+          className={`dark:bg-navy-800 pointer-events-auto fixed right-0 bottom-0 left-0 flex h-[90vh] flex-col rounded-t-[30px] bg-white shadow-2xl transition-transform duration-200 md:hidden ${
             isOpen ? "translate-y-0" : "translate-y-[120%]"
           }`}
         >

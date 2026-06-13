@@ -290,10 +290,10 @@ function GeminiStickyComposer({
   showScrollBottom?: boolean;
 }) {
   return (
-    <div className="sticky bottom-0 isolate z-20 shrink-0 bg-[#eef4ff] pb-4 pt-2 dark:bg-navy-900">
+    <div className="dark:bg-navy-900 sticky bottom-0 isolate z-20 shrink-0 bg-[#eef4ff] pt-2 pb-4">
       {/* Nút cuộn xuống cuối */}
       {showScrollBottom && (
-        <div className="absolute bottom-full left-0 right-0 mb-4 flex justify-center">
+        <div className="absolute right-0 bottom-full left-0 mb-4 flex justify-center">
           <button
             onClick={() => {
               window.scrollTo({

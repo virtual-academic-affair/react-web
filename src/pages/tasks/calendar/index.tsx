@@ -158,7 +158,7 @@ const TimelineItem = ({
         next.set("id", String(task.id));
         setSearchParams(next);
       }}
-      className={`group flex w-full cursor-pointer items-center rounded-3xl p-4 transition-all duration-300 ${
+      className={`group flex w-full cursor-pointer items-center rounded-3xl p-4 transition-all duration-200 ${
         isFirst
           ? "bg-brand-900 text-white"
           : "dark:bg-navy-800 text-navy-700 dark:border-navy-700 border border-gray-100 bg-white dark:text-white"

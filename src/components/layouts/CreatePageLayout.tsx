@@ -30,7 +30,7 @@ const CreatePageLayout: React.FC<CreatePageLayoutProps> = ({
       {/* Process Steps - Outside card, above (optional) */}
       {processSteps && (
         <div
-          className={`absolute top-[calc(25vh-120px)] z-10 ${cardWidth} max-w-[calc(100vw-48px)] transition-all duration-300`}
+          className={`absolute top-[calc(25vh-120px)] z-10 ${cardWidth} max-w-[calc(100vw-48px)] transition-all duration-200`}
         >
           {processSteps}
         </div>
@@ -38,7 +38,7 @@ const CreatePageLayout: React.FC<CreatePageLayoutProps> = ({
 
       {/* Card */}
       <Card
-        extra={`relative z-10 ${cardWidth} max-w-[calc(100vw-48px)] p-8 transition-all duration-300`}
+        extra={`relative z-10 ${cardWidth} max-w-[calc(100vw-48px)] p-8 transition-all duration-200`}
       >
         <div className={sideContent ? "flex h-full flex-col" : ""}>
           <div className="mb-6">

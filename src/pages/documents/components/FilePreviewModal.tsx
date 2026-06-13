@@ -472,7 +472,9 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
 
   const publicUrl = useMemo(() => {
     if (!fileDetail) return null;
-    return downloadFormat === "markdown" ? fileDetail.markdownFileUrl : fileDetail.fileUrl;
+    return downloadFormat === "markdown"
+      ? fileDetail.markdownFileUrl
+      : fileDetail.fileUrl;
   }, [fileDetail, downloadFormat]);
 
   // Keyboard handler
@@ -585,7 +587,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
                 <MdDescription className="h-5 w-5 text-gray-300" />
               </div>
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-white max-w-[240px] sm:max-w-[360px] md:max-w-[480px]">
+                <p className="max-w-[240px] truncate text-sm font-semibold text-white sm:max-w-[360px] md:max-w-[480px]">
                   {fileName}
                 </p>
                 <p className="text-xs text-gray-400 uppercase">
@@ -596,7 +598,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
 
             {/* PDF Toolbar in the middle */}
             {category === "pdf" && numPages > 0 && (
-              <div className="mx-4 flex shrink-0 items-center gap-2 rounded-xl bg-white/5 px-3 py-1 border border-white/8">
+              <div className="mx-4 flex shrink-0 items-center gap-2 rounded-xl border border-white/8 bg-white/5 px-3 py-1">
                 <button
                   type="button"
                   onClick={handlePrevPage}
@@ -618,7 +620,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
                 >
                   <MdChevronRight className="h-4 w-4" />
                 </button>
-                <span className="h-4 w-px bg-white/15 mx-1" />
+                <span className="mx-1 h-4 w-px bg-white/15" />
                 <button
                   type="button"
                   onClick={handleZoomOut}
@@ -642,7 +644,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
             )}
 
             {/* Actions */}
-            <div className="flex flex-1 justify-end items-center gap-1">
+            <div className="flex flex-1 items-center justify-end gap-1">
               <button
                 type="button"
                 onClick={handleDownload}
