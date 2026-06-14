@@ -51,6 +51,11 @@ function formToProfileDto(form: StudentProfileForm): UserProfile {
   return dto;
 }
 
+const detailRowClass =
+  "flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6";
+const detailLabelClass = "w-full shrink-0 sm:w-40";
+const detailContentClass = "w-full min-w-0 flex-1";
+
 const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
   userId,
   onClose,
@@ -206,13 +211,13 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
       ) : (
         <div className="flex flex-col gap-4">
           {/* Avatar */}
-          <div className="flex items-center gap-6">
-            <div className="w-40 shrink-0">
+          <div className={detailRowClass}>
+            <div className={detailLabelClass}>
               <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                 Avatar
               </p>
             </div>
-            <div className="flex-1">
+            <div className={detailContentClass}>
               <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full">
                 {detail.picture ? (
                   <img
@@ -230,13 +235,13 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
           </div>
 
           {/* Name */}
-          <div className="flex items-center gap-6">
-            <div className="w-40 shrink-0">
+          <div className={detailRowClass}>
+            <div className={detailLabelClass}>
               <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                 Tên
               </p>
             </div>
-            <div className="flex-1">
+            <div className={detailContentClass}>
               <p className="text-navy-700 text-base dark:text-white">
                 {detail.name || "—"}
               </p>
@@ -244,13 +249,13 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
           </div>
 
           {/* Email */}
-          <div className="flex items-center gap-6">
-            <div className="w-40 shrink-0">
+          <div className={detailRowClass}>
+            <div className={detailLabelClass}>
               <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                 Email
               </p>
             </div>
-            <div className="flex-1">
+            <div className={detailContentClass}>
               <p className="text-navy-700 text-base dark:text-white">
                 {detail.email}
               </p>
@@ -258,13 +263,13 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
           </div>
 
           {/* Created At */}
-          <div className="flex items-center gap-6">
-            <div className="w-40 shrink-0">
+          <div className={detailRowClass}>
+            <div className={detailLabelClass}>
               <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                 Ngày tham gia
               </p>
             </div>
-            <div className="flex-1">
+            <div className={detailContentClass}>
               <p className="text-navy-700 text-base dark:text-white">
                 {formatDate(detail.createdAt)}
               </p>
@@ -272,13 +277,13 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
           </div>
 
           {/* Role */}
-          <div className="flex items-center gap-6">
-            <div className="w-40 shrink-0">
+          <div className={detailRowClass}>
+            <div className={detailLabelClass}>
               <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                 Vai trò
               </p>
             </div>
-            <div className="flex-1">
+            <div className={detailContentClass}>
               <RoleSelector
                 value={detail.role}
                 onChange={handleRoleChange}
@@ -293,13 +298,13 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
           </div>
 
           {/* Status */}
-          <div className="flex items-center gap-6">
-            <div className="w-40 shrink-0">
+          <div className={detailRowClass}>
+            <div className={detailLabelClass}>
               <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                 Trạng thái hoạt động
               </p>
             </div>
-            <div className="flex-1">
+            <div className={detailContentClass}>
               <Switch
                 checked={detail.isActive}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
@@ -316,13 +321,13 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
                 Thông tin sinh viên
               </p>
               <div className="flex flex-col gap-3 text-sm text-gray-600 dark:text-gray-400">
-                <div className="flex items-center gap-6">
-                  <div className="w-40 shrink-0">
+                <div className={detailRowClass}>
+                  <div className={detailLabelClass}>
                     <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                       Năm nhập học
                     </p>
                   </div>
-                  <div className="flex-1">
+                  <div className={detailContentClass}>
                     <input
                       type="number"
                       min={1900}
@@ -340,13 +345,13 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
                     />
                   </div>
                 </div>
-                <div className="flex items-center gap-6">
-                  <div className="w-40 shrink-0">
+                <div className={detailRowClass}>
+                  <div className={detailLabelClass}>
                     <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                       Chuyên ngành
                     </p>
                   </div>
-                  <div className="flex-1">
+                  <div className={detailContentClass}>
                     <input
                       value={studentForm.major}
                       onChange={(e) =>
@@ -370,49 +375,49 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
               Thông số kỹ thuật
             </p>
             <div className="flex flex-col gap-2 text-sm text-gray-600 dark:text-gray-400">
-              <div className="flex items-center gap-6">
-                <div className="w-40 shrink-0">
+              <div className={detailRowClass}>
+                <div className={detailLabelClass}>
                   <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                     ID
                   </p>
                 </div>
-                <div className="flex-1">
+                <div className={detailContentClass}>
                   <p className="text-navy-700 text-base dark:text-white">
                     {detail.id}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-6">
-                <div className="w-40 shrink-0">
+              <div className={detailRowClass}>
+                <div className={detailLabelClass}>
                   <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                     Google ID
                   </p>
                 </div>
-                <div className="flex-1">
+                <div className={detailContentClass}>
                   <p className="text-navy-700 text-base dark:text-white">
                     {detail.googleId || "—"}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-6">
-                <div className="w-40 shrink-0">
+              <div className={detailRowClass}>
+                <div className={detailLabelClass}>
                   <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                     Ngày tạo
                   </p>
                 </div>
-                <div className="flex-1">
+                <div className={detailContentClass}>
                   <p className="text-navy-700 text-base dark:text-white">
                     {formatDate(detail.createdAt)}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-6">
-                <div className="w-40 shrink-0">
+              <div className={detailRowClass}>
+                <div className={detailLabelClass}>
                   <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
                     Cập nhật lần cuối
                   </p>
                 </div>
-                <div className="flex-1">
+                <div className={detailContentClass}>
                   <p className="text-navy-700 text-base dark:text-white">
                     {formatDate(detail.updatedAt)}
                   </p>

@@ -80,7 +80,6 @@ const UserSidebar: React.FC<UserSidebarProps> = ({
               }
               event.preventDefault();
               onShowChatbotPanel();
-              onClose();
             }}
           >
             {collapsed ? (

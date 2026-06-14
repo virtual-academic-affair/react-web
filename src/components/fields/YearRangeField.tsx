@@ -26,7 +26,7 @@ export default function YearRangeField({
   const displayVal = (val: number | undefined) =>
     val === undefined || val === 0 || val === 9999 ? "" : val.toString();
 
-  const inputCls = `w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white text-sm`;
+  const inputCls = `w-full min-w-0 rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white`;
 
   return (
     <div className="flex flex-col gap-1 w-full">
@@ -35,7 +35,7 @@ export default function YearRangeField({
           {label}
         </label>
       )}
-      <div className="flex items-center gap-2">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
         <input
           type="number"
           placeholder="Từ năm"
@@ -44,7 +44,9 @@ export default function YearRangeField({
           disabled={disabled}
           className={inputCls}
         />
-        <span className="text-gray-400 text-[10px] font-semibold uppercase tracking-wider">đến</span>
+        <span className="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
+          đến
+        </span>
         <input
           type="number"
           placeholder="Đến năm"

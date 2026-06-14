@@ -174,7 +174,7 @@ function GeminiAssistantMessage() {
             </button>
           </div>
         )}
-        <div className="space-y-2 pr-9">
+        <div className="space-y-2">
           <MessagePrimitive.GroupedParts groupBy={groupAssistantParts}>
             {({ part, children }) => {
               switch (part.type) {

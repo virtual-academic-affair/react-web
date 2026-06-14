@@ -18,7 +18,7 @@ const StudentFormFields: React.FC<StudentFormFieldsProps> = ({
   value,
   onChange,
   disabled = false,
-  labelWidthClassName = "w-40",
+  labelWidthClassName = "w-full sm:w-40",
   errors,
 }) => {
   return (

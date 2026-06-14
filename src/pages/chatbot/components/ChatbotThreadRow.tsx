@@ -1,12 +1,19 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   MdArchive,
   MdCheck,
   MdClose,
   MdDelete,
   MdEdit,
+  MdMoreVert,
   MdUnarchive,
 } from "react-icons/md";
+
+import {
+  getFloatingDropdownPosition,
+  type FloatingPosition,
+} from "@/utils/floatingPosition";
 
 import type { ChatThreadSession } from "../types";
 
@@ -44,6 +51,12 @@ export function ChatbotThreadRow({
   onDelete,
 }: ThreadRowProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<FloatingPosition>({
+    left: 0,
+  });
 
   useEffect(() => {
     if (isEditing) {
@@ -54,6 +67,43 @@ export function ChatbotThreadRow({
     }
   }, [isEditing]);
 
+  useEffect(() => {
+    if (!isMenuOpen) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        !triggerRef.current?.contains(target) &&
+        !menuRef.current?.contains(target)
+      ) {
+        setIsMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMenuOpen]);
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const close = () => setIsMenuOpen(false);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [isMenuOpen]);
+
   const commit = () => {
     const next = draft.trim();
     if (!next || next === session.title) {
@@ -62,9 +112,23 @@ export function ChatbotThreadRow({
     }
     onSaveEdit(next);
   };
-  const actionPaddingClass = canEdit
-    ? "pr-24 sm:pr-0 sm:group-hover:pr-24 sm:group-focus-within:pr-24"
-    : "pr-16 sm:pr-0 sm:group-hover:pr-16 sm:group-focus-within:pr-16";
+  const runMenuAction = (action: () => void) => {
+    setIsMenuOpen(false);
+    action();
+  };
+  const toggleMenu = () => {
+    if (!isMenuOpen && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setMenuPosition(
+        getFloatingDropdownPosition(rect, {
+          gap: 8,
+          width: 180,
+          maxHeight: 180,
+        }),
+      );
+    }
+    setIsMenuOpen((current) => !current);
+  };
 
   return (
     <div
@@ -120,55 +184,90 @@ export function ChatbotThreadRow({
             type="button"
             onClick={onSwitch}
             disabled={!canSwitch}
-            className={`min-w-0 flex-1 truncate text-left font-medium transition-[padding] disabled:cursor-default ${actionPaddingClass}`}
+            className="min-w-0 flex-1 truncate pr-1 text-left font-medium disabled:cursor-default"
             title={session.title}
           >
             {session.title?.trim() || "Không có tiêu đề"}
           </button>
-          <div className="absolute top-1/2 right-3 flex -translate-y-1/2 items-center gap-0.5 opacity-100 transition sm:pointer-events-none sm:opacity-0 sm:group-hover:pointer-events-auto sm:group-hover:opacity-100 sm:group-focus-within:pointer-events-auto sm:group-focus-within:opacity-100">
-            {canEdit ? (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onStartEdit();
-                }}
-                className="flex h-7 w-7 items-center justify-center rounded-full text-[#444746] hover:bg-black/[0.06] dark:text-gray-300 dark:hover:bg-white/10"
-                aria-label="Đổi tên"
-                title="Đổi tên"
-              >
-                <MdEdit className="h-4 w-4" />
-              </button>
-            ) : null}
+          <div className="shrink-0">
             <button
+              ref={triggerRef}
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                onArchive();
+                toggleMenu();
               }}
-              className="flex h-7 w-7 items-center justify-center rounded-full text-[#444746] hover:bg-black/[0.06] dark:text-gray-300 dark:hover:bg-white/10"
-              aria-label={archiveAction === "archive" ? "Lưu trữ" : "Khôi phục"}
-              title={archiveAction === "archive" ? "Lưu trữ" : "Khôi phục"}
+              className="flex h-7 w-7 items-center justify-center rounded-full text-[#444746] opacity-100 transition hover:bg-black/[0.06] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 dark:text-gray-300 dark:hover:bg-white/10"
+              aria-label="Mở tuỳ chọn cuộc trò chuyện"
+              aria-haspopup="menu"
+              aria-expanded={isMenuOpen}
+              title="Tuỳ chọn"
             >
-              {archiveAction === "archive" ? (
-                <MdArchive className="h-4 w-4" />
-              ) : (
-                <MdUnarchive className="h-4 w-4" />
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
-              }}
-              className="flex h-7 w-7 items-center justify-center rounded-full text-[#d93025] hover:bg-[#fce8e6] dark:text-[#f28b82] dark:hover:bg-white/10"
-              aria-label="Xoá"
-              title="Xoá"
-            >
-              <MdDelete className="h-4 w-4" />
+              <MdMoreVert className="h-4 w-4" />
             </button>
           </div>
+
+          {isMenuOpen
+            ? createPortal(
+                <div
+                  ref={menuRef}
+                  role="menu"
+                  style={{
+                    top: menuPosition.top,
+                    bottom: menuPosition.bottom,
+                    left: menuPosition.left,
+                    width: menuPosition.width,
+                  }}
+                  className="dark:bg-navy-700 fixed z-9999 rounded-xl bg-white p-1.5 text-sm text-[#1f1f1f] shadow-xl ring-1 ring-black/10 dark:text-white dark:ring-white/10"
+                >
+                  {canEdit ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        runMenuAction(onStartEdit);
+                      }}
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-black/[0.06] dark:hover:bg-white/10"
+                      role="menuitem"
+                    >
+                      <MdEdit className="h-4 w-4" />
+                      <span>Đổi tên</span>
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      runMenuAction(onArchive);
+                    }}
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-black/[0.06] dark:hover:bg-white/10"
+                    role="menuitem"
+                  >
+                    {archiveAction === "archive" ? (
+                      <MdArchive className="h-4 w-4" />
+                    ) : (
+                      <MdUnarchive className="h-4 w-4" />
+                    )}
+                    <span>
+                      {archiveAction === "archive" ? "Lưu trữ" : "Khôi phục"}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      runMenuAction(onDelete);
+                    }}
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-[#d93025] transition hover:bg-[#fce8e6] dark:text-[#f28b82] dark:hover:bg-white/10"
+                    role="menuitem"
+                  >
+                    <MdDelete className="h-4 w-4" />
+                    <span>Xoá</span>
+                  </button>
+                </div>,
+                document.body,
+              )
+            : null}
         </>
       )}
     </div>

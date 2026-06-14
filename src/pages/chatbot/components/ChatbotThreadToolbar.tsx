@@ -11,8 +11,10 @@ import { ChatbotThreadRow } from "./ChatbotThreadRow";
 type ThreadListMode = "active" | "archived";
 
 export function ChatbotThreadToolbar({
+  onNavigate,
   onShowMenu,
 }: {
+  onNavigate?: () => void;
   onShowMenu?: () => void;
 }) {
   const {
@@ -76,12 +78,20 @@ export function ChatbotThreadToolbar({
   const handleSwitch = (id: string) => {
     setEditingThread(null);
     switchToThread(id);
+    onNavigate?.();
   };
 
   const handleNewThread = () => {
     setMode("active");
     setEditingThread(null);
     switchToNewThread();
+    onNavigate?.();
+  };
+
+  const handleViewArchivedThread = async (session: ChatThreadSession) => {
+    setEditingThread(null);
+    await viewArchivedThread(session);
+    onNavigate?.();
   };
 
   const handleModeChange = (nextMode: ThreadListMode) => {
@@ -212,7 +222,7 @@ export function ChatbotThreadToolbar({
                   onSwitch={() =>
                     mode === "active"
                       ? handleSwitch(session.id)
-                      : void viewArchivedThread(session)
+                      : void handleViewArchivedThread(session)
                   }
                   onStartEdit={() =>
                     setEditingThread({ id: session.id, draft: session.title })

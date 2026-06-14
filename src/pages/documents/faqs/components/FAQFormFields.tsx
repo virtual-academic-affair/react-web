@@ -20,7 +20,7 @@ interface FAQFormFieldsProps {
 }
 
 const inputCls = (hasError?: string) =>
-  `w-full rounded-2xl border bg-transparent px-3 py-2 outline-none dark:text-white ${
+  `w-full min-w-0 rounded-2xl border bg-transparent px-3 py-2 outline-none dark:text-white ${
     hasError
       ? "border-red-400 dark:border-red-400"
       : "border-gray-200 dark:border-white/10"
@@ -41,7 +41,7 @@ export function FAQFormFields({
   return (
     <>
       <FormRow alignTop label="Câu hỏi" required={true}>
-        <div className="flex flex-col gap-1">
+        <div className="flex min-w-0 flex-col gap-1">
           <textarea
             placeholder="Nhập câu hỏi (ít nhất 5 kí tự)..."
             value={question}
@@ -56,7 +56,7 @@ export function FAQFormFields({
       </FormRow>
 
       <FormRow alignTop label="Câu trả lời" required={true}>
-        <div className="flex flex-col gap-1">
+        <div className="flex min-w-0 flex-col gap-1">
           <RichTextEditor
             value={answer}
             onChange={onAnswerChange}

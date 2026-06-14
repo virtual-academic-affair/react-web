@@ -49,7 +49,7 @@ const ITEM_STATUS_HEX: Record<ItemStatus, string> = {
 
 const ITEM_STATUS_OPTION_COLORS: Record<string, string> = ITEM_STATUS_HEX;
 
-const drawerFormLabelWidth = "min-w-[104px] w-[104px]";
+const drawerFormLabelWidth = "w-full sm:min-w-[104px] sm:w-[104px]";
 const drawerInputClass =
   "min-h-[42px] w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-navy-800 outline-none transition-colors placeholder:text-gray-400 focus-visible:border-brand-500 focus-visible:ring-2 focus-visible:ring-brand-500/20 dark:border-white/10 dark:bg-transparent dark:text-gray-100 dark:placeholder:text-gray-500";
 

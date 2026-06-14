@@ -87,7 +87,7 @@ const Drawer: React.FC<DrawerProps> = ({
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-4 py-4 text-sm leading-relaxed md:px-6 md:py-5">
+          <div className="flex-1 overflow-x-hidden overflow-y-auto px-4 py-4 text-sm leading-relaxed md:px-6 md:py-5">
             {children}
           </div>
 
@@ -124,7 +124,7 @@ const Drawer: React.FC<DrawerProps> = ({
             </h2>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-4 py-4 text-sm leading-relaxed md:px-6 md:py-5">
+          <div className="flex-1 overflow-x-hidden overflow-y-auto px-4 py-4 text-sm leading-relaxed md:px-6 md:py-5">
             {children}
           </div>
 

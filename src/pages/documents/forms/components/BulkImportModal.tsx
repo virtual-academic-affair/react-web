@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import { message as toast } from "antd";
 import Drawer from "@/components/drawer/Drawer";
+import FilePickerField from "@/components/fields/FilePickerField";
 import DetailFormLayout, { FormRow } from "@/components/layouts/DetailFormLayout";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { formsService } from "@/services/documents/forms.service";
@@ -84,13 +85,6 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
     return () => { cancelled = true; };
   }, [file, config.startRow]);
 
-  const handleFileFilter = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-    }
-  };
-
   const handleConfigChange = (key: keyof typeof config, value: string) => {
     const numValue = Math.max(1, parseInt(value) || 1);
     const newConfig = { ...config, [key]: numValue };
@@ -136,19 +130,19 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
     >
       <form onSubmit={handleImport} className="flex flex-col gap-4">
         <DetailFormLayout>
-          <FormRow label="File dữ liệu">
-            <div className="flex flex-col gap-2">
-              <input
-                key={open ? "open" : "closed"}
-                ref={fileInputRef}
-                type="file"
-                accept=".xlsx,.xls,.csv"
-                onClick={(e) => (e.currentTarget.value = "")}
-                onChange={handleFileFilter}
-                disabled={isPending}
-                className="w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm outline-none file:mr-3 file:rounded-lg file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-gray-700 hover:file:bg-gray-200 dark:border-white/10 dark:text-white dark:file:bg-white/10 dark:file:text-white dark:hover:file:bg-white/20"
-              />
-            </div>
+          <FormRow
+            label="File dữ liệu"
+            className="flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-6"
+            labelWidthClassName="w-full sm:w-40"
+          >
+            <FilePickerField
+              inputKey={open ? "open" : "closed"}
+              inputRef={fileInputRef}
+              file={file}
+              accept=".xlsx,.xls,.csv"
+              disabled={isPending}
+              onChange={setFile}
+            />
           </FormRow>
 
           <FormRow label="Cột Nội dung">

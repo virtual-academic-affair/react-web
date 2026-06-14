@@ -1,8 +1,8 @@
-import Navbar from "@/components/navbar";
 import PageLoader from "@/components/loading/PageLoader";
+import Navbar from "@/components/navbar";
 import Sidebar from "@/components/sidebar";
-import { useMobileBodyScrollLock } from "@/hooks/useMobileBodyScrollLock";
 import { useDynamicData } from "@/hooks/useDynamicData";
+import { useMobileBodyScrollLock } from "@/hooks/useMobileBodyScrollLock";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
@@ -23,7 +23,9 @@ const ClassRegistrationStatisticsPage = lazy(
   () => import("@/pages/class-registration/statistics"),
 );
 const FAQsPage = lazy(() => import("@/pages/documents/faqs"));
-const ProposedFAQsPage = lazy(() => import("@/pages/documents/faqs/candidates"));
+const ProposedFAQsPage = lazy(
+  () => import("@/pages/documents/faqs/candidates"),
+);
 const FormsPage = lazy(() => import("@/pages/documents/forms"));
 const DocumentListPage = lazy(() => import("@/pages/documents/list"));
 const GmailConfigPage = lazy(() => import("@/pages/emails/config"));
@@ -88,7 +90,10 @@ const AdminLayout: React.FC = () => {
           }`}
         >
           <Suspense fallback={<PageLoader />}>
-            <ChatbotThreadToolbar onShowMenu={() => setSidebarMode("app")} />
+            <ChatbotThreadToolbar
+              onNavigate={() => setOpen(false)}
+              onShowMenu={() => setSidebarMode("app")}
+            />
           </Suspense>
         </div>
       ) : (
