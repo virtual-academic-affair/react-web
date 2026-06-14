@@ -1,9 +1,9 @@
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
-import PageLoader from "@/components/loading/PageLoader";
 import RoleRoute from "@/components/auth/RoleRoute";
+import PageLoader from "@/components/loading/PageLoader";
 import { refreshTokens } from "@/services/http";
 import { useAuthStore } from "@/stores/auth.store";
-import { ConfigProvider, message as toast, theme } from "antd";
+import { ConfigProvider, theme, message as toast } from "antd";
 import viVN from "antd/locale/vi_VN";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
@@ -25,9 +25,13 @@ const UserLayout = lazy(() => import("@/layouts/user"));
 const BannedPage = lazy(() => import("@/pages/auth/banned"));
 const GmailGrantFromAddonPage = lazy(() => import("@/pages/auth/gmail-grant"));
 const LoginPage = lazy(() => import("@/pages/auth/login"));
-const GoogleCallbackPage = lazy(() => import("@/pages/auth/login/callback"));
 const GmailDeeplinkPage = lazy(() => import("@/pages/gmail-deeplink"));
 const UserDashboard = lazy(() => import("@/pages/user"));
+
+function getBannedAuthError(searchParams: URLSearchParams): string | null {
+  const error = searchParams.get("error");
+  return error?.trim().toLowerCase() || null;
+}
 
 /**
  * On fresh page load the Zustand store has no token (in-memory only).
@@ -47,17 +51,28 @@ function RootRedirect() {
   const threadId = searchParams.get("threadId");
   const email = searchParams.get("email");
   const iframeMode = searchParams.get("iframe") === "true";
+  const bannedAuthError = getBannedAuthError(searchParams);
+  const isBannedRedirect = Boolean(bannedAuthError);
   /** Extension luôn gửi iframe=true&email; phải vào /gmail-deeplink ngay — nếu không, refresh cookie → Navigate /admin trong iframe gây redirect/reload lặp. */
   const shouldEnterGmailDeeplink =
     (!!messageId && !!threadId && !!email) || (iframeMode && !!email);
   const grantHandledRef = useRef(false);
 
   const [status, setStatus] = useState<"checking" | "done">(
-    accessToken ? "done" : "checking",
+    accessToken || isBannedRedirect ? "done" : "checking",
   );
 
   useEffect(() => {
-    if (!grantHandledRef.current && (grantParam === "1" || grantParam === "0")) {
+    if (isBannedRedirect) {
+      useAuthStore.getState().clearAuth();
+      setStatus("done");
+      return;
+    }
+
+    if (
+      !grantHandledRef.current &&
+      (grantParam === "1" || grantParam === "0")
+    ) {
       grantHandledRef.current = true;
       if (grantParam === "1") {
         toast.success("Cấp quyền thành công.");
@@ -88,11 +103,30 @@ function RootRedirect() {
       .catch(() => {
         setStatus("done"); // not logged in → show landing
       });
-  }, [status, shouldEnterGmailDeeplink, tokenParam, grantParam]);
+  }, [
+    status,
+    shouldEnterGmailDeeplink,
+    tokenParam,
+    grantParam,
+    isBannedRedirect,
+  ]);
 
   // Gmail extension / deeplink: preserve full query on /gmail-deeplink
   if (shouldEnterGmailDeeplink) {
     return <Navigate to={`/gmail-deeplink${location.search}`} replace />;
+  }
+
+  if (isBannedRedirect) {
+    return (
+      <Navigate
+        to={`/auth/banned`}
+        replace
+        state={{
+          isBannedFlow: true,
+          message: bannedAuthError,
+        }}
+      />
+    );
   }
 
   if (status === "checking") {
@@ -151,7 +185,6 @@ export default function App() {
             {/* ── Auth ── */}
             <Route path="/auth" element={<AuthLayout />}>
               <Route path="login" element={<LoginPage />} />
-              <Route path="callback" element={<GoogleCallbackPage />} />
               <Route path="gmail-grant" element={<GmailGrantFromAddonPage />} />
               <Route path="banned" element={<BannedPage />} />
             </Route>

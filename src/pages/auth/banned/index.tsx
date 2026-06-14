@@ -3,16 +3,57 @@
  * Shown when a user whose account has been deactivated attempts to login.
  */
 
+import { useAuthStore } from "@/stores/auth.store";
+import { useEffect } from "react";
 import { MdBlock } from "react-icons/md";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import {
+  Navigate,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
+
+type BannedLocationState = {
+  isBannedFlow?: boolean;
+  message?: string;
+};
+
+function isBannedError(error: string | null | undefined): boolean {
+  return error?.trim().toLowerCase() === "user is banned";
+}
+
+function getBannedMessage(
+  state: BannedLocationState | null,
+  searchParams: URLSearchParams,
+): string | null {
+  const rawMessage = state?.message || searchParams.get("error");
+
+  if (!rawMessage) return null;
+
+  if (isBannedError(rawMessage)) {
+    return "Trạng thái: tài khoản đã bị đình chỉ.";
+  }
+
+  return rawMessage;
+}
 
 export default function BannedPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const clearAuth = useAuthStore((state) => state.clearAuth);
+  const state = location.state as BannedLocationState | null;
+  const message = getBannedMessage(state, searchParams);
+  const isAllowed =
+    Boolean(state?.isBannedFlow) || isBannedError(searchParams.get("error"));
 
-  // Prevent direct access to this page by unauthenticated guests.
-  // It should ONLY be accessible if they were just redirected here by the callback flow after failing login.
-  if (!location.state?.isBannedFlow) {
+  useEffect(() => {
+    if (isAllowed) {
+      clearAuth();
+    }
+  }, [clearAuth, isAllowed]);
+
+  if (!isAllowed) {
     return <Navigate to="/auth/login" replace />;
   }
 
@@ -35,6 +76,11 @@ export default function BannedPage() {
         <p className="mb-2 text-center text-base text-gray-600 dark:text-gray-400">
           Tài khoản của bạn đã bị quản trị viên vô hiệu hóa.
         </p>
+        {message ? (
+          <p className="mb-3 text-center text-sm font-medium text-red-500 dark:text-red-300">
+            {message}
+          </p>
+        ) : null}
         <p className="mb-8 text-center text-sm text-gray-500 dark:text-gray-500">
           Nếu bạn cho rằng đây là nhầm lẫn, vui lòng liên hệ quản trị viên để
           được hỗ trợ.

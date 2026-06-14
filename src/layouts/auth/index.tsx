@@ -19,14 +19,14 @@ export default function AuthLayout() {
   );
 
   const location = useLocation();
-  const isCallback = location.pathname.includes("/callback");
+  const isBanned = location.pathname.includes("/banned");
 
   // Only block auth pages if:
   // (a) we already have a token in memory (SPA navigation), OR
   // (b) localStorage says the user has authenticated before (hard navigation)
   //     In case (b) we verify via refreshTokens() — which is safe because
   //     clearAuth() already removed the localStorage flag on logout.
-  const needsCheck = !accessToken && isMarkedAuthenticated() && !isCallback;
+  const needsCheck = !accessToken && isMarkedAuthenticated() && !isBanned;
 
   const [status, setStatus] = useState<"checking" | "done">(
     needsCheck ? "checking" : "done",
@@ -58,7 +58,7 @@ export default function AuthLayout() {
 
   // Re-read from store after potential refresh
   const { accessToken: token } = useAuthStore.getState();
-  if (token) return <Navigate to="/" replace />;
+  if (token && !isBanned) return <Navigate to="/" replace />;
 
   const toggleDark = () => {
     if (darkmode) {
