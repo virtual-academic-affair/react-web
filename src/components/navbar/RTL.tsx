@@ -74,7 +74,7 @@ const Navbar = (props: {
               <IoMdNotificationsOutline className="h-4 w-4 text-gray-600 dark:text-white" />
             </p>
           }
-          animation="origin-[65%_0%] md:origin-top-start transition-all duration-300 ease-in-out"
+          animation="origin-[65%_0%] md:origin-top-start transition-all duration-200 ease-in-out"
           children={
             <div className="shadow-shadow-500 dark:bg-navy-700! rounded-primary flex w-[360px] flex-col gap-3 bg-white p-4 shadow-xl sm:w-[460px] dark:text-white dark:shadow-none">
               <div className="flex items-center justify-between">
@@ -158,7 +158,7 @@ const Navbar = (props: {
             </div>
           }
           classNames={"py-2 top-6 -inset-s-[250px] md:-inset-s-[330px] w-max"}
-          animation="origin-[75%_0%] md:origin-top-start transition-all duration-300 ease-in-out"
+          animation="origin-[75%_0%] md:origin-top-start transition-all duration-200 ease-in-out"
         />
         <div
           className="cursor-pointer text-gray-600"

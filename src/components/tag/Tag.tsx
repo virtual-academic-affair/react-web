@@ -120,13 +120,13 @@ const Tag: FC<TagProps> = ({
               onClick?.();
               handleOpen(e);
             }}
-            className={`inline-flex min-w-0 max-w-full items-center gap-1 rounded-full border px-2 py-0.5 pl-3 text-xs font-medium select-none ${
+            className={`inline-flex max-w-full min-w-0 items-center gap-1 rounded-full border px-2 py-0.5 pl-3 text-xs font-medium select-none ${
               interactive && !disabled
                 ? "cursor-pointer transition-all duration-150 hover:opacity-80 hover:shadow-sm"
                 : ""
             } ${disabled ? "cursor-default" : ""} ${className ?? ""}`}
           >
-            <span className="min-w-0 max-w-full truncate whitespace-nowrap">
+            <span className="max-w-full min-w-0 truncate whitespace-nowrap">
               {children}
             </span>
             {!disabled && (
@@ -153,7 +153,7 @@ const Tag: FC<TagProps> = ({
                   bottom: dropdownPos.bottom,
                   left: dropdownPos.left,
                 }}
-                className="dark:bg-navy-900 fixed z-210 max-h-[280px] min-w-[140px] max-w-[calc(100vw-24px)] overflow-y-auto rounded-2xl border border-gray-100 bg-white py-1.5 shadow-xl dark:border-white/10 dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
+                className="dark:bg-navy-900 fixed z-210 max-h-[280px] max-w-[calc(100vw-24px)] min-w-[140px] overflow-y-auto rounded-2xl border border-gray-100 bg-white py-1.5 shadow-xl dark:border-white/10 dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
               >
                 {options.map((opt) => {
                   const isActive = opt.value === value;
@@ -224,11 +224,11 @@ const Tag: FC<TagProps> = ({
     <span
       style={{ backgroundColor: bgWithOpacity, color, borderColor: color }}
       onClick={onClick}
-      className={`inline-flex min-w-0 max-w-full items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${
+      className={`inline-flex max-w-full min-w-0 items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${
         interactive ? "cursor-pointer transition-opacity hover:opacity-80" : ""
       } ${className ?? ""}`}
     >
-      <span className="min-w-0 max-w-full truncate whitespace-nowrap">
+      <span className="max-w-full min-w-0 truncate whitespace-nowrap">
         {children}
       </span>
     </span>

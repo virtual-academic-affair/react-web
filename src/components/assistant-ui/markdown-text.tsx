@@ -3,8 +3,8 @@ import { StreamdownTextPrimitive } from "@assistant-ui/react-streamdown";
 import {
   STREAMDOWN_CONTROLS,
   STREAMDOWN_LINK_SAFETY,
-  STREAMDOWN_PLUGINS,
 } from "@/components/markdown/streamdown-config";
+import { useStreamdownMathPlugins } from "@/components/markdown/useStreamdownMathPlugins";
 
 const MARKDOWN_COMPONENTS = {
   table: ({ children, ...props }) => (
@@ -47,12 +47,14 @@ const MARKDOWN_COMPONENTS = {
 } satisfies StreamdownTextComponents;
 
 export function MarkdownText() {
+  const plugins = useStreamdownMathPlugins();
+
   return (
     <StreamdownTextPrimitive
       mode="streaming"
       controls={STREAMDOWN_CONTROLS}
       linkSafety={STREAMDOWN_LINK_SAFETY}
-      plugins={STREAMDOWN_PLUGINS}
+      plugins={plugins}
       components={MARKDOWN_COMPONENTS}
       className="text-[#1f1f1f] dark:text-[#e3e3e3]"
       containerClassName="min-w-0 text-base leading-relaxed"

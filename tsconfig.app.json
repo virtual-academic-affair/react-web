@@ -17,10 +17,9 @@
     "jsx": "react-jsx",
 
     /* Path mapping */
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "routes": ["src/routes.tsx"]
+      "@/*": ["./src/*"],
+      "routes": ["./src/routes.tsx"]
     },
 
     /* Linting */

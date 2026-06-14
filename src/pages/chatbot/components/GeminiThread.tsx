@@ -6,10 +6,13 @@ import {
   useMessage,
   type PartState,
 } from "@assistant-ui/react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  MdArrowDownward,
   MdAutoAwesome,
+  MdCheck,
   MdChecklist,
+  MdContentCopy,
   MdDescription,
   MdSchool,
   MdSend,
@@ -25,7 +28,6 @@ import {
   ReasoningTrigger,
 } from "@/components/assistant-ui/reasoning";
 import { Source, Sources } from "@/components/assistant-ui/sources";
-import { ToolFallback } from "@/components/assistant-ui/tool-fallback";
 
 import { useChatbotShell } from "../chatbotShellContext";
 
@@ -109,75 +111,130 @@ function GeminiAssistantMessage() {
     messageStatus !== "requires-action";
   const groupAssistantParts = useCallback((part: PartState) => {
     if (part.type === "reasoning") return ["group-reasoning"] as const;
-    if (part.type === "tool-call") return ["group-reasoning"] as const;
     if (part.type === "source") return ["group-sources"] as const;
     return null;
   }, []);
 
+  const messageRef = useRef<HTMLDivElement>(null);
+  const [copied, setCopied] = useState(false);
+  const [showCopyBtn, setShowCopyBtn] = useState(true);
+
+  const handleCopy = useCallback(() => {
+    const text = messageContent
+      .filter(
+        (part): part is Extract<typeof part, { type: "text" }> =>
+          part.type === "text",
+      )
+      .map((part) => part.text)
+      .join("\n\n");
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [messageContent]);
+
+  useEffect(() => {
+    const el = messageRef.current;
+    if (!el) return;
+
+    const check = () => {
+      const rect = el.getBoundingClientRect();
+      setShowCopyBtn(rect.bottom > 300);
+    };
+
+    window.addEventListener("scroll", check, { passive: true });
+    check();
+    return () => window.removeEventListener("scroll", check);
+  }, []);
+
   return (
     <MessagePrimitive.Root>
-      <div className="w-full min-w-0 space-y-2 text-base leading-relaxed">
-        <MessagePrimitive.GroupedParts groupBy={groupAssistantParts}>
-          {({ part, children }) => {
-            switch (part.type) {
-              case "group-reasoning": {
-                const running =
-                  "status" in part && part.status?.type === "running";
-                const firstReasoningPart = part.indices
-                  .map((index) => messageContent[index])
-                  .find((item) => item?.type === "reasoning");
-                const reasoningMeta = parseReasoningParentId(
-                  firstReasoningPart &&
-                    "parentId" in firstReasoningPart &&
-                    typeof firstReasoningPart.parentId === "string"
-                    ? firstReasoningPart.parentId
-                    : undefined,
-                );
-                const defaultOpen = running || reasoningMeta.defaultOpen;
-                return (
-                  <ReasoningRoot
-                    key={part.indices.join("-")}
-                    defaultOpen={defaultOpen}
-                    resetKey={`${messageId}:${part.indices.join("-")}`}
-                    variant="ghost"
-                  >
-                    <ReasoningTrigger
-                      active={running}
-                      processingTimeMs={reasoningMeta.processingTimeMs}
-                    />
-                    <ReasoningContent aria-busy={running}>
-                      <ReasoningText>{children}</ReasoningText>
-                    </ReasoningContent>
-                  </ReasoningRoot>
-                );
-              }
-              case "group-sources":
-                return (
-                  <Sources
-                    key={part.indices.join("-")}
-                    sourceCount={part.indices.length}
-                  >
-                    {children}
-                  </Sources>
-                );
-              case "text":
-                return <MarkdownText />;
-              case "reasoning":
-                return <Reasoning {...part} />;
-              case "tool-call":
-                return part.toolUI ?? <ToolFallback {...part} />;
-              case "source":
-                return <Source {...part} />;
-              default:
-                return null;
-            }
-          }}
-        </MessagePrimitive.GroupedParts>
-        {showTimestamp ? (
-          <div className="pt-1 text-right text-xs text-[#9aa0a6] dark:text-[#8f98aa]">
-            {timestampText}
+      <div
+        ref={messageRef}
+        className="relative w-full min-w-0 text-base leading-relaxed"
+      >
+        {hasFinalContent && (
+          <div
+            className={`sticky top-3 z-10 flex h-0 justify-end transition-opacity duration-200 ${
+              showCopyBtn ? "opacity-100" : "pointer-events-none opacity-0"
+            }`}
+          >
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-[#5f6368] transition-colors hover:bg-gray-100 hover:text-[#202124] dark:text-[#9aa0a6] dark:hover:bg-white/10 dark:hover:text-white"
+              aria-label={copied ? "Đã sao chép" : "Sao chép"}
+              title={copied ? "Đã sao chép" : "Sao chép"}
+            >
+              {copied ? (
+                <MdCheck className="h-[18px] w-[18px] text-green-500" />
+              ) : (
+                <MdContentCopy className="h-[18px] w-[18px]" />
+              )}
+            </button>
           </div>
-        ) : null}
+        )}
+        <div className="space-y-2 pr-9">
+          <MessagePrimitive.GroupedParts groupBy={groupAssistantParts}>
+            {({ part, children }) => {
+              switch (part.type) {
+                case "group-reasoning": {
+                  const running =
+                    "status" in part && part.status?.type === "running";
+                  const firstReasoningPart = part.indices
+                    .map((index) => messageContent[index])
+                    .find((item) => item?.type === "reasoning");
+                  const reasoningMeta = parseReasoningParentId(
+                    firstReasoningPart &&
+                      "parentId" in firstReasoningPart &&
+                      typeof firstReasoningPart.parentId === "string"
+                      ? firstReasoningPart.parentId
+                      : undefined,
+                  );
+                  const defaultOpen = running || reasoningMeta.defaultOpen;
+                  return (
+                    <ReasoningRoot
+                      key={part.indices.join("-")}
+                      defaultOpen={defaultOpen}
+                      resetKey={`${messageId}:${part.indices.join("-")}`}
+                      variant="ghost"
+                    >
+                      <ReasoningTrigger
+                        active={running}
+                        processingTimeMs={reasoningMeta.processingTimeMs}
+                      />
+                      <ReasoningContent aria-busy={running}>
+                        <ReasoningText>{children}</ReasoningText>
+                      </ReasoningContent>
+                    </ReasoningRoot>
+                  );
+                }
+                case "group-sources":
+                  return (
+                    <Sources
+                      key={part.indices.join("-")}
+                      sourceCount={part.indices.length}
+                    >
+                      {children}
+                    </Sources>
+                  );
+                case "text":
+                  return <MarkdownText />;
+                case "reasoning":
+                  return <Reasoning {...part} />;
+                case "source":
+                  return <Source {...part} />;
+                default:
+                  return null;
+              }
+            }}
+          </MessagePrimitive.GroupedParts>
+          {showTimestamp ? (
+            <div className="pt-1 text-right text-xs text-[#9aa0a6] dark:text-[#8f98aa]">
+              {timestampText}
+            </div>
+          ) : null}
+        </div>
       </div>
     </MessagePrimitive.Root>
   );
@@ -227,9 +284,31 @@ function GeminiComposer() {
   );
 }
 
-function GeminiStickyComposer() {
+function GeminiStickyComposer({
+  showScrollBottom,
+}: {
+  showScrollBottom?: boolean;
+}) {
   return (
-    <div className="bg-lightPrimary dark:bg-navy-900 sticky bottom-0 z-20 isolate shrink-0 pt-2 pb-4">
+    <div className="bg-lightPrimary dark:bg-navy-900 sticky bottom-0 isolate z-20 mt-auto shrink-0 pt-2 pb-4">
+      {/* Nút cuộn xuống cuối */}
+      {showScrollBottom && (
+        <div className="absolute right-0 bottom-full left-0 mb-4 flex justify-center">
+          <button
+            onClick={() => {
+              window.scrollTo({
+                top: document.documentElement.scrollHeight,
+                behavior: "smooth",
+              });
+            }}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-900/80 text-white shadow-md backdrop-blur transition-all hover:bg-gray-900 dark:bg-[#1f3760] dark:text-[#a8c7fa] dark:hover:bg-[#1a73e8] dark:hover:text-white"
+            aria-label="Cuộn xuống cuối đoạn chat"
+          >
+            <MdArrowDownward className="h-5 w-5" />
+          </button>
+        </div>
+      )}
+
       <GeminiComposer />
       <p className="mx-auto mt-2 max-w-lg text-center text-xs leading-snug text-[#444746] dark:text-gray-400">
         Câu trả lời của AI chỉ mang tính chất tham khảo. Xác thực lại với các
@@ -280,43 +359,106 @@ function ChatbotEmptyState() {
   );
 }
 
+const SKELETON_ROWS = [
+  { side: "right", widths: ["72%"] },
+  { side: "left", widths: ["88%", "64%", "40%"] },
+  { side: "right", widths: ["55%"] },
+  { side: "left", widths: ["80%", "52%"] },
+] as const;
+
+function ChatMessagesSkeletonLoader() {
+  return (
+    <div
+      className="flex w-full flex-col gap-6 px-1 pt-4"
+      aria-hidden
+      aria-label="Đang tải tin nhắn…"
+    >
+      {SKELETON_ROWS.map((row, rowIdx) => (
+        <div
+          key={rowIdx}
+          className={`flex w-full flex-col gap-2 ${
+            row.side === "right" ? "items-end" : "items-start"
+          }`}
+        >
+          {row.widths.map((width, lineIdx) => (
+            <div
+              key={lineIdx}
+              style={{ width }}
+              className={`h-4 animate-pulse rounded-full bg-[#e9eef6] dark:bg-white/10 ${
+                row.side === "right" ? "rounded-tr-sm" : "rounded-tl-sm"
+              }`}
+            />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /** Giao diện theo hướng [Gemini clone assistant-ui](https://www.assistant-ui.com/examples/gemini). */
 export function GeminiThread({ className = "" }: { className?: string }) {
-  const hasMessages = useAuiState((s) => s.thread.messages.length > 0);
-  const { activeThreadId } = useChatbotShell();
-  const autoScrolledThreadRef = useRef<string | null>(null);
+  const messagesCount = useAuiState((s) => s.thread.messages.length);
+  const { activeThreadId, isLoadingMessages, sessions } = useChatbotShell();
+  const isNewThread = !sessions.find((s) => s.id === activeThreadId)?.serverId;
+  const [showScrollBottom, setShowScrollBottom] = useState(false);
+
+  const updateScrollButton = useCallback(() => {
+    const scrollY = window.scrollY;
+    const windowHeight = window.innerHeight;
+    const documentHeight = document.documentElement.scrollHeight;
+
+    setShowScrollBottom(documentHeight - scrollY - windowHeight > 150);
+  }, []);
 
   useEffect(() => {
-    if (!hasMessages || autoScrolledThreadRef.current === activeThreadId) {
-      return;
+    if (messagesCount === 0) {
+      const frameId = window.requestAnimationFrame(updateScrollButton);
+      return () => window.cancelAnimationFrame(frameId);
     }
 
-    autoScrolledThreadRef.current = activeThreadId;
-
-    window.requestAnimationFrame(() => {
+    const frameId = window.requestAnimationFrame(() => {
       window.scrollTo({
         top: document.documentElement.scrollHeight,
         behavior: "auto",
       });
+      updateScrollButton();
     });
-  }, [activeThreadId, hasMessages]);
+    return () => window.cancelAnimationFrame(frameId);
+  }, [activeThreadId, messagesCount, updateScrollButton]);
+
+  useEffect(() => {
+    window.addEventListener("scroll", updateScrollButton, { passive: true });
+    window.addEventListener("resize", updateScrollButton);
+    updateScrollButton();
+    return () => {
+      window.removeEventListener("scroll", updateScrollButton);
+      window.removeEventListener("resize", updateScrollButton);
+    };
+  }, [updateScrollButton]);
 
   return (
     <ThreadPrimitive.Root
-      className={`flex min-h-[calc(100vh-8rem)] w-full flex-col bg-transparent text-base text-[#1f1f1f] dark:text-white ${className}`.trim()}
+      className={`flex min-h-[calc(100vh-2.5rem)] w-full flex-col bg-transparent text-base text-[#1f1f1f] dark:text-white ${className}`.trim()}
     >
-      <ThreadPrimitive.Viewport className="w-full flex-1 overflow-visible">
-        <div className="flex min-h-[calc(100vh-15rem)] w-full flex-col pt-4">
-          {hasMessages ? null : <ChatbotEmptyState />}
-          <ThreadPrimitive.Messages
-            components={{
-              UserMessage: GeminiUserMessage,
-              AssistantMessage: GeminiAssistantMessage,
-            }}
-          />
+      <ThreadPrimitive.Viewport className="flex min-h-0 w-full flex-1 flex-col overflow-visible">
+        <div className="flex min-h-0 w-full flex-1 flex-col pt-4">
+          {isLoadingMessages ? (
+            <ChatMessagesSkeletonLoader />
+          ) : isNewThread && messagesCount === 0 ? (
+            <ChatbotEmptyState />
+          ) : null}
+          {!isLoadingMessages && (
+            <ThreadPrimitive.Messages
+              components={{
+                UserMessage: GeminiUserMessage,
+                AssistantMessage: GeminiAssistantMessage,
+              }}
+            />
+          )}
         </div>
       </ThreadPrimitive.Viewport>
-      <GeminiStickyComposer />
+
+      <GeminiStickyComposer showScrollBottom={showScrollBottom} />
     </ThreadPrimitive.Root>
   );
 }

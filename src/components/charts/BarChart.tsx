@@ -1,6 +1,10 @@
 import type { ApexOptions } from "apexcharts";
 import React from "react";
-import Chart from "react-apexcharts";
+import Chart from "react-apexcharts/core";
+
+import "apexcharts/bar";
+import "apexcharts/features/legend";
+import "apexcharts/features/toolbar";
 
 type ChartProps = {
   chartData: any[]; // Data can be dynamic, any is often necessary here but we can use any[]

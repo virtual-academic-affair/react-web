@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { message as toast } from "antd";
-import * as docx from "docx-preview";
 import React, {
   useCallback,
   useEffect,
+  Suspense,
   useMemo,
   useRef,
   useState,
@@ -17,24 +17,22 @@ import {
   MdErrorOutline,
   MdFileDownload,
 } from "react-icons/md";
-import { Document, Page, pdfjs } from "react-pdf";
-import { Streamdown } from "streamdown";
 
-import {
-  STREAMDOWN_CONTROLS,
-  STREAMDOWN_LINK_SAFETY,
-  STREAMDOWN_PLUGINS,
-} from "@/components/markdown/streamdown-config";
 import {
   type DownloadFileFormat,
   DocumentsService,
 } from "@/services/documents";
 
-import "katex/dist/katex.min.css";
-import "streamdown/styles.css";
 import "./FilePreviewModal.css";
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+const DocxPreview = React.lazy(() => import("./file-preview/DocxPreview"));
+const MarkdownPreview = React.lazy(
+  () => import("./file-preview/MarkdownPreview"),
+);
+const PdfPreview = React.lazy(() => import("./file-preview/PdfPreview"));
+const PlainTextPreview = React.lazy(
+  () => import("./file-preview/PlainTextPreview"),
+);
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -95,6 +93,15 @@ function categorizeFile(filename: string): FileCategory {
   return "unsupported";
 }
 
+function PreviewLoading() {
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-4">
+      <div className="fpv-spinner" />
+      <p className="text-sm text-gray-400">Đang tải trình xem trước...</p>
+    </div>
+  );
+}
+
 // ── Props ────────────────────────────────────────────────────────────────────
 
 interface FilePreviewModalProps {
@@ -106,217 +113,6 @@ interface FilePreviewModalProps {
   onClose: () => void;
 }
 
-// ── Sub-components ───────────────────────────────────────────────────────────
-
-interface PdfPreviewProps {
-  url: string;
-  initialPage?: number;
-  scale: number;
-  currentPage: number;
-  numPages: number;
-  setNumPages: (n: number) => void;
-  setCurrentPage: (p: number) => void;
-  pdfScrollRef: React.MutableRefObject<((page: number) => void) | undefined>;
-}
-
-const PdfPreview: React.FC<PdfPreviewProps> = ({
-  url,
-  initialPage = 1,
-  scale,
-  currentPage,
-  numPages,
-  setNumPages,
-  setCurrentPage,
-  pdfScrollRef,
-}) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
-
-  const handleScroll = () => {
-    if (!containerRef.current || numPages === 0) return;
-    const { scrollTop, clientHeight } = containerRef.current;
-
-    // Tìm trang nào đang chiếm phần lớn diện tích nhìn thấy (viewport)
-    // Tọa độ giữa màn hình
-    const middleY = scrollTop + clientHeight / 2;
-
-    let closestPage = 1;
-    let minDistance = Infinity;
-
-    for (let i = 0; i < numPages; i++) {
-      const el = pageRefs.current[i];
-      if (!el) continue;
-      const pageTop = el.offsetTop;
-      const pageMiddle = pageTop + el.offsetHeight / 2;
-
-      const distance = Math.abs(middleY - pageMiddle);
-      if (distance < minDistance) {
-        minDistance = distance;
-        closestPage = i + 1;
-      }
-    }
-
-    if (closestPage !== currentPage) {
-      setCurrentPage(closestPage);
-    }
-  };
-
-  useEffect(() => {
-    pdfScrollRef.current = (page: number) => {
-      const target = pageRefs.current[page - 1];
-      if (containerRef.current && target) {
-        containerRef.current.scrollTo({
-          top: target.offsetTop - 32, // trừ hao padding
-          behavior: "smooth",
-        });
-      }
-    };
-    return () => {
-      pdfScrollRef.current = undefined;
-    };
-  }, [numPages]);
-
-  return (
-    <div className="flex h-full flex-col overflow-hidden">
-      {/* PDF content */}
-      <div
-        ref={containerRef}
-        onScroll={handleScroll}
-        className="relative flex flex-1 justify-center overflow-auto bg-gray-800/50 p-8"
-      >
-        <Document
-          file={url}
-          onLoadSuccess={({ numPages: n }) => {
-            const safeInitialPage = Math.min(Math.max(initialPage, 1), n || 1);
-            setNumPages(n);
-            setCurrentPage(safeInitialPage);
-            pageRefs.current = new Array(n).fill(null);
-
-            // Wait refs mounted, then jump to requested page (for deep-link from inquiry TOC)
-            setTimeout(() => {
-              const container = containerRef.current;
-              const target = pageRefs.current[safeInitialPage - 1];
-              if (!container || !target) return;
-              container.scrollTo({
-                top: Math.max(target.offsetTop - 32, 0),
-                behavior: "auto",
-              });
-            }, 0);
-          }}
-          loading={
-            <div className="absolute inset-0 flex h-full w-full flex-col items-center justify-center gap-2 py-20 text-white/70">
-              <div className="fpv-spinner" />
-              <span>Đang tải PDF...</span>
-            </div>
-          }
-          error={
-            <div className="absolute inset-0 flex h-full w-full flex-col items-center justify-center gap-3 py-20 text-gray-400">
-              <MdErrorOutline className="h-12 w-12" />
-              <p className="text-sm">Không thể hiển thị PDF.</p>
-            </div>
-          }
-        >
-          <div className="flex flex-col items-center gap-6">
-            {Array.from(new Array(numPages), (_, index) => (
-              <div
-                key={`page_${index + 1}`}
-                ref={(el) => {
-                  if (pageRefs.current) {
-                    pageRefs.current[index] = el;
-                  }
-                }}
-              >
-                <Page
-                  pageNumber={index + 1}
-                  scale={scale}
-                  className="bg-white shadow-lg"
-                  renderTextLayer={false}
-                  renderAnnotationLayer={false}
-                />
-              </div>
-            ))}
-          </div>
-        </Document>
-      </div>
-    </div>
-  );
-};
-
-const TextPreview: React.FC<{ url: string; fileName: string }> = ({
-  url,
-  fileName,
-}) => {
-  const [content, setContent] = useState<string>("");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchText = async () => {
-      try {
-        setLoading(true);
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("Failed to fetch text");
-        const text = await res.text();
-        setContent(text);
-      } catch {
-        setContent("Không thể đọc nội dung tệp.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchText();
-  }, [url]);
-
-  if (loading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <div className="fpv-spinner" />
-      </div>
-    );
-  }
-
-  const isMarkdown = getExtension(fileName) === "md";
-
-  return (
-    <div className="h-full overflow-auto bg-gray-800/50 p-8">
-      {isMarkdown ? (
-        <article className="mx-auto min-h-[80vh] max-w-[816px] rounded bg-white p-12 text-gray-800 shadow-lg">
-          <Streamdown
-            mode="static"
-            isAnimating={false}
-            lineNumbers={false}
-            controls={STREAMDOWN_CONTROLS}
-            linkSafety={STREAMDOWN_LINK_SAFETY}
-            plugins={STREAMDOWN_PLUGINS}
-            className={[
-              "text-base leading-relaxed",
-              "[&_a]:text-blue-600 [&_a]:underline",
-              "[&_blockquote]:border-l-4 [&_blockquote]:border-gray-300 [&_blockquote]:pl-4 [&_blockquote]:text-gray-600",
-              "[&_code]:rounded [&_code]:bg-gray-100 [&_code]:px-1.5 [&_code]:py-0.5",
-              "[&_h1]:mb-4 [&_h1]:text-3xl [&_h1]:font-bold",
-              "[&_h2]:mb-3 [&_h2]:text-2xl [&_h2]:font-semibold",
-              "[&_h3]:mb-2 [&_h3]:text-xl [&_h3]:font-semibold",
-              "[&_li]:mb-1 [&_ol]:mb-3 [&_ol]:list-decimal [&_ol]:pl-6",
-              "[&_p]:mb-3 [&_ul]:mb-3 [&_ul]:list-disc [&_ul]:pl-6",
-              "[&_pre]:mb-4 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-gray-950 [&_pre]:p-4 [&_pre]:text-gray-100",
-              "[&_pre_code]:bg-transparent [&_pre_code]:p-0",
-              "[&_table]:my-4 [&_table]:w-full [&_table]:border-collapse [&_table]:text-left [&_table]:text-sm",
-              "[&_tbody_tr:nth-child(even)]:bg-gray-50",
-              "[&_td]:border [&_td]:border-gray-300 [&_td]:px-3 [&_td]:py-2 [&_td]:align-top",
-              "[&_th]:border [&_th]:border-gray-300 [&_th]:bg-gray-100 [&_th]:px-3 [&_th]:py-2 [&_th]:font-semibold",
-            ].join(" ")}
-          >
-            {content}
-          </Streamdown>
-        </article>
-      ) : (
-        <pre className="mx-auto min-h-[80vh] max-w-[816px] rounded bg-white p-12 font-mono text-[13px] leading-relaxed break-all whitespace-pre-wrap text-gray-800 shadow-lg">
-          {content}
-        </pre>
-      )}
-    </div>
-  );
-};
-
 const ImagePreview: React.FC<{ url: string }> = ({ url }) => (
   <div className="flex h-full w-full items-center justify-center p-8">
     <img
@@ -326,71 +122,6 @@ const ImagePreview: React.FC<{ url: string }> = ({ url }) => (
     />
   </div>
 );
-
-const DocxPreview: React.FC<{ url: string }> = ({ url }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const renderDocx = async () => {
-      try {
-        if (!containerRef.current) return;
-        setLoading(true);
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("Failed to fetch docx file");
-        const blob = await res.blob();
-
-        // docx-preview natively renders word document pages with formatting preserved
-        // Tắt inWrapper để không sinh ra lớp nền trắng/xám dư thừa của thư viện
-        await docx.renderAsync(blob, containerRef.current, undefined, {
-          className: "docx-viewer-section",
-          inWrapper: false,
-          ignoreWidth: false,
-          ignoreHeight: false,
-          ignoreFonts: false,
-          breakPages: true,
-          ignoreLastRenderedPageBreak: true,
-          experimental: false,
-        });
-      } catch (err) {
-        console.error(err);
-        setError("Không thể hiển thị tệp DOCX. Vui lòng tải xuống để xem.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    renderDocx();
-  }, [url]);
-
-  return (
-    <div className="flex-1 overflow-auto bg-gray-800/50 p-8">
-      {loading && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-800/50">
-          <div className="flex flex-col items-center justify-center gap-2 text-white/70">
-            <div className="fpv-spinner" />
-            <span>Đang tải DOCX...</span>
-          </div>
-        </div>
-      )}
-
-      {error ? (
-        <div className="flex h-full flex-col items-center justify-center gap-3 text-gray-400">
-          <MdErrorOutline className="h-12 w-12" />
-          <p className="text-sm">{error}</p>
-        </div>
-      ) : (
-        <div className="flex min-h-full flex-col items-center justify-center">
-          {/* Lớp bọc chính chứa nội dung Word. Thư viện sẽ render <section> vào đây */}
-          <div
-            ref={containerRef}
-            className="w-full max-w-[816px] overflow-hidden rounded bg-white shadow-lg [&>section]:m-0! [&>section]:bg-transparent! [&>section]:p-12! [&>section]:shadow-none!"
-          />
-        </div>
-      )}
-    </div>
-  );
-};
 
 const UnsupportedPreview: React.FC<{
   fileName: string;
@@ -472,7 +203,9 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
 
   const publicUrl = useMemo(() => {
     if (!fileDetail) return null;
-    return downloadFormat === "markdown" ? fileDetail.markdownFileUrl : fileDetail.fileUrl;
+    return downloadFormat === "markdown"
+      ? fileDetail.markdownFileUrl
+      : fileDetail.fileUrl;
   }, [fileDetail, downloadFormat]);
 
   // Keyboard handler
@@ -543,23 +276,37 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
     switch (category) {
       case "pdf":
         return (
-          <PdfPreview
-            url={publicUrl}
-            initialPage={initialPage}
-            scale={scale}
-            currentPage={currentPage}
-            numPages={numPages}
-            setNumPages={setNumPages}
-            setCurrentPage={setCurrentPage}
-            pdfScrollRef={pdfScrollRef}
-          />
+          <Suspense fallback={<PreviewLoading />}>
+            <PdfPreview
+              url={publicUrl}
+              initialPage={initialPage}
+              scale={scale}
+              currentPage={currentPage}
+              numPages={numPages}
+              setNumPages={setNumPages}
+              setCurrentPage={setCurrentPage}
+              pdfScrollRef={pdfScrollRef}
+            />
+          </Suspense>
         );
       case "text":
-        return <TextPreview url={publicUrl} fileName={fileName} />;
+        return (
+          <Suspense fallback={<PreviewLoading />}>
+            {getExtension(fileName) === "md" ? (
+              <MarkdownPreview url={publicUrl} />
+            ) : (
+              <PlainTextPreview url={publicUrl} />
+            )}
+          </Suspense>
+        );
       case "image":
         return <ImagePreview url={publicUrl} />;
       case "docx":
-        return <DocxPreview url={publicUrl} />;
+        return (
+          <Suspense fallback={<PreviewLoading />}>
+            <DocxPreview url={publicUrl} />
+          </Suspense>
+        );
       case "unsupported":
         return (
           <UnsupportedPreview fileName={fileName} onDownload={handleDownload} />
@@ -585,7 +332,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
                 <MdDescription className="h-5 w-5 text-gray-300" />
               </div>
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-white max-w-[240px] sm:max-w-[360px] md:max-w-[480px]">
+                <p className="max-w-[240px] truncate text-sm font-semibold text-white sm:max-w-[360px] md:max-w-[480px]">
                   {fileName}
                 </p>
                 <p className="text-xs text-gray-400 uppercase">
@@ -596,7 +343,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
 
             {/* PDF Toolbar in the middle */}
             {category === "pdf" && numPages > 0 && (
-              <div className="mx-4 flex shrink-0 items-center gap-2 rounded-xl bg-white/5 px-3 py-1 border border-white/8">
+              <div className="mx-4 flex shrink-0 items-center gap-2 rounded-xl border border-white/8 bg-white/5 px-3 py-1">
                 <button
                   type="button"
                   onClick={handlePrevPage}
@@ -618,7 +365,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
                 >
                   <MdChevronRight className="h-4 w-4" />
                 </button>
-                <span className="h-4 w-px bg-white/15 mx-1" />
+                <span className="mx-1 h-4 w-px bg-white/15" />
                 <button
                   type="button"
                   onClick={handleZoomOut}
@@ -642,7 +389,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
             )}
 
             {/* Actions */}
-            <div className="flex flex-1 justify-end items-center gap-1">
+            <div className="flex flex-1 items-center justify-end gap-1">
               <button
                 type="button"
                 onClick={handleDownload}

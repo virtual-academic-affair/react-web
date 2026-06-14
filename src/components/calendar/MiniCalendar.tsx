@@ -3,7 +3,7 @@ import Card from "@/components/card";
 import { useState } from "react";
 import { Calendar } from "react-calendar";
 import "react-calendar/dist/Calendar.css";
-import type { Value } from "react-calendar/dist/esm/shared/types.js";
+import type { Value } from "react-calendar/dist/shared/types.js";
 import { MdChevronLeft, MdChevronRight } from "react-icons/md";
 
 const MiniCalendar = () => {

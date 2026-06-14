@@ -19,7 +19,9 @@ export function SidebarLinks(props: { routes: RoutesType[] }) {
     if (!route.path) {
       return location.pathname.startsWith(route.layout);
     }
-    return location.pathname === href || location.pathname.startsWith(`${href}/`);
+    return (
+      location.pathname === href || location.pathname.startsWith(`${href}/`)
+    );
   };
 
   const isParentActive = (route: RoutesType) => {

@@ -5,7 +5,7 @@ import {
   MdPictureAsPdf,
   MdTableRows,
 } from "react-icons/md";
-import { SiMicrosoftword } from "react-icons/si";
+import { PiMicrosoftWordLogoFill  } from "react-icons/pi";
 
 export type FileType =
   | "pdf"
@@ -60,7 +60,7 @@ const FileIcon: React.FC<FileIconProps> = ({ filename, size = "md" }) => {
     case "word":
       return (
         <div className={`${wrapCls} bg-blue-50 dark:bg-blue-900/20`}>
-          <SiMicrosoftword className={`${iconCls} text-blue-600`} />
+          <PiMicrosoftWordLogoFill className={`${iconCls} text-blue-600`} />
         </div>
       );
     case "image":

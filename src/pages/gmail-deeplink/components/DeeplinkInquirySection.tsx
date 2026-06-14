@@ -1,6 +1,6 @@
 import ConfirmModal from "@/components/modal/ConfirmModal";
 import Tag from "@/components/tag/Tag";
-import InquiryReplyRichTextEditor from "@/pages/inquiry/inquiries/components/InquiryReplyRichTextEditor";
+import InquiryReplyRichTextEditor from "@/components/inquiry/InquiryReplyRichTextEditor";
 import { inquiriesService } from "@/services/inquiry";
 import {
   InquiryTypeColors,

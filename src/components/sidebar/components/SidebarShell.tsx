@@ -31,6 +31,7 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
   const navigate = useNavigate();
   const clearAuth = useAuthStore((s) => s.clearAuth);
   const [userInfo, setUserInfo] = React.useState<UserInfo>({});
+  const [isLoadingUser, setIsLoadingUser] = React.useState(true);
   const [darkmode, setDarkmode] = React.useState(
     document.body.classList.contains("dark"),
   );
@@ -39,7 +40,8 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
     authService
       .getMe()
       .then(setUserInfo)
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setIsLoadingUser(false));
   }, []);
 
   const { name: userName, picture: avatarUrl, email: userEmail } = userInfo;
@@ -70,7 +72,7 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
 
   return (
     <div
-      className={`fixed inset-0 z-50! flex flex-col gap-4 bg-lightPrimary p-4 transition-all duration-300 dark:bg-navy-900 lg:inset-auto lg:top-5 lg:bottom-5 lg:left-5 lg:bg-transparent lg:p-0 lg:z-0! ${
+      className={`bg-lightPrimary dark:bg-navy-900 fixed inset-0 z-50! flex flex-col gap-4 p-4 transition-all duration-200 lg:inset-auto lg:top-5 lg:bottom-5 lg:left-5 lg:z-0! lg:bg-transparent lg:p-0 lg:dark:bg-transparent ${
         open ? "translate-x-0" : "-translate-x-[120%] lg:translate-x-0"
       } ${collapsed ? "lg:w-[70px]" : "w-full lg:w-78.25"}`}
     >
@@ -88,7 +90,7 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
         type="button"
         onClick={onToggleCollapse}
         title={collapsed ? "Mở rộng" : "Thu gọn"}
-        className="hover:text-brand-500 dark:border-navy-600 dark:bg-navy-800 dark:hover:bg-navy-700 absolute top-8 -right-3.5 z-10 hidden h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-md hover:bg-gray-50 dark:text-gray-300 lg:flex"
+        className="hover:text-brand-500 dark:border-navy-600 dark:bg-navy-800 dark:hover:bg-navy-700 absolute top-8 -right-3.5 z-10 hidden h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-md hover:bg-gray-50 lg:flex dark:text-gray-300"
       >
         {collapsed ? (
           <RiArrowRightSLine className="h-4 w-4" />
@@ -99,9 +101,7 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
 
       <Card extra="flex-1 overflow-hidden rounded-[30px] pb-4">
         <div className="h-full overflow-y-auto pt-6">
-          <ul className={`mt-5 ${collapsed ? "px-2" : "px-4"}`}>
-            {children}
-          </ul>
+          <ul className={`mt-5 ${collapsed ? "px-2" : "px-4"}`}>{children}</ul>
         </div>
       </Card>
 
@@ -112,7 +112,9 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
           <Dropdown
             button={
               <div className="flex items-center gap-3">
-                {avatarUrl ? (
+                {isLoadingUser ? (
+                  <div className="h-10 w-10 shrink-0 animate-pulse rounded-full bg-gray-200 dark:bg-white/10" />
+                ) : avatarUrl ? (
                   <img
                     className="h-10 w-10 shrink-0 rounded-full object-cover"
                     src={avatarUrl}
@@ -124,11 +126,14 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
                     {userName?.charAt(0)?.toUpperCase() ?? "?"}
                   </div>
                 )}
-                {!collapsed && (
-                  <span className="text-navy-700 text-sm font-medium dark:text-white">
-                    {userName ?? "Tài khoản"}
-                  </span>
-                )}
+                {!collapsed &&
+                  (isLoadingUser ? (
+                    <div className="h-3.5 w-24 animate-pulse rounded-full bg-gray-200 dark:bg-white/10" />
+                  ) : (
+                    <span className="text-navy-700 text-sm font-medium dark:text-white">
+                      {userName ?? "—"}
+                    </span>
+                  ))}
               </div>
             }
             children={
@@ -154,7 +159,7 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
               </div>
             }
             classNames="py-2 bottom-full mb-2 -left-[10px] w-max"
-            animation="origin-bottom-left transition-all duration-300 ease-in-out"
+            animation="origin-bottom-left transition-all duration-200 ease-in-out"
           />
 
           {!collapsed && (

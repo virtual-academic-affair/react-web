@@ -40,8 +40,8 @@ const Dropdown = (props: {
         className={`${classNames} absolute z-50 ${
           animation
             ? animation
-            : "origin-top-right transition-all duration-300 ease-in-out"
-        } ${openWrapper ? "scale-100 pointer-events-auto" : "scale-0 pointer-events-none"}`}
+            : "origin-top-right transition-all duration-200 ease-in-out"
+        } ${openWrapper ? "pointer-events-auto scale-100" : "pointer-events-none scale-0"}`}
       >
         {children}
       </div>

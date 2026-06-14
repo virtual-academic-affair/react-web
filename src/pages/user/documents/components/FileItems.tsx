@@ -1,9 +1,5 @@
 import React from "react";
-import {
-  MdFileDownload,
-  MdInfoOutline,
-  MdVisibility,
-} from "react-icons/md";
+import { MdFileDownload, MdInfoOutline, MdVisibility } from "react-icons/md";
 import Tag from "@/components/tag/Tag";
 import { formatDate } from "@/utils/date";
 import {
@@ -44,7 +40,7 @@ export const FileCard: React.FC<FileItemProps> = ({
             type="button"
             title="Xem trước"
             onClick={onPreview}
-            className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-500/10 text-brand-500 transition-colors hover:bg-brand-500/20 dark:bg-brand-500/15 dark:hover:bg-brand-500/25"
+            className="bg-brand-500/10 text-brand-500 hover:bg-brand-500/20 dark:bg-brand-500/15 dark:hover:bg-brand-500/25 flex h-8 w-8 items-center justify-center rounded-xl transition-colors"
           >
             <MdVisibility className="h-4 w-4" />
           </button>
@@ -69,7 +65,7 @@ export const FileCard: React.FC<FileItemProps> = ({
 
       {/* Name */}
       <button type="button" className="text-left" onClick={onPreview}>
-        <p className="text-navy-700 h-10 line-clamp-2 text-sm font-semibold leading-snug transition-colors group-hover:text-brand-500 dark:text-white dark:group-hover:text-brand-400">
+        <p className="text-navy-700 group-hover:text-brand-500 dark:group-hover:text-brand-400 line-clamp-2 h-10 text-sm leading-snug font-semibold transition-colors dark:text-white">
           {name}
         </p>
         <p className="mt-0.5 truncate text-xs text-gray-400">
@@ -80,7 +76,11 @@ export const FileCard: React.FC<FileItemProps> = ({
       {/* Type chip */}
       {typeLabel && (
         <div className="flex flex-wrap gap-1">
-          <Tag color={typeColor || "#94a3b8"} className="text-[10px]" interactive={false}>
+          <Tag
+            color={typeColor || "#94a3b8"}
+            className="text-[10px]"
+            interactive={false}
+          >
             {typeLabel}
           </Tag>
         </div>
@@ -108,17 +108,23 @@ export const FileRow: React.FC<FileItemProps> = ({
 
       <div className="min-w-0 flex-1">
         <button type="button" className="w-full text-left" onClick={onPreview}>
-          <p className="text-navy-700 truncate text-sm font-semibold transition-colors group-hover:text-brand-500 dark:text-white dark:group-hover:text-brand-400">
+          <p className="text-navy-700 group-hover:text-brand-500 dark:group-hover:text-brand-400 truncate text-sm font-semibold transition-colors dark:text-white">
             {name}
           </p>
-          <p className="truncate text-xs text-gray-400">{file.originalFilename}</p>
+          <p className="truncate text-xs text-gray-400">
+            {file.originalFilename}
+          </p>
         </button>
       </div>
 
       {/* Type chip */}
       {typeLabel && (
         <div className="hidden items-center gap-1.5 sm:flex">
-          <Tag color={typeColor || "#94a3b8"} className="text-[10px]" interactive={false}>
+          <Tag
+            color={typeColor || "#94a3b8"}
+            className="text-[10px]"
+            interactive={false}
+          >
             {typeLabel}
           </Tag>
         </div>
@@ -133,7 +139,7 @@ export const FileRow: React.FC<FileItemProps> = ({
           type="button"
           title="Xem trước"
           onClick={onPreview}
-          className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-500/10 text-brand-500 hover:bg-brand-500/20 dark:bg-brand-500/15"
+          className="bg-brand-500/10 text-brand-500 hover:bg-brand-500/20 dark:bg-brand-500/15 flex h-8 w-8 items-center justify-center rounded-xl"
         >
           <MdVisibility className="h-4 w-4" />
         </button>

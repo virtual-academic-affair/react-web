@@ -22,7 +22,7 @@ function CardMenu(props: { transparent?: boolean }) {
           <BsThreeDots className="h-6 w-6" />
         </button>
       }
-      animation={"origin-top-right transition-all duration-300 ease-in-out"}
+      animation={"origin-top-right transition-all duration-200 ease-in-out"}
       classNames={`${transparent ? "top-8" : "top-11"} right-0 w-max`}
       children={
         <div className="shadow-shadow-500 dark:bg-navy-700! z-50 w-max rounded-xl bg-white px-4 py-3 text-sm shadow-xl dark:shadow-none">

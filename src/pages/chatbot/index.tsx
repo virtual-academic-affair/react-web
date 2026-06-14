@@ -1,6 +1,6 @@
 import { Alert } from "antd";
-import React from "react";
 import "katex/dist/katex.min.css";
+import React from "react";
 import "streamdown/styles.css";
 
 import { ChatbotErrorBoundary } from "./ChatbotErrorBoundary";
@@ -11,7 +11,7 @@ function ChatbotPageInner() {
   const { errorMessage, clearError, activeThreadId } = useChatbotShell();
 
   return (
-    <div className="flex min-h-[calc(100vh-2.5rem)] w-full flex-col bg-transparent">
+    <div className="flex max-h-full min-h-screen w-full flex-col bg-transparent">
       {errorMessage ? (
         <Alert
           type="error"

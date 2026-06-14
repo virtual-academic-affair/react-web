@@ -1,5 +1,9 @@
 import React from "react";
-import ReactApexChart from "react-apexcharts";
+import ReactApexChart from "react-apexcharts/core";
+
+import "apexcharts/pie";
+import "apexcharts/features/legend";
+import "apexcharts/features/toolbar";
 
 type ChartProps = {
   // using `interface` is also ok

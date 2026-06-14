@@ -54,10 +54,6 @@ export const API_ENDPOINTS = {
       itemsBulkStatus: (parentId: number) =>
         `/classRegistration/classRegistrations/${parentId}/items/bulkStatus`,
     },
-    cancelReasons: {
-      base: "/classRegistration/cancelReasons",
-      byId: (id: number) => `/classRegistration/cancelReasons/${id}`,
-    },
   },
 
   // Email
@@ -93,15 +89,6 @@ export const API_ENDPOINTS = {
       stats: "/inquiry/inquiries/stats",
       previewReply: (id: number) => `/inquiry/inquiries/${id}/reply`,
       reply: (id: number) => `/inquiry/inquiries/${id}/reply`,
-    },
-  },
-
-  // Task
-  task: {
-    tasks: {
-      base: "/task/tasks",
-      byId: (id: number) => `/task/tasks/${id}`,
-      stats: "/task/tasks/stats",
     },
   },
 
