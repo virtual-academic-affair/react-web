@@ -290,7 +290,7 @@ function GeminiStickyComposer({
   showScrollBottom?: boolean;
 }) {
   return (
-    <div className="bg-lightPrimary dark:bg-navy-900 sticky bottom-0 isolate z-20 shrink-0 pt-2 pb-4">
+    <div className="bg-lightPrimary dark:bg-navy-900 sticky bottom-0 isolate z-20 mt-auto shrink-0 pt-2 pb-4">
       {/* Nút cuộn xuống cuối */}
       {showScrollBottom && (
         <div className="absolute right-0 bottom-full left-0 mb-4 flex justify-center">
@@ -402,42 +402,46 @@ export function GeminiThread({ className = "" }: { className?: string }) {
   const isNewThread = !sessions.find((s) => s.id === activeThreadId)?.serverId;
   const [showScrollBottom, setShowScrollBottom] = useState(false);
 
-  useEffect(() => {
-    if (messagesCount === 0) return;
+  const updateScrollButton = useCallback(() => {
+    const scrollY = window.scrollY;
+    const windowHeight = window.innerHeight;
+    const documentHeight = document.documentElement.scrollHeight;
 
-    window.requestAnimationFrame(() => {
+    setShowScrollBottom(documentHeight - scrollY - windowHeight > 150);
+  }, []);
+
+  useEffect(() => {
+    if (messagesCount === 0) {
+      const frameId = window.requestAnimationFrame(updateScrollButton);
+      return () => window.cancelAnimationFrame(frameId);
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
       window.scrollTo({
         top: document.documentElement.scrollHeight,
         behavior: "auto",
       });
+      updateScrollButton();
     });
-  }, [activeThreadId, messagesCount]);
+    return () => window.cancelAnimationFrame(frameId);
+  }, [activeThreadId, messagesCount, updateScrollButton]);
 
   useEffect(() => {
-    const handleScroll = () => {
-      const scrollY = window.scrollY;
-      const windowHeight = window.innerHeight;
-      const documentHeight = document.documentElement.scrollHeight;
-
-      // Cách đáy khoảng 150px thì hiện nút
-      if (documentHeight - scrollY - windowHeight > 150) {
-        setShowScrollBottom(true);
-      } else {
-        setShowScrollBottom(false);
-      }
+    window.addEventListener("scroll", updateScrollButton, { passive: true });
+    window.addEventListener("resize", updateScrollButton);
+    updateScrollButton();
+    return () => {
+      window.removeEventListener("scroll", updateScrollButton);
+      window.removeEventListener("resize", updateScrollButton);
     };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [updateScrollButton]);
 
   return (
     <ThreadPrimitive.Root
-      className={`flex min-h-[calc(100vh-8rem)] w-full flex-col bg-transparent text-base text-[#1f1f1f] dark:text-white ${className}`.trim()}
+      className={`flex min-h-[calc(100vh-2.5rem)] w-full flex-col bg-transparent text-base text-[#1f1f1f] dark:text-white ${className}`.trim()}
     >
-      <ThreadPrimitive.Viewport className="w-full flex-1 overflow-visible">
-        <div className="flex min-h-[calc(100vh-15rem)] w-full flex-col pt-4">
+      <ThreadPrimitive.Viewport className="flex min-h-0 w-full flex-1 flex-col overflow-visible">
+        <div className="flex min-h-0 w-full flex-1 flex-col pt-4">
           {isLoadingMessages ? (
             <ChatMessagesSkeletonLoader />
           ) : isNewThread && messagesCount === 0 ? (

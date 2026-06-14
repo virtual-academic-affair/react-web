@@ -62,10 +62,13 @@ export function ChatbotThreadRow({
     }
     onSaveEdit(next);
   };
+  const actionPaddingClass = canEdit
+    ? "pr-24 sm:pr-0 sm:group-hover:pr-24 sm:group-focus-within:pr-24"
+    : "pr-16 sm:pr-0 sm:group-hover:pr-16 sm:group-focus-within:pr-16";
 
   return (
     <div
-      className={`group flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition ${
+      className={`group relative flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition ${
         isActive
           ? "bg-[#d3e3fd] text-[#062e6f] dark:bg-white/[0.12] dark:text-white"
           : "text-[#1f1f1f] hover:bg-black/[0.04] dark:text-gray-200 dark:hover:bg-white/10"
@@ -117,12 +120,12 @@ export function ChatbotThreadRow({
             type="button"
             onClick={onSwitch}
             disabled={!canSwitch}
-            className="min-w-0 flex-1 truncate text-left font-medium disabled:cursor-default"
+            className={`min-w-0 flex-1 truncate text-left font-medium transition-[padding] disabled:cursor-default ${actionPaddingClass}`}
             title={session.title}
           >
             {session.title?.trim() || "Không có tiêu đề"}
           </button>
-          <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
+          <div className="absolute top-1/2 right-3 flex -translate-y-1/2 items-center gap-0.5 opacity-100 transition sm:pointer-events-none sm:opacity-0 sm:group-hover:pointer-events-auto sm:group-hover:opacity-100 sm:group-focus-within:pointer-events-auto sm:group-focus-within:opacity-100">
             {canEdit ? (
               <button
                 type="button"

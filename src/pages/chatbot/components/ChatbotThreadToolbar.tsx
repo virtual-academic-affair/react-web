@@ -118,7 +118,7 @@ export function ChatbotThreadToolbar({
 
   return (
     <>
-      <aside className="dark:bg-navy-800 flex h-full min-h-0 w-full shrink-0 flex-col rounded-[30px] bg-white/80 p-3 shadow-[0_2px_12px_-6px_rgba(0,0,0,0.28)] ring-1 ring-black/5 backdrop-blur dark:ring-white/10">
+      <aside className="dark:bg-navy-800 flex h-full min-h-0 w-full shrink-0 flex-col rounded-[30px] bg-white/80 p-3">
         {onShowMenu ? (
           <div className="mb-3 flex shrink-0 items-center justify-between gap-2 px-1">
             <button
@@ -129,7 +129,7 @@ export function ChatbotThreadToolbar({
               <MdArrowBack className="h-4 w-4 shrink-0" aria-hidden />
               Menu
             </button>
-            <span className="truncate px-2 text-sm font-bold text-navy-700 dark:text-white">
+            <span className="text-navy-700 truncate px-2 text-sm font-bold dark:text-white">
               Chatbot
             </span>
           </div>
