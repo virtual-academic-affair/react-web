@@ -1,5 +1,6 @@
 import ConfirmModal from "@/components/modal/ConfirmModal";
 import Drawer from "@/components/drawer/Drawer";
+import FilePickerField from "@/components/fields/FilePickerField";
 import DetailFormLayout, { FormRow } from "@/components/layouts/DetailFormLayout";
 import TableLayout, {
   type TableAction,
@@ -380,19 +381,19 @@ const StudentsPage: React.FC = () => {
       >
         <form onSubmit={handleImport} className="flex flex-col gap-4">
           <DetailFormLayout>
-            <FormRow label="File dữ liệu">
-              <div className="flex flex-col gap-2">
-                <input
-                  key={importOpen ? 'open' : 'closed'}
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".xlsx,.xls,.csv"
-                  onClick={(e) => (e.currentTarget.value = "")}
-                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                  disabled={importing}
-                  className="w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm outline-none file:mr-3 file:rounded-lg file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-gray-700 hover:file:bg-gray-200 dark:border-white/10 dark:text-white dark:file:bg-white/10 dark:file:text-white dark:hover:file:bg-white/20"
-                />
-              </div>
+            <FormRow
+              label="File dữ liệu"
+              className="flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-6"
+              labelWidthClassName="w-full sm:w-40"
+            >
+              <FilePickerField
+                inputKey={importOpen ? "open" : "closed"}
+                inputRef={fileInputRef}
+                file={file}
+                accept=".xlsx,.xls,.csv"
+                disabled={importing}
+                onChange={setFile}
+              />
             </FormRow>
 
             <FormRow label="Cột MSSV">

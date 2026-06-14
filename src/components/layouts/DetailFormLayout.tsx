@@ -33,25 +33,31 @@ const DetailFormLayout: React.FC<DetailFormLayoutProps> = ({
 export const FormRow: React.FC<FormRowProps> = ({
   label,
   children,
-  labelWidthClassName = "w-40",
+  labelWidthClassName = "w-full sm:w-40",
   className,
   required = false,
   alignTop = false,
   dense = false,
 }) => {
+  const rowClassName = dense
+    ? `flex gap-3 ${alignTop ? "items-start" : "items-center"}`
+    : `flex flex-col gap-2 sm:flex-row ${
+        alignTop ? "sm:items-start" : "sm:items-center"
+      } sm:gap-6`;
+
   return (
     <div
-      className={`flex ${dense ? "gap-3" : "gap-6"} ${alignTop ? "items-start" : "items-center"} ${className ?? ""}`}
+      className={`${rowClassName} ${className ?? ""}`}
     >
       <div
-        className={`${labelWidthClassName} shrink-0 ${alignTop ? "pt-1.5" : ""}`}
+        className={`${labelWidthClassName} shrink-0 ${alignTop ? "sm:pt-1.5" : ""}`}
       >
         <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
           {label}
           {required && <span className="ml-1 text-red-500">*</span>}
         </p>
       </div>
-      <div className="flex-1">{children}</div>
+      <div className="w-full min-w-0 flex-1">{children}</div>
     </div>
   );
 };

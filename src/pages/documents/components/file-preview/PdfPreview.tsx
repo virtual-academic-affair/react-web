@@ -77,7 +77,7 @@ export default function PdfPreview({
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="relative flex flex-1 justify-center overflow-auto bg-gray-800/50 p-8"
+        className="relative flex flex-1 justify-start overflow-auto bg-gray-800/50 p-3 sm:justify-center sm:p-8"
       >
         <Document
           file={url}
@@ -110,7 +110,7 @@ export default function PdfPreview({
             </div>
           }
         >
-          <div className="flex flex-col items-center gap-6">
+          <div className="flex min-w-max flex-col items-center gap-4 sm:gap-6">
             {Array.from(new Array(numPages), (_, index) => (
               <div
                 key={`page_${index + 1}`}

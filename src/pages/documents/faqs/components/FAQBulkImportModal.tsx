@@ -1,4 +1,5 @@
 import Drawer from "@/components/drawer/Drawer";
+import FilePickerField from "@/components/fields/FilePickerField";
 import DetailFormLayout, { FormRow } from "@/components/layouts/DetailFormLayout";
 import { faqsService } from "@/services/documents/faqs.service";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -10,6 +11,12 @@ interface FAQBulkImportModalProps {
   open: boolean;
   onClose: () => void;
 }
+
+const numberInputClass =
+  "w-full min-w-0 rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white";
+const responsiveRowClass =
+  "flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-6";
+const responsiveLabelClass = "w-full sm:w-40";
 
 export default function FAQBulkImportModal({
   open,
@@ -87,13 +94,6 @@ export default function FAQBulkImportModal({
     return () => { cancelled = true; };
   }, [file, config.startRow]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-    }
-  };
-
   const handleConfigChange = (key: keyof typeof config, value: string) => {
     setConfig((p) => ({ ...p, [key]: parseInt(value, 10) || 0 }));
   };
@@ -131,65 +131,92 @@ export default function FAQBulkImportModal({
     <Drawer isOpen={open} onClose={handleClose} title="Thêm câu hỏi hàng loạt">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <DetailFormLayout>
-          <FormRow label="File dữ liệu">
-            <input
-              key={open ? 'open' : 'closed'}
-              ref={fileInputRef}
-              type="file"
+          <FormRow
+            label="File dữ liệu"
+            className={responsiveRowClass}
+            labelWidthClassName={responsiveLabelClass}
+          >
+            <FilePickerField
+              inputKey={open ? "open" : "closed"}
+              inputRef={fileInputRef}
+              file={file}
               accept=".xlsx,.xls,.csv"
-              onClick={(e) => (e.currentTarget.value = "")}
-              onChange={handleFileChange}
               disabled={isPending}
-              className="w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm outline-none file:mr-3 file:rounded-lg file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-gray-700 hover:file:bg-gray-200 dark:border-white/10 dark:text-white dark:file:bg-white/10 dark:file:text-white dark:hover:file:bg-white/20"
+              onChange={setFile}
             />
           </FormRow>
 
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-            <FormRow label="Cột Câu hỏi">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <FormRow
+              label="Cột Câu hỏi"
+              className={responsiveRowClass}
+              labelWidthClassName={responsiveLabelClass}
+            >
               <input
                 type="number"
                 min={1}
                 value={config.questionCol}
                 onChange={(e) => handleConfigChange("questionCol", e.target.value)}
-                className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+                disabled={isPending}
+                className={numberInputClass}
               />
             </FormRow>
-            <FormRow label="Cột Câu trả lời">
+            <FormRow
+              label="Cột Câu trả lời"
+              className={responsiveRowClass}
+              labelWidthClassName={responsiveLabelClass}
+            >
               <input
                 type="number"
                 min={1}
                 value={config.answerCol}
                 onChange={(e) => handleConfigChange("answerCol", e.target.value)}
-                className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+                disabled={isPending}
+                className={numberInputClass}
               />
             </FormRow>
-            <FormRow label="Cột Năm học">
+            <FormRow
+              label="Cột Năm học"
+              className={responsiveRowClass}
+              labelWidthClassName={responsiveLabelClass}
+            >
               <input
                 type="number"
                 min={1}
                 value={config.academicYearCol}
                 onChange={(e) => handleConfigChange("academicYearCol", e.target.value)}
-                className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+                disabled={isPending}
+                className={numberInputClass}
               />
             </FormRow>
-            <FormRow label="Cột Niên khóa">
+            <FormRow
+              label="Cột Niên khóa"
+              className={responsiveRowClass}
+              labelWidthClassName={responsiveLabelClass}
+            >
               <input
                 type="number"
                 min={1}
                 value={config.enrollmentYearCol}
                 onChange={(e) => handleConfigChange("enrollmentYearCol", e.target.value)}
-                className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+                disabled={isPending}
+                className={numberInputClass}
               />
             </FormRow>
           </div>
 
-          <FormRow label="Dòng bắt đầu">
+          <FormRow
+            label="Dòng bắt đầu"
+            className={responsiveRowClass}
+            labelWidthClassName={responsiveLabelClass}
+          >
             <input
               type="number"
               min={1}
               value={config.startRow}
               onChange={(e) => handleConfigChange("startRow", e.target.value)}
-              className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+              disabled={isPending}
+              className={numberInputClass}
             />
           </FormRow>
         </DetailFormLayout>

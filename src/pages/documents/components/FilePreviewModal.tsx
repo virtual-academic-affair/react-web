@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React, {
+  Suspense,
   useCallback,
   useEffect,
-  Suspense,
   useMemo,
   useRef,
   useState,
@@ -166,6 +166,11 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
   const [scale, setScale] = useState(1.2);
   const pdfScrollRef = useRef<(page: number) => void>(undefined);
 
+  useEffect(() => {
+    if (!isOpen || category !== "pdf") return;
+    setScale(window.innerWidth < 640 ? 0.7 : 1.2);
+  }, [category, isOpen]);
+
   const handlePrevPage = useCallback(() => {
     if (currentPage <= 1) return;
     const prev = currentPage - 1;
@@ -325,71 +330,94 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
         {/* Modal container */}
         <div className="relative flex h-full w-full flex-col">
           {/* Header */}
-          <div className="z-1 flex shrink-0 items-center justify-between border-b border-white/8 bg-[#202124]/95 px-5 py-3">
+          <div className="z-1 flex shrink-0 flex-col gap-2 border-b border-white/8 bg-[#202124]/95 px-3 py-2 sm:px-5 sm:py-3 md:flex-row md:items-center md:justify-between">
             {/* File info */}
-            <div className="flex min-w-0 flex-1 items-center gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10">
-                <MdDescription className="h-5 w-5 text-gray-300" />
+            <div className="flex w-full min-w-0 items-center justify-between gap-2 md:flex-1 md:justify-start">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10">
+                  <MdDescription className="h-5 w-5 text-gray-300" />
+                </div>
+                <div className="min-w-0">
+                  <p className="max-w-[180px] truncate text-sm font-semibold text-white sm:max-w-[360px] md:max-w-[480px]">
+                    {fileName}
+                  </p>
+                  <p className="text-xs text-gray-400 uppercase">
+                    {getExtension(fileName)} file
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="max-w-[240px] truncate text-sm font-semibold text-white sm:max-w-[360px] md:max-w-[480px]">
-                  {fileName}
-                </p>
-                <p className="text-xs text-gray-400 uppercase">
-                  {getExtension(fileName)} file
-                </p>
+
+              <div className="flex shrink-0 items-center justify-end gap-1 md:hidden">
+                <button
+                  type="button"
+                  onClick={handleDownload}
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition-all hover:bg-white/12 hover:text-white active:scale-92"
+                  title="Tải xuống"
+                >
+                  <MdFileDownload className="h-5 w-5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition-all hover:bg-white/12 hover:text-white active:scale-92"
+                  title="Đóng"
+                >
+                  <MdClose className="h-5 w-5" />
+                </button>
               </div>
             </div>
 
             {/* PDF Toolbar in the middle */}
             {category === "pdf" && numPages > 0 && (
-              <div className="mx-4 flex shrink-0 items-center gap-2 rounded-xl border border-white/8 bg-white/5 px-3 py-1">
-                <button
-                  type="button"
-                  onClick={handlePrevPage}
-                  disabled={currentPage <= 1}
-                  className="rounded-lg p-1 text-white/70 transition-colors hover:bg-white/10 disabled:opacity-30"
-                  title="Trang trước"
-                >
-                  <MdChevronLeft className="h-4 w-4" />
-                </button>
-                <span className="min-w-[45px] text-center text-xs font-semibold text-white/80">
-                  {currentPage} / {numPages}
-                </span>
-                <button
-                  type="button"
-                  onClick={handleNextPage}
-                  disabled={currentPage >= numPages}
-                  className="rounded-lg p-1 text-white/70 transition-colors hover:bg-white/10 disabled:opacity-30"
-                  title="Trang sau"
-                >
-                  <MdChevronRight className="h-4 w-4" />
-                </button>
-                <span className="mx-1 h-4 w-px bg-white/15" />
-                <button
-                  type="button"
-                  onClick={handleZoomOut}
-                  className="rounded-lg px-2 py-0.5 text-xs font-medium text-white/70 transition-colors hover:bg-white/10"
-                  title="Thu nhỏ"
-                >
-                  −
-                </button>
-                <span className="min-w-[35px] text-center text-xs font-semibold text-white/80">
-                  {Math.round(scale * 100)}%
-                </span>
-                <button
-                  type="button"
-                  onClick={handleZoomIn}
-                  className="rounded-lg px-2 py-0.5 text-xs font-medium text-white/70 transition-colors hover:bg-white/10"
-                  title="Phóng to"
-                >
-                  +
-                </button>
+              <div className="w-full min-w-0 [scrollbar-width:none] overflow-x-auto [-ms-overflow-style:none] md:mx-4 md:w-auto md:shrink-0 md:overflow-visible [&::-webkit-scrollbar]:hidden">
+                <div className="flex w-max min-w-full items-center justify-between gap-1 rounded-xl border border-white/8 bg-white/5 px-2 py-1 sm:gap-2 sm:px-3 md:min-w-0">
+                  <button
+                    type="button"
+                    onClick={handlePrevPage}
+                    disabled={currentPage <= 1}
+                    className="rounded-lg p-1 text-white/70 transition-colors hover:bg-white/10 disabled:opacity-30"
+                    title="Trang trước"
+                  >
+                    <MdChevronLeft className="h-4 w-4" />
+                  </button>
+                  <span className="min-w-[45px] text-center text-xs font-semibold text-white/80">
+                    {currentPage} / {numPages}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleNextPage}
+                    disabled={currentPage >= numPages}
+                    className="rounded-lg p-1 text-white/70 transition-colors hover:bg-white/10 disabled:opacity-30"
+                    title="Trang sau"
+                  >
+                    <MdChevronRight className="h-4 w-4" />
+                  </button>
+                  <span className="mx-1 h-4 w-px bg-white/15" />
+                  <button
+                    type="button"
+                    onClick={handleZoomOut}
+                    className="rounded-lg px-2 py-0.5 text-xs font-medium text-white/70 transition-colors hover:bg-white/10"
+                    title="Thu nhỏ"
+                  >
+                    −
+                  </button>
+                  <span className="min-w-[35px] text-center text-xs font-semibold text-white/80">
+                    {Math.round(scale * 100)}%
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleZoomIn}
+                    className="rounded-lg px-2 py-0.5 text-xs font-medium text-white/70 transition-colors hover:bg-white/10"
+                    title="Phóng to"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
             )}
 
             {/* Actions */}
-            <div className="flex flex-1 items-center justify-end gap-1">
+            <div className="hidden flex-1 items-center justify-end gap-1 md:flex">
               <button
                 type="button"
                 onClick={handleDownload}

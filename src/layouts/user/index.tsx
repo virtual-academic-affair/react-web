@@ -70,7 +70,10 @@ const UserLayout = () => {
           }`}
         >
           <Suspense fallback={<PageLoader />}>
-            <ChatbotThreadToolbar onShowMenu={() => setSidebarMode("app")} />
+            <ChatbotThreadToolbar
+              onNavigate={() => setOpen(false)}
+              onShowMenu={() => setSidebarMode("app")}
+            />
           </Suspense>
         </div>
       ) : (

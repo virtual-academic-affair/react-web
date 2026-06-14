@@ -17,7 +17,7 @@ interface FormFormFieldsProps {
 }
 
 const inputCls = (hasError?: string) =>
-  `w-full rounded-2xl border bg-transparent px-3 py-2 outline-none dark:text-white ${
+  `w-full min-w-0 rounded-2xl border bg-transparent px-3 py-2 outline-none dark:text-white ${
     hasError
       ? "border-red-400 dark:border-red-400"
       : "border-gray-200 dark:border-white/10"
@@ -36,7 +36,7 @@ export function FormFormFields({
   return (
     <>
       <FormRow label="Nội dung" alignTop required={true}>
-        <div className="flex flex-col gap-1">
+        <div className="flex min-w-0 flex-col gap-1">
           <input
             type="text"
             placeholder="Nhập nội dung..."
@@ -52,7 +52,7 @@ export function FormFormFields({
       </FormRow>
 
       <FormRow label="Link/Email thông tin" alignTop required={true}>
-        <div className="flex flex-col gap-1">
+        <div className="flex min-w-0 flex-col gap-1">
           <RichTextEditor
             value={contentLink}
             onChange={onContentLinkChange}
@@ -64,7 +64,7 @@ export function FormFormFields({
       </FormRow>
 
       <FormRow alignTop label="Ghi chú">
-        <div className="flex flex-col gap-1">
+        <div className="flex min-w-0 flex-col gap-1">
           <RichTextEditor
             value={notes}
             onChange={onNotesChange}

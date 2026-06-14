@@ -23,7 +23,6 @@ export function SidebarChatbotPanel(props: {
     }
     event.preventDefault();
     onShowChatbotPanel();
-    onNavigate?.();
   };
 
   if (collapsed) {

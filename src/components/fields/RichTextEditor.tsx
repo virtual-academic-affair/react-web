@@ -347,7 +347,7 @@ const RichTextEditor = React.forwardRef<
     );
 
     return (
-      <div className={`w-full ${className}`}>
+      <div className={`w-full min-w-0 ${className}`}>
         {label && (
           <label
             htmlFor={id}
@@ -357,7 +357,7 @@ const RichTextEditor = React.forwardRef<
           </label>
         )}
         <div
-          className={`overflow-hidden rounded-2xl border transition-colors duration-200 ${error ? "border-red-500" : "border-gray-200 dark:border-white/10"}`}
+          className={`min-w-0 overflow-hidden rounded-2xl border transition-colors duration-200 ${error ? "border-red-500" : "border-gray-200 dark:border-white/10"}`}
         >
           <style>{`
             .tiptap-editor:not(.tiptap-editor--compact) .ProseMirror {
@@ -420,7 +420,7 @@ const RichTextEditor = React.forwardRef<
           `}</style>
           {editor ? (
             <div
-              className={`tiptap-editor bg-transparent ${compact ? "tiptap-editor--compact" : ""}`}
+              className={`tiptap-editor min-w-0 bg-transparent ${compact ? "tiptap-editor--compact" : ""}`}
             >
               <EditorToolbar editor={editor} disabled={disabled} />
               <EditorContent editor={editor} />

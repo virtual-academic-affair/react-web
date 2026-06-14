@@ -70,10 +70,10 @@ const Row: React.FC<{
   accent?: boolean;
   children: React.ReactNode;
 }> = ({ label, accent, children }) => (
-  <div className="flex items-start gap-6">
-    <div className="w-40 shrink-0">
+  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-6">
+    <div className="w-full shrink-0 sm:w-40">
       <p
-        className={`mb-1 text-xs font-semibold tracking-wide uppercase ${
+        className={`text-xs font-semibold tracking-wide uppercase ${
           accent
             ? "text-brand-500 dark:text-brand-300"
             : "text-gray-400 dark:text-gray-500"
@@ -82,7 +82,7 @@ const Row: React.FC<{
         {label}
       </p>
     </div>
-    <div className="flex-1">{children}</div>
+    <div className="w-full min-w-0 flex-1">{children}</div>
   </div>
 );
 
@@ -327,7 +327,9 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
   );
 
   const inputClass =
-    "dark:bg-navy-800 w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white placeholder:text-gray-400";
+    "dark:bg-navy-800 w-full min-w-0 rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white placeholder:text-gray-400";
+  const yearRangeClass =
+    "grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2";
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
@@ -407,7 +409,7 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
               </p>
             ) : (
               <>
-                <div className="flex items-center gap-2">
+                <div className={yearRangeClass}>
                   <input
                     type="number"
                     value={enrollFromYear}
@@ -446,7 +448,7 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
               </p>
             ) : (
               <>
-                <div className="flex items-center gap-2">
+                <div className={yearRangeClass}>
                   <input
                     type="number"
                     value={academicFromYear}

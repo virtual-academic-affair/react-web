@@ -166,7 +166,7 @@ function TableLayout<T extends { id: number | string }>({
       {middleSlot}
 
       {/* Table Card */}
-      <Card extra="p-6">
+      <Card extra="p-4 sm:p-6">
         <div className="flex flex-col gap-4">
           {/* Table */}
           <div className="overflow-x-auto overflow-y-hidden rounded-2xl">
@@ -422,19 +422,27 @@ function PaginationBar({
   let dotsIndex = 0;
 
   return (
-    <div className="flex flex-col items-end gap-2 pt-1">
+    <div className="flex flex-col items-stretch gap-2 pt-1 sm:items-end">
       {/* Main nav row */}
-      <div className="flex w-full items-center justify-between">
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          Trang {paginationInfo.currentPage} trên {paginationInfo.totalPages}{" "}
-          <span className="mx-2">·</span> {paginationInfo.total} bản ghi
+      <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-gray-600 dark:text-gray-400">
+          <span className="whitespace-nowrap sm:hidden">
+            Trang {paginationInfo.currentPage}/{paginationInfo.totalPages}
+          </span>
+          <span className="hidden whitespace-nowrap sm:inline">
+            Trang {paginationInfo.currentPage} trên {paginationInfo.totalPages}
+          </span>
+          <span className="text-gray-400 dark:text-gray-500">·</span>
+          <span className="whitespace-nowrap">
+            {paginationInfo.total} bản ghi
+          </span>
         </p>
-        <div className="flex items-center gap-1">
+        <div className="flex w-full max-w-full items-center justify-end gap-1 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:w-auto sm:overflow-visible sm:pb-0 [&::-webkit-scrollbar]:hidden">
           <button
             type="button"
             onClick={() => onPageChange(page - 1)}
             disabled={page <= 1}
-            className="flex items-center rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-40 dark:text-gray-400 dark:hover:bg-white/10"
+            className="flex shrink-0 items-center rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-40 dark:text-gray-400 dark:hover:bg-white/10"
           >
             <MdChevronLeft className="h-5 w-5" />
           </button>
@@ -460,7 +468,7 @@ function PaginationBar({
                   type="button"
                   onClick={() => openJump(thisKey)}
                   title="Nhập trang cụ thể"
-                  className={`flex h-8 w-8 items-center justify-center rounded-lg text-sm transition-colors ${
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm transition-colors ${
                     isActive
                       ? "bg-brand-50 text-brand-500 dark:bg-brand-500/20 dark:text-brand-400"
                       : "text-gray-400 hover:bg-gray-100 dark:text-gray-500 dark:hover:bg-white/10"
@@ -475,7 +483,7 @@ function PaginationBar({
                 key={p}
                 type="button"
                 onClick={() => onPageChange(p)}
-                className={`flex h-8 w-8 items-center justify-center rounded-2xl text-sm font-medium ${
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl text-sm font-medium ${
                   p === current
                     ? "bg-brand-500 text-white"
                     : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/10"
@@ -490,7 +498,7 @@ function PaginationBar({
             type="button"
             onClick={() => onPageChange(page + 1)}
             disabled={page >= paginationInfo.totalPages}
-            className="flex items-center rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-40 dark:text-gray-400 dark:hover:bg-white/10"
+            className="flex shrink-0 items-center rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-40 dark:text-gray-400 dark:hover:bg-white/10"
           >
             <MdChevronRight className="h-5 w-5" />
           </button>
