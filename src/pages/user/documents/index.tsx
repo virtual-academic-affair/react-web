@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { message as toast } from "antd";
 import React, {
   lazy,
   Suspense,
@@ -311,23 +310,6 @@ const UserDocumentsPage: React.FC = () => {
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
 
-  const handleDownload = useCallback(async (file: any) => {
-    if (!file.fileUrl) { toast.error("Không thể tải xuống tệp."); return; }
-    try {
-      const res = await fetch(file.fileUrl);
-      if (!res.ok) throw new Error("Network error");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = file.originalFilename;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch {
-      toast.error("Không thể tải xuống tệp.");
-    }
-  }, []);
-
   const handleFilterChange = useCallback((typeKey: string, next: string[]) => {
     setFilters((prev) => ({ ...prev, [typeKey]: next }));
     setPage(1);
@@ -392,12 +374,12 @@ const UserDocumentsPage: React.FC = () => {
       </div>
 
       {/* ── Filter bar + view toggle ────────────────────────────────────── */}
-      <div className="mb-4 flex items-center gap-2 overflow-x-auto pb-1">
-        <span className="shrink-0 text-xs font-medium text-gray-400">
+      <div className="mb-4 flex flex-wrap items-start gap-2">
+        <span className="shrink-0 pt-2 text-xs font-medium text-gray-400">
           Lọc theo:
         </span>
 
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
           {/* Hardcoded document type filter */}
           <FilterGroup
             label="Loại tài liệu"
@@ -536,7 +518,6 @@ const UserDocumentsPage: React.FC = () => {
               metadataTypes={metadataTypes}
               onDetail={() => handleOpenDetail(file)}
               onPreview={() => handleOpenPreview(file)}
-              onDownload={() => handleDownload(file)}
             />
           ))}
         </div>
@@ -549,7 +530,6 @@ const UserDocumentsPage: React.FC = () => {
               metadataTypes={metadataTypes}
               onDetail={() => handleOpenDetail(file)}
               onPreview={() => handleOpenPreview(file)}
-              onDownload={() => handleDownload(file)}
             />
           ))}
         </div>
