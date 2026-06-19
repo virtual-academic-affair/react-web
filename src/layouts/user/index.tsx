@@ -107,7 +107,7 @@ const UserLayout = () => {
 
         {/* Page content */}
         <div
-          className={`mx-auto mb-auto h-full min-h-[84vh] w-[calc(100vw-6%)] pt-5 transition-all duration-200 md:w-[calc(100vw-8%)] ${
+          className={`mx-auto mb-auto h-full min-h-[84vh] w-[calc(100vw-6%)] py-5 transition-all duration-200 md:w-[calc(100vw-8%)] ${
             effectiveCollapsed
               ? "lg:w-[calc(100vw-162px)]"
               : "lg:w-[calc(100vw-405px)]"
