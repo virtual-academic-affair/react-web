@@ -35,9 +35,7 @@ const UserLayout = () => {
     location.pathname === "/user/chatbot" ||
     location.pathname.startsWith("/user/chatbot/");
   const [open, setOpen] = useState(() => window.innerWidth >= 1024);
-  const [isDesktop, setIsDesktop] = useState(
-    () => window.innerWidth >= 1024,
-  );
+  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
   const [collapsed, setCollapsed] = useState(false);
   const [sourcePreviewLocationKey, setSourcePreviewLocationKey] = useState<
     string | null
@@ -67,12 +65,15 @@ const UserLayout = () => {
     isUserChatbotRoute && appSidebarLocationKey !== location.key;
   const effectiveCollapsed = isDesktop && collapsed;
 
-  const handleSourcePreviewOpenChange = useCallback((isOpen: boolean) => {
-    setSourcePreviewLocationKey(isOpen ? location.key : null);
-    if (isOpen && window.innerWidth >= 1024) {
-      setCollapsed(true);
-    }
-  }, [location.key]);
+  const handleSourcePreviewOpenChange = useCallback(
+    (isOpen: boolean) => {
+      setSourcePreviewLocationKey(isOpen ? location.key : null);
+      if (isOpen && window.innerWidth >= 1024) {
+        setCollapsed(true);
+      }
+    },
+    [location.key],
+  );
   useMobileBodyScrollLock(open || sourcePreviewOpen);
 
   const mobileCanvasPosition = sourcePreviewOpen
