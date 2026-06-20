@@ -153,10 +153,10 @@ const AdminLayout: React.FC = () => {
 
         {/* Page content */}
         <div
-          className={`mx-auto w-[calc(100vw-6%)] pt-5 transition-all duration-200 md:w-[calc(100vw-8%)] lg:w-[calc(100%-62px)] ${
+          className={`pt-5 transition-all duration-200 ${
             isAdminChatbotRoute
-              ? "flex min-h-0 flex-1 overflow-hidden"
-              : "mb-auto h-full min-h-[84vh]"
+              ? "flex min-h-0 w-full flex-1 overflow-hidden"
+              : "mx-auto mb-auto h-full min-h-[84vh] w-[calc(100vw-6%)] md:w-[calc(100vw-8%)] lg:w-[calc(100%-62px)]"
           }`}
         >
           <Suspense fallback={<PageLoader />}>
@@ -225,7 +225,13 @@ const AdminLayout: React.FC = () => {
   );
 
   return (
-    <div className="bg-lightPrimary dark:bg-navy-900! flex min-h-screen w-max overflow-x-hidden lg:w-full">
+    <div
+      className={`bg-lightPrimary dark:bg-navy-900! w-full ${
+        isAdminChatbotRoute
+          ? "h-dvh min-h-0 overflow-hidden"
+          : "min-h-screen overflow-x-hidden"
+      }`}
+    >
       {isAdminChatbotRoute ? (
         <Suspense fallback={<PageLoader />}>
           <ChatbotRuntimeProvider>

@@ -292,7 +292,7 @@ function GeminiStickyComposer({
   onScrollToBottom: () => void;
 }) {
   return (
-    <div className="bg-lightPrimary dark:bg-navy-900 relative z-20 shrink-0 pt-2 pb-4">
+    <div className="bg-lightPrimary dark:bg-navy-900 relative z-20 w-full shrink-0 pt-2 pb-4">
       {showScrollBottom ? (
         <button
           type="button"
@@ -304,11 +304,13 @@ function GeminiStickyComposer({
         </button>
       ) : null}
 
-      <GeminiComposer />
-      <p className="mx-auto mt-2 max-w-lg text-center text-xs leading-snug text-[#444746] dark:text-gray-400">
-        Câu trả lời của AI chỉ mang tính chất tham khảo. Xác thực lại với các
-        tài liệu gợi ý.
-      </p>
+      <div className="mx-auto w-full max-w-[860px] px-[3vw] md:px-[4vw] lg:px-0">
+        <GeminiComposer />
+        <p className="mx-auto mt-2 max-w-lg text-center text-xs leading-snug text-[#444746] dark:text-gray-400">
+          Câu trả lời của AI chỉ mang tính chất tham khảo. Xác thực lại với các
+          tài liệu gợi ý.
+        </p>
+      </div>
     </div>
   );
 }
@@ -457,7 +459,7 @@ export function GeminiThread({ className = "" }: { className?: string }) {
         ref={viewportRef}
         className="flex min-h-0 w-full flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain"
       >
-        <div className="flex min-h-full w-full flex-col">
+        <div className="mx-auto flex min-h-full w-full max-w-[860px] flex-col px-[3vw] md:px-[4vw] lg:px-0">
           {isLoadingMessages ? (
             <ChatMessagesSkeletonLoader />
           ) : isNewThread && messagesCount === 0 ? (

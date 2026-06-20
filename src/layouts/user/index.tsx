@@ -132,10 +132,10 @@ const UserLayout = () => {
 
         {/* Page content */}
         <div
-          className={`mx-auto w-[calc(100vw-6%)] transition-all duration-200 md:w-[calc(100vw-8%)] lg:w-[calc(100%-62px)] ${
+          className={`transition-all duration-200 ${
             isUserChatbotRoute
-              ? "flex min-h-0 flex-1 overflow-hidden py-5"
-              : "mb-auto h-full min-h-[84vh] py-5"
+              ? "flex min-h-0 w-full flex-1 overflow-hidden py-5"
+              : "mx-auto mb-auto h-full min-h-[84vh] w-[calc(100vw-6%)] py-5 md:w-[calc(100vw-8%)] lg:w-[calc(100%-62px)]"
           }`}
         >
           <Suspense fallback={<PageLoader />}>
@@ -161,7 +161,13 @@ const UserLayout = () => {
   );
 
   return (
-    <div className="bg-lightPrimary dark:bg-navy-900! flex min-h-screen w-max overflow-x-hidden lg:w-full">
+    <div
+      className={`bg-lightPrimary dark:bg-navy-900! w-full ${
+        isUserChatbotRoute
+          ? "h-dvh min-h-0 overflow-hidden"
+          : "min-h-screen overflow-x-hidden"
+      }`}
+    >
       {isUserChatbotRoute ? (
         <Suspense fallback={<PageLoader />}>
           <ChatbotRuntimeProvider>

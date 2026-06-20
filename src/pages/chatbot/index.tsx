@@ -39,7 +39,7 @@ function ChatbotPageInner() {
               ThreadPrimitive.Root re-subscribes to the correct thread */}
           <GeminiThread
             key={activeThreadId}
-            className="mx-auto min-h-0 max-w-[860px] flex-1"
+            className="min-h-0 w-full flex-1"
           />
         </div>
       </div>
