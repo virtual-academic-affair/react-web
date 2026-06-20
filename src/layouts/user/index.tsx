@@ -90,28 +90,20 @@ const UserLayout = () => {
 
       {/* Main content */}
       <div
-        className={`relative flex min-h-screen w-full flex-col transition-all duration-200 ${
+        className={`relative flex min-h-screen min-w-0 flex-1 flex-col transition-all duration-200 ${
           effectiveCollapsed ? "lg:ml-[100px]" : "lg:ml-[343px]"
         }`}
       >
         {/* Navbar */}
         <div
-          className={`mx-auto w-[calc(100vw-6%)] transition-all duration-200 md:w-[calc(100vw-8%)] ${
-            effectiveCollapsed
-              ? "lg:w-[calc(100vw-162px)]"
-              : "lg:w-[calc(100vw-405px)]"
-          }`}
+          className="mx-auto w-[calc(100vw-6%)] transition-all duration-200 md:w-[calc(100vw-8%)] lg:w-[calc(100%-62px)]"
         >
           <Navbar onOpenSidenav={() => setOpen(true)} />
         </div>
 
         {/* Page content */}
         <div
-          className={`mx-auto mb-auto h-full min-h-[84vh] w-[calc(100vw-6%)] py-5 transition-all duration-200 md:w-[calc(100vw-8%)] ${
-            effectiveCollapsed
-              ? "lg:w-[calc(100vw-162px)]"
-              : "lg:w-[calc(100vw-405px)]"
-          }`}
+          className="mx-auto mb-auto h-full min-h-[84vh] w-[calc(100vw-6%)] py-5 transition-all duration-200 md:w-[calc(100vw-8%)] lg:w-[calc(100%-62px)]"
         >
           <Suspense fallback={<PageLoader />}>
             <Routes>

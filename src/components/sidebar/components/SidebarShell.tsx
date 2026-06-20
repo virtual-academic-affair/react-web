@@ -100,7 +100,7 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
       </button>
 
       <Card extra="flex-1 overflow-hidden rounded-[30px] pb-4">
-        <div className="h-full overflow-y-auto pt-6">
+        <div className="h-full overflow-x-hidden overflow-y-auto pt-6">
           <ul className={`mt-5 ${collapsed ? "px-2" : "px-4"}`}>{children}</ul>
         </div>
       </Card>
