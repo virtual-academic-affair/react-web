@@ -151,7 +151,7 @@ function GeminiAssistantMessage() {
     <MessagePrimitive.Root>
       <div
         ref={messageRef}
-        className="relative w-full min-w-0 text-base leading-relaxed"
+        className="relative w-full min-w-0 pb-9 text-base leading-relaxed"
       >
         {hasFinalContent && (
           <div
@@ -231,7 +231,7 @@ function GeminiAssistantMessage() {
           </MessagePrimitive.GroupedParts>
           {showTimestamp ? (
             <div className="pt-1 text-right text-xs text-[#9aa0a6] dark:text-[#8f98aa]">
-              {timestampText}
+              Trả lời lúc {timestampText}
             </div>
           ) : null}
         </div>
@@ -440,7 +440,7 @@ export function GeminiThread({ className = "" }: { className?: string }) {
       className={`flex min-h-[calc(100vh-2.5rem)] w-full flex-col bg-transparent text-base text-[#1f1f1f] dark:text-white ${className}`.trim()}
     >
       <ThreadPrimitive.Viewport className="flex min-h-0 w-full flex-1 flex-col overflow-visible">
-        <div className="flex min-h-0 w-full flex-1 flex-col pt-4">
+        <div className="flex min-h-0 w-full flex-1 flex-col">
           {isLoadingMessages ? (
             <ChatMessagesSkeletonLoader />
           ) : isNewThread && messagesCount === 0 ? (

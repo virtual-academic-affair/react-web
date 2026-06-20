@@ -221,7 +221,7 @@ function StructuredReasoning({ steps }: { steps: StructuredReasoningStep[] }) {
                   setShowAll(true);
                 }
               }}
-              className="pointer-events-auto cursor-pointer text-xs font-semibold text-[#5f6368] opacity-100 transition-colors hover:text-[#1a73e8] focus-visible:text-[#1a73e8] focus-visible:outline-none sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100 dark:text-[#8f98aa] dark:hover:text-[#a8c7fa] dark:focus-visible:text-[#a8c7fa]"
+              className="pointer-events-auto cursor-pointer text-xs font-semibold text-[#5f6368] opacity-100 transition-colors hover:text-[#1a73e8] focus-visible:text-[#1a73e8] focus-visible:outline-none dark:text-[#8f98aa] dark:hover:text-[#a8c7fa] dark:focus-visible:text-[#a8c7fa]"
             >
               Xem thêm {steps.length - previewCount} bước
             </span>

@@ -736,11 +736,57 @@ body.dark .ant-notification-notice {
   );
 }
 
+@keyframes source-card-shimmer {
+  from {
+    transform: translateX(-140%);
+  }
+
+  to {
+    transform: translateX(140%);
+  }
+}
+
+.source-card-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.source-card-shimmer::after {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgb(255 255 255 / 70%) 50%,
+    transparent 70%
+  );
+  transform: translateX(-140%);
+}
+
+.source-card-shimmer:hover::after {
+  animation: source-card-shimmer 900ms ease-in-out 1;
+}
+
+.dark .source-card-shimmer::after {
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgb(168 199 250 / 18%) 50%,
+    transparent 70%
+  );
+}
+
 @media (prefers-reduced-motion: reduce) {
   .reasoning-status-shimmer {
     animation: none;
     color: currentColor;
     background-image: none;
+  }
+
+  .source-card-shimmer:hover::after {
+    animation: none;
   }
 }
 
