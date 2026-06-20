@@ -4,12 +4,20 @@
  * Mirrors the admin layout structure with collapsible sidebar support.
  */
 
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import PageLoader from "@/components/loading/PageLoader";
 import Navbar from "@/components/navbar";
 import UserSidebar from "@/components/sidebar/UserSidebar";
+import { SourcePreviewProvider } from "@/components/assistant-ui/source-preview-context";
 import { useMobileBodyScrollLock } from "@/hooks/useMobileBodyScrollLock";
 
 const ChatbotPage = lazy(() => import("@/pages/chatbot"));
@@ -35,6 +43,7 @@ const UserLayout = () => {
     const handleResize = () => {
       setOpen(window.innerWidth >= 1024);
       if (window.innerWidth < 1024) {
+        setCollapsed(false);
         setChatbotCollapsed(false);
       }
     };
@@ -63,6 +72,11 @@ const UserLayout = () => {
 
   const showChatbotSidebar = isUserChatbotRoute && sidebarMode === "chatbot";
   const effectiveCollapsed = showChatbotSidebar ? chatbotCollapsed : collapsed;
+  const handleSourcePreviewOpenChange = useCallback((isOpen: boolean) => {
+    if (!isOpen || window.innerWidth < 1024) return;
+    setCollapsed(true);
+    setChatbotCollapsed(true);
+  }, []);
   useMobileBodyScrollLock(open);
 
   const layoutBody = (
@@ -78,7 +92,9 @@ const UserLayout = () => {
               onNavigate={() => setOpen(false)}
               onShowMenu={() => setSidebarMode("app")}
               collapsed={chatbotCollapsed}
-              onToggleCollapse={() => setChatbotCollapsed((current) => !current)}
+              onToggleCollapse={() =>
+                setChatbotCollapsed((current) => !current)
+              }
             />
           </Suspense>
         </div>
@@ -101,16 +117,12 @@ const UserLayout = () => {
         }`}
       >
         {/* Navbar */}
-        <div
-          className="mx-auto w-[calc(100vw-6%)] transition-all duration-200 md:w-[calc(100vw-8%)] lg:w-[calc(100%-62px)]"
-        >
+        <div className="mx-auto w-[calc(100vw-6%)] transition-all duration-200 md:w-[calc(100vw-8%)] lg:w-[calc(100%-62px)]">
           <Navbar onOpenSidenav={() => setOpen(true)} />
         </div>
 
         {/* Page content */}
-        <div
-          className="mx-auto mb-auto h-full min-h-[84vh] w-[calc(100vw-6%)] py-5 transition-all duration-200 md:w-[calc(100vw-8%)] lg:w-[calc(100%-62px)]"
-        >
+        <div className="mx-auto mb-auto h-full min-h-[84vh] w-[calc(100vw-6%)] py-5 transition-all duration-200 md:w-[calc(100vw-8%)] lg:w-[calc(100%-62px)]">
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/documents" element={<UserDocumentsPage />} />
@@ -135,7 +147,11 @@ const UserLayout = () => {
     <div className="bg-lightPrimary dark:bg-navy-900! flex min-h-screen w-full">
       {isUserChatbotRoute ? (
         <Suspense fallback={<PageLoader />}>
-          <ChatbotRuntimeProvider>{layoutBody}</ChatbotRuntimeProvider>
+          <ChatbotRuntimeProvider>
+            <SourcePreviewProvider onOpenChange={handleSourcePreviewOpenChange}>
+              {layoutBody}
+            </SourcePreviewProvider>
+          </ChatbotRuntimeProvider>
         </Suspense>
       ) : (
         layoutBody

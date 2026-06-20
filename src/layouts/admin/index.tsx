@@ -1,9 +1,17 @@
 import PageLoader from "@/components/loading/PageLoader";
 import Navbar from "@/components/navbar";
 import Sidebar from "@/components/sidebar";
+import { SourcePreviewProvider } from "@/components/assistant-ui/source-preview-context";
 import { useDynamicData } from "@/hooks/useDynamicData";
 import { useMobileBodyScrollLock } from "@/hooks/useMobileBodyScrollLock";
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 const UsersPage = lazy(() => import("@/pages/auth/accounts"));
@@ -67,6 +75,7 @@ const AdminLayout: React.FC = () => {
     const handleResize = () => {
       setOpen(window.innerWidth >= 1024);
       if (window.innerWidth < 1024) {
+        setCollapsed(false);
         setChatbotCollapsed(false);
       }
     };
@@ -83,6 +92,11 @@ const AdminLayout: React.FC = () => {
 
   const showChatbotSidebar = isAdminChatbotRoute && sidebarMode === "chatbot";
   const effectiveCollapsed = showChatbotSidebar ? chatbotCollapsed : collapsed;
+  const handleSourcePreviewOpenChange = useCallback((isOpen: boolean) => {
+    if (!isOpen || window.innerWidth < 1024) return;
+    setCollapsed(true);
+    setChatbotCollapsed(true);
+  }, []);
   useMobileBodyScrollLock(open);
 
   const layoutBody = (
@@ -98,7 +112,9 @@ const AdminLayout: React.FC = () => {
               onNavigate={() => setOpen(false)}
               onShowMenu={() => setSidebarMode("app")}
               collapsed={chatbotCollapsed}
-              onToggleCollapse={() => setChatbotCollapsed((current) => !current)}
+              onToggleCollapse={() =>
+                setChatbotCollapsed((current) => !current)
+              }
             />
           </Suspense>
         </div>
@@ -121,16 +137,12 @@ const AdminLayout: React.FC = () => {
         }`}
       >
         {/* Navbar */}
-        <div
-          className="mx-auto w-[calc(100vw-6%)] transition-all duration-200 md:w-[calc(100vw-8%)] lg:w-[calc(100%-62px)]"
-        >
+        <div className="mx-auto w-[calc(100vw-6%)] transition-all duration-200 md:w-[calc(100vw-8%)] lg:w-[calc(100%-62px)]">
           <Navbar onOpenSidenav={() => setOpen(true)} />
         </div>
 
         {/* Page content */}
-        <div
-          className="mx-auto mb-auto h-full min-h-[84vh] w-[calc(100vw-6%)] pt-5 transition-all duration-200 md:w-[calc(100vw-8%)] lg:w-[calc(100%-62px)]"
-        >
+        <div className="mx-auto mb-auto h-full min-h-[84vh] w-[calc(100vw-6%)] pt-5 transition-all duration-200 md:w-[calc(100vw-8%)] lg:w-[calc(100%-62px)]">
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route
@@ -198,7 +210,11 @@ const AdminLayout: React.FC = () => {
     <div className="bg-lightPrimary dark:bg-navy-900! flex min-h-screen w-full">
       {isAdminChatbotRoute ? (
         <Suspense fallback={<PageLoader />}>
-          <ChatbotRuntimeProvider>{layoutBody}</ChatbotRuntimeProvider>
+          <ChatbotRuntimeProvider>
+            <SourcePreviewProvider onOpenChange={handleSourcePreviewOpenChange}>
+              {layoutBody}
+            </SourcePreviewProvider>
+          </ChatbotRuntimeProvider>
         </Suspense>
       ) : (
         layoutBody
