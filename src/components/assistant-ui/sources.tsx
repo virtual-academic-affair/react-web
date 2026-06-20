@@ -231,7 +231,7 @@ export function SourcePreviewPanel() {
   const { preview, closePreview } = useSourcePreview();
   const [mode, setMode] = useState<SourcePreviewMode>("preview");
   const [panelWidth, setPanelWidth] = useState(() =>
-    Math.min(720, Math.max(480, window.innerWidth * 0.46)),
+    Math.min(720, Math.max(480, window.innerWidth * 0.3)),
   );
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(Boolean(preview?.markdownUrl));
@@ -436,16 +436,15 @@ export function SourcePreviewPanel() {
   if (!preview) return null;
 
   const headerTitle = preview.fileName || preview.title || "Tài liệu tham khảo";
+  const panelStyle = {
+    "--source-preview-width": `${panelWidth}px`,
+  } as CSSProperties;
 
   return (
     <aside
       ref={panelRef}
-      style={
-        {
-          "--source-preview-width": `${panelWidth}px`,
-        } as CSSProperties
-      }
-      className="dark:bg-navy-800 fixed inset-0 z-50 flex min-h-0 w-full shrink-0 flex-col overflow-hidden bg-white shadow-2xl lg:sticky lg:inset-auto lg:top-5 lg:z-20 lg:h-[calc(100vh-2.5rem)] lg:w-(--source-preview-width) lg:rounded-[24px] lg:border lg:border-gray-200 lg:shadow-xl dark:lg:border-white/10"
+      style={panelStyle}
+      className="dark:bg-navy-800 relative z-50 flex h-dvh min-h-0 w-screen shrink-0 flex-col overflow-hidden bg-white shadow-2xl lg:z-20 lg:my-5 lg:mr-[31px] lg:h-[calc(100dvh-2.5rem)] lg:w-(--source-preview-width) lg:rounded-[24px] lg:border lg:border-gray-200 lg:shadow-xl dark:lg:border-white/10"
     >
       <button
         type="button"
@@ -646,6 +645,11 @@ export function SourcePreviewPanel() {
       </div>
     </aside>
   );
+}
+
+export function SourcePreviewCanvas() {
+  const { preview } = useSourcePreview();
+  return preview ? <SourcePreviewPanel key={preview.key} /> : null;
 }
 
 export function Source(props: SourceMessagePartProps) {

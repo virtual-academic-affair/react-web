@@ -6,7 +6,6 @@ import {
   MdHistory,
   MdSearch,
 } from "react-icons/md";
-import { LuPanelLeft } from "react-icons/lu";
 
 import { sortSessionsByActivity } from "../chatbotMappers";
 import { useChatbotSessionsQuery } from "../chatbotQueries";
@@ -22,12 +21,10 @@ export function ChatbotThreadToolbar({
   onNavigate,
   onShowMenu,
   collapsed = false,
-  onToggleCollapse,
 }: {
   onNavigate?: () => void;
   onShowMenu?: () => void;
   collapsed?: boolean;
-  onToggleCollapse?: () => void;
 }) {
   const {
     sessions,
@@ -141,32 +138,21 @@ export function ChatbotThreadToolbar({
 
   return (
     <>
-      <aside
-        className={`dark:bg-navy-800 flex h-full min-h-0 w-full shrink-0 flex-col overflow-hidden rounded-[30px] bg-white/80 ${
-          collapsed ? "items-center p-2" : "p-3"
+      <div
+        className={`flex h-full min-h-0 w-full shrink-0 flex-col overflow-hidden ${
+          collapsed ? "items-center px-2" : "px-3"
         }`}
       >
         {collapsed ? (
-          <>
-            <button
-              type="button"
-              onClick={onToggleCollapse}
-              className="hover:text-brand-500 mb-3 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#5f6368] transition hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white"
-              aria-label="Mở rộng sidebar chatbot"
-              title="Mở rộng"
-            >
-              <LuPanelLeft className="h-5 w-5" aria-hidden />
-            </button>
-            <button
-              type="button"
-              onClick={handleNewThread}
-              className="dark:bg-brand-500 dark:hover:bg-brand-400 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#d3e3fd] text-[#062e6f] transition hover:bg-[#c2d7f7] dark:text-white"
-              aria-label="Tạo cuộc trò chuyện mới"
-              title="Tạo mới"
-            >
-              <MdAdd className="h-6 w-6" aria-hidden />
-            </button>
-          </>
+          <button
+            type="button"
+            onClick={handleNewThread}
+            className="dark:bg-brand-500 dark:hover:bg-brand-400 mt-3 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#d3e3fd] text-[#062e6f] transition hover:bg-[#c2d7f7] dark:text-white"
+            aria-label="Tạo cuộc trò chuyện mới"
+            title="Tạo mới"
+          >
+            <MdAdd className="h-6 w-6" aria-hidden />
+          </button>
         ) : (
           <div className="flex min-h-0 w-full flex-1 flex-col">
             {onShowMenu ? (
@@ -189,17 +175,6 @@ export function ChatbotThreadToolbar({
                   >
                     <MdSearch className="h-5 w-5" aria-hidden />
                   </button>
-                  {onToggleCollapse ? (
-                    <button
-                      type="button"
-                      onClick={onToggleCollapse}
-                      className="hover:text-brand-500 hidden h-9 w-9 items-center justify-center rounded-full text-[#5f6368] transition hover:bg-gray-100 lg:flex dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white"
-                      aria-label="Thu gọn sidebar chatbot"
-                      title="Thu gọn"
-                    >
-                      <LuPanelLeft className="h-5 w-5" aria-hidden />
-                    </button>
-                  ) : null}
                 </div>
               </div>
             ) : null}
@@ -316,7 +291,7 @@ export function ChatbotThreadToolbar({
             </div>
           </div>
         )}
-      </aside>
+      </div>
 
       {searchOpen ? (
         <ChatbotThreadSearchDialog

@@ -33,7 +33,6 @@ const UserSidebar: React.FC<UserSidebarProps> = ({
   return (
     <SidebarShell
       open={open}
-      onClose={onClose}
       collapsed={collapsed}
       onToggleCollapse={onToggleCollapse}
     >

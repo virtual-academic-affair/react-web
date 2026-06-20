@@ -3,9 +3,7 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useRef,
   useState,
   type PropsWithChildren,
 } from "react";
@@ -33,50 +31,23 @@ const SourcePreviewContext = createContext<SourcePreviewContextValue | null>(
 export function SourcePreviewProvider({
   children,
   onOpenChange,
-  desktopOpenDelayMs = 220,
 }: PropsWithChildren<{
   onOpenChange?: (open: boolean) => void;
-  desktopOpenDelayMs?: number;
 }>) {
   const [preview, setPreview] = useState<SourcePreviewData | null>(null);
-  const previewRef = useRef<SourcePreviewData | null>(null);
-  const openTimerRef = useRef<number | null>(null);
-
-  const clearOpenTimer = useCallback(() => {
-    if (openTimerRef.current === null) return;
-    window.clearTimeout(openTimerRef.current);
-    openTimerRef.current = null;
-  }, []);
 
   const openPreview = useCallback(
     (nextPreview: SourcePreviewData) => {
-      clearOpenTimer();
-
-      if (previewRef.current || window.innerWidth < 1024) {
-        previewRef.current = nextPreview;
-        setPreview(nextPreview);
-        onOpenChange?.(true);
-        return;
-      }
-
+      setPreview(nextPreview);
       onOpenChange?.(true);
-      openTimerRef.current = window.setTimeout(() => {
-        previewRef.current = nextPreview;
-        setPreview(nextPreview);
-        openTimerRef.current = null;
-      }, desktopOpenDelayMs);
     },
-    [clearOpenTimer, desktopOpenDelayMs, onOpenChange],
+    [onOpenChange],
   );
 
   const closePreview = useCallback(() => {
-    clearOpenTimer();
-    previewRef.current = null;
     setPreview(null);
     onOpenChange?.(false);
-  }, [clearOpenTimer, onOpenChange]);
-
-  useEffect(() => clearOpenTimer, [clearOpenTimer]);
+  }, [onOpenChange]);
 
   const value = useMemo(
     () => ({ preview, openPreview, closePreview }),

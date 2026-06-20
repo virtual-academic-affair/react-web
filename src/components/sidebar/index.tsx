@@ -21,7 +21,6 @@ const Sidebar = (props: {
   return (
     <SidebarShell
       open={open}
-      onClose={onClose}
       collapsed={collapsed}
       onToggleCollapse={onToggleCollapse}
     >

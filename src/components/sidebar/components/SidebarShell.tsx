@@ -7,7 +7,6 @@ import React from "react";
 import {
   RiArrowLeftSLine,
   RiArrowRightSLine,
-  RiCloseLine,
   RiMoonFill,
   RiSunFill,
 } from "react-icons/ri";
@@ -15,17 +14,17 @@ import { useNavigate } from "react-router-dom";
 
 interface SidebarShellProps {
   open: boolean;
-  onClose: () => void;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
+  contentMode?: "list" | "custom";
   children: React.ReactNode;
 }
 
 const SidebarShell: React.FC<SidebarShellProps> = ({
   open,
-  onClose,
   collapsed = false,
   onToggleCollapse,
+  contentMode = "list",
   children,
 }) => {
   const navigate = useNavigate();
@@ -72,20 +71,11 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
 
   return (
     <div
-      className={`bg-lightPrimary dark:bg-navy-900 fixed inset-0 z-50! flex flex-col gap-4 p-4 transition-all duration-200 lg:inset-auto lg:top-5 lg:bottom-5 lg:left-5 lg:z-0! lg:bg-transparent lg:p-0 lg:dark:bg-transparent ${
-        open ? "translate-x-0" : "-translate-x-[120%] lg:translate-x-0"
-      } ${collapsed ? "lg:w-[70px]" : "w-full lg:w-78.25"}`}
+      data-open={open}
+      className={`bg-lightPrimary dark:bg-navy-900 relative z-50! flex h-screen w-[80vw] shrink-0 flex-col gap-4 p-4 lg:fixed lg:inset-auto lg:top-5 lg:bottom-5 lg:left-5 lg:z-0! lg:h-auto lg:bg-transparent lg:p-0 lg:transition-[width] lg:duration-200 lg:ease-in-out lg:will-change-[width] lg:dark:bg-transparent ${
+        collapsed ? "lg:w-[70px]" : "lg:w-78.25"
+      }`}
     >
-      <button
-        type="button"
-        aria-label="Đóng menu"
-        title="Đóng menu"
-        onClick={onClose}
-        className="dark:bg-navy-700 absolute top-6 right-6 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-600 shadow-sm transition-colors hover:bg-gray-200 lg:hidden dark:text-white dark:hover:bg-white/10"
-      >
-        <RiCloseLine className="h-5 w-5" />
-      </button>
-
       <button
         type="button"
         onClick={onToggleCollapse}
@@ -100,14 +90,28 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
       </button>
 
       <Card extra="flex-1 overflow-hidden rounded-[30px] pb-4">
-        <div className="h-full overflow-x-hidden overflow-y-auto pt-6">
-          <ul className={`mt-5 ${collapsed ? "px-2" : "px-4"}`}>{children}</ul>
-        </div>
+        {contentMode === "list" ? (
+          <div className="h-full overflow-x-hidden overflow-y-auto pt-6">
+            <ul
+              className={`mt-5 transition-[padding] duration-200 ease-in-out ${
+                collapsed ? "px-2" : "px-4"
+              }`}
+            >
+              {children}
+            </ul>
+          </div>
+        ) : (
+          <div className="flex h-full min-h-0 flex-col overflow-hidden pt-6">
+            {children}
+          </div>
+        )}
       </Card>
 
       <Card extra="rounded-[30px] px-3 py-3">
         <div
-          className={`flex items-center ${collapsed ? "justify-center" : "justify-between"}`}
+          className={`flex items-center transition-all duration-200 ease-in-out ${
+            collapsed ? "justify-center" : "justify-between"
+          }`}
         >
           <Dropdown
             button={
