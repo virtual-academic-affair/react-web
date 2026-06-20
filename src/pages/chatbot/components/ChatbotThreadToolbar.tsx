@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { MdAdd, MdArchive, MdArrowBack, MdHistory } from "react-icons/md";
+import {
+  MdAdd,
+  MdArchive,
+  MdArrowBack,
+  MdHistory,
+  MdSearch,
+} from "react-icons/md";
+import { LuPanelLeft } from "react-icons/lu";
 
 import { sortSessionsByActivity } from "../chatbotMappers";
 import { useChatbotSessionsQuery } from "../chatbotQueries";
@@ -7,15 +14,20 @@ import { useChatbotShell } from "../chatbotShellContext";
 import type { ChatThreadSession } from "../types";
 import { ChatbotThreadDeleteConfirm } from "./ChatbotThreadDeleteConfirm";
 import { ChatbotThreadRow } from "./ChatbotThreadRow";
+import { ChatbotThreadSearchDialog } from "./ChatbotThreadSearchDialog";
 
 type ThreadListMode = "active" | "archived";
 
 export function ChatbotThreadToolbar({
   onNavigate,
   onShowMenu,
+  collapsed = false,
+  onToggleCollapse,
 }: {
   onNavigate?: () => void;
   onShowMenu?: () => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }) {
   const {
     sessions,
@@ -40,6 +52,7 @@ export function ChatbotThreadToolbar({
     null,
   );
   const [isDeleting, setIsDeleting] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const activeSessionsQuery = useChatbotSessionsQuery(
     "active",
     mode === "active",
@@ -128,129 +141,191 @@ export function ChatbotThreadToolbar({
 
   return (
     <>
-      <aside className="dark:bg-navy-800 flex h-full min-h-0 w-full shrink-0 flex-col rounded-[30px] bg-white/80 p-3">
-        {onShowMenu ? (
-          <div className="mb-3 flex shrink-0 items-center justify-between gap-2 px-1">
+      <aside
+        className={`dark:bg-navy-800 flex h-full min-h-0 w-full shrink-0 flex-col overflow-hidden rounded-[30px] bg-white/80 ${
+          collapsed ? "items-center p-2" : "p-3"
+        }`}
+      >
+        {collapsed ? (
+          <>
             <button
               type="button"
-              onClick={onShowMenu}
-              className="hover:text-brand-500 inline-flex min-w-0 items-center gap-2 rounded-full px-2 py-1.5 text-sm font-semibold text-[#5f6368] transition hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white"
+              onClick={onToggleCollapse}
+              className="hover:text-brand-500 mb-3 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#5f6368] transition hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white"
+              aria-label="Mở rộng sidebar chatbot"
+              title="Mở rộng"
             >
-              <MdArrowBack className="h-4 w-4 shrink-0" aria-hidden />
-              Menu
+              <LuPanelLeft className="h-5 w-5" aria-hidden />
             </button>
-            <span className="text-navy-700 truncate px-2 text-sm font-bold dark:text-white">
-              Chatbot
-            </span>
+            <button
+              type="button"
+              onClick={handleNewThread}
+              className="dark:bg-brand-500 dark:hover:bg-brand-400 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#d3e3fd] text-[#062e6f] transition hover:bg-[#c2d7f7] dark:text-white"
+              aria-label="Tạo cuộc trò chuyện mới"
+              title="Tạo mới"
+            >
+              <MdAdd className="h-6 w-6" aria-hidden />
+            </button>
+          </>
+        ) : (
+          <div className="flex min-h-0 w-full flex-1 flex-col">
+            {onShowMenu ? (
+              <div className="mb-3 flex shrink-0 items-center gap-2 px-1">
+                <button
+                  type="button"
+                  onClick={onShowMenu}
+                  className="hover:text-brand-500 inline-flex min-w-0 items-center gap-2 rounded-full px-2 py-1.5 text-sm font-semibold text-[#5f6368] transition hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white"
+                >
+                  <MdArrowBack className="h-4 w-4 shrink-0" aria-hidden />
+                  Menu
+                </button>
+                <div className="ml-auto flex shrink-0 items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setSearchOpen(true)}
+                    className="hover:text-brand-500 flex h-9 w-9 items-center justify-center rounded-full text-[#5f6368] transition hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white"
+                    aria-label="Tìm kiếm cuộc trò chuyện"
+                    title="Tìm kiếm"
+                  >
+                    <MdSearch className="h-5 w-5" aria-hidden />
+                  </button>
+                  {onToggleCollapse ? (
+                    <button
+                      type="button"
+                      onClick={onToggleCollapse}
+                      className="hover:text-brand-500 hidden h-9 w-9 items-center justify-center rounded-full text-[#5f6368] transition hover:bg-gray-100 lg:flex dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white"
+                      aria-label="Thu gọn sidebar chatbot"
+                      title="Thu gọn"
+                    >
+                      <LuPanelLeft className="h-5 w-5" aria-hidden />
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+
+            <div className="mb-3 flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={handleNewThread}
+                className="dark:bg-brand-500 dark:hover:bg-brand-400 inline-flex h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-[#d3e3fd] px-4 text-sm font-semibold text-[#062e6f] transition hover:bg-[#c2d7f7] dark:text-white"
+              >
+                <MdAdd className="h-5 w-5 shrink-0" aria-hidden />
+                Tạo mới
+              </button>
+            </div>
+
+            <div className="mb-3 grid shrink-0 grid-cols-2 rounded-2xl bg-gray-100 p-1 dark:bg-white/8">
+              <button
+                type="button"
+                onClick={() => handleModeChange("active")}
+                className={`rounded-xl px-2 py-1.5 text-xs font-semibold transition ${
+                  mode === "active"
+                    ? "text-navy-700 dark:bg-navy-700 bg-white shadow-sm dark:text-white"
+                    : "hover:text-navy-700 text-gray-600 dark:text-gray-300 dark:hover:text-white"
+                }`}
+              >
+                Đang hoạt động
+              </button>
+              <button
+                type="button"
+                onClick={() => handleModeChange("archived")}
+                className={`rounded-xl px-2 py-1.5 text-xs font-semibold transition ${
+                  mode === "archived"
+                    ? "text-navy-700 dark:bg-navy-700 bg-white shadow-sm dark:text-white"
+                    : "hover:text-navy-700 text-gray-600 dark:text-gray-300 dark:hover:text-white"
+                }`}
+              >
+                Lưu trữ
+              </button>
+            </div>
+
+            <div className="mb-2 flex shrink-0 items-center gap-2 px-2 text-xs font-semibold tracking-wide text-[#5f6368] uppercase dark:text-gray-400">
+              {mode === "active" ? (
+                <MdHistory className="h-4 w-4" aria-hidden />
+              ) : (
+                <MdArchive className="h-4 w-4" aria-hidden />
+              )}
+              {mode === "active" ? "Lịch sử chat" : "Chat lưu trữ"}
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto pr-1 pb-4">
+              {isLoadingVisible ? (
+                <div className="rounded-xl px-3 py-2 text-sm text-[#444746] dark:text-gray-400">
+                  Đang tải...
+                </div>
+              ) : visibleSessions.length === 0 ? (
+                <div className="rounded-xl px-3 py-2 text-sm text-[#444746] dark:text-gray-400">
+                  {mode === "active"
+                    ? "Chưa có cuộc trò chuyện nào."
+                    : "Chưa có cuộc trò chuyện lưu trữ nào."}
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {visibleSessions.map((session, i) => (
+                    <ChatbotThreadRow
+                      key={session.id || `session-${i}`}
+                      session={session}
+                      isActive={session.id === activeThreadId}
+                      isEditing={
+                        mode === "active" && editingThread?.id === session.id
+                      }
+                      draft={
+                        editingThread?.id === session.id
+                          ? editingThread.draft
+                          : session.title
+                      }
+                      canSwitch
+                      canEdit={mode === "active"}
+                      archiveAction={
+                        mode === "active" ? "archive" : "unarchive"
+                      }
+                      onSwitch={() =>
+                        mode === "active"
+                          ? handleSwitch(session.id)
+                          : void handleViewArchivedThread(session)
+                      }
+                      onStartEdit={() =>
+                        setEditingThread({
+                          id: session.id,
+                          draft: session.title,
+                        })
+                      }
+                      onDraftChange={(next) =>
+                        setEditingThread((current) =>
+                          current?.id === session.id
+                            ? { ...current, draft: next }
+                            : current,
+                        )
+                      }
+                      onCancelEdit={() => setEditingThread(null)}
+                      onSaveEdit={async (next) => {
+                        setEditingThread(null);
+                        await renameThread(session.id, next);
+                      }}
+                      onArchive={() =>
+                        mode === "active"
+                          ? handleArchive(session)
+                          : void handleUnarchive(session)
+                      }
+                      onDelete={() => handleDelete(session)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        ) : null}
-
-        <div className="mb-3 flex shrink-0 items-center gap-2">
-          <button
-            type="button"
-            onClick={handleNewThread}
-            className="dark:bg-brand-500 dark:hover:bg-brand-400 inline-flex h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-[#d3e3fd] px-4 text-sm font-semibold text-[#062e6f] transition hover:bg-[#c2d7f7] dark:text-white"
-          >
-            <MdAdd className="h-5 w-5 shrink-0" aria-hidden />
-            Tạo mới
-          </button>
-        </div>
-
-        <div className="mb-3 grid shrink-0 grid-cols-2 rounded-2xl bg-gray-100 p-1 dark:bg-white/8">
-          <button
-            type="button"
-            onClick={() => handleModeChange("active")}
-            className={`rounded-xl px-2 py-1.5 text-xs font-semibold transition ${
-              mode === "active"
-                ? "text-navy-700 dark:bg-navy-700 bg-white shadow-sm dark:text-white"
-                : "hover:text-navy-700 text-gray-600 dark:text-gray-300 dark:hover:text-white"
-            }`}
-          >
-            Đang hoạt động
-          </button>
-          <button
-            type="button"
-            onClick={() => handleModeChange("archived")}
-            className={`rounded-xl px-2 py-1.5 text-xs font-semibold transition ${
-              mode === "archived"
-                ? "text-navy-700 dark:bg-navy-700 bg-white shadow-sm dark:text-white"
-                : "hover:text-navy-700 text-gray-600 dark:text-gray-300 dark:hover:text-white"
-            }`}
-          >
-            Lưu trữ
-          </button>
-        </div>
-
-        <div className="mb-2 flex shrink-0 items-center gap-2 px-2 text-xs font-semibold tracking-wide text-[#5f6368] uppercase dark:text-gray-400">
-          {mode === "active" ? (
-            <MdHistory className="h-4 w-4" aria-hidden />
-          ) : (
-            <MdArchive className="h-4 w-4" aria-hidden />
-          )}
-          {mode === "active" ? "Lịch sử chat" : "Chat lưu trữ"}
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto pr-1 pb-4">
-          {isLoadingVisible ? (
-            <div className="rounded-xl px-3 py-2 text-sm text-[#444746] dark:text-gray-400">
-              Đang tải...
-            </div>
-          ) : visibleSessions.length === 0 ? (
-            <div className="rounded-xl px-3 py-2 text-sm text-[#444746] dark:text-gray-400">
-              {mode === "active"
-                ? "Chưa có cuộc trò chuyện nào."
-                : "Chưa có cuộc trò chuyện lưu trữ nào."}
-            </div>
-          ) : (
-            <div className="space-y-1">
-              {visibleSessions.map((session, i) => (
-                <ChatbotThreadRow
-                  key={session.id || `session-${i}`}
-                  session={session}
-                  isActive={session.id === activeThreadId}
-                  isEditing={
-                    mode === "active" && editingThread?.id === session.id
-                  }
-                  draft={
-                    editingThread?.id === session.id
-                      ? editingThread.draft
-                      : session.title
-                  }
-                  canSwitch
-                  canEdit={mode === "active"}
-                  archiveAction={mode === "active" ? "archive" : "unarchive"}
-                  onSwitch={() =>
-                    mode === "active"
-                      ? handleSwitch(session.id)
-                      : void handleViewArchivedThread(session)
-                  }
-                  onStartEdit={() =>
-                    setEditingThread({ id: session.id, draft: session.title })
-                  }
-                  onDraftChange={(next) =>
-                    setEditingThread((current) =>
-                      current?.id === session.id
-                        ? { ...current, draft: next }
-                        : current,
-                    )
-                  }
-                  onCancelEdit={() => setEditingThread(null)}
-                  onSaveEdit={async (next) => {
-                    setEditingThread(null);
-                    await renameThread(session.id, next);
-                  }}
-                  onArchive={() =>
-                    mode === "active"
-                      ? handleArchive(session)
-                      : void handleUnarchive(session)
-                  }
-                  onDelete={() => handleDelete(session)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+        )}
       </aside>
+
+      {searchOpen ? (
+        <ChatbotThreadSearchDialog
+          sessions={activeSessions}
+          activeThreadId={activeThreadId}
+          onClose={() => setSearchOpen(false)}
+          onSelect={handleSwitch}
+        />
+      ) : null}
 
       <ChatbotThreadDeleteConfirm
         target={deleteTarget}

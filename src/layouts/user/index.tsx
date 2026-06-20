@@ -29,10 +29,14 @@ const UserDocumentsPage = lazy(() => import("@/pages/user/documents"));
 const UserLayout = () => {
   const [open, setOpen] = useState(() => window.innerWidth >= 1024);
   const [collapsed, setCollapsed] = useState(false);
+  const [chatbotCollapsed, setChatbotCollapsed] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
       setOpen(window.innerWidth >= 1024);
+      if (window.innerWidth < 1024) {
+        setChatbotCollapsed(false);
+      }
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
@@ -58,21 +62,23 @@ const UserLayout = () => {
   }, [isUserChatbotRoute]);
 
   const showChatbotSidebar = isUserChatbotRoute && sidebarMode === "chatbot";
-  const effectiveCollapsed = showChatbotSidebar ? false : collapsed;
+  const effectiveCollapsed = showChatbotSidebar ? chatbotCollapsed : collapsed;
   useMobileBodyScrollLock(open);
 
   const layoutBody = (
     <>
       {showChatbotSidebar ? (
         <div
-          className={`bg-lightPrimary dark:bg-navy-900 fixed inset-0 z-50! flex w-full flex-col p-4 transition-all duration-200 lg:inset-auto lg:top-5 lg:bottom-5 lg:left-5 lg:z-0! lg:w-78.25 lg:bg-transparent lg:p-0 lg:dark:bg-transparent ${
+          className={`bg-lightPrimary dark:bg-navy-900 fixed inset-0 z-50! flex w-full flex-col p-4 transition-all duration-200 lg:inset-auto lg:top-5 lg:bottom-5 lg:left-5 lg:z-0! lg:bg-transparent lg:p-0 lg:dark:bg-transparent ${
             open ? "translate-x-0" : "-translate-x-[120%] lg:translate-x-0"
-          }`}
+          } ${chatbotCollapsed ? "lg:w-[70px]" : "lg:w-78.25"}`}
         >
           <Suspense fallback={<PageLoader />}>
             <ChatbotThreadToolbar
               onNavigate={() => setOpen(false)}
               onShowMenu={() => setSidebarMode("app")}
+              collapsed={chatbotCollapsed}
+              onToggleCollapse={() => setChatbotCollapsed((current) => !current)}
             />
           </Suspense>
         </div>
