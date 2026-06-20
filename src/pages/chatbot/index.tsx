@@ -1,7 +1,9 @@
 import { Alert } from "antd";
 import "katex/dist/katex.min.css";
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import "streamdown/styles.css";
+
+import { useSourcePreview } from "@/components/assistant-ui/source-preview-context";
 
 import { ChatbotErrorBoundary } from "./ChatbotErrorBoundary";
 import { useChatbotShell } from "./chatbotShellContext";
@@ -9,9 +11,18 @@ import { GeminiThread } from "./components/GeminiThread";
 
 function ChatbotPageInner() {
   const { errorMessage, clearError, activeThreadId } = useChatbotShell();
+  const { closePreview } = useSourcePreview();
+  const previousThreadIdRef = useRef(activeThreadId);
+
+  useEffect(() => {
+    if (previousThreadIdRef.current !== activeThreadId) {
+      closePreview();
+      previousThreadIdRef.current = activeThreadId;
+    }
+  }, [activeThreadId, closePreview]);
 
   return (
-    <div className="flex max-h-full min-h-screen w-full flex-col bg-transparent">
+    <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-transparent">
       {errorMessage ? (
         <Alert
           type="error"
@@ -22,13 +33,15 @@ function ChatbotPageInner() {
           className="mb-4"
         />
       ) : null}
-      <div className="flex min-h-0 flex-1">
-        {/* key forces a clean remount when switching sessions so
-            ThreadPrimitive.Root re-subscribes to the correct thread */}
-        <GeminiThread
-          key={activeThreadId}
-          className="mx-auto max-w-[860px] flex-1"
-        />
+      <div className="flex min-h-0 flex-1 items-stretch">
+        <div className="flex min-h-0 min-w-0 flex-1">
+          {/* key forces a clean remount when switching sessions so
+              ThreadPrimitive.Root re-subscribes to the correct thread */}
+          <GeminiThread
+            key={activeThreadId}
+            className="min-h-0 w-full flex-1"
+          />
+        </div>
       </div>
     </div>
   );

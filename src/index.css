@@ -430,13 +430,15 @@
    BASE
    ───────────────────────────────────────────────────────────────────────── */
 
-*,
-::before,
-::after {
-  transition-property:
-    color, background-color, border-color, text-decoration-color, fill, stroke;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 200ms;
+@layer base {
+  *,
+  ::before,
+  ::after {
+    transition-property:
+      color, background-color, border-color, text-decoration-color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 200ms;
+  }
 }
 
 html,
@@ -691,6 +693,100 @@ body.dark .ant-notification-notice {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes reasoning-status-shimmer {
+  0%,
+  25% {
+    background-position: 100% 0;
+  }
+
+  25%,
+  100% {
+    background-position: 0% 0;
+  }
+}
+
+.reasoning-status-shimmer {
+  color: transparent;
+  background-image: linear-gradient(
+    90deg,
+    #80868b 0%,
+    #9aa0a6 38%,
+    #ffffff 50%,
+    #9aa0a6 62%,
+    #80868b 100%
+  );
+  background-position: 140% 0;
+  background-size: 260% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: reasoning-status-shimmer 4s ease-in-out infinite;
+}
+
+.dark .reasoning-status-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    #8f98aa 0%,
+    #b8c0d6 38%,
+    #ffffff 50%,
+    #b8c0d6 62%,
+    #8f98aa 100%
+  );
+}
+
+@keyframes source-card-shimmer {
+  from {
+    transform: translateX(-140%);
+  }
+
+  to {
+    transform: translateX(140%);
+  }
+}
+
+.source-card-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.source-card-shimmer::after {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgb(255 255 255 / 70%) 50%,
+    transparent 70%
+  );
+  transform: translateX(-140%);
+}
+
+.source-card-shimmer:hover::after {
+  animation: source-card-shimmer 900ms ease-in-out 1;
+}
+
+.dark .source-card-shimmer::after {
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgb(168 199 250 / 18%) 50%,
+    transparent 70%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reasoning-status-shimmer {
+    animation: none;
+    color: currentColor;
+    background-image: none;
+  }
+
+  .source-card-shimmer:hover::after {
+    animation: none;
   }
 }
 

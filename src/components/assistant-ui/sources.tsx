@@ -8,17 +8,35 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type ReactNode,
 } from "react";
-import { createPortal } from "react-dom";
+import {
+  LuCheck,
+  LuCodeXml,
+  LuCopy,
+  LuExternalLink,
+  LuEye,
+  LuFileText,
+  LuX,
+} from "react-icons/lu";
 import {
   MdArrowDownward,
   MdArrowUpward,
   MdArticle,
-  MdOpenInNew,
   MdPictureAsPdf,
 } from "react-icons/md";
+import { Streamdown } from "streamdown";
+
+import { copyTextToClipboard } from "@/components/copyable/copyTextToClipboard";
+import {
+  STREAMDOWN_CONTROLS,
+  STREAMDOWN_LINK_SAFETY,
+} from "@/components/markdown/streamdown-config";
+import { useStreamdownMathPlugins } from "@/components/markdown/useStreamdownMathPlugins";
+
 import Tooltip from "../tooltip/Tooltip";
+import { useSourcePreview } from "./source-preview-context";
 
 type SourceMeta = {
   citationId?: number;
@@ -38,6 +56,10 @@ type HighlightRange = {
   ranges: PageRange[];
   reason: "line" | "page" | "title" | "none";
 };
+
+type SourcePreviewMode = "preview" | "code";
+
+const HIGHLIGHT_START_VIEWPORT_ANCHOR = 0.35;
 
 function getPageLabel(pages?: string[]) {
   if (!pages?.length) return "";
@@ -168,43 +190,69 @@ export function Sources({
   );
 }
 
-function SourcePreviewDrawer({
-  open,
-  onClose,
-  title,
-  fileName,
-  pageLabel,
-  pages,
-  markdownUrl,
-  pdfUrl,
-}: {
-  open: boolean;
-  onClose: () => void;
-  title: string | undefined;
-  fileName?: string;
-  pageLabel: string;
-  pages?: string[];
-  markdownUrl?: string;
-  pdfUrl: string | undefined;
-}) {
+function buildMarkdownSegments(lines: string[], ranges: PageRange[]) {
+  const segments: Array<{
+    start: number;
+    end: number;
+    highlighted: boolean;
+    content: string;
+  }> = [];
+
+  lines.forEach((line, index) => {
+    const highlighted = ranges.some(
+      (range) => index >= range.start && index <= range.end,
+    );
+    const previous = segments.at(-1);
+
+    if (previous && previous.highlighted === highlighted) {
+      previous.end = index;
+      previous.content += `\n${line}`;
+      return;
+    }
+
+    segments.push({
+      start: index,
+      end: index,
+      highlighted,
+      content: line,
+    });
+  });
+
+  return segments;
+}
+
+function clampPanelWidth(width: number, containerWidth: number) {
+  const minWidth = Math.min(420, containerWidth);
+  const maxWidth = Math.max(minWidth, containerWidth - 360);
+  return Math.min(Math.max(width, minWidth), maxWidth);
+}
+
+export function SourcePreviewPanel() {
+  const { preview, closePreview } = useSourcePreview();
+  const [mode, setMode] = useState<SourcePreviewMode>("preview");
+  const [panelWidth, setPanelWidth] = useState(() =>
+    Math.min(720, Math.max(480, window.innerWidth * 0.3)),
+  );
   const [content, setContent] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(Boolean(preview?.markdownUrl));
   const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
+  const panelRef = useRef<HTMLElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
-  const highlightRef = useRef<HTMLDivElement | null>(null);
   const scrollRafRef = useRef<number | null>(null);
   const [jumpState, setJumpState] = useState<{
     up: PageRange | null;
     down: PageRange | null;
   }>({ up: null, down: null });
+  const plugins = useStreamdownMathPlugins();
+  const markdownUrl = preview?.markdownUrl;
+  const title = preview?.title;
+  const pages = preview?.pages;
 
   useEffect(() => {
-    if (!open || !markdownUrl) return;
+    if (!markdownUrl) return;
 
     const controller = new AbortController();
-    setLoading(true);
-    setError("");
-    setContent("");
 
     fetch(markdownUrl, { signal: controller.signal })
       .then((response) => {
@@ -225,12 +273,16 @@ function SourcePreviewDrawer({
       });
 
     return () => controller.abort();
-  }, [markdownUrl, open]);
+  }, [markdownUrl]);
 
   const lines = useMemo(() => content.split(/\r?\n/), [content]);
   const highlight = useMemo(
     () => findHighlightRange(lines, pages, title ?? ""),
     [lines, pages, title],
+  );
+  const markdownSegments = useMemo(
+    () => buildMarkdownSegments(lines, highlight.ranges),
+    [highlight.ranges, lines],
   );
 
   const scrollToRange = useCallback((range: PageRange) => {
@@ -238,18 +290,15 @@ function SourcePreviewDrawer({
     const target = root?.querySelector(
       `[data-line-number="${range.start + 1}"]`,
     ) as HTMLDivElement | null;
-    const endTarget = root?.querySelector(
-      `[data-line-number="${range.end + 1}"]`,
-    ) as HTMLDivElement | null;
     if (!root || !target || range.start < 0) return;
 
     const rootRect = root.getBoundingClientRect();
     const targetRect = target.getBoundingClientRect();
-    const endRect = endTarget?.getBoundingClientRect() ?? targetRect;
     const targetTop = targetRect.top - rootRect.top + root.scrollTop;
-    const targetBottom = endRect.bottom - rootRect.top + root.scrollTop;
-    const targetCenter = (targetTop + targetBottom) / 2;
-    const nextScrollTop = Math.max(targetCenter - root.clientHeight / 2, 0);
+    const nextScrollTop = Math.max(
+      targetTop - root.clientHeight * HIGHLIGHT_START_VIEWPORT_ANCHOR,
+      0,
+    );
 
     root.scrollTo({
       top: nextScrollTop,
@@ -281,9 +330,7 @@ function SourcePreviewDrawer({
         const startEl = root.querySelector(
           `[data-line-number="${range.start + 1}"]`,
         );
-        const endEl = root.querySelector(
-          `[data-line-number="${range.end + 1}"]`,
-        );
+        const endEl = root.querySelector(`[data-line-end="${range.end + 1}"]`);
         if (!startEl) continue;
 
         const startRect = startEl.getBoundingClientRect();
@@ -299,7 +346,8 @@ function SourcePreviewDrawer({
       }
 
       setJumpState((prev) =>
-        prev.up?.start === upTarget?.start && prev.down?.start === downTarget?.start
+        prev.up?.start === upTarget?.start &&
+        prev.down?.start === downTarget?.start
           ? prev
           : { up: upTarget, down: downTarget },
       );
@@ -307,13 +355,13 @@ function SourcePreviewDrawer({
   }, [highlight.ranges]);
 
   useLayoutEffect(() => {
-    if (!open || loading || !content || highlight.start < 0) return;
+    if (loading || !content || highlight.start < 0) return;
     scrollToHighlight();
     handleScroll();
-  }, [content, highlight, loading, open, scrollToHighlight, handleScroll]);
+  }, [content, handleScroll, highlight, loading, mode, scrollToHighlight]);
 
   useEffect(() => {
-    if (!open || loading || !content || highlight.start < 0) return;
+    if (loading || !content || highlight.start < 0) return;
     const frames: number[] = [];
     const timers = [0, 100, 300, 500, 800, 1200].map((delay) =>
       window.setTimeout(() => {
@@ -334,180 +382,281 @@ function SourcePreviewDrawer({
       frames.forEach(cancelAnimationFrame);
       timers.forEach(window.clearTimeout);
     };
-  }, [content, highlight, loading, open, scrollToHighlight]);
-
-  const headerExtra = (
-    <div className="flex items-center gap-2">
-      {markdownUrl ? (
-        <Tooltip label={"Mở file markdown"} placement="topRight">
-          <a
-            href={markdownUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-[#1a73e8] dark:hover:bg-white/10 dark:hover:text-[#a8c7fa]"
-            aria-label="Mở file markdown"
-          >
-            <MdArticle className="h-5 w-5" />
-          </a>
-        </Tooltip>
-      ) : null}
-      <Tooltip label={"Mở file PDF"} placement="topRight">
-        <a
-          href={pdfUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-[#1a73e8] dark:hover:bg-white/10 dark:hover:text-[#a8c7fa]"
-          aria-label="Mở file PDF"
-        >
-          <MdOpenInNew className="h-5 w-5" />
-        </a>
-      </Tooltip>
-    </div>
-  );
+  }, [content, handleScroll, highlight, loading, mode, scrollToHighlight]);
 
   useEffect(() => {
-    if (!open) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") closePreview();
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose, open]);
+  }, [closePreview]);
 
-  if (!open) return null;
+  const handleResizeStart = useCallback(
+    (event: React.PointerEvent<HTMLButtonElement>) => {
+      if (event.button !== 0) return;
+      const container = panelRef.current?.parentElement;
+      if (!container) return;
 
-  return createPortal(
-    <>
-      <div
-        className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      <div className="pointer-events-none fixed inset-0 z-50 flex justify-end">
-        <aside className="dark:bg-navy-800 pointer-events-auto my-6 mr-6 flex h-[calc(100%-48px)] w-[min(1120px,calc(100vw-48px))] flex-col rounded-[30px] bg-white shadow-2xl">
-          <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-6 py-4 dark:border-white/10">
-            <h2 className="text-navy-700 min-w-0 flex-1 truncate text-base font-bold dark:text-white">
-              {fileName || title || "Tài liệu tham khảo"}
-            </h2>
-            <div className="flex shrink-0 items-center gap-3">
-              {headerExtra}
-              <Tooltip label={"Đóng"} placement="topRight">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-white/10"
-                  aria-label="Đóng"
-                >
-                  <span className="text-xl leading-none" aria-hidden>
-                    ×
-                  </span>
-                </button>
-              </Tooltip>
-            </div>
-          </div>
+      event.preventDefault();
+      const containerRect = container.getBoundingClientRect();
+      const previousCursor = document.body.style.cursor;
+      const previousUserSelect = document.body.style.userSelect;
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 text-sm leading-relaxed">
-            <div className="space-y-4 text-[#1f1f1f] dark:text-white">
-              <div className="rounded-2xl border border-[#d3e3fd] bg-[#f8fafd] p-4 dark:border-white/10 dark:bg-white/[0.04]">
-                <div className="flex items-start gap-3">
-                  <span
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e8f0fe] text-[#1a73e8] dark:bg-[#1f3760]/60 dark:text-[#a8c7fa]"
-                    aria-hidden
-                  >
-                    <MdPictureAsPdf className="h-5 w-5" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold">{title}</p>
-                    <p className="mt-1 text-xs text-[#5f6368] dark:text-gray-400">
-                      {pageLabel || "Không có thông tin dòng"}
-                    </p>
-                  </div>
-                </div>
-              </div>
+      const handlePointerMove = (moveEvent: PointerEvent) => {
+        setPanelWidth(
+          clampPanelWidth(
+            containerRect.right - moveEvent.clientX,
+            containerRect.width,
+          ),
+        );
+      };
+      const handlePointerUp = () => {
+        document.body.style.cursor = previousCursor;
+        document.body.style.userSelect = previousUserSelect;
+        window.removeEventListener("pointermove", handlePointerMove);
+        window.removeEventListener("pointerup", handlePointerUp);
+      };
 
-              {!markdownUrl ? (
-                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-100">
-                  Tài liệu này chưa có file markdown để xem trực tiếp. Bạn vẫn
-                  có thể mở PDF gốc bằng nút ở góc trên.
-                </div>
-              ) : loading ? (
-                <div className="rounded-2xl border border-[#dadce0] bg-white px-4 py-8 text-center text-sm text-[#5f6368] dark:border-white/10 dark:bg-white/[0.04] dark:text-gray-300">
-                  Đang mở nội dung tài liệu...
-                </div>
-              ) : error ? (
-                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-400/20 dark:bg-red-400/10 dark:text-red-100">
-                  {error}
-                </div>
-              ) : content ? (
-                <div className="relative overflow-hidden rounded-2xl border border-[#dadce0] bg-white dark:border-white/10 dark:bg-[#080f2f]">
-                  <div
-                    ref={scrollContainerRef}
-                    onScroll={handleScroll}
-                    className="min-h-[280px] overflow-y-auto py-2 font-mono text-xs leading-5"
-                    style={{ height: "min(560px, calc(100vh - 280px))" }}
-                  >
-                    {lines.map((line, index) => {
-                      const highlighted = highlight.ranges.some(
-                        (range) => index >= range.start && index <= range.end,
-                      );
-                      const isFirstHighlight = index === highlight.start;
-
-                      return (
-                        <div
-                          key={`${index}-${line.slice(0, 12)}`}
-                          ref={isFirstHighlight ? highlightRef : undefined}
-                          data-line-number={index + 1}
-                          className={`grid grid-cols-[4rem_1fr] gap-3 px-4 ${
-                            highlighted
-                              ? "bg-[#fff7cc] text-[#1f1f1f] dark:bg-[#5c4a00]/55 dark:text-[#fff7cc]"
-                              : "text-[#3c4043] dark:text-[#d9e2ff]"
-                          }`}
-                        >
-                          <span className="text-right text-[#80868b] select-none dark:text-[#7d89b0]">
-                            {index + 1}
-                          </span>
-                          <pre className="min-w-0 font-mono break-words whitespace-pre-wrap">
-                            {line || " "}
-                          </pre>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Floating jump buttons */}
-                  {jumpState.up && (
-                    <button
-                      onClick={() => scrollToRange(jumpState.up!)}
-                      className="absolute left-1/2 top-4 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full bg-gray-900/80 text-white shadow-md backdrop-blur transition-all hover:bg-gray-900 dark:bg-[#1f3760] dark:text-[#a8c7fa] dark:hover:bg-[#1a73e8] dark:hover:text-white"
-                      aria-label="Đoạn đánh dấu trước đó"
-                    >
-                      <MdArrowUpward className="h-5 w-5" />
-                    </button>
-                  )}
-                  {jumpState.down && (
-                    <button
-                      onClick={() => scrollToRange(jumpState.down!)}
-                      className="absolute bottom-4 left-1/2 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full bg-gray-900/80 text-white shadow-md backdrop-blur transition-all hover:bg-gray-900 dark:bg-[#1f3760] dark:text-[#a8c7fa] dark:hover:bg-[#1a73e8] dark:hover:text-white"
-                      aria-label="Đoạn đánh dấu tiếp theo"
-                    >
-                      <MdArrowDownward className="h-5 w-5" />
-                    </button>
-                  )}
-                </div>
-              ) : null}
-            </div>
-          </div>
-        </aside>
-      </div>
-    </>,
-    document.body,
+      window.addEventListener("pointermove", handlePointerMove);
+      window.addEventListener("pointerup", handlePointerUp);
+    },
+    [],
   );
+
+  const handleCopy = useCallback(async () => {
+    const success = await copyTextToClipboard(content);
+    if (!success) return;
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1600);
+  }, [content]);
+
+  if (!preview) return null;
+
+  const headerTitle = preview.fileName || preview.title || "Tài liệu tham khảo";
+  const panelStyle = {
+    "--source-preview-width": `${panelWidth}px`,
+  } as CSSProperties;
+
+  return (
+    <aside
+      ref={panelRef}
+      style={panelStyle}
+      className="dark:bg-navy-800 relative z-50 flex h-dvh min-h-0 w-screen shrink-0 flex-col overflow-hidden bg-white shadow-2xl lg:z-20 lg:my-5 lg:mr-[31px] lg:h-[calc(100dvh-2.5rem)] lg:w-(--source-preview-width) lg:rounded-[24px] lg:border lg:border-gray-200 lg:shadow-xl dark:lg:border-white/10"
+    >
+      <button
+        type="button"
+        onPointerDown={handleResizeStart}
+        className="group absolute inset-y-0 -left-2 z-30 hidden w-4 cursor-col-resize items-center justify-center lg:flex"
+        aria-label="Điều chỉnh độ rộng bản xem trước"
+      >
+        <span className="h-16 w-1 cursor-col-resize rounded-full bg-gray-300 transition group-hover:bg-[#1a73e8] dark:bg-white/20 dark:group-hover:bg-[#a8c7fa]" />
+      </button>
+
+      <header className="flex shrink-0 items-center gap-3 border-b border-gray-200 px-4 py-3 dark:border-white/10">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#e8f0fe] text-[#1a73e8] dark:bg-[#1f3760]/60 dark:text-[#a8c7fa]">
+          <LuFileText className="h-5 w-5" aria-hidden />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2
+            className="truncate text-sm font-semibold text-[#1f1f1f] dark:text-white"
+            title={headerTitle}
+          >
+            {headerTitle}
+          </h2>
+          <p className="mt-0.5 truncate text-xs text-[#5f6368] dark:text-gray-400">
+            {preview.pageLabel || "Không có thông tin dòng"}
+          </p>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-1.5">
+          <div className="flex items-center rounded-xl bg-gray-100 p-1 dark:bg-white/8">
+            <Tooltip label="Preview" placement="topRight">
+              <button
+                type="button"
+                onClick={() => setMode("preview")}
+                className={`flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold transition ${
+                  mode === "preview"
+                    ? "bg-white text-[#1a73e8] shadow-sm dark:bg-white/12 dark:text-[#a8c7fa]"
+                    : "text-[#5f6368] hover:text-[#1f1f1f] dark:text-gray-400 dark:hover:text-white"
+                }`}
+                aria-pressed={mode === "preview"}
+              >
+                <LuEye className="h-4 w-4" aria-hidden />
+              </button>
+            </Tooltip>
+            <Tooltip label="Code" placement="topRight">
+              <button
+                type="button"
+                onClick={() => setMode("code")}
+                className={`flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold transition ${
+                  mode === "code"
+                    ? "bg-white text-[#1a73e8] shadow-sm dark:bg-white/12 dark:text-[#a8c7fa]"
+                    : "text-[#5f6368] hover:text-[#1f1f1f] dark:text-gray-400 dark:hover:text-white"
+                }`}
+                aria-pressed={mode === "code"}
+              >
+                <LuCodeXml className="h-4 w-4" aria-hidden />
+              </button>
+            </Tooltip>
+          </div>
+
+          <Tooltip label={copied ? "Đã sao chép" : "Sao chép"}>
+            <button
+              type="button"
+              onClick={() => void handleCopy()}
+              disabled={!content}
+              className="flex h-9 items-center gap-1.5 rounded-xl px-2.5 text-xs font-semibold text-[#5f6368] transition hover:bg-gray-100 hover:text-[#1f1f1f] disabled:cursor-not-allowed disabled:opacity-40 dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white"
+              aria-label={copied ? "Đã sao chép" : "Sao chép nội dung"}
+            >
+              {copied ? (
+                <LuCheck className="h-4 w-4 text-green-500" aria-hidden />
+              ) : (
+                <LuCopy className="h-4 w-4" aria-hidden />
+              )}
+            </button>
+          </Tooltip>
+
+          {preview.pdfUrl ? (
+            <Tooltip label="Mở file gốc" placement="topRight">
+              <a
+                href={preview.pdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-[#5f6368] transition hover:bg-gray-100 hover:text-[#1a73e8] dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-[#a8c7fa]"
+                aria-label="Mở file gốc"
+              >
+                <LuExternalLink className="h-4 w-4" />
+              </a>
+            </Tooltip>
+          ) : null}
+
+          <Tooltip label="Đóng" placement="topRight">
+            <button
+              type="button"
+              onClick={closePreview}
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-[#5f6368] transition hover:bg-gray-100 hover:text-[#1f1f1f] dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white"
+              aria-label="Đóng bản xem trước"
+            >
+              <LuX className="h-5 w-5" aria-hidden />
+            </button>
+          </Tooltip>
+        </div>
+      </header>
+
+      <div className="relative min-h-0 flex-1 bg-[#fbfcfe] dark:bg-[#080f2f]">
+        {!markdownUrl ? (
+          <div className="m-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-100">
+            Tài liệu này chưa có file markdown để xem trực tiếp.
+          </div>
+        ) : loading ? (
+          <div className="flex h-full items-center justify-center text-sm text-[#5f6368] dark:text-gray-300">
+            Đang mở nội dung tài liệu...
+          </div>
+        ) : error ? (
+          <div className="m-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-400/20 dark:bg-red-400/10 dark:text-red-100">
+            {error}
+          </div>
+        ) : content ? (
+          <div
+            ref={scrollContainerRef}
+            onScroll={handleScroll}
+            className="h-full overflow-auto"
+          >
+            {mode === "preview" ? (
+              <div className="mx-auto max-w-4xl px-6 py-7">
+                {markdownSegments.map((segment) => (
+                  <div
+                    key={`${segment.start}-${segment.end}`}
+                    data-line-number={segment.start + 1}
+                    data-line-end={segment.end + 1}
+                    className={`rounded-md px-2 ${
+                      segment.highlighted
+                        ? "bg-[#fff3a3] text-[#1f1f1f] dark:bg-[#5c4a00]/65 dark:text-[#fff7cc]"
+                        : ""
+                    }`}
+                  >
+                    <Streamdown
+                      mode="static"
+                      controls={STREAMDOWN_CONTROLS}
+                      linkSafety={STREAMDOWN_LINK_SAFETY}
+                      plugins={plugins}
+                      className="text-[15px] leading-7 text-[#24292f] dark:text-[#e6edf3]"
+                    >
+                      {segment.content || " "}
+                    </Streamdown>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="min-w-max py-3 font-mono text-xs leading-6">
+                {lines.map((line, index) => {
+                  const highlighted = highlight.ranges.some(
+                    (range) => index >= range.start && index <= range.end,
+                  );
+
+                  return (
+                    <div
+                      key={`${index}-${line.slice(0, 12)}`}
+                      data-line-number={index + 1}
+                      data-line-end={index + 1}
+                      className={`grid grid-cols-[3.5rem_minmax(0,1fr)] gap-3 px-4 ${
+                        highlighted
+                          ? "bg-[#fff3a3] text-[#1f1f1f] dark:bg-[#5c4a00]/65 dark:text-[#fff7cc]"
+                          : "text-[#3c4043] dark:text-[#d9e2ff]"
+                      }`}
+                    >
+                      <span className="text-right text-[#80868b] select-none dark:text-[#7d89b0]">
+                        {index + 1}
+                      </span>
+                      <pre className="min-w-0 font-mono whitespace-pre">
+                        {line || " "}
+                      </pre>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ) : null}
+
+        {jumpState.up ? (
+          <button
+            type="button"
+            onClick={() => scrollToRange(jumpState.up!)}
+            className="absolute top-4 left-1/2 z-10 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full bg-gray-900/80 text-white shadow-md backdrop-blur transition hover:bg-gray-900 dark:bg-[#1f3760] dark:text-[#a8c7fa] dark:hover:bg-[#1a73e8] dark:hover:text-white"
+            aria-label="Đoạn đánh dấu trước đó"
+          >
+            <MdArrowUpward className="h-5 w-5" />
+          </button>
+        ) : null}
+        {jumpState.down ? (
+          <button
+            type="button"
+            onClick={() => scrollToRange(jumpState.down!)}
+            className="absolute bottom-4 left-1/2 z-10 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full bg-gray-900/80 text-white shadow-md backdrop-blur transition hover:bg-gray-900 dark:bg-[#1f3760] dark:text-[#a8c7fa] dark:hover:bg-[#1a73e8] dark:hover:text-white"
+            aria-label="Đoạn đánh dấu tiếp theo"
+          >
+            <MdArrowDownward className="h-5 w-5" />
+          </button>
+        ) : null}
+      </div>
+    </aside>
+  );
+}
+
+export function SourcePreviewCanvas() {
+  const { preview } = useSourcePreview();
+  return preview ? <SourcePreviewPanel key={preview.key} /> : null;
 }
 
 export function Source(props: SourceMessagePartProps) {
   const { url, title } = props;
   const meta = props as SourceMessagePartProps & SourceMeta;
   const { hideCitationNumber } = useContext(SourceNumberContext);
-  const [previewOpen, setPreviewOpen] = useState(false);
+  const { openPreview } = useSourcePreview();
   const fileName = meta.fileName?.trim();
   const label = title?.trim() || fileName || url;
   const pageLabel = getPageLabel(meta.pages);
@@ -517,57 +666,52 @@ export function Source(props: SourceMessagePartProps) {
       : null;
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => setPreviewOpen(true)}
-        className="group flex w-full min-w-0 items-start gap-3 rounded-2xl border border-[#dadce0] bg-[#f8fafd] px-3 py-3 text-left text-[#1f1f1f] transition hover:border-[#1a73e8]/45 hover:bg-[#f1f6ff] dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:border-[#a8c7fa]/45 dark:hover:bg-white/[0.07]"
+    <button
+      type="button"
+      onClick={() =>
+        openPreview({
+          key: [
+            meta.markdownUrl || url || fileName || label,
+            meta.pages?.join(",") || "",
+          ].join(":"),
+          title: label,
+          fileName,
+          pageLabel,
+          pages: meta.pages,
+          markdownUrl: meta.markdownUrl,
+          pdfUrl: url,
+        })
+      }
+      className="source-card-shimmer group flex w-full min-w-0 items-start gap-3 rounded-2xl border border-[#dadce0] bg-[#f8fafd] px-3 py-3 text-left text-[#1f1f1f] transition hover:border-[#1a73e8]/45 hover:bg-[#f1f6ff] dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:border-[#a8c7fa]/45 dark:hover:bg-white/[0.07]"
+    >
+      <span
+        className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#e8f0fe] text-[#1a73e8] dark:bg-[#1f3760]/60 dark:text-[#a8c7fa]"
+        aria-hidden
       >
-        <span
-          className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#e8f0fe] text-[#1a73e8] dark:bg-[#1f3760]/60 dark:text-[#a8c7fa]"
-          aria-hidden
-        >
-          <MdPictureAsPdf className="h-5 w-5" />
-        </span>
+        <MdPictureAsPdf className="h-5 w-5" />
+      </span>
 
-        <span className="min-w-0 flex-1">
-          <span className="flex min-w-0 flex-wrap items-center gap-2">
-            {citationLabel ? (
-              <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-[#062e6f] ring-1 ring-[#d3e3fd] dark:bg-white/10 dark:text-[#d3e3fd] dark:ring-white/10">
-                {citationLabel}
-              </span>
-            ) : null}
-            <span className="truncate text-sm leading-5 font-semibold">
-              {fileName || label}
-            </span>
-          </span>
-
-          {fileName && label !== fileName ? (
-            <span className="mt-0.5 block text-sm leading-5 wrap-break-word text-[#444746] dark:text-gray-300">
-              {label}
+      <span className="min-w-0 flex-1">
+        <span className="flex min-w-0 flex-wrap items-center gap-2">
+          {citationLabel ? (
+            <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-[#062e6f] ring-1 ring-[#d3e3fd] dark:bg-white/10 dark:text-[#d3e3fd] dark:ring-white/10">
+              {citationLabel}
             </span>
           ) : null}
-
-          <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#5f6368] dark:text-gray-400">
-            {pageLabel ? <span>{pageLabel}</span> : null}
+          <span className="truncate text-sm leading-5 font-semibold">
+            {fileName || label}
           </span>
         </span>
 
-        <MdArticle
-          className="mt-1 h-4 w-4 shrink-0 text-[#5f6368] transition group-hover:text-[#1a73e8] dark:text-gray-400 dark:group-hover:text-[#a8c7fa]"
-          aria-hidden
-        />
-      </button>
-      <SourcePreviewDrawer
-        open={previewOpen}
-        onClose={() => setPreviewOpen(false)}
-        title={label}
-        fileName={fileName}
-        pageLabel={pageLabel}
-        pages={meta.pages}
-        markdownUrl={meta.markdownUrl}
-        pdfUrl={url}
+        <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#5f6368] dark:text-gray-400">
+          {pageLabel ? <span>{pageLabel}</span> : "Không có thông tin dòng"}
+        </span>
+      </span>
+
+      <MdArticle
+        className="mt-1 h-4 w-4 shrink-0 text-[#5f6368] transition group-hover:text-[#1a73e8] dark:text-gray-400 dark:group-hover:text-[#a8c7fa]"
+        aria-hidden
       />
-    </>
+    </button>
   );
 }

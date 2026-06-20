@@ -151,7 +151,7 @@ function GeminiAssistantMessage() {
     <MessagePrimitive.Root>
       <div
         ref={messageRef}
-        className="relative w-full min-w-0 text-base leading-relaxed"
+        className="relative w-full min-w-0 pb-9 text-base leading-relaxed"
       >
         {hasFinalContent && (
           <div
@@ -231,7 +231,7 @@ function GeminiAssistantMessage() {
           </MessagePrimitive.GroupedParts>
           {showTimestamp ? (
             <div className="pt-1 text-right text-xs text-[#9aa0a6] dark:text-[#8f98aa]">
-              {timestampText}
+              Trả lời lúc {timestampText}
             </div>
           ) : null}
         </div>
@@ -286,34 +286,31 @@ function GeminiComposer() {
 
 function GeminiStickyComposer({
   showScrollBottom,
+  onScrollToBottom,
 }: {
-  showScrollBottom?: boolean;
+  showScrollBottom: boolean;
+  onScrollToBottom: () => void;
 }) {
   return (
-    <div className="bg-lightPrimary dark:bg-navy-900 sticky bottom-0 isolate z-20 mt-auto shrink-0 pt-2 pb-4">
-      {/* Nút cuộn xuống cuối */}
-      {showScrollBottom && (
-        <div className="absolute right-0 bottom-full left-0 mb-4 flex justify-center">
-          <button
-            onClick={() => {
-              window.scrollTo({
-                top: document.documentElement.scrollHeight,
-                behavior: "smooth",
-              });
-            }}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-900/80 text-white shadow-md backdrop-blur transition-all hover:bg-gray-900 dark:bg-[#1f3760] dark:text-[#a8c7fa] dark:hover:bg-[#1a73e8] dark:hover:text-white"
-            aria-label="Cuộn xuống cuối đoạn chat"
-          >
-            <MdArrowDownward className="h-5 w-5" />
-          </button>
-        </div>
-      )}
+    <div className="bg-lightPrimary dark:bg-navy-900 relative z-20 w-full shrink-0 pt-2 pb-4">
+      {showScrollBottom ? (
+        <button
+          type="button"
+          onClick={() => onScrollToBottom()}
+          className="absolute bottom-[calc(100%+1rem)] left-1/2 z-10 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full bg-gray-900/80 text-white shadow-md backdrop-blur transition-all hover:bg-gray-900 dark:bg-[#1f3760] dark:text-[#a8c7fa] dark:hover:bg-[#1a73e8] dark:hover:text-white"
+          aria-label="Cuộn xuống cuối đoạn chat"
+        >
+          <MdArrowDownward className="h-5 w-5" />
+        </button>
+      ) : null}
 
-      <GeminiComposer />
-      <p className="mx-auto mt-2 max-w-lg text-center text-xs leading-snug text-[#444746] dark:text-gray-400">
-        Câu trả lời của AI chỉ mang tính chất tham khảo. Xác thực lại với các
-        tài liệu gợi ý.
-      </p>
+      <div className="mx-auto w-full max-w-[860px] px-[3vw] md:px-[4vw] lg:px-0">
+        <GeminiComposer />
+        <p className="mx-auto mt-2 max-w-lg text-center text-xs leading-snug text-[#444746] dark:text-gray-400">
+          Câu trả lời của AI chỉ mang tính chất tham khảo. Xác thực lại với các
+          tài liệu gợi ý.
+        </p>
+      </div>
     </div>
   );
 }
@@ -397,17 +394,29 @@ function ChatMessagesSkeletonLoader() {
 
 /** Giao diện theo hướng [Gemini clone assistant-ui](https://www.assistant-ui.com/examples/gemini). */
 export function GeminiThread({ className = "" }: { className?: string }) {
+  const viewportRef = useRef<HTMLDivElement>(null);
   const messagesCount = useAuiState((s) => s.thread.messages.length);
   const { activeThreadId, isLoadingMessages, sessions } = useChatbotShell();
   const isNewThread = !sessions.find((s) => s.id === activeThreadId)?.serverId;
   const [showScrollBottom, setShowScrollBottom] = useState(false);
 
   const updateScrollButton = useCallback(() => {
-    const scrollY = window.scrollY;
-    const windowHeight = window.innerHeight;
-    const documentHeight = document.documentElement.scrollHeight;
+    const viewport = viewportRef.current;
+    if (!viewport) return;
 
-    setShowScrollBottom(documentHeight - scrollY - windowHeight > 150);
+    setShowScrollBottom(
+      viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight > 150,
+    );
+  }, []);
+
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    viewport.scrollTo({
+      top: viewport.scrollHeight,
+      behavior,
+    });
   }, []);
 
   useEffect(() => {
@@ -417,31 +426,40 @@ export function GeminiThread({ className = "" }: { className?: string }) {
     }
 
     const frameId = window.requestAnimationFrame(() => {
-      window.scrollTo({
-        top: document.documentElement.scrollHeight,
-        behavior: "auto",
-      });
+      scrollToBottom("auto");
       updateScrollButton();
     });
     return () => window.cancelAnimationFrame(frameId);
-  }, [activeThreadId, messagesCount, updateScrollButton]);
+  }, [
+    activeThreadId,
+    messagesCount,
+    scrollToBottom,
+    updateScrollButton,
+  ]);
 
   useEffect(() => {
-    window.addEventListener("scroll", updateScrollButton, { passive: true });
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    viewport.addEventListener("scroll", updateScrollButton, { passive: true });
     window.addEventListener("resize", updateScrollButton);
-    updateScrollButton();
+    const frameId = window.requestAnimationFrame(updateScrollButton);
     return () => {
-      window.removeEventListener("scroll", updateScrollButton);
+      window.cancelAnimationFrame(frameId);
+      viewport.removeEventListener("scroll", updateScrollButton);
       window.removeEventListener("resize", updateScrollButton);
     };
   }, [updateScrollButton]);
 
   return (
     <ThreadPrimitive.Root
-      className={`flex min-h-[calc(100vh-2.5rem)] w-full flex-col bg-transparent text-base text-[#1f1f1f] dark:text-white ${className}`.trim()}
+      className={`flex h-full min-h-0 min-w-0 flex-col bg-transparent text-base text-[#1f1f1f] dark:text-white ${className}`.trim()}
     >
-      <ThreadPrimitive.Viewport className="flex min-h-0 w-full flex-1 flex-col overflow-visible">
-        <div className="flex min-h-0 w-full flex-1 flex-col pt-4">
+      <ThreadPrimitive.Viewport
+        ref={viewportRef}
+        className="flex min-h-0 w-full flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain"
+      >
+        <div className="mx-auto flex min-h-full w-full max-w-[860px] flex-col px-[3vw] md:px-[4vw] lg:px-0">
           {isLoadingMessages ? (
             <ChatMessagesSkeletonLoader />
           ) : isNewThread && messagesCount === 0 ? (
@@ -458,7 +476,10 @@ export function GeminiThread({ className = "" }: { className?: string }) {
         </div>
       </ThreadPrimitive.Viewport>
 
-      <GeminiStickyComposer showScrollBottom={showScrollBottom} />
+      <GeminiStickyComposer
+        showScrollBottom={showScrollBottom}
+        onScrollToBottom={scrollToBottom}
+      />
     </ThreadPrimitive.Root>
   );
 }
