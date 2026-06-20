@@ -39,6 +39,8 @@ type HighlightRange = {
   reason: "line" | "page" | "title" | "none";
 };
 
+const HIGHLIGHT_START_VIEWPORT_ANCHOR = 0.35;
+
 function getPageLabel(pages?: string[]) {
   if (!pages?.length) return "";
   return pages.length === 1 ? `Dòng ${pages[0]}` : `Dòng ${pages.join(", ")}`;
@@ -191,7 +193,6 @@ function SourcePreviewDrawer({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
-  const highlightRef = useRef<HTMLDivElement | null>(null);
   const scrollRafRef = useRef<number | null>(null);
   const [jumpState, setJumpState] = useState<{
     up: PageRange | null;
@@ -238,18 +239,15 @@ function SourcePreviewDrawer({
     const target = root?.querySelector(
       `[data-line-number="${range.start + 1}"]`,
     ) as HTMLDivElement | null;
-    const endTarget = root?.querySelector(
-      `[data-line-number="${range.end + 1}"]`,
-    ) as HTMLDivElement | null;
     if (!root || !target || range.start < 0) return;
 
     const rootRect = root.getBoundingClientRect();
     const targetRect = target.getBoundingClientRect();
-    const endRect = endTarget?.getBoundingClientRect() ?? targetRect;
     const targetTop = targetRect.top - rootRect.top + root.scrollTop;
-    const targetBottom = endRect.bottom - rootRect.top + root.scrollTop;
-    const targetCenter = (targetTop + targetBottom) / 2;
-    const nextScrollTop = Math.max(targetCenter - root.clientHeight / 2, 0);
+    const nextScrollTop = Math.max(
+      targetTop - root.clientHeight * HIGHLIGHT_START_VIEWPORT_ANCHOR,
+      0,
+    );
 
     root.scrollTo({
       top: nextScrollTop,
@@ -334,7 +332,14 @@ function SourcePreviewDrawer({
       frames.forEach(cancelAnimationFrame);
       timers.forEach(window.clearTimeout);
     };
-  }, [content, highlight, loading, open, scrollToHighlight]);
+  }, [
+    content,
+    handleScroll,
+    highlight,
+    loading,
+    open,
+    scrollToHighlight,
+  ]);
 
   const headerExtra = (
     <div className="flex items-center gap-2">
@@ -449,12 +454,10 @@ function SourcePreviewDrawer({
                       const highlighted = highlight.ranges.some(
                         (range) => index >= range.start && index <= range.end,
                       );
-                      const isFirstHighlight = index === highlight.start;
 
                       return (
                         <div
                           key={`${index}-${line.slice(0, 12)}`}
-                          ref={isFirstHighlight ? highlightRef : undefined}
                           data-line-number={index + 1}
                           className={`grid grid-cols-[4rem_1fr] gap-3 px-4 ${
                             highlighted
