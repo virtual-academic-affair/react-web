@@ -9,10 +9,7 @@ import {
   type ComponentProps,
   type ReactNode,
 } from "react";
-import {
-  MdCheck,
-  MdKeyboardArrowRight,
-} from "react-icons/md";
+import { MdCheck, MdKeyboardArrowRight } from "react-icons/md";
 import { Streamdown } from "streamdown";
 
 import {
@@ -353,14 +350,24 @@ export function ReasoningTrigger({
         className="group/reasoning-trigger inline-flex cursor-pointer items-center gap-1.5 py-1 text-[#80868b] transition-colors hover:text-[#1a73e8] data-[active=true]:text-[#1a73e8] dark:text-[#9aa0a6] dark:hover:text-[#a8c7fa] dark:data-[active=true]:text-[#a8c7fa]"
         aria-label="Bật tắt suy nghĩ"
       >
-        <span className="text-xs font-medium">
-          Suy nghĩ
+        <span
+          className={`inline-flex items-baseline gap-1.5 ${
+            active ? "reasoning-status-shimmer" : ""
+          }`}
+        >
+          <span className="text-xs font-medium">Suy nghĩ</span>
+          {durationText ? (
+            <span
+              className={`text-xs ${
+                active
+                  ? ""
+                  : "text-[#9aa0a6] transition-colors group-hover/reasoning-trigger:text-[#1a73e8] dark:text-[#8f98aa] dark:group-hover/reasoning-trigger:text-[#a8c7fa]"
+              }`}
+            >
+              {durationText}
+            </span>
+          ) : null}
         </span>
-        {durationText ? (
-          <span className="text-xs text-[#9aa0a6] transition-colors group-hover/reasoning-trigger:text-[#1a73e8] dark:text-[#8f98aa] dark:group-hover/reasoning-trigger:text-[#a8c7fa]">
-            {durationText}
-          </span>
-        ) : null}
         <MdKeyboardArrowRight
           className={`h-4 w-4 shrink-0 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
             open ? "rotate-90" : "rotate-0"
@@ -379,14 +386,24 @@ export function ReasoningTrigger({
       className="group/reasoning-trigger inline-flex cursor-pointer items-center gap-1.5 py-1 text-[#5f6368] transition-colors hover:text-[#1a73e8] data-[active=true]:text-[#1a73e8] dark:text-[#c4c7c5] dark:hover:text-[#a8c7fa] dark:data-[active=true]:text-[#a8c7fa]"
       aria-label="Bật tắt suy nghĩ"
     >
-      <span className="text-sm font-medium">
-        Suy nghĩ
+      <span
+        className={`inline-flex items-baseline gap-1.5 ${
+          active ? "reasoning-status-shimmer" : ""
+        }`}
+      >
+        <span className="text-sm font-medium">Suy nghĩ</span>
+        {durationText ? (
+          <span
+            className={`text-xs ${
+              active
+                ? ""
+                : "text-[#80868b] transition-colors group-hover/reasoning-trigger:text-[#1a73e8] dark:text-[#9aa0a6] dark:group-hover/reasoning-trigger:text-[#a8c7fa]"
+            }`}
+          >
+            {durationText}
+          </span>
+        ) : null}
       </span>
-      {durationText ? (
-        <span className="text-xs text-[#80868b] transition-colors group-hover/reasoning-trigger:text-[#1a73e8] dark:text-[#9aa0a6] dark:group-hover/reasoning-trigger:text-[#a8c7fa]">
-          {durationText}
-        </span>
-      ) : null}
       <MdKeyboardArrowRight
         className={`h-4 w-4 shrink-0 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
           open ? "rotate-90" : "rotate-0"
