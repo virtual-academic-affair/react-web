@@ -293,20 +293,19 @@ function GeminiStickyComposer({
     <div className="bg-lightPrimary dark:bg-navy-900 sticky bottom-0 isolate z-20 mt-auto shrink-0 pt-2 pb-4">
       {/* Nút cuộn xuống cuối */}
       {showScrollBottom && (
-        <div className="absolute right-0 bottom-full left-0 mb-4 flex justify-center">
-          <button
-            onClick={() => {
-              window.scrollTo({
-                top: document.documentElement.scrollHeight,
-                behavior: "smooth",
-              });
-            }}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-900/80 text-white shadow-md backdrop-blur transition-all hover:bg-gray-900 dark:bg-[#1f3760] dark:text-[#a8c7fa] dark:hover:bg-[#1a73e8] dark:hover:text-white"
-            aria-label="Cuộn xuống cuối đoạn chat"
-          >
-            <MdArrowDownward className="h-5 w-5" />
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => {
+            window.scrollTo({
+              top: document.documentElement.scrollHeight,
+              behavior: "smooth",
+            });
+          }}
+          className="absolute bottom-[calc(100%+1rem)] left-1/2 z-10 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full bg-gray-900/80 text-white shadow-md backdrop-blur transition-all hover:bg-gray-900 dark:bg-[#1f3760] dark:text-[#a8c7fa] dark:hover:bg-[#1a73e8] dark:hover:text-white"
+          aria-label="Cuộn xuống cuối đoạn chat"
+        >
+          <MdArrowDownward className="h-5 w-5" />
+        </button>
       )}
 
       <GeminiComposer />
