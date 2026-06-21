@@ -9,8 +9,14 @@ export function SidebarChatbotPanel(props: {
   collapsed?: boolean;
   onShowChatbotPanel?: () => void;
   onNavigate?: () => void;
+  onNavigateStart?: () => void;
 }): JSX.Element {
-  const { collapsed = false, onShowChatbotPanel, onNavigate } = props;
+  const {
+    collapsed = false,
+    onShowChatbotPanel,
+    onNavigate,
+    onNavigateStart,
+  } = props;
   const location = useLocation();
 
   const onChatbotPath =
@@ -18,6 +24,7 @@ export function SidebarChatbotPanel(props: {
     location.pathname.startsWith(`${CHATBOT_HREF}/`);
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
     if (!onChatbotPath || !onShowChatbotPanel) {
+      if (!onChatbotPath) onNavigateStart?.();
       onNavigate?.();
       return;
     }

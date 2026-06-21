@@ -10,10 +10,12 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { SourcePreviewProvider } from "@/components/assistant-ui/source-preview-context";
 import { SourcePreviewCanvas } from "@/components/assistant-ui/sources";
 import PageLoader from "@/components/loading/PageLoader";
+import RouteNavigationOverlay from "@/components/loading/RouteNavigationOverlay";
 import Navbar from "@/components/navbar";
 import { MobileSidebarBackdrop } from "@/components/sidebar/components/MobileSidebarBackdrop";
 import UserSidebar from "@/components/sidebar/UserSidebar";
 import { useMobileBodyScrollLock } from "@/hooks/useMobileBodyScrollLock";
+import { useRouteNavigationPending } from "@/hooks/useRouteNavigationPending";
 
 const ChatbotPage = lazy(() => import("@/pages/chatbot"));
 const ChatbotRuntimeProvider = lazy(() =>
@@ -45,6 +47,8 @@ const UserLayout = () => {
   >(null);
   const sourcePreviewOpen =
     isUserChatbotRoute && sourcePreviewLocationKey === location.key;
+  const { navigationPending, startNavigation } =
+    useRouteNavigationPending();
 
   useEffect(() => {
     const handleResize = () => {
@@ -111,6 +115,7 @@ const UserLayout = () => {
               ? () => setAppSidebarLocationKey(null)
               : undefined
           }
+          onNavigateStart={startNavigation}
         />
       )}
 
@@ -163,6 +168,7 @@ const UserLayout = () => {
 
   return (
     <div className="bg-lightPrimary dark:bg-navy-900! h-dvh min-h-0 w-full overflow-hidden">
+      <RouteNavigationOverlay visible={navigationPending} />
       {isUserChatbotRoute ? (
         <Suspense fallback={<PageLoader />}>
           <ChatbotRuntimeProvider>

@@ -1,11 +1,13 @@
 import { SourcePreviewProvider } from "@/components/assistant-ui/source-preview-context";
 import { SourcePreviewCanvas } from "@/components/assistant-ui/sources";
 import PageLoader from "@/components/loading/PageLoader";
+import RouteNavigationOverlay from "@/components/loading/RouteNavigationOverlay";
 import Navbar from "@/components/navbar";
 import Sidebar from "@/components/sidebar";
 import { MobileSidebarBackdrop } from "@/components/sidebar/components/MobileSidebarBackdrop";
 import { useDynamicData } from "@/hooks/useDynamicData";
 import { useMobileBodyScrollLock } from "@/hooks/useMobileBodyScrollLock";
+import { useRouteNavigationPending } from "@/hooks/useRouteNavigationPending";
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
@@ -61,6 +63,8 @@ const AdminLayout: React.FC = () => {
   >(null);
   const sourcePreviewOpen =
     isAdminChatbotRoute && sourcePreviewLocationKey === location.key;
+  const { navigationPending, startNavigation } =
+    useRouteNavigationPending();
 
   useEffect(() => {
     const handleResize = () => {
@@ -131,6 +135,7 @@ const AdminLayout: React.FC = () => {
               ? () => setAppSidebarLocationKey(null)
               : undefined
           }
+          onNavigateStart={startNavigation}
         />
       )}
 
@@ -226,6 +231,7 @@ const AdminLayout: React.FC = () => {
 
   return (
     <div className="bg-lightPrimary dark:bg-navy-900! h-dvh min-h-0 w-full overflow-hidden">
+      <RouteNavigationOverlay visible={navigationPending} />
       {isAdminChatbotRoute ? (
         <Suspense fallback={<PageLoader />}>
           <ChatbotRuntimeProvider>

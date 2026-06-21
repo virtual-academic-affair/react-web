@@ -9,6 +9,7 @@ const Sidebar = (props: {
   collapsed?: boolean;
   onToggleCollapse?: () => void;
   onShowChatbotPanel?: () => void;
+  onNavigateStart?: () => void;
 }) => {
   const {
     open,
@@ -16,6 +17,7 @@ const Sidebar = (props: {
     collapsed = false,
     onToggleCollapse,
     onShowChatbotPanel,
+    onNavigateStart,
   } = props;
 
   return (
@@ -24,11 +26,17 @@ const Sidebar = (props: {
       collapsed={collapsed}
       onToggleCollapse={onToggleCollapse}
     >
-      <Links routes={routes} collapsed={collapsed} onNavigate={onClose} />
+      <Links
+        routes={routes}
+        collapsed={collapsed}
+        onNavigate={onClose}
+        onNavigateStart={onNavigateStart}
+      />
       <SidebarChatbotPanel
         collapsed={collapsed}
         onShowChatbotPanel={onShowChatbotPanel}
         onNavigate={onClose}
+        onNavigateStart={onNavigateStart}
       />
     </SidebarShell>
   );
