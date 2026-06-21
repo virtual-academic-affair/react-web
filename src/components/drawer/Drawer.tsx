@@ -1,5 +1,7 @@
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import type { ReactNode } from "react";
 import React, { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { MdClose } from "react-icons/md";
 
 interface DrawerProps {
@@ -33,6 +35,8 @@ const Drawer: React.FC<DrawerProps> = ({
   hideBackdrop = false,
   wrapperClassName = "z-50",
 }) => {
+  useBodyScrollLock(isOpen);
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -53,7 +57,7 @@ const Drawer: React.FC<DrawerProps> = ({
   const marginClass = side === "right" ? "mr-6" : "ml-6";
   const flexJustify = side === "right" ? "justify-end" : "justify-start";
 
-  return (
+  return createPortal(
     <>
       {isOpen && !hideBackdrop && (
         <div
@@ -105,7 +109,7 @@ const Drawer: React.FC<DrawerProps> = ({
 
         {/* Mobile bottom sheet */}
         <div
-          className={`dark:bg-navy-800 pointer-events-auto fixed right-0 bottom-0 left-0 flex h-[90vh] flex-col rounded-t-[30px] bg-white shadow-2xl transition-transform duration-200 md:hidden ${
+          className={`dark:bg-navy-800 pointer-events-auto fixed right-0 bottom-0 left-0 flex h-[90dvh] flex-col rounded-t-[30px] bg-white shadow-2xl transition-transform duration-200 md:hidden ${
             isOpen ? "translate-y-0" : "translate-y-[120%]"
           }`}
         >
@@ -140,7 +144,8 @@ const Drawer: React.FC<DrawerProps> = ({
           )}
         </div>
       </div>
-    </>
+    </>,
+    document.body,
   );
 };
 

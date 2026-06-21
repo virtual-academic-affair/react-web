@@ -72,7 +72,7 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
   return (
     <div
       data-open={open}
-      className={`bg-lightPrimary dark:bg-navy-900 relative z-50! flex h-screen w-[80vw] shrink-0 flex-col gap-4 p-4 lg:fixed lg:inset-auto lg:top-5 lg:bottom-5 lg:left-5 lg:z-0! lg:h-auto lg:bg-transparent lg:p-0 lg:transition-[width] lg:duration-200 lg:ease-in-out lg:will-change-[width] lg:dark:bg-transparent ${
+      className={`bg-lightPrimary dark:bg-navy-900 relative z-50! flex h-dvh w-[80vw] shrink-0 flex-col gap-4 p-4 lg:fixed lg:inset-auto lg:top-5 lg:bottom-5 lg:left-5 lg:z-0! lg:h-auto lg:bg-transparent lg:p-0 lg:transition-[width] lg:duration-200 lg:ease-in-out lg:will-change-[width] lg:dark:bg-transparent ${
         collapsed ? "lg:w-[70px]" : "lg:w-78.25"
       }`}
     >

@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { MdChatBubbleOutline, MdClose, MdSearch } from "react-icons/md";
 
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+
 import type { ChatThreadSession } from "../types";
 
 type ChatbotThreadSearchDialogProps = {
@@ -65,6 +67,7 @@ export function ChatbotThreadSearchDialog({
   onSelect,
 }: ChatbotThreadSearchDialogProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  useBodyScrollLock(true);
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -90,28 +93,9 @@ export function ChatbotThreadSearchDialog({
 
   useEffect(() => {
     const frameId = window.requestAnimationFrame(() => inputRef.current?.focus());
-    const scrollY = window.scrollY;
-    const { body, documentElement } = document;
-    const previousBodyOverflow = body.style.overflow;
-    const previousBodyPosition = body.style.position;
-    const previousBodyTop = body.style.top;
-    const previousBodyWidth = body.style.width;
-    const previousHtmlOverflow = documentElement.style.overflow;
-
-    body.style.overflow = "hidden";
-    body.style.position = "fixed";
-    body.style.top = `-${scrollY}px`;
-    body.style.width = "100%";
-    documentElement.style.overflow = "hidden";
 
     return () => {
       window.cancelAnimationFrame(frameId);
-      body.style.overflow = previousBodyOverflow;
-      body.style.position = previousBodyPosition;
-      body.style.top = previousBodyTop;
-      body.style.width = previousBodyWidth;
-      documentElement.style.overflow = previousHtmlOverflow;
-      window.scrollTo(0, scrollY);
     };
   }, []);
 

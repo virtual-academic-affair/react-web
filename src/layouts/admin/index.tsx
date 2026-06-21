@@ -106,9 +106,7 @@ const AdminLayout: React.FC = () => {
     <div
       className={`relative flex transition-transform duration-200 ease-in-out lg:w-full lg:[translate:none] ${
         isAdminChatbotRoute ? "w-[280vw]" : "w-[180vw]"
-      } ${
-        isAdminChatbotRoute ? "h-dvh min-h-0 overflow-hidden" : "min-h-screen"
-      } ${mobileCanvasPosition}`}
+      } h-dvh min-h-0 overflow-hidden ${mobileCanvasPosition}`}
     >
       <MobileSidebarBackdrop open={open} onClose={() => setOpen(false)} />
 
@@ -138,16 +136,18 @@ const AdminLayout: React.FC = () => {
 
       {/* Main content */}
       <div
-        className={`relative flex w-screen min-w-0 shrink-0 flex-col transition-all duration-200 lg:w-auto lg:flex-1 ${
-          isAdminChatbotRoute ? "h-dvh min-h-0 overflow-hidden" : "min-h-screen"
+        className={`relative flex h-dvh min-h-0 w-screen min-w-0 shrink-0 flex-col transition-all duration-200 lg:w-auto lg:flex-1 ${
+          isAdminChatbotRoute
+            ? "overflow-hidden"
+            : "overflow-x-hidden overflow-y-auto overscroll-y-contain"
         } ${effectiveCollapsed ? "lg:ml-[100px]" : "lg:ml-[343px]"}`}
       >
         {/* Navbar */}
         <div className="mx-auto w-[calc(100vw-6%)] transition-all duration-200 md:w-[calc(100vw-8%)] lg:w-[calc(100%-62px)]">
           <Navbar
             sidebarOpen={open}
+            overlayOpen={sourcePreviewOpen}
             onOpenSidenav={() => setOpen(true)}
-            contained={isAdminChatbotRoute}
           />
         </div>
 
@@ -225,13 +225,7 @@ const AdminLayout: React.FC = () => {
   );
 
   return (
-    <div
-      className={`bg-lightPrimary dark:bg-navy-900! w-full ${
-        isAdminChatbotRoute
-          ? "h-dvh min-h-0 overflow-hidden"
-          : "min-h-screen overflow-x-hidden"
-      }`}
-    >
+    <div className="bg-lightPrimary dark:bg-navy-900! h-dvh min-h-0 w-full overflow-hidden">
       {isAdminChatbotRoute ? (
         <Suspense fallback={<PageLoader />}>
           <ChatbotRuntimeProvider>

@@ -18,6 +18,7 @@ import {
   MdFileDownload,
 } from "react-icons/md";
 
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import {
   type DownloadFileFormat,
   DocumentsService,
@@ -213,6 +214,8 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
       : fileDetail.fileUrl;
   }, [fileDetail, downloadFormat]);
 
+  useBodyScrollLock(isOpen);
+
   // Keyboard handler
   useEffect(() => {
     if (!isOpen) return;
@@ -222,16 +225,6 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [isOpen, onClose]);
-
-  // Prevent body scroll
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isOpen]);
 
   const handleDownload = useCallback(async () => {
     if (!publicUrl) return;
