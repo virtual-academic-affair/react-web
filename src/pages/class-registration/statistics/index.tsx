@@ -30,7 +30,7 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="mb-5 flex flex-col gap-5">
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-4">
         {/* Left Side: Charts (3/4 width) */}
         <div className="flex flex-col gap-5 lg:col-span-3">
@@ -50,7 +50,7 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
         </div>
 
         {/* Right Side: Widgets (1/4 width) */}
-        <div className="flex flex-col gap-5 lg:col-span-1">
+        <div className="mb-5 flex flex-col gap-5 lg:col-span-1">
           <SelectField
             value={timeRange}
             options={TIME_RANGE_OPTIONS}

@@ -5,6 +5,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
+import { createPortal } from "react-dom";
 import { FiAlignJustify } from "react-icons/fi";
 
 const DRAG_MARGIN = 8;
@@ -12,14 +13,14 @@ const DRAG_THRESHOLD = 6;
 
 interface NavbarProps {
   sidebarOpen: boolean;
+  overlayOpen?: boolean;
   onOpenSidenav: () => void;
-  contained?: boolean;
 }
 
 const Navbar = ({
   sidebarOpen,
+  overlayOpen = false,
   onOpenSidenav,
-  contained = false,
 }: NavbarProps) => {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dragRef = useRef<{
@@ -139,9 +140,9 @@ const Navbar = ({
     onOpenSidenav();
   };
 
-  if (sidebarOpen) return null;
+  if (sidebarOpen || overlayOpen) return null;
 
-  return (
+  return createPortal(
     <button
       ref={buttonRef}
       type="button"
@@ -154,12 +155,11 @@ const Navbar = ({
       style={{
         transform: `translate3d(${dragOffset.x}px, ${dragOffset.y}px, 0)`,
       }}
-      className={`dark:bg-navy-800! top-4 right-4 z-40 mt-2 flex h-11 w-11 touch-none items-center justify-center rounded-full border-2 border-gray-300 bg-white text-gray-600 shadow-lg transition-colors select-none hover:bg-gray-50 active:cursor-grabbing lg:hidden dark:text-white dark:hover:bg-white/10 ${
-        contained ? "absolute" : "fixed"
-      }`}
+      className="dark:bg-navy-800! fixed top-4 right-4 z-40 mt-2 flex h-11 w-11 touch-none items-center justify-center rounded-full border-2 border-gray-300 bg-white text-gray-600 shadow-lg transition-colors select-none hover:bg-gray-50 active:cursor-grabbing lg:hidden dark:text-white dark:hover:bg-white/10"
     >
       <FiAlignJustify className="h-5 w-5" />
-    </button>
+    </button>,
+    document.body,
   );
 };
 

@@ -12,7 +12,7 @@ export function MobileSidebarBackdrop({
       type="button"
       onClick={onClose}
       aria-label="Đóng sidebar"
-      className={`absolute top-0 left-[80vw] z-40 h-screen w-screen bg-black/70 transition-opacity duration-200 lg:hidden ${
+      className={`absolute top-0 left-[80vw] z-40 h-dvh w-screen bg-black/70 transition-opacity duration-200 lg:hidden ${
         open ? "opacity-100" : "pointer-events-none opacity-0"
       }`}
     />
