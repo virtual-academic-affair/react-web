@@ -9,6 +9,7 @@ interface UserSidebarProps {
   collapsed: boolean;
   onToggleCollapse: () => void;
   onShowChatbotPanel?: () => void;
+  onNavigateStart?: () => void;
 }
 
 const UserSidebar: React.FC<UserSidebarProps> = ({
@@ -17,6 +18,7 @@ const UserSidebar: React.FC<UserSidebarProps> = ({
   collapsed,
   onToggleCollapse,
   onShowChatbotPanel,
+  onNavigateStart,
 }) => {
   const location = useLocation();
 
@@ -74,6 +76,7 @@ const UserSidebar: React.FC<UserSidebarProps> = ({
             to={routeHref(route)}
             onClick={(event) => {
               if (!active || !isChatbotRoute || !onShowChatbotPanel) {
+                if (!active) onNavigateStart?.();
                 onClose();
                 return;
               }

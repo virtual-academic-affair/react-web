@@ -130,7 +130,7 @@ function TableLayout<T extends { id: number | string }>({
   }, [paginationProp, result, pageSize]);
 
   return (
-    <div className="flex flex-col gap-4 pb-10">
+    <div className="flex flex-col gap-4 pb-5">
       {/* Search + filter bar */}
       {!hideSearchBar && (
         <div className="flex items-center gap-3">
@@ -437,7 +437,7 @@ function PaginationBar({
             {paginationInfo.total} bản ghi
           </span>
         </p>
-        <div className="flex w-full max-w-full items-center justify-end gap-1 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:w-auto sm:overflow-visible sm:pb-0 [&::-webkit-scrollbar]:hidden">
+        <div className="flex w-full max-w-full [scrollbar-width:none] items-center justify-end gap-1 overflow-x-auto pb-1 [-ms-overflow-style:none] sm:w-auto sm:overflow-visible sm:pb-0 [&::-webkit-scrollbar]:hidden">
           <button
             type="button"
             onClick={() => onPageChange(page - 1)}
@@ -511,7 +511,7 @@ function PaginationBar({
           ref={popoverRef}
           className="dark:bg-navy-800 rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-lg dark:border-white/10"
         >
-          <p className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+          <p className="mb-2.5 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
             Đến trang
           </p>
           <div className="flex items-center gap-2">
@@ -541,7 +541,7 @@ function PaginationBar({
                 if (e.key === "Enter") commitJump();
                 if (e.key === "Escape") closeJump();
               }}
-              className="h-9 w-16 rounded-xl border border-gray-200 bg-transparent px-2 text-center text-sm font-medium text-gray-700 outline-none focus:border-brand-400 dark:border-white/10 dark:text-white dark:focus:border-brand-400 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              className="focus:border-brand-400 dark:focus:border-brand-400 h-9 w-16 [appearance:textfield] rounded-xl border border-gray-200 bg-transparent px-2 text-center text-sm font-medium text-gray-700 outline-none dark:border-white/10 dark:text-white [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
             />
 
             {/* Stepper + */}
@@ -550,7 +550,9 @@ function PaginationBar({
               onClick={() =>
                 setJumpValue((v) => {
                   const n = parseInt(v, 10);
-                  return String(Number.isNaN(n) ? page : Math.min(total, n + 1));
+                  return String(
+                    Number.isNaN(n) ? page : Math.min(total, n + 1),
+                  );
                 })
               }
               className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 text-gray-500 transition-colors hover:bg-gray-100 dark:border-white/10 dark:text-gray-400 dark:hover:bg-white/10"
@@ -573,6 +575,5 @@ function PaginationBar({
     </div>
   );
 }
-
 
 export default TableLayout;
