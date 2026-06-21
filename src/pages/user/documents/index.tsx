@@ -354,22 +354,19 @@ const UserDocumentsPage: React.FC = () => {
           Tổng hợp tài liệu giáo vụ liên quan đến các vấn đề học tập, quy chế
         </p>
 
-        <form onSubmit={handleSearch} className="relative">
-          <MdSearch className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-gray-400" />
+        <form
+          onSubmit={handleSearch}
+          className="dark:bg-navy-800 focus-within:border-brand-400 focus-within:ring-brand-400/20 dark:focus-within:border-brand-500 flex w-full items-center gap-2 rounded-2xl border border-gray-200 bg-white p-2 pl-4 shadow-sm transition-all focus-within:ring-2 dark:border-white/10"
+        >
+          <MdSearch className="h-5 w-5 shrink-0 text-gray-400" />
           <input
             id="user-documents-search"
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Tìm tài liệu, công văn, quyết định..."
-            className="dark:bg-navy-800 focus:border-brand-400 focus:ring-brand-400/20 dark:focus:border-brand-500 w-full rounded-2xl border border-gray-200 bg-white py-3 pr-24 pl-11 text-sm text-gray-700 shadow-sm transition-all outline-none focus:ring-2 dark:border-white/10 dark:text-white dark:placeholder-gray-500"
+            className="min-w-0 flex-1 bg-transparent py-1 text-sm text-gray-700 outline-none dark:text-white dark:placeholder-gray-500"
           />
-          <button
-            type="submit"
-            className="bg-brand-500 hover:bg-brand-600 absolute top-1/2 right-2 -translate-y-1/2 rounded-xl px-4 py-1.5 text-sm font-medium text-white transition-colors"
-          >
-            Tìm kiếm
-          </button>
         </form>
       </div>
 
@@ -510,7 +507,7 @@ const UserDocumentsPage: React.FC = () => {
           )}
         </div>
       ) : viewMode === "grid" ? (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-4 pb-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
           {files.map((file: any) => (
             <FileCard
               key={file.fileId}

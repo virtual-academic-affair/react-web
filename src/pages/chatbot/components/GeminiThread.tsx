@@ -6,7 +6,15 @@ import {
   useMessage,
   type PartState,
 } from "@assistant-ui/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 import {
   MdArrowDownward,
   MdAutoAwesome,
@@ -32,6 +40,10 @@ import { Source, Sources } from "@/components/assistant-ui/sources";
 import { useChatbotShell } from "../chatbotShellContext";
 
 const GEMINI_INPUT_PLACEHOLDER = "Hỏi Chatbot giáo vụ";
+const COPY_BUTTON_HIDE_OFFSET = 300;
+
+const ChatViewportContext =
+  createContext<RefObject<HTMLDivElement | null> | null>(null);
 
 const EMPTY_PROMPTS = [
   {
@@ -95,6 +107,7 @@ function GeminiUserMessage() {
 }
 
 function GeminiAssistantMessage() {
+  const viewportRef = useContext(ChatViewportContext);
   const messageId = useMessage((state) => state.id);
   const messageContent = useMessage((state) => state.content);
   const createdAt = useMessage((state) => state.createdAt);
@@ -135,17 +148,29 @@ function GeminiAssistantMessage() {
 
   useEffect(() => {
     const el = messageRef.current;
-    if (!el) return;
+    const viewport = viewportRef?.current;
+    if (!el || !viewport) return;
 
     const check = () => {
-      const rect = el.getBoundingClientRect();
-      setShowCopyBtn(rect.bottom > 300);
+      const messageRect = el.getBoundingClientRect();
+      const viewportRect = viewport.getBoundingClientRect();
+      setShowCopyBtn(
+        messageRect.bottom - viewportRect.top > COPY_BUTTON_HIDE_OFFSET,
+      );
     };
 
-    window.addEventListener("scroll", check, { passive: true });
+    viewport.addEventListener("scroll", check, { passive: true });
+    window.addEventListener("resize", check);
+    const resizeObserver = new ResizeObserver(check);
+    resizeObserver.observe(el);
+    resizeObserver.observe(viewport);
     check();
-    return () => window.removeEventListener("scroll", check);
-  }, []);
+    return () => {
+      viewport.removeEventListener("scroll", check);
+      window.removeEventListener("resize", check);
+      resizeObserver.disconnect();
+    };
+  }, [viewportRef]);
 
   return (
     <MessagePrimitive.Root>
@@ -292,7 +317,7 @@ function GeminiStickyComposer({
   onScrollToBottom: () => void;
 }) {
   return (
-    <div className="bg-lightPrimary dark:bg-navy-900 relative z-20 w-full shrink-0 pt-2 pb-4">
+    <div className="bg-lightPrimary dark:bg-navy-900 relative z-20 w-full shrink-0 pt-2">
       {showScrollBottom ? (
         <button
           type="button"
@@ -430,12 +455,7 @@ export function GeminiThread({ className = "" }: { className?: string }) {
       updateScrollButton();
     });
     return () => window.cancelAnimationFrame(frameId);
-  }, [
-    activeThreadId,
-    messagesCount,
-    scrollToBottom,
-    updateScrollButton,
-  ]);
+  }, [activeThreadId, messagesCount, scrollToBottom, updateScrollButton]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -455,31 +475,33 @@ export function GeminiThread({ className = "" }: { className?: string }) {
     <ThreadPrimitive.Root
       className={`flex h-full min-h-0 min-w-0 flex-col bg-transparent text-base text-[#1f1f1f] dark:text-white ${className}`.trim()}
     >
-      <ThreadPrimitive.Viewport
-        ref={viewportRef}
-        className="flex min-h-0 w-full flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain"
-      >
-        <div className="mx-auto flex min-h-full w-full max-w-[860px] flex-col px-[3vw] md:px-[4vw] lg:px-0">
-          {isLoadingMessages ? (
-            <ChatMessagesSkeletonLoader />
-          ) : isNewThread && messagesCount === 0 ? (
-            <ChatbotEmptyState />
-          ) : null}
-          {!isLoadingMessages && (
-            <ThreadPrimitive.Messages
-              components={{
-                UserMessage: GeminiUserMessage,
-                AssistantMessage: GeminiAssistantMessage,
-              }}
-            />
-          )}
-        </div>
-      </ThreadPrimitive.Viewport>
+      <ChatViewportContext.Provider value={viewportRef}>
+        <ThreadPrimitive.Viewport
+          ref={viewportRef}
+          className="flex min-h-0 w-full flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain"
+        >
+          <div className="mx-auto flex min-h-full w-full max-w-[860px] flex-col px-[3vw] md:px-[4vw] lg:px-0">
+            {isLoadingMessages ? (
+              <ChatMessagesSkeletonLoader />
+            ) : isNewThread && messagesCount === 0 ? (
+              <ChatbotEmptyState />
+            ) : null}
+            {!isLoadingMessages && (
+              <ThreadPrimitive.Messages
+                components={{
+                  UserMessage: GeminiUserMessage,
+                  AssistantMessage: GeminiAssistantMessage,
+                }}
+              />
+            )}
+          </div>
+        </ThreadPrimitive.Viewport>
 
-      <GeminiStickyComposer
-        showScrollBottom={showScrollBottom}
-        onScrollToBottom={scrollToBottom}
-      />
+        <GeminiStickyComposer
+          showScrollBottom={showScrollBottom}
+          onScrollToBottom={scrollToBottom}
+        />
+      </ChatViewportContext.Provider>
     </ThreadPrimitive.Root>
   );
 }
