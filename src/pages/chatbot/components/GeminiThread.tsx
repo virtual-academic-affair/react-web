@@ -264,7 +264,7 @@ function GeminiComposer({ centered = false }: { centered?: boolean }) {
     <ComposerPrimitive.Root
       className={`group/composer relative w-full rounded-4xl border p-3 transition-[border-color,box-shadow,background-color] duration-300 ${
         centered
-          ? "border-[#d3e3fd]/80 bg-white/90 shadow-[0_18px_70px_-28px_rgba(26,115,232,0.45)] backdrop-blur-xl dark:border-white/10 dark:bg-navy-800 dark:shadow-[0_20px_70px_-30px_rgba(58,91,246,0.38)]"
+          ? "dark:bg-navy-800 border-[#d3e3fd]/80 bg-white/90 shadow-[0_18px_70px_-28px_rgba(26,115,232,0.45)] backdrop-blur-xl dark:border-white/10 dark:shadow-[0_20px_70px_-30px_rgba(58,91,246,0.38)]"
           : "dark:bg-navy-800 border-transparent bg-white shadow-[0_2px_8px_-2px_rgba(0,0,0,0.16)]"
       } ${isArchived ? "opacity-80" : ""}`}
       data-empty={isEmpty}
