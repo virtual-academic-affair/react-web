@@ -197,7 +197,7 @@ export function ChatbotThreadRow({
                 e.stopPropagation();
                 toggleMenu();
               }}
-              className="flex h-7 w-7 items-center justify-center rounded-full text-[#444746] opacity-100 transition hover:bg-black/[0.06] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 dark:text-gray-300 dark:hover:bg-white/10"
+              className="flex h-7 w-7 items-center justify-center rounded-full text-[#444746] opacity-100 transition hover:bg-black/[0.06] sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100 dark:text-gray-300 dark:hover:bg-white/10"
               aria-label="Mở tuỳ chọn cuộc trò chuyện"
               aria-haspopup="menu"
               aria-expanded={isMenuOpen}
@@ -218,7 +218,7 @@ export function ChatbotThreadRow({
                     left: menuPosition.left,
                     width: menuPosition.width,
                   }}
-                  className="dark:bg-navy-700 fixed z-9999 rounded-xl bg-white p-1.5 text-sm text-[#1f1f1f] shadow-xl ring-1 ring-black/10 dark:text-white dark:ring-white/10"
+                  className="dark:bg-navy-700 fixed z-9999 rounded-xl bg-white p-1.5 text-sm text-[#1f1f1f] shadow-xl dark:text-white"
                 >
                   {canEdit ? (
                     <button

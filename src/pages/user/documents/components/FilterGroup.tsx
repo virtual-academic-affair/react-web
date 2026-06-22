@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { MdCheck, MdExpandMore } from "react-icons/md";
 import {
   getFloatingDropdownPosition,
   type FloatingPosition,
 } from "@/utils/floatingPosition";
+import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { MdCheck, MdExpandMore } from "react-icons/md";
 
 export interface FilterOption {
   value: string;
@@ -93,7 +93,7 @@ const FilterGroup: React.FC<FilterGroupProps> = ({
         type="button"
         id={`filter-group-${typeKey}`}
         onClick={handleToggle}
-        className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-1.5 text-sm font-medium transition-transform ${
+        className={`flex shrink-0 items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-transform ${
           hasActive
             ? "border-brand-500 bg-brand-500/10 text-brand-600 dark:text-brand-400"
             : "dark:bg-navy-800 border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50 dark:border-white/10 dark:text-gray-300 dark:hover:border-white/20 dark:hover:bg-white/5"

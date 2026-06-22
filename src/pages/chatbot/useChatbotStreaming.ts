@@ -320,7 +320,7 @@ export function useChatbotStreaming({
               role: "assistant",
               content: "",
               createdAt: now,
-              reasoningDefaultOpen: true,
+              reasoningDefaultOpen: false,
             },
           ],
         };

@@ -51,9 +51,7 @@ const AdminLayout: React.FC = () => {
     location.pathname.startsWith("/admin/chatbot/");
 
   const [open, setOpen] = useState(() => window.innerWidth >= 1024);
-  const [isDesktop, setIsDesktop] = useState(
-    () => window.innerWidth >= 1024,
-  );
+  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
   const [collapsed, setCollapsed] = useState(false);
   const [sourcePreviewLocationKey, setSourcePreviewLocationKey] = useState<
     string | null
@@ -63,8 +61,7 @@ const AdminLayout: React.FC = () => {
   >(null);
   const sourcePreviewOpen =
     isAdminChatbotRoute && sourcePreviewLocationKey === location.key;
-  const { navigationPending, startNavigation } =
-    useRouteNavigationPending();
+  const { navigationPending, startNavigation } = useRouteNavigationPending();
 
   useEffect(() => {
     const handleResize = () => {
@@ -92,12 +89,15 @@ const AdminLayout: React.FC = () => {
     isAdminChatbotRoute && appSidebarLocationKey !== location.key;
   const effectiveCollapsed = isDesktop && collapsed;
 
-  const handleSourcePreviewOpenChange = useCallback((isOpen: boolean) => {
-    setSourcePreviewLocationKey(isOpen ? location.key : null);
-    if (isOpen && window.innerWidth >= 1024) {
-      setCollapsed(true);
-    }
-  }, [location.key]);
+  const handleSourcePreviewOpenChange = useCallback(
+    (isOpen: boolean) => {
+      setSourcePreviewLocationKey(isOpen ? location.key : null);
+      if (isOpen && window.innerWidth >= 1024) {
+        setCollapsed(true);
+      }
+    },
+    [location.key],
+  );
   useMobileBodyScrollLock(open || sourcePreviewOpen);
 
   const mobileCanvasPosition = sourcePreviewOpen
@@ -158,7 +158,7 @@ const AdminLayout: React.FC = () => {
 
         {/* Page content */}
         <div
-          className={`pt-5 transition-all duration-200 ${
+          className={`px-10 pt-5 transition-all duration-200 ${
             isAdminChatbotRoute
               ? "flex min-h-0 w-full flex-1 overflow-hidden"
               : "mx-auto mb-auto h-full min-h-[84vh] w-[calc(100vw-6%)] md:w-[calc(100vw-8%)] lg:w-[calc(100%-62px)]"

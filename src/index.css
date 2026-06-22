@@ -699,7 +699,7 @@ body.dark .ant-notification-notice {
 @keyframes reasoning-status-shimmer {
   0%,
   25% {
-    background-position: 100% 0;
+    background-position: 150% 0;
   }
 
   25%,
@@ -722,7 +722,7 @@ body.dark .ant-notification-notice {
   background-size: 260% 100%;
   background-clip: text;
   -webkit-background-clip: text;
-  animation: reasoning-status-shimmer 4s ease-in-out infinite;
+  animation: reasoning-status-shimmer 2s ease-in-out infinite;
 }
 
 .dark .reasoning-status-shimmer {

@@ -13,10 +13,8 @@ import {
 } from "react";
 import {
   LuCheck,
-  LuCodeXml,
   LuCopy,
   LuExternalLink,
-  LuEye,
   LuFileText,
   LuX,
 } from "react-icons/lu";
@@ -472,7 +470,7 @@ export function SourcePreviewPanel() {
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5">
-          <div className="flex items-center rounded-xl bg-gray-100 p-1 dark:bg-white/8">
+          {/* <div className="flex items-center rounded-xl bg-gray-100 p-1 dark:bg-white/8">
             <Tooltip label="Preview" placement="topRight">
               <button
                 type="button"
@@ -501,7 +499,7 @@ export function SourcePreviewPanel() {
                 <LuCodeXml className="h-4 w-4" aria-hidden />
               </button>
             </Tooltip>
-          </div>
+          </div> */}
 
           <Tooltip label={copied ? "Đã sao chép" : "Sao chép"}>
             <button

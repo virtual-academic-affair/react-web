@@ -65,7 +65,6 @@ const EMPTY_PROMPTS = [
 
 function parseReasoningParentId(parentId: string | undefined) {
   return {
-    defaultOpen: !parentId?.includes(":closed"),
     processingTimeMs: (() => {
       const raw = parentId?.match(/:ms=(\d+)/)?.[1];
       if (!raw) return undefined;
@@ -216,11 +215,10 @@ function GeminiAssistantMessage() {
                       ? firstReasoningPart.parentId
                       : undefined,
                   );
-                  const defaultOpen = running || reasoningMeta.defaultOpen;
                   return (
                     <ReasoningRoot
                       key={part.indices.join("-")}
-                      defaultOpen={defaultOpen}
+                      defaultOpen={false}
                       resetKey={`${messageId}:${part.indices.join("-")}`}
                       variant="ghost"
                     >
@@ -329,7 +327,7 @@ function GeminiStickyComposer({
         </button>
       ) : null}
 
-      <div className="mx-auto w-full max-w-[860px] px-[3vw] md:px-[4vw] lg:px-0">
+      <div className="mx-auto mb-4 w-full max-w-[860px] px-[3vw] md:px-[4vw] lg:px-0">
         <GeminiComposer />
         <p className="mx-auto mt-2 max-w-lg text-center text-xs leading-snug text-[#444746] dark:text-gray-400">
           Câu trả lời của AI chỉ mang tính chất tham khảo. Xác thực lại với các
