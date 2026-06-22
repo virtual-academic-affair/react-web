@@ -17,12 +17,8 @@ import {
 } from "react";
 import {
   MdArrowDownward,
-  MdAutoAwesome,
   MdCheck,
-  MdChecklist,
   MdContentCopy,
-  MdDescription,
-  MdSchool,
   MdSend,
   MdSquare,
 } from "react-icons/md";
@@ -45,22 +41,17 @@ const COPY_BUTTON_HIDE_OFFSET = 300;
 const ChatViewportContext =
   createContext<RefObject<HTMLDivElement | null> | null>(null);
 
-const EMPTY_PROMPTS = [
-  {
-    icon: MdSchool,
-    title: "Điều kiện tốt nghiệp",
-    text: "Hỏi về tín chỉ, chuẩn ngoại ngữ, chứng chỉ bắt buộc.",
-  },
-  {
-    icon: MdChecklist,
-    title: "Quy chế học vụ",
-    text: "Tra cứu quy định học lại, cải thiện điểm, cảnh báo học tập.",
-  },
-  {
-    icon: MdDescription,
-    title: "Tài liệu đào tạo",
-    text: "Tìm thông tin trong chương trình đào tạo và văn bản liên quan.",
-  },
+const NEW_CHAT_GREETINGS = [
+  "Cùng bắt đầu nhé, bạn muốn hỏi điều gì?",
+  "Hôm nay bạn cần tra cứu thông tin gì?",
+  "Bạn đang băn khoăn điều gì về học vụ?",
+  "Cùng tìm câu trả lời cho hành trình học tập của bạn.",
+  "Bạn muốn tìm hiểu quy chế hay chương trình đào tạo?",
+  "Có câu hỏi nào về học tập cần mình hỗ trợ không?",
+  "Sẵn sàng rồi, chúng ta cùng tra cứu nhé.",
+  "Bạn cần mình hỗ trợ điều gì hôm nay?",
+  "Cùng tháo gỡ câu hỏi học vụ của bạn nhé.",
+  "Hãy bắt đầu với điều bạn đang quan tâm.",
 ] as const;
 
 function parseReasoningParentId(parentId: string | undefined) {
@@ -263,7 +254,7 @@ function GeminiAssistantMessage() {
   );
 }
 
-function GeminiComposer() {
+function GeminiComposer({ centered = false }: { centered?: boolean }) {
   const isEmpty = useAuiState((s) => s.composer.isEmpty);
   const isRunning = useAuiState((s) => s.thread.isRunning);
   const { activeSessionStatus } = useChatbotShell();
@@ -271,9 +262,11 @@ function GeminiComposer() {
 
   return (
     <ComposerPrimitive.Root
-      className={`group/composer dark:bg-navy-800 relative w-full rounded-4xl bg-white p-3 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.16)] ${
-        isArchived ? "opacity-80" : ""
-      }`}
+      className={`group/composer relative w-full rounded-4xl border p-3 transition-[border-color,box-shadow,background-color] duration-300 ${
+        centered
+          ? "border-[#d3e3fd]/80 bg-white/90 shadow-[0_18px_70px_-28px_rgba(26,115,232,0.45)] backdrop-blur-xl dark:border-white/10 dark:bg-navy-800 dark:shadow-[0_20px_70px_-30px_rgba(58,91,246,0.38)]"
+          : "dark:bg-navy-800 border-transparent bg-white shadow-[0_2px_8px_-2px_rgba(0,0,0,0.16)]"
+      } ${isArchived ? "opacity-80" : ""}`}
       data-empty={isEmpty}
       data-running={isRunning}
     >
@@ -310,9 +303,11 @@ function GeminiComposer() {
 function GeminiStickyComposer({
   showScrollBottom,
   onScrollToBottom,
+  animateFromCenter,
 }: {
   showScrollBottom: boolean;
   onScrollToBottom: () => void;
+  animateFromCenter: boolean;
 }) {
   return (
     <div className="bg-lightPrimary dark:bg-navy-900 relative z-20 w-full shrink-0 pt-2">
@@ -327,7 +322,11 @@ function GeminiStickyComposer({
         </button>
       ) : null}
 
-      <div className="mx-auto mb-4 w-full max-w-[860px] px-[3vw] md:px-[4vw] lg:px-0">
+      <div
+        className={`mx-auto mb-4 w-full max-w-[860px] px-[3vw] md:px-[4vw] lg:px-0 ${
+          animateFromCenter ? "chatbot-composer-dock-enter" : ""
+        }`}
+      >
         <GeminiComposer />
         <p className="mx-auto mt-2 max-w-lg text-center text-xs leading-snug text-[#444746] dark:text-gray-400">
           Câu trả lời của AI chỉ mang tính chất tham khảo. Xác thực lại với các
@@ -339,41 +338,18 @@ function GeminiStickyComposer({
 }
 
 function ChatbotEmptyState() {
+  const [greeting] = useState(
+    () =>
+      NEW_CHAT_GREETINGS[Math.floor(Math.random() * NEW_CHAT_GREETINGS.length)],
+  );
+
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-4 py-10 text-center">
-      <div
-        className="mb-5 flex h-14 w-14 items-center justify-center rounded-full border border-[#d3e3fd]/60 bg-[#eef4ff] text-[#1a73e8] shadow-sm dark:border-white/10 dark:bg-white/[0.06] dark:text-[#a8c7fa]"
-        aria-hidden
-      >
-        <MdAutoAwesome className="h-6 w-6" />
-      </div>
-      <h1 className="text-2xl font-semibold tracking-normal text-[#202124] sm:text-3xl dark:text-white">
-        Bạn cần hỏi gì về học vụ?
-      </h1>
-      <p className="mt-3 max-w-xl text-sm leading-6 text-[#5f6368] dark:text-[#b8c0d6]">
-        Nhập câu hỏi bên dưới để tra cứu quy chế, chương trình đào tạo và các
-        tài liệu học vụ đã được bóc tách.
-      </p>
-      <div className="mt-7 grid w-full gap-3 sm:grid-cols-3">
-        {EMPTY_PROMPTS.map((item) => {
-          const Icon = item.icon;
-          return (
-            <div
-              key={item.title}
-              className="rounded-2xl border border-[#d3e3fd]/70 bg-white/80 p-4 text-left shadow-[0_8px_28px_-24px_rgba(26,115,232,0.5)] dark:border-white/10 dark:bg-white/[0.04]"
-            >
-              <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-[#d3e3fd] text-[#0b57d0] dark:bg-[#1f3760] dark:text-[#a8c7fa]">
-                <Icon className="h-5 w-5" />
-              </div>
-              <div className="text-sm font-semibold text-[#202124] dark:text-white">
-                {item.title}
-              </div>
-              <div className="mt-1 text-xs leading-5 text-[#5f6368] dark:text-[#9aa0a6]">
-                {item.text}
-              </div>
-            </div>
-          );
-        })}
+    <div className="flex min-h-[32rem] w-full flex-1 items-center justify-center px-4 py-12 sm:px-6">
+      <div className="relative z-10 w-full max-w-[820px] -translate-y-[4vh]">
+        <h1 className="mb-8 text-center text-3xl leading-tight font-normal tracking-[-0.03em] text-[#3c4043] sm:text-4xl md:text-[2.65rem] dark:text-[#e8eaed]">
+          {greeting}
+        </h1>
+        <GeminiComposer centered />
       </div>
     </div>
   );
@@ -469,10 +445,21 @@ export function GeminiThread({ className = "" }: { className?: string }) {
     };
   }, [updateScrollButton]);
 
+  const showEmptyState =
+    isNewThread && messagesCount === 0 && !isLoadingMessages;
+
   return (
     <ThreadPrimitive.Root
-      className={`flex h-full min-h-0 min-w-0 flex-col bg-transparent text-base text-[#1f1f1f] dark:text-white ${className}`.trim()}
+      className={`relative isolate flex h-full min-h-0 min-w-0 flex-col bg-transparent text-base text-[#1f1f1f] dark:text-white ${className}`.trim()}
     >
+      {showEmptyState ? (
+        <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+          <span className="chatbot-ambient-light chatbot-ambient-light-one" />
+          <span className="chatbot-ambient-light chatbot-ambient-light-two" />
+          <span className="chatbot-ambient-light chatbot-ambient-light-three" />
+        </div>
+      ) : null}
+
       <ChatViewportContext.Provider value={viewportRef}>
         <ThreadPrimitive.Viewport
           ref={viewportRef}
@@ -495,10 +482,13 @@ export function GeminiThread({ className = "" }: { className?: string }) {
           </div>
         </ThreadPrimitive.Viewport>
 
-        <GeminiStickyComposer
-          showScrollBottom={showScrollBottom}
-          onScrollToBottom={scrollToBottom}
-        />
+        {showEmptyState ? null : (
+          <GeminiStickyComposer
+            showScrollBottom={showScrollBottom}
+            onScrollToBottom={scrollToBottom}
+            animateFromCenter={isNewThread && messagesCount > 0}
+          />
+        )}
       </ChatViewportContext.Provider>
     </ThreadPrimitive.Root>
   );

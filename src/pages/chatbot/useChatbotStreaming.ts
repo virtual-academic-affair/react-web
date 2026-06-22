@@ -331,6 +331,11 @@ export function useChatbotStreaming({
         );
       });
 
+      if (!sessionAtSendTime?.serverId) {
+        selectedByUserRef.current = threadId;
+        navigateToThread(threadId, { replace: true });
+      }
+
       abortRef.current?.abort();
       abortRef.current = new AbortController();
       setIsRunning(true);
@@ -340,7 +345,9 @@ export function useChatbotStreaming({
     [
       abortRef,
       activeThreadIdRef,
+      navigateToThread,
       runStreamForAssistant,
+      selectedByUserRef,
       sessionsRef,
       setSessions,
       setSystemError,

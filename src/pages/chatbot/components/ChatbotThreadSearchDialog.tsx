@@ -87,12 +87,16 @@ export function ChatbotThreadSearchDialog({
           score: number;
         } => result.score !== null,
       )
-      .sort((left, right) => right.score - left.score || left.index - right.index)
+      .sort(
+        (left, right) => right.score - left.score || left.index - right.index,
+      )
       .slice(0, 30);
   }, [query, sessions]);
 
   useEffect(() => {
-    const frameId = window.requestAnimationFrame(() => inputRef.current?.focus());
+    const frameId = window.requestAnimationFrame(() =>
+      inputRef.current?.focus(),
+    );
 
     return () => {
       window.cancelAnimationFrame(frameId);
@@ -110,7 +114,7 @@ export function ChatbotThreadSearchDialog({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-10000 flex items-start justify-center bg-black/70 px-4 pt-[12vh] backdrop-blur-[1px] sm:pt-[16vh]"
+      className="fixed inset-0 z-10000 flex items-start justify-center bg-black/30 px-4 pt-[12vh] backdrop-blur-sm sm:pt-[16vh]"
       role="presentation"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();

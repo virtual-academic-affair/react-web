@@ -336,6 +336,7 @@ export function ReasoningTrigger({
   }, [active]);
 
   const displayTimeMs = active ? elapsedMs : processingTimeMs;
+  // @ts-ignore
   const durationText =
     typeof displayTimeMs === "number" && Number.isFinite(displayTimeMs)
       ? `${formatDuration(displayTimeMs)}`
