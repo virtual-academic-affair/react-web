@@ -1,12 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import Tooltip from "@/components/tooltip/Tooltip";
+import { ScrollFadeArea } from "@/components/scroll-fade/ScrollFadeArea";
+import { useAuthStore } from "@/stores/auth.store";
 import {
-  MdAdd,
-  MdArchive,
-  MdArrowBack,
-  MdHistory,
-  MdSearch,
-} from "react-icons/md";
+  getChatbotReturnLabel,
+  getChatbotReturnPath,
+} from "@/utils/chatbotReturn.util";
+import { useMemo, useState, useEffect } from "react";
+import { MdAdd, MdArrowBack, MdChevronRight, MdSearch } from "react-icons/md";
+import { useNavigate } from "react-router-dom";
 
+import { chatbotSidebarCollapsedNeutralIconClass } from "../assistantActionButton";
+import { useChatbotLayout } from "../chatbotLayoutContext";
 import { sortSessionsByActivity } from "../chatbotMappers";
 import { useChatbotSessionsQuery } from "../chatbotQueries";
 import { useChatbotShell } from "../chatbotShellContext";
@@ -14,33 +18,42 @@ import type { ChatThreadSession } from "../types";
 import { ChatbotThreadDeleteConfirm } from "./ChatbotThreadDeleteConfirm";
 import { ChatbotThreadRow } from "./ChatbotThreadRow";
 import { ChatbotThreadSearchDialog } from "./ChatbotThreadSearchDialog";
+import {
+  ChatbotShortcutHint,
+  useChatbotModKeyLabel,
+} from "./ChatbotShortcutHint";
 
-type ThreadListMode = "active" | "archived";
+const neutralPillClass =
+  "inline-flex h-9 w-full items-center justify-start gap-2 rounded-full px-3 text-xs font-medium text-[#444746] transition hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10";
+
+const primaryPillClass =
+  "dark:bg-brand-500 dark:hover:bg-brand-400 inline-flex h-9 w-full items-center justify-start gap-2 rounded-full bg-[#d3e3fd] px-3 text-xs font-semibold text-[#062e6f] transition hover:bg-[#c2d7f7] dark:text-white";
+
+const collapsedPrimaryIconClass =
+  "dark:bg-brand-500 dark:hover:bg-brand-400 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#d3e3fd] text-[#062e6f] transition hover:bg-[#c2d7f7] dark:text-white";
 
 export function ChatbotThreadToolbar({
   onNavigate,
-  onShowMenu,
   collapsed = false,
 }: {
   onNavigate?: () => void;
-  onShowMenu?: () => void;
   collapsed?: boolean;
 }) {
+  const navigate = useNavigate();
+  const userRole = useAuthStore((s) => s.userRole);
+  const returnPath = getChatbotReturnPath();
   const {
     sessions,
     activeThreadId,
-    activeSessionStatus,
     isLoadingSessions,
     switchToThread,
     viewArchivedThread,
     switchToNewThread,
     renameThread,
     archiveThread,
-    unarchiveThread,
     deleteThread,
   } = useChatbotShell();
 
-  const [mode, setMode] = useState<ThreadListMode>("active");
   const [editingThread, setEditingThread] = useState<{
     id: string;
     draft: string;
@@ -50,20 +63,13 @@ export function ChatbotThreadToolbar({
   );
   const [isDeleting, setIsDeleting] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const activeSessionsQuery = useChatbotSessionsQuery(
-    "active",
-    mode === "active",
-  );
-  const archivedSessionsQuery = useChatbotSessionsQuery(
-    "archived",
-    mode === "archived" || activeSessionStatus === "archived",
-  );
-
-  useEffect(() => {
-    if (activeSessionStatus === "archived") {
-      setMode("archived");
-    }
-  }, [activeSessionStatus]);
+  const { registerOpenSearch } = useChatbotLayout();
+  const modKeyLabel = useChatbotModKeyLabel();
+  const newChatShortcutKeys = [modKeyLabel, "⇧", "O"];
+  const searchShortcutKeys = [modKeyLabel, "⇧", "K"];
+  const [historyExpanded, setHistoryExpanded] = useState(true);
+  const activeSessionsQuery = useChatbotSessionsQuery("active", true);
+  const archivedSessionsQuery = useChatbotSessionsQuery("archived", searchOpen);
 
   const activeSessions = useMemo(
     () =>
@@ -77,13 +83,9 @@ export function ChatbotThreadToolbar({
   );
 
   const archivedSessions = archivedSessionsQuery.data ?? [];
-  const visibleSessions = mode === "active" ? activeSessions : archivedSessions;
   const isLoadingVisible =
-    mode === "active"
-      ? isLoadingSessions ||
-        (activeSessionsQuery.isFetching && !activeSessions.length)
-      : archivedSessionsQuery.isLoading ||
-        (archivedSessionsQuery.isFetching && !archivedSessionsQuery.data);
+    isLoadingSessions ||
+    (activeSessionsQuery.isFetching && !activeSessions.length);
 
   const handleSwitch = (id: string) => {
     setEditingThread(null);
@@ -92,11 +94,15 @@ export function ChatbotThreadToolbar({
   };
 
   const handleNewThread = () => {
-    setMode("active");
     setEditingThread(null);
     switchToNewThread();
     onNavigate?.();
   };
+
+  useEffect(() => {
+    registerOpenSearch(() => setSearchOpen(true));
+    return () => registerOpenSearch(null);
+  }, [registerOpenSearch]);
 
   const handleViewArchivedThread = async (session: ChatThreadSession) => {
     setEditingThread(null);
@@ -104,20 +110,16 @@ export function ChatbotThreadToolbar({
     onNavigate?.();
   };
 
-  const handleModeChange = (nextMode: ThreadListMode) => {
-    setMode(nextMode);
-    setEditingThread(null);
-    if (nextMode === "active") {
-      void activeSessionsQuery.refetch();
+  const handleSearchSelect = (session: ChatThreadSession) => {
+    if (session.status === "archived") {
+      void handleViewArchivedThread(session);
+      return;
     }
+    handleSwitch(session.id);
   };
 
   const handleArchive = (session: ChatThreadSession) => {
     void archiveThread(session.id);
-  };
-
-  const handleUnarchive = async (session: ChatThreadSession) => {
-    await unarchiveThread(session);
   };
 
   const handleDelete = (session: ChatThreadSession) => {
@@ -130,175 +132,204 @@ export function ChatbotThreadToolbar({
     try {
       await deleteThread(deleteTarget);
       setDeleteTarget(null);
-      setMode("active");
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  const handleReturn = () => {
+    onNavigate?.();
+    navigate(returnPath);
   };
 
   return (
     <>
       <div
         className={`flex h-full min-h-0 w-full shrink-0 flex-col overflow-hidden ${
-          collapsed ? "items-center px-2" : "px-3"
+          collapsed ? "items-start px-0 pt-1" : "pt-1"
         }`}
       >
         {collapsed ? (
-          <button
-            type="button"
-            onClick={handleNewThread}
-            className="dark:bg-brand-500 dark:hover:bg-brand-400 mt-3 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#d3e3fd] text-[#062e6f] transition hover:bg-[#c2d7f7] dark:text-white"
-            aria-label="Tạo cuộc trò chuyện mới"
-            title="Tạo mới"
-          >
-            <MdAdd className="h-6 w-6" aria-hidden />
-          </button>
-        ) : (
-          <div className="flex min-h-0 w-full flex-1 flex-col">
-            {onShowMenu ? (
-              <div className="mb-3 flex shrink-0 items-center gap-2 px-1">
-                <button
-                  type="button"
-                  onClick={onShowMenu}
-                  className="hover:text-brand-500 inline-flex min-w-0 items-center gap-2 rounded-full px-2 py-1.5 text-sm font-semibold text-[#5f6368] transition hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white"
-                >
-                  <MdArrowBack className="h-4 w-4 shrink-0" aria-hidden />
-                  Menu
-                </button>
-                <div className="ml-auto flex shrink-0 items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setSearchOpen(true)}
-                    className="hover:text-brand-500 flex h-9 w-9 items-center justify-center rounded-full text-[#5f6368] transition hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white"
-                    aria-label="Tìm kiếm cuộc trò chuyện"
-                    title="Tìm kiếm"
-                  >
-                    <MdSearch className="h-5 w-5" aria-hidden />
-                  </button>
-                </div>
-              </div>
-            ) : null}
-
-            <div className="mb-3 flex shrink-0 items-center gap-2">
+          <div className="mt-4 flex w-9 flex-col items-center gap-1.5">
+            <Tooltip label="Tạo mới" placement="right">
               <button
                 type="button"
                 onClick={handleNewThread}
-                className="dark:bg-brand-500 dark:hover:bg-brand-400 inline-flex h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-[#d3e3fd] px-4 text-sm font-semibold text-[#062e6f] transition hover:bg-[#c2d7f7] dark:text-white"
+                className={collapsedPrimaryIconClass}
+                aria-label="Tạo mới"
               >
-                <MdAdd className="h-5 w-5 shrink-0" aria-hidden />
+                <MdAdd className="h-4 w-4" aria-hidden />
+              </button>
+            </Tooltip>
+
+            <Tooltip label="Tìm kiếm" placement="right">
+              <button
+                type="button"
+                onClick={() => setSearchOpen(true)}
+                className={chatbotSidebarCollapsedNeutralIconClass}
+                aria-label="Tìm kiếm"
+              >
+                <MdSearch className="h-4 w-4" aria-hidden />
+              </button>
+            </Tooltip>
+
+            {userRole === "admin" ? (
+              <Tooltip
+                label={getChatbotReturnLabel(returnPath)}
+                placement="right"
+              >
+                <button
+                  type="button"
+                  onClick={handleReturn}
+                  className={chatbotSidebarCollapsedNeutralIconClass}
+                  aria-label={getChatbotReturnLabel(returnPath)}
+                >
+                  <MdArrowBack className="h-4 w-4" aria-hidden />
+                </button>
+              </Tooltip>
+            ) : null}
+          </div>
+        ) : (
+          <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
+            <div className="mt-3 shrink-0 px-3">
+              <button
+                type="button"
+                onClick={handleNewThread}
+                className={`${primaryPillClass} group`}
+              >
+                <MdAdd className="h-4 w-4 shrink-0" aria-hidden />
                 Tạo mới
+                <ChatbotShortcutHint keys={newChatShortcutKeys} />
               </button>
-            </div>
 
-            <div className="mb-3 grid shrink-0 grid-cols-2 rounded-2xl bg-gray-100 p-1 dark:bg-white/8">
               <button
                 type="button"
-                onClick={() => handleModeChange("active")}
-                className={`rounded-xl px-2 py-1.5 text-xs font-semibold transition ${
-                  mode === "active"
-                    ? "text-navy-700 dark:bg-navy-700 bg-white shadow-sm dark:text-white"
-                    : "hover:text-navy-700 text-gray-600 dark:text-gray-300 dark:hover:text-white"
-                }`}
+                onClick={() => setSearchOpen(true)}
+                className={`${neutralPillClass} group`}
               >
-                Đang hoạt động
+                <MdSearch className="h-4 w-4 shrink-0" aria-hidden />
+                Tìm kiếm
+                <ChatbotShortcutHint keys={searchShortcutKeys} />
               </button>
-              <button
-                type="button"
-                onClick={() => handleModeChange("archived")}
-                className={`rounded-xl px-2 py-1.5 text-xs font-semibold transition ${
-                  mode === "archived"
-                    ? "text-navy-700 dark:bg-navy-700 bg-white shadow-sm dark:text-white"
-                    : "hover:text-navy-700 text-gray-600 dark:text-gray-300 dark:hover:text-white"
-                }`}
-              >
-                Lưu trữ
-              </button>
+
+              {userRole === "admin" ? (
+                <button
+                  type="button"
+                  onClick={handleReturn}
+                  className={neutralPillClass}
+                >
+                  <MdArrowBack className="h-4 w-4 shrink-0" aria-hidden />
+                  <span className="truncate">
+                    {getChatbotReturnLabel(returnPath)}
+                  </span>
+                </button>
+              ) : null}
             </div>
 
-            <div className="mb-2 flex shrink-0 items-center gap-2 px-2 text-xs font-semibold tracking-wide text-[#5f6368] uppercase dark:text-gray-400">
-              {mode === "active" ? (
-                <MdHistory className="h-4 w-4" aria-hidden />
-              ) : (
-                <MdArchive className="h-4 w-4" aria-hidden />
-              )}
-              {mode === "active" ? "Lịch sử chat" : "Chat lưu trữ"}
-            </div>
-
-            <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto pr-1 pb-4">
-              {isLoadingVisible ? (
-                <div className="rounded-xl px-3 py-2 text-sm text-[#444746] dark:text-gray-400">
+            {isLoadingVisible ? (
+              <div className="mt-4 min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-3">
+                <div className="py-2 text-xs text-[#444746] dark:text-gray-400">
                   Đang tải...
                 </div>
-              ) : visibleSessions.length === 0 ? (
-                <div className="rounded-xl px-3 py-2 text-sm text-[#444746] dark:text-gray-400">
-                  {mode === "active"
-                    ? "Chưa có cuộc trò chuyện nào."
-                    : "Chưa có cuộc trò chuyện lưu trữ nào."}
-                </div>
-              ) : (
-                <div className="space-y-1">
-                  {visibleSessions.map((session, i) => (
-                    <ChatbotThreadRow
-                      key={session.id || `session-${i}`}
-                      session={session}
-                      isActive={session.id === activeThreadId}
-                      isEditing={
-                        mode === "active" && editingThread?.id === session.id
-                      }
-                      draft={
-                        editingThread?.id === session.id
-                          ? editingThread.draft
-                          : session.title
-                      }
-                      canSwitch
-                      canEdit={mode === "active"}
-                      archiveAction={
-                        mode === "active" ? "archive" : "unarchive"
-                      }
-                      onSwitch={() =>
-                        mode === "active"
-                          ? handleSwitch(session.id)
-                          : void handleViewArchivedThread(session)
-                      }
-                      onStartEdit={() =>
-                        setEditingThread({
-                          id: session.id,
-                          draft: session.title,
-                        })
-                      }
-                      onDraftChange={(next) =>
-                        setEditingThread((current) =>
-                          current?.id === session.id
-                            ? { ...current, draft: next }
-                            : current,
-                        )
-                      }
-                      onCancelEdit={() => setEditingThread(null)}
-                      onSaveEdit={async (next) => {
-                        setEditingThread(null);
-                        await renameThread(session.id, next);
-                      }}
-                      onArchive={() =>
-                        mode === "active"
-                          ? handleArchive(session)
-                          : void handleUnarchive(session)
-                      }
-                      onDelete={() => handleDelete(session)}
+              </div>
+            ) : (
+              <>
+                <div className="mt-4 shrink-0 px-3">
+                  <button
+                    type="button"
+                    onClick={() => setHistoryExpanded((current) => !current)}
+                    className="text-[#5f6368] group flex w-full cursor-pointer items-center px-3 py-1 text-xs font-medium dark:text-gray-400"
+                    aria-expanded={historyExpanded}
+                  >
+                    <span className="truncate">Gần đây</span>
+                    <MdChevronRight
+                      className={`ml-2 h-4 w-4 shrink-0 transition-all duration-200 ease-in-out ${
+                        historyExpanded
+                          ? "rotate-90 opacity-0 group-hover:opacity-100"
+                          : "rotate-0 opacity-100"
+                      }`}
+                      aria-hidden
                     />
-                  ))}
+                  </button>
                 </div>
-              )}
-            </div>
+
+                <div
+                  className={`grid min-h-0 flex-1 transition-[grid-template-rows,opacity] duration-300 ease-in-out ${
+                    historyExpanded
+                      ? "grid-rows-[1fr] opacity-100"
+                      : "pointer-events-none grid-rows-[0fr] opacity-0"
+                  }`}
+                >
+                  <div className="min-h-0 overflow-hidden">
+                    <ScrollFadeArea
+                      wrapperClassName="h-full min-h-0"
+                      className="h-full min-h-0 overflow-x-hidden overflow-y-auto px-3 [scrollbar-width:thin]"
+                      topFadeRem={1.25}
+                      bottomFadeRem={1.75}
+                      thresholdPx={4}
+                      watchDeps={[historyExpanded, activeSessions.length]}
+                    >
+                      {activeSessions.length === 0 ? (
+                        <div className="px-3 py-2 text-xs text-[#444746] dark:text-gray-400">
+                          Chưa có cuộc trò chuyện nào.
+                        </div>
+                      ) : (
+                        <div>
+                          {activeSessions.map((session, i) => (
+                            <ChatbotThreadRow
+                              key={session.id || `session-${i}`}
+                              session={session}
+                              isActive={session.id === activeThreadId}
+                              isEditing={editingThread?.id === session.id}
+                              draft={
+                                editingThread?.id === session.id
+                                  ? editingThread.draft
+                                  : session.title
+                              }
+                              canSwitch
+                              canEdit
+                              archiveAction="archive"
+                              onSwitch={() => handleSwitch(session.id)}
+                              onStartEdit={() =>
+                                setEditingThread({
+                                  id: session.id,
+                                  draft: session.title,
+                                })
+                              }
+                              onDraftChange={(next) =>
+                                setEditingThread((current) =>
+                                  current?.id === session.id
+                                    ? { ...current, draft: next }
+                                    : current,
+                                )
+                              }
+                              onCancelEdit={() => setEditingThread(null)}
+                              onSaveEdit={async (next) => {
+                                setEditingThread(null);
+                                await renameThread(session.id, next);
+                              }}
+                              onArchive={() => handleArchive(session)}
+                              onDelete={() => handleDelete(session)}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </ScrollFadeArea>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>
 
       {searchOpen ? (
         <ChatbotThreadSearchDialog
-          sessions={activeSessions}
+          activeSessions={activeSessions}
+          archivedSessions={archivedSessions}
           activeThreadId={activeThreadId}
           onClose={() => setSearchOpen(false)}
-          onSelect={handleSwitch}
+          onSelect={handleSearchSelect}
         />
       ) : null}
 

@@ -9,6 +9,7 @@
 import logoBgColor from "@/assets/img/logo/logo-bg-color.svg";
 import heroVideo from "@/assets/video/home-optimized.mp4";
 import { useAuthStore } from "@/stores/auth.store";
+import { hasTempAuth } from "@/utils/tempAuth.util";
 import React from "react";
 import { LuLogIn } from "react-icons/lu";
 import { useNavigate } from "react-router-dom";
@@ -20,7 +21,7 @@ const UserDashboard: React.FC = () => {
   const [videoLoaded, setVideoLoaded] = React.useState(false);
 
   const handleJoin = () => {
-    if (accessToken) {
+    if (accessToken || hasTempAuth()) {
       if (userRole === "admin") {
         navigate("/admin/email/config", { replace: true });
       } else {

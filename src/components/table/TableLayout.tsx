@@ -176,7 +176,7 @@ function TableLayout<T extends { id: number | string }>({
                   {columns.map((col) => (
                     <th
                       key={col.key}
-                      className={`px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500 table-column-header-${col.key}`}
+                      className={`px-4 py-3 text-left align-top text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500 table-column-header-${col.key}`}
                       style={{
                         width: col.width,
                         maxWidth: col.maxWidth,
@@ -187,7 +187,7 @@ function TableLayout<T extends { id: number | string }>({
                   ))}
                   {actions.length > 0 && (
                     <th
-                      className="dark:bg-navy-800 sticky right-0 z-20 bg-white px-4 py-3 text-center text-xs font-semibold tracking-wide whitespace-nowrap text-gray-400 uppercase dark:text-gray-500"
+                      className="dark:bg-navy-800 sticky right-0 z-20 bg-white px-4 py-3 text-center align-top text-xs font-semibold tracking-wide whitespace-nowrap text-gray-400 uppercase dark:text-gray-500"
                       style={{
                         width: `${Math.max(100, actions.length * 55)}px`,
                         boxShadow: "-10px 0 10px -10px rgba(0,0,0,0.15)",
@@ -208,7 +208,7 @@ function TableLayout<T extends { id: number | string }>({
                       {columns.map((col) => (
                         <td
                           key={col.key}
-                          className="px-4 py-3"
+                          className="px-4 py-3 align-top"
                           style={{
                             width: col.width,
                             maxWidth: col.maxWidth,
@@ -219,7 +219,7 @@ function TableLayout<T extends { id: number | string }>({
                       ))}
                       {actions.length > 0 && (
                         <td
-                          className="dark:bg-navy-800 sticky right-0 z-10 bg-white px-4 py-3"
+                          className="dark:bg-navy-800 sticky right-0 z-10 bg-white px-4 py-3 align-top"
                           style={{
                             boxShadow: "-10px 0 10px -10px rgba(0,0,0,0.15)",
                           }}
@@ -256,25 +256,25 @@ function TableLayout<T extends { id: number | string }>({
                         {columns.map((col) => (
                           <td
                             key={col.key}
-                            className="max-w-px px-4 py-3"
+                            className="max-w-px px-4 py-3 align-top"
                             style={{
                               width: col.width,
                               maxWidth: col.maxWidth,
                             }}
                           >
-                            <div className="w-full min-w-0 truncate">
+                            <div className="w-full min-w-0">
                               {col.render(item, index)}
                             </div>
                           </td>
                         ))}
                         {actions.length > 0 && (
                           <td
-                            className="group-hover:bg-lightPrimary dark:bg-navy-800 dark:group-hover:bg-navy-700 sticky right-0 z-10 bg-white py-3 pr-2 whitespace-nowrap"
+                            className="group-hover:bg-lightPrimary dark:bg-navy-800 dark:group-hover:bg-navy-700 sticky right-0 z-10 bg-white px-4 py-3 align-top whitespace-nowrap"
                             style={{
                               boxShadow: "-10px 0 10px -10px rgba(0,0,0,0.15)",
                             }}
                           >
-                            <div className="flex items-center justify-center gap-2">
+                            <div className="flex items-start justify-center gap-2">
                               {actions.map((action) => {
                                 const customRendered = action.render
                                   ? action.render(item)

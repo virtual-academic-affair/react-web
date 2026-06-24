@@ -16,6 +16,7 @@ import {
   STREAMDOWN_CONTROLS,
   STREAMDOWN_LINK_SAFETY,
 } from "@/components/markdown/streamdown-config";
+import { ScrollFadeArea } from "@/components/scroll-fade/ScrollFadeArea";
 import { useStreamdownMathPlugins } from "@/components/markdown/useStreamdownMathPlugins";
 
 type ReasoningVariant = "ghost" | "default";
@@ -80,7 +81,7 @@ function ReasoningMarkdown({ text }: { text: string }) {
       controls={STREAMDOWN_CONTROLS}
       linkSafety={STREAMDOWN_LINK_SAFETY}
       plugins={plugins}
-      className="text-sm leading-relaxed text-[#3c4043] dark:text-[#d9e2ff]"
+      className="text-xs leading-relaxed text-[#3c4043] italic dark:text-[#d9e2ff]"
     >
       {text}
     </Streamdown>
@@ -89,14 +90,14 @@ function ReasoningMarkdown({ text }: { text: string }) {
 
 function StepIcon({ isActive }: { isActive: boolean }) {
   return (
-    <div className="relative flex h-6 w-6 shrink-0 items-center justify-center">
+    <div className="relative flex h-[22px] w-[22px] shrink-0 items-center justify-center">
       {/* Completed State */}
       <div
         className={`absolute inset-0 flex items-center justify-center rounded-full bg-[#1a73e8] text-white transition-all duration-200 dark:bg-[#4285f4] ${
           isActive ? "scale-0 opacity-0" : "scale-100 opacity-100"
         }`}
       >
-        <MdCheck className="h-3.5 w-3.5" />
+        <MdCheck className="h-3 w-3" />
       </div>
 
       {/* Active State */}
@@ -109,7 +110,7 @@ function StepIcon({ isActive }: { isActive: boolean }) {
           className="absolute inset-0 rounded-full border-[1.5px] border-dashed border-[#1a73e8] dark:border-[#6dabf7]"
           style={{ animation: "spin 3s linear infinite" }}
         />
-        <div className="absolute top-1/2 left-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#1a73e8] dark:bg-[#6dabf7]" />
+        <div className="absolute top-1/2 left-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#1a73e8] dark:bg-[#6dabf7]" />
       </div>
     </div>
   );
@@ -119,7 +120,7 @@ function StepConnector({ dashed }: { dashed?: boolean }) {
   return (
     <div
       className={
-        "my-1.5 w-px flex-1 border-l border-[#d3e3fd] dark:border-[#3d4f76] " +
+        "my-1 w-px flex-1 border-l border-[#d3e3fd] dark:border-[#3d4f76] " +
         (dashed ? "border-dashed" : "border-solid")
       }
     />
@@ -138,12 +139,12 @@ function StructuredReasoningStep({
   isNextActive: boolean;
 }) {
   return (
-    <div className="chat-message-enter flex gap-3">
+    <div className="chat-message-enter flex gap-2.5">
       <div className="flex flex-col items-center">
         <StepIcon isActive={isActive} />
         {!isLast && <StepConnector dashed={isNextActive} />}
       </div>
-      <div className="min-w-0 flex-1 pb-10">
+      <div className="min-w-0 flex-1 pb-5">
         <ReasoningMarkdown text={step.content} />
         {isActive && (
           <span className="ml-1 inline-flex align-middle text-[#1a73e8] dark:text-[#6dabf7]">
@@ -157,96 +158,24 @@ function StructuredReasoningStep({
 
 function StructuredReasoning({ steps }: { steps: StructuredReasoningStep[] }) {
   const busy = useContext(ReasoningBusyContext);
-  const [showAll, setShowAll] = useState(false);
-  const previewCount = 2;
-  const hasMore = steps.length > previewCount;
-  const visibleSteps = showAll ? steps : steps.slice(0, previewCount);
-  const nextStep = !showAll && hasMore ? steps[previewCount] : null;
-
-  const renderStep = (
-    step: StructuredReasoningStep,
-    index: number,
-    isLastVisible: boolean,
-  ) => {
-    const isLast = index === steps.length - 1;
-    const isActive = busy && isLast;
-    const isNextActive = busy && index === steps.length - 2;
-
-    return (
-      <StructuredReasoningStep
-        key={step.id}
-        step={step}
-        isLast={isLastVisible}
-        isActive={isActive}
-        isNextActive={isNextActive}
-      />
-    );
-  };
 
   return (
-    <div>
-      {visibleSteps.map((step, index) =>
-        renderStep(
-          step,
-          index,
-          showAll
-            ? index === visibleSteps.length - 1
-            : !hasMore && index === visibleSteps.length - 1,
-        ),
-      )}
+    <div className="italic">
+      {steps.map((step, index) => {
+        const isLast = index === steps.length - 1;
+        const isActive = busy && isLast;
+        const isNextActive = busy && index === steps.length - 2;
 
-      {nextStep ? (
-        <div className="group relative -mt-4 overflow-hidden pb-6">
-          <div
-            className="overflow-hidden opacity-45"
-            style={{
-              height: 24,
-              maskImage:
-                "linear-gradient(to bottom, black 0%, transparent 100%)",
-              WebkitMaskImage:
-                "linear-gradient(to bottom, black 0%, transparent 100%)",
-            }}
-            aria-hidden="true"
-          >
-            {renderStep(nextStep, previewCount, true)}
-          </div>
-          <div className="absolute inset-x-0 bottom-0 flex justify-start">
-            <span
-              role="button"
-              tabIndex={0}
-              onClick={() => setShowAll(true)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  setShowAll(true);
-                }
-              }}
-              className="pointer-events-auto cursor-pointer text-xs font-semibold text-[#5f6368] opacity-100 transition-colors hover:text-[#1a73e8] focus-visible:text-[#1a73e8] focus-visible:outline-none dark:text-[#8f98aa] dark:hover:text-[#a8c7fa] dark:focus-visible:text-[#a8c7fa]"
-            >
-              Xem thêm {steps.length - previewCount} bước
-            </span>
-          </div>
-        </div>
-      ) : null}
-
-      {showAll && hasMore ? (
-        <div className="-mt-4 flex justify-start">
-          <span
-            role="button"
-            tabIndex={0}
-            onClick={() => setShowAll(false)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                setShowAll(false);
-              }
-            }}
-            className="cursor-pointer text-xs font-semibold text-[#5f6368] transition-colors hover:text-[#1a73e8] focus-visible:text-[#1a73e8] focus-visible:outline-none dark:text-[#8f98aa] dark:hover:text-[#a8c7fa] dark:focus-visible:text-[#a8c7fa]"
-          >
-            Thu gọn
-          </span>
-        </div>
-      ) : null}
+        return (
+          <StructuredReasoningStep
+            key={step.id}
+            step={step}
+            isLast={isLast}
+            isActive={isActive}
+            isNextActive={isNextActive}
+          />
+        );
+      })}
     </div>
   );
 }
@@ -420,7 +349,37 @@ export function ReasoningContent(props: ComponentProps<"div">) {
   const { open } = useReasoningDisclosure();
   const { className, children, style, ...rest } = props;
   const busy = props["aria-busy"] === true || props["aria-busy"] === "true";
-  const ghost = variant === "ghost" ? "ml-1 mt-6" : "";
+  const ghostScrollClass =
+    variant === "ghost"
+      ? "ml-1 mt-2 min-h-0 max-h-60 overflow-x-hidden overflow-y-auto overscroll-contain pr-2 italic [scrollbar-width:thin] sm:pr-3"
+      : "";
+
+  if (variant === "ghost") {
+    return (
+      <ReasoningBusyContext.Provider value={busy}>
+        <div
+          className={`grid min-h-0 transition-[grid-template-rows,opacity,margin] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+            open
+              ? "mb-5 grid-rows-[1fr] opacity-100"
+              : "pointer-events-none mb-0 grid-rows-[0fr] opacity-0"
+          }`}
+          aria-hidden={!open}
+          {...rest}
+        >
+          <ScrollFadeArea
+            wrapperClassName="min-h-0 overflow-hidden"
+            className={[ghostScrollClass, className].filter(Boolean).join(" ")}
+            style={style}
+            thresholdPx={4}
+            watchDeps={[open, busy, children]}
+          >
+            {children}
+          </ScrollFadeArea>
+        </div>
+      </ReasoningBusyContext.Provider>
+    );
+  }
+
   return (
     <ReasoningBusyContext.Provider value={busy}>
       <div
@@ -436,7 +395,6 @@ export function ReasoningContent(props: ComponentProps<"div">) {
         <div className="min-h-0 overflow-hidden">
           <div
             className={[
-              ghost,
               className,
               "transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
               open ? "translate-y-0" : "-translate-y-2",
@@ -456,12 +414,12 @@ export function ReasoningText({ children }: { children: ReactNode }) {
   const variant = useContext(ReasoningVariantContext);
   if (variant === "ghost") {
     return (
-      <div className="space-y-2 text-xs leading-relaxed text-[#80868b] dark:text-[#9aa0a6]">
+      <div className="space-y-2 text-xs leading-relaxed text-[#80868b] italic dark:text-[#9aa0a6]">
         {children}
       </div>
     );
   }
-  return <div className="space-y-2 text-sm">{children}</div>;
+  return <div className="space-y-2 text-sm italic">{children}</div>;
 }
 
 export function Reasoning(part: ReasoningMessagePartProps) {

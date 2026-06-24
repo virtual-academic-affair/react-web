@@ -5,6 +5,7 @@
 
 import { authService } from "@/services/auth";
 import { useAuthStore } from "@/stores/auth.store";
+import { hasTempAuth } from "@/utils/tempAuth.util";
 import { message as toast } from "antd";
 import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
@@ -15,7 +16,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   // SPA navigation (not hard navigation) guard: token is in memory → redirect to their dashboard
-  if (accessToken) {
+  if (accessToken || hasTempAuth()) {
     return <Navigate to="/" replace />;
   }
 

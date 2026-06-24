@@ -8,6 +8,7 @@
 
 import { API_CONFIG, API_ENDPOINTS } from "@/config/api.config";
 import type { ApiErrorResponse, ApiResponse } from "@/types/common";
+import { hasTempAuth } from "@/utils/tempAuth.util";
 import type {
   AxiosInstance,
   AxiosResponse,
@@ -102,6 +103,15 @@ http.interceptors.response.use(
       error.response?.status === 401 &&
       !originalRequest._retry
     ) {
+      if (hasTempAuth()) {
+        const body = error.response.data as ApiErrorResponse | undefined;
+        throw new ApiError(
+          401,
+          body?.message ?? "Unauthorized",
+          body?.errors,
+        );
+      }
+
       if (isRefreshing) {
         return new Promise<string>((resolve, reject) => {
           failedQueue.push({ resolve, reject });

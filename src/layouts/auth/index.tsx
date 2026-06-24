@@ -8,6 +8,7 @@ import authImg from "@/assets/img/auth/auth.webp";
 import LogoBgWhite from "@/assets/img/logo/logo-bg-white-circle.svg";
 import { refreshTokens } from "@/services/http";
 import { isMarkedAuthenticated, useAuthStore } from "@/stores/auth.store";
+import { hasTempAuth } from "@/utils/tempAuth.util";
 import React, { useEffect, useState } from "react";
 import { RiMoonFill, RiSunFill } from "react-icons/ri";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
@@ -26,7 +27,8 @@ export default function AuthLayout() {
   // (b) localStorage says the user has authenticated before (hard navigation)
   //     In case (b) we verify via refreshTokens() — which is safe because
   //     clearAuth() already removed the localStorage flag on logout.
-  const needsCheck = !accessToken && isMarkedAuthenticated() && !isBanned;
+  const needsCheck =
+    !accessToken && isMarkedAuthenticated() && !isBanned && !hasTempAuth();
 
   const [status, setStatus] = useState<"checking" | "done">(
     needsCheck ? "checking" : "done",
@@ -58,7 +60,7 @@ export default function AuthLayout() {
 
   // Re-read from store after potential refresh
   const { accessToken: token } = useAuthStore.getState();
-  if (token && !isBanned) return <Navigate to="/" replace />;
+  if ((token || hasTempAuth()) && !isBanned) return <Navigate to="/" replace />;
 
   const toggleDark = () => {
     if (darkmode) {
