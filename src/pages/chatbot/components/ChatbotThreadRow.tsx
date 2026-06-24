@@ -11,6 +11,11 @@ import {
 } from "react-icons/md";
 
 import {
+  dropdownMenuItemClass,
+  dropdownMenuItemDangerClass,
+  dropdownMenuPanelClass,
+} from "@/components/navbar/UserMenu";
+import {
   getFloatingDropdownPosition,
   type FloatingPosition,
 } from "@/utils/floatingPosition";
@@ -122,8 +127,8 @@ export function ChatbotThreadRow({
       setMenuPosition(
         getFloatingDropdownPosition(rect, {
           gap: 8,
-          width: 180,
-          maxHeight: 180,
+          width: 208,
+          maxHeight: 220,
         }),
       );
     }
@@ -132,10 +137,10 @@ export function ChatbotThreadRow({
 
   return (
     <div
-      className={`group relative flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition ${
+      className={`group relative flex h-9 w-full items-center rounded-full px-3 text-xs transition ${
         isActive
-          ? "bg-[#d3e3fd] text-[#062e6f] dark:bg-white/[0.12] dark:text-white"
-          : "text-[#1f1f1f] hover:bg-black/[0.04] dark:text-gray-200 dark:hover:bg-white/10"
+          ? "bg-gray-100 font-medium text-[#1f1f1f] dark:bg-white/10 dark:text-gray-200"
+          : "text-[#1f1f1f] hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10"
       }`}
     >
       {isEditing ? (
@@ -184,28 +189,32 @@ export function ChatbotThreadRow({
             type="button"
             onClick={onSwitch}
             disabled={!canSwitch}
-            className="min-w-0 flex-1 truncate pr-1 text-left font-medium disabled:cursor-default"
+            className={`min-w-0 flex-1 truncate text-left font-medium transition-[padding] duration-150 disabled:cursor-default ${
+              isMenuOpen ? "pr-1" : "group-hover:pr-1"
+            }`}
             title={session.title}
           >
             {session.title?.trim() || "Không có tiêu đề"}
           </button>
-          <div className="shrink-0">
-            <button
-              ref={triggerRef}
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleMenu();
-              }}
-              className="flex h-7 w-7 items-center justify-center rounded-full text-[#444746] opacity-100 transition hover:bg-black/[0.06] sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100 dark:text-gray-300 dark:hover:bg-white/10"
-              aria-label="Mở tuỳ chọn cuộc trò chuyện"
-              aria-haspopup="menu"
-              aria-expanded={isMenuOpen}
-              title="Tuỳ chọn"
-            >
-              <MdMoreVert className="h-4 w-4" />
-            </button>
-          </div>
+          <button
+            ref={triggerRef}
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleMenu();
+            }}
+            className={`flex h-7 shrink-0 items-center justify-center overflow-hidden rounded-full text-[#444746] transition-all duration-150 hover:bg-black/[0.06] dark:text-gray-300 dark:hover:bg-white/10 ${
+              isMenuOpen
+                ? "w-7 opacity-100"
+                : "w-0 opacity-0 group-hover:w-7 group-hover:opacity-100"
+            }`}
+            aria-label="Mở tuỳ chọn cuộc trò chuyện"
+            aria-haspopup="menu"
+            aria-expanded={isMenuOpen}
+            title="Tuỳ chọn"
+          >
+            <MdMoreVert className="h-4 w-4 shrink-0" />
+          </button>
 
           {isMenuOpen
             ? createPortal(
@@ -218,7 +227,7 @@ export function ChatbotThreadRow({
                     left: menuPosition.left,
                     width: menuPosition.width,
                   }}
-                  className="dark:bg-navy-700 fixed z-9999 rounded-xl bg-white p-1.5 text-sm text-[#1f1f1f] shadow-xl dark:text-white"
+                  className={`${dropdownMenuPanelClass} fixed z-[99999]`}
                 >
                   {canEdit ? (
                     <button
@@ -227,10 +236,10 @@ export function ChatbotThreadRow({
                         e.stopPropagation();
                         runMenuAction(onStartEdit);
                       }}
-                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-black/[0.06] dark:hover:bg-white/10"
+                      className={dropdownMenuItemClass}
                       role="menuitem"
                     >
-                      <MdEdit className="h-4 w-4" />
+                      <MdEdit className="h-4 w-4 shrink-0" />
                       <span>Đổi tên</span>
                     </button>
                   ) : null}
@@ -240,13 +249,13 @@ export function ChatbotThreadRow({
                       e.stopPropagation();
                       runMenuAction(onArchive);
                     }}
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-black/[0.06] dark:hover:bg-white/10"
+                    className={dropdownMenuItemClass}
                     role="menuitem"
                   >
                     {archiveAction === "archive" ? (
-                      <MdArchive className="h-4 w-4" />
+                      <MdArchive className="h-4 w-4 shrink-0" />
                     ) : (
-                      <MdUnarchive className="h-4 w-4" />
+                      <MdUnarchive className="h-4 w-4 shrink-0" />
                     )}
                     <span>
                       {archiveAction === "archive" ? "Lưu trữ" : "Khôi phục"}
@@ -258,10 +267,10 @@ export function ChatbotThreadRow({
                       e.stopPropagation();
                       runMenuAction(onDelete);
                     }}
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-[#d93025] transition hover:bg-[#fce8e6] dark:text-[#f28b82] dark:hover:bg-white/10"
+                    className={dropdownMenuItemDangerClass}
                     role="menuitem"
                   >
-                    <MdDelete className="h-4 w-4" />
+                    <MdDelete className="h-4 w-4 shrink-0" />
                     <span>Xoá</span>
                   </button>
                 </div>,

@@ -3,6 +3,7 @@ import RoleRoute from "@/components/auth/RoleRoute";
 import PageLoader from "@/components/loading/PageLoader";
 import { refreshTokens } from "@/services/http";
 import { useAuthStore } from "@/stores/auth.store";
+import { hasTempAuth } from "@/utils/tempAuth.util";
 import { ConfigProvider, theme, message as toast } from "antd";
 import viVN from "antd/locale/vi_VN";
 import dayjs from "dayjs";
@@ -59,7 +60,7 @@ function RootRedirect() {
   const grantHandledRef = useRef(false);
 
   const [status, setStatus] = useState<"checking" | "done">(
-    accessToken || isBannedRedirect ? "done" : "checking",
+    accessToken || isBannedRedirect || hasTempAuth() ? "done" : "checking",
   );
 
   useEffect(() => {
@@ -86,6 +87,10 @@ function RootRedirect() {
     }
 
     if (shouldEnterGmailDeeplink) return;
+    if (hasTempAuth()) {
+      setStatus("done");
+      return;
+    }
     if (tokenParam) {
       const normalized = tokenParam.replace(/^"+|"+$/g, "");
       useAuthStore.getState().setAccessToken(normalized);

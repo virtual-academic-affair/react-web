@@ -1,13 +1,12 @@
 import { ChatbotThreadToolbar } from "@/pages/chatbot/components/ChatbotThreadToolbar";
 
-import SidebarShell from "./components/SidebarShell";
+import ChatbotSidebarShell from "./components/ChatbotSidebarShell";
 
 type ChatbotSidebarProps = {
   open: boolean;
   onClose: () => void;
   collapsed: boolean;
   onToggleCollapse: () => void;
-  onShowMenu: () => void;
 };
 
 export function ChatbotSidebar({
@@ -15,20 +14,14 @@ export function ChatbotSidebar({
   onClose,
   collapsed,
   onToggleCollapse,
-  onShowMenu,
 }: ChatbotSidebarProps) {
   return (
-    <SidebarShell
+    <ChatbotSidebarShell
       open={open}
       collapsed={collapsed}
       onToggleCollapse={onToggleCollapse}
-      contentMode="custom"
     >
-      <ChatbotThreadToolbar
-        onNavigate={onClose}
-        onShowMenu={onShowMenu}
-        collapsed={collapsed}
-      />
-    </SidebarShell>
+      <ChatbotThreadToolbar onNavigate={onClose} collapsed={collapsed} />
+    </ChatbotSidebarShell>
   );
 }

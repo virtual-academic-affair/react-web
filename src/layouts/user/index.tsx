@@ -1,7 +1,6 @@
 /**
  * User Layout
- * Wraps all /user/* pages with UserSidebar, Navbar, and content area.
- * Mirrors the admin layout structure with collapsible sidebar support.
+ * Wraps all /user/* pages with TopNavbar and content area.
  */
 
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
@@ -11,11 +10,12 @@ import { SourcePreviewProvider } from "@/components/assistant-ui/source-preview-
 import { SourcePreviewCanvas } from "@/components/assistant-ui/sources";
 import PageLoader from "@/components/loading/PageLoader";
 import RouteNavigationOverlay from "@/components/loading/RouteNavigationOverlay";
-import Navbar from "@/components/navbar";
+import TopNavbar, { TOP_NAVBAR_PAGE_PADDING_CLASS } from "@/components/navbar/TopNavbar";
+import { ChatbotLayoutProvider } from "@/pages/chatbot/chatbotLayoutContext";
 import { MobileSidebarBackdrop } from "@/components/sidebar/components/MobileSidebarBackdrop";
-import UserSidebar from "@/components/sidebar/UserSidebar";
 import { useMobileBodyScrollLock } from "@/hooks/useMobileBodyScrollLock";
 import { useRouteNavigationPending } from "@/hooks/useRouteNavigationPending";
+import userRoutes from "@/userRoutes";
 
 const ChatbotPage = lazy(() => import("@/pages/chatbot"));
 const ChatbotRuntimeProvider = lazy(() =>
@@ -42,9 +42,6 @@ const UserLayout = () => {
   const [sourcePreviewLocationKey, setSourcePreviewLocationKey] = useState<
     string | null
   >(null);
-  const [appSidebarLocationKey, setAppSidebarLocationKey] = useState<
-    string | null
-  >(null);
   const sourcePreviewOpen =
     isUserChatbotRoute && sourcePreviewLocationKey === location.key;
   const { navigationPending, startNavigation } = useRouteNavigationPending();
@@ -53,7 +50,9 @@ const UserLayout = () => {
     const handleResize = () => {
       const desktop = window.innerWidth >= 1024;
       setIsDesktop(desktop);
-      setOpen(desktop);
+      if (isUserChatbotRoute) {
+        setOpen(desktop);
+      }
       if (!desktop) {
         setCollapsed(false);
       } else if (sourcePreviewOpen) {
@@ -62,10 +61,8 @@ const UserLayout = () => {
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [sourcePreviewOpen]);
+  }, [isUserChatbotRoute, sourcePreviewOpen]);
 
-  const showChatbotSidebar =
-    isUserChatbotRoute && appSidebarLocationKey !== location.key;
   const effectiveCollapsed = isDesktop && collapsed;
 
   const handleSourcePreviewOpenChange = useCallback(
@@ -77,107 +74,102 @@ const UserLayout = () => {
     },
     [location.key],
   );
-  useMobileBodyScrollLock(open || sourcePreviewOpen);
+  useMobileBodyScrollLock(isUserChatbotRoute && (open || sourcePreviewOpen));
 
-  const mobileCanvasPosition = sourcePreviewOpen
-    ? "-translate-x-[180vw]"
-    : open
-      ? "translate-x-0"
-      : "-translate-x-[80vw]";
+  const mobileCanvasPosition = !isUserChatbotRoute
+    ? ""
+    : sourcePreviewOpen
+      ? "-translate-x-[180vw]"
+      : open
+        ? "translate-x-0"
+        : "-translate-x-[80vw]";
 
-  const layoutBody = (
+  const layoutContent = (
     <div
-      className={`relative flex transition-transform duration-200 ease-in-out lg:w-full lg:[translate:none] ${
-        isUserChatbotRoute ? "w-[280vw]" : "w-[180vw]"
-      } h-dvh min-h-0 overflow-hidden ${mobileCanvasPosition}`}
+      className={`relative flex min-h-0 flex-1 overflow-hidden transition-transform duration-200 ease-in-out lg:translate-none ${
+        isUserChatbotRoute
+          ? `w-[280vw] lg:w-full ${mobileCanvasPosition}`
+          : "w-full"
+      }`}
     >
-      <MobileSidebarBackdrop open={open} onClose={() => setOpen(false)} />
+        {isUserChatbotRoute ? (
+          <>
+            <MobileSidebarBackdrop open={open} onClose={() => setOpen(false)} />
+            <div className="flex h-full min-h-0 shrink-0 self-stretch lg:py-5 lg:pl-5">
+              <Suspense fallback={<PageLoader />}>
+                <ChatbotSidebar
+                  open={open}
+                  onClose={() => setOpen(false)}
+                  collapsed={effectiveCollapsed}
+                  onToggleCollapse={() => setCollapsed((current) => !current)}
+                />
+              </Suspense>
+            </div>
+          </>
+        ) : null}
 
-      {showChatbotSidebar ? (
-        <Suspense fallback={<PageLoader />}>
-          <ChatbotSidebar
-            open={open}
-            onClose={() => setOpen(false)}
-            collapsed={effectiveCollapsed}
-            onToggleCollapse={() => setCollapsed((current) => !current)}
-            onShowMenu={() => setAppSidebarLocationKey(location.key)}
-          />
-        </Suspense>
-      ) : (
-        <UserSidebar
-          open={open}
-          onClose={() => setOpen(false)}
-          collapsed={effectiveCollapsed}
-          onToggleCollapse={() => setCollapsed((c) => !c)}
-          onShowChatbotPanel={
-            isUserChatbotRoute
-              ? () => setAppSidebarLocationKey(null)
-              : undefined
-          }
-          onNavigateStart={startNavigation}
-        />
-      )}
-
-      {/* Main content */}
-      <div
-        className={`relative flex h-dvh min-h-0 w-screen min-w-0 shrink-0 flex-col transition-all duration-200 lg:w-auto lg:flex-1 ${
-          isUserChatbotRoute
-            ? "overflow-hidden"
-            : "overflow-x-hidden overflow-y-auto overscroll-y-contain"
-        } ${effectiveCollapsed ? "lg:ml-[130px]" : "lg:ml-[343px]"}`}
-      >
-        {/* Navbar */}
-        <div className="mx-auto w-[calc(100vw-6%)] transition-all duration-200 md:w-[calc(100vw-8%)] lg:w-[calc(100%-62px)]">
-          <Navbar
-            sidebarOpen={open}
-            overlayOpen={sourcePreviewOpen}
-            onOpenSidenav={() => setOpen(true)}
-          />
-        </div>
-
-        {/* Page content */}
         <div
-          className={`transition-all duration-200 ${
+          className={`relative flex h-full min-h-0 w-screen min-w-0 shrink-0 flex-col lg:w-auto lg:flex-1 ${
             isUserChatbotRoute
-              ? "flex min-h-0 w-full flex-1 overflow-hidden py-5"
-              : "mx-auto mb-auto h-full min-h-[84vh] w-[calc(100vw-6%)] py-5 md:w-[calc(100vw-8%)] lg:w-[calc(100%-62px)]"
+              ? "overflow-hidden"
+              : "overflow-x-hidden overflow-y-auto overscroll-y-contain"
           }`}
         >
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
-              <Route path="/documents" element={<UserDocumentsPage />} />
-              <Route path="/forms" element={<FormsPage isReadOnly />} />
-              <Route path="/chatbot/*" element={<ChatbotPage />} />
-              <Route
-                path="/"
-                element={<Navigate to="/user/documents" replace />}
-              />
-              <Route
-                path="*"
-                element={<Navigate to="/user/documents" replace />}
-              />
-            </Routes>
-          </Suspense>
+          <div
+            className={`transition-all duration-200 ${
+              isUserChatbotRoute
+                ? "flex min-h-0 w-full flex-1 overflow-hidden py-5"
+                : `mx-auto mb-auto h-full min-h-0 w-full max-w-[1600px] px-4 pb-5 md:px-6 ${TOP_NAVBAR_PAGE_PADDING_CLASS}`
+            }`}
+          >
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                <Route path="/documents" element={<UserDocumentsPage />} />
+                <Route path="/forms" element={<FormsPage isReadOnly />} />
+                <Route path="/chatbot/*" element={<ChatbotPage />} />
+                <Route
+                  path="/"
+                  element={<Navigate to="/user/documents" replace />}
+                />
+                <Route
+                  path="*"
+                  element={<Navigate to="/user/documents" replace />}
+                />
+              </Routes>
+            </Suspense>
+          </div>
         </div>
-      </div>
 
-      {isUserChatbotRoute ? <SourcePreviewCanvas /> : null}
+        {isUserChatbotRoute ? <SourcePreviewCanvas /> : null}
     </div>
   );
 
   return (
-    <div className="bg-lightPrimary dark:bg-navy-900! h-dvh min-h-0 w-full overflow-hidden">
+    <div className="bg-lightPrimary dark:bg-navy-900! flex h-dvh min-h-0 w-full flex-col">
       <RouteNavigationOverlay visible={navigationPending} />
+      {!isUserChatbotRoute ? (
+        <TopNavbar
+          routes={userRoutes}
+          homeHref="/user/documents"
+          chatbotHref="/user/chatbot"
+          onNavigateStart={startNavigation}
+          includeChatbotLink
+        />
+      ) : null}
       {isUserChatbotRoute ? (
         <Suspense fallback={<PageLoader />}>
           <ChatbotRuntimeProvider>
-            <SourcePreviewProvider onOpenChange={handleSourcePreviewOpenChange}>
-              {layoutBody}
-            </SourcePreviewProvider>
+            <ChatbotLayoutProvider
+              onToggleSidebar={() => setOpen((current) => !current)}
+            >
+              <SourcePreviewProvider onOpenChange={handleSourcePreviewOpenChange}>
+                {layoutContent}
+              </SourcePreviewProvider>
+            </ChatbotLayoutProvider>
           </ChatbotRuntimeProvider>
         </Suspense>
       ) : (
-        layoutBody
+        layoutContent
       )}
     </div>
   );

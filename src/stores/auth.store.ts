@@ -1,4 +1,5 @@
 import type { Role } from "@/types/users";
+import { getTempAuthToken } from "@/utils/tempAuth.util";
 import { create } from "zustand";
 
 const IS_AUTH_KEY = "is_authenticated";
@@ -33,15 +34,19 @@ export function isMarkedAuthenticated(): boolean {
   return localStorage.getItem(IS_AUTH_KEY) === "1";
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  accessToken: null,
-  userRole: null,
-  setAccessToken: (token) => {
-    localStorage.setItem(IS_AUTH_KEY, "1");
-    set({ accessToken: token, userRole: getRoleFromToken(token) });
-  },
-  clearAuth: () => {
-    localStorage.removeItem(IS_AUTH_KEY);
-    set({ accessToken: null, userRole: null });
-  },
-}));
+export const useAuthStore = create<AuthState>((set) => {
+  const initialToken = getTempAuthToken();
+
+  return {
+    accessToken: initialToken,
+    userRole: initialToken ? getRoleFromToken(initialToken) : null,
+    setAccessToken: (token) => {
+      localStorage.setItem(IS_AUTH_KEY, "1");
+      set({ accessToken: token, userRole: getRoleFromToken(token) });
+    },
+    clearAuth: () => {
+      localStorage.removeItem(IS_AUTH_KEY);
+      set({ accessToken: null, userRole: null });
+    },
+  };
+});

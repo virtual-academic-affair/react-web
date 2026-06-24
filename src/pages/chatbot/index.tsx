@@ -6,8 +6,22 @@ import "streamdown/styles.css";
 import { useSourcePreview } from "@/components/assistant-ui/source-preview-context";
 
 import { ChatbotErrorBoundary } from "./ChatbotErrorBoundary";
+import { useChatbotLayout } from "./chatbotLayoutContext";
 import { useChatbotShell } from "./chatbotShellContext";
 import { GeminiThread } from "./components/GeminiThread";
+import { useChatbotKeyboardShortcuts } from "./useChatbotKeyboardShortcuts";
+
+function ChatbotKeyboardShortcuts() {
+  const { switchToNewThread } = useChatbotShell();
+  const { openSearch } = useChatbotLayout();
+
+  useChatbotKeyboardShortcuts({
+    onNewChat: switchToNewThread,
+    onOpenSearch: openSearch,
+  });
+
+  return null;
+}
 
 function ChatbotPageInner() {
   const { errorMessage, clearError, activeThreadId } = useChatbotShell();
@@ -23,8 +37,9 @@ function ChatbotPageInner() {
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-transparent">
+      <ChatbotKeyboardShortcuts />
       {errorMessage ? (
-        <div className="mx-auto mt-3 mb-2 flex w-[calc(100%-2rem)] max-w-[860px] shrink-0 items-start gap-3 rounded-2xl border border-red-200/80 bg-white/95 px-4 py-3 shadow-sm backdrop-blur-sm dark:border-red-300/15 dark:bg-[#131f49]/95">
+        <div className="mx-auto mt-3 mb-2 flex w-[calc(100%-2rem)] max-w-[700px] shrink-0 items-start gap-3 rounded-2xl border border-red-200/80 bg-white/95 px-4 py-3 shadow-sm backdrop-blur-sm dark:border-red-300/15 dark:bg-[#131f49]/95">
           <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-500 dark:bg-red-400/10 dark:text-red-300">
             <MdErrorOutline className="h-5 w-5" aria-hidden />
           </span>

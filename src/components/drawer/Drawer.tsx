@@ -18,7 +18,7 @@ interface DrawerProps {
   side?: "left" | "right";
   /** Không render lớp phủ mờ (dùng khi mở song song drawer khác có backdrop) */
   hideBackdrop?: boolean;
-  /** z-index lớp bọc (mặc định z-50). Drawer trái thường dùng z-[49] để nằm dưới drawer phải. */
+  /** z-index lớp bọc (mặc định z-60, trên top nav z-50). Drawer trái thường dùng z-55 để nằm dưới drawer phải. */
   wrapperClassName?: string;
 }
 
@@ -33,7 +33,7 @@ const Drawer: React.FC<DrawerProps> = ({
   headerExtra,
   side = "right",
   hideBackdrop = false,
-  wrapperClassName = "z-50",
+  wrapperClassName = "z-60",
 }) => {
   useBodyScrollLock(isOpen);
 
@@ -61,7 +61,7 @@ const Drawer: React.FC<DrawerProps> = ({
     <>
       {isOpen && !hideBackdrop && (
         <div
-          className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
+          className="fixed inset-0 z-60 bg-black/30 backdrop-blur-sm"
           onClick={onClose}
         />
       )}

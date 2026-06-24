@@ -1,16 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import Checkbox from "@/components/checkbox";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { createPortal } from "react-dom";
 import { MdChatBubbleOutline, MdClose, MdSearch } from "react-icons/md";
-
-import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 
 import type { ChatThreadSession } from "../types";
 
 type ChatbotThreadSearchDialogProps = {
-  sessions: ChatThreadSession[];
+  activeSessions: ChatThreadSession[];
+  archivedSessions: ChatThreadSession[];
   activeThreadId: string;
   onClose: () => void;
-  onSelect: (threadId: string) => void;
+  onSelect: (session: ChatThreadSession) => void;
 };
 
 function normalizeSearchText(value: string) {
@@ -61,7 +62,8 @@ function getFuzzyScore(title: string, query: string) {
 }
 
 export function ChatbotThreadSearchDialog({
-  sessions,
+  activeSessions,
+  archivedSessions,
   activeThreadId,
   onClose,
   onSelect,
@@ -70,9 +72,15 @@ export function ChatbotThreadSearchDialog({
   useBodyScrollLock(true);
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [searchArchived, setSearchArchived] = useState(false);
+
+  const searchableSessions = useMemo(
+    () => (searchArchived ? [...activeSessions, ...archivedSessions] : activeSessions),
+    [activeSessions, archivedSessions, searchArchived],
+  );
 
   const results = useMemo(() => {
-    return sessions
+    return searchableSessions
       .map((session, index) => ({
         session,
         index,
@@ -91,7 +99,7 @@ export function ChatbotThreadSearchDialog({
         (left, right) => right.score - left.score || left.index - right.index,
       )
       .slice(0, 30);
-  }, [query, sessions]);
+  }, [query, searchableSessions]);
 
   useEffect(() => {
     const frameId = window.requestAnimationFrame(() =>
@@ -103,17 +111,22 @@ export function ChatbotThreadSearchDialog({
     };
   }, []);
 
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [searchArchived]);
+
   const activeResultIndex = results.length
     ? Math.min(selectedIndex, results.length - 1)
     : 0;
 
-  const selectResult = (threadId: string) => {
-    onSelect(threadId);
+  const selectResult = (session: ChatThreadSession) => {
+    onSelect(session);
     onClose();
   };
 
   return createPortal(
     <div
+      data-chatbot-search-dialog
       className="fixed inset-0 z-10000 flex items-start justify-center bg-black/30 px-4 pt-[12vh] backdrop-blur-sm sm:pt-[16vh]"
       role="presentation"
       onMouseDown={(event) => {
@@ -143,7 +156,7 @@ export function ChatbotThreadSearchDialog({
             );
           } else if (event.key === "Enter" && results[activeResultIndex]) {
             event.preventDefault();
-            selectResult(results[activeResultIndex].session.id);
+            selectResult(results[activeResultIndex].session);
           }
         }}
       >
@@ -173,6 +186,16 @@ export function ChatbotThreadSearchDialog({
           </button>
         </div>
 
+        <label className="flex shrink-0 cursor-pointer items-center gap-2 border-b border-gray-100 px-5 py-3 text-sm text-gray-600 dark:border-white/10 dark:text-gray-300">
+          <Checkbox
+            checked={searchArchived}
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              setSearchArchived(event.target.checked)
+            }
+          />
+          <span>Tìm trong lưu trữ</span>
+        </label>
+
         <h2 id="chat-search-title" className="sr-only">
           Tìm kiếm cuộc trò chuyện
         </h2>
@@ -187,7 +210,7 @@ export function ChatbotThreadSearchDialog({
                   <button
                     key={session.id}
                     type="button"
-                    onClick={() => selectResult(session.id)}
+                    onClick={() => selectResult(session)}
                     onMouseEnter={() => setSelectedIndex(index)}
                     className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition ${
                       isSelected
@@ -202,6 +225,11 @@ export function ChatbotThreadSearchDialog({
                     <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[#1f1f1f] dark:text-white">
                       {session.title?.trim() || "Cuộc trò chuyện mới"}
                     </span>
+                    {session.status === "archived" ? (
+                      <span className="shrink-0 text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Lưu trữ
+                      </span>
+                    ) : null}
                     {isActive ? (
                       <span className="shrink-0 text-xs font-medium text-[#1a73e8] dark:text-[#a8c7fa]">
                         Đang mở

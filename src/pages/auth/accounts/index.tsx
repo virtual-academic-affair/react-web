@@ -368,9 +368,6 @@ const UsersPage: React.FC<UsersPageProps> = () => {
           <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
             {/* Filter pills */}
             <div className="flex flex-wrap items-center gap-2">
-              <span className="shrink-0 text-xs font-medium text-gray-400">
-                Lọc theo:
-              </span>
               <FilterGroup
                 label="Vai trò"
                 typeKey="role"
@@ -396,7 +393,7 @@ const UsersPage: React.FC<UsersPageProps> = () => {
                 <button
                   type="button"
                   onClick={handleClearAllFilters}
-                  className="text-brand-500 hover:text-brand-600 dark:hover:text-brand-400 ml-2 text-xs font-medium underline underline-offset-2"
+                  className="text-action-link ml-2 text-xs"
                 >
                   Xóa tất cả
                 </button>

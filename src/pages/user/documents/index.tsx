@@ -372,10 +372,6 @@ const UserDocumentsPage: React.FC = () => {
 
       {/* ── Filter bar + view toggle ────────────────────────────────────── */}
       <div className="mb-4 flex flex-wrap items-start gap-2">
-        <span className="shrink-0 pt-2 text-xs font-medium text-gray-400">
-          Lọc theo:
-        </span>
-
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
           {/* Hardcoded document type filter */}
           <FilterGroup
@@ -423,7 +419,7 @@ const UserDocumentsPage: React.FC = () => {
             <button
               type="button"
               onClick={handleClearAll}
-              className="text-brand-500 hover:text-brand-600 dark:hover:text-brand-400 text-xs font-medium underline underline-offset-2"
+              className="text-action-link text-xs"
             >
               Xóa tất cả
             </button>

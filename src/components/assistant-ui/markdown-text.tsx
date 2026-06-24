@@ -61,3 +61,19 @@ export function MarkdownText() {
     />
   );
 }
+
+export function MarkdownTextSm() {
+  const plugins = useStreamdownMathPlugins();
+
+  return (
+    <StreamdownTextPrimitive
+      mode="streaming"
+      controls={STREAMDOWN_CONTROLS}
+      linkSafety={STREAMDOWN_LINK_SAFETY}
+      plugins={plugins}
+      components={MARKDOWN_COMPONENTS}
+      className="text-[#1f1f1f] dark:text-[#e3e3e3]"
+      containerClassName="min-w-0 text-sm leading-relaxed"
+    />
+  );
+}

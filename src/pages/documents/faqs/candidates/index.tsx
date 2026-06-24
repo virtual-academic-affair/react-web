@@ -1,12 +1,13 @@
 import { fixRichTextLinks } from "@/components/fields/RichTextEditor";
 import type { TableAction, TableColumn } from "@/components/table/TableLayout";
 import TableLayout from "@/components/table/TableLayout";
+import TableClampCell from "@/components/table/TableClampCell";
 import { faqsService } from "@/services/documents/faqs.service";
 import type { FAQCandidate } from "@/types/faqs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import { useState } from "react";
-import { MdInfoOutline, MdKeyboardArrowDown, MdKeyboardArrowUp } from "react-icons/md";
+import { MdInfoOutline } from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
 import CandidateDetailDrawer from "../components/CandidateDetailDrawer";
 import CandidateStatusSelector from "../components/CandidateStatusSelector";
@@ -26,7 +27,6 @@ export default function ProposedFAQsPage() {
   // UI state
   const [searchValue, setSearchValue] = useState(search);
   const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   // Data fetching
   const {
@@ -110,38 +110,22 @@ export default function ProposedFAQsPage() {
       key: "question",
       header: "Câu hỏi đề xuất",
       width: "40%",
-      render: (item) => {
-        const id = item.candidateId || (item as any).id;
-        const isExpanded = expandedIds.has(id);
-        return (
-          <p
-            className={`whitespace-normal text-sm font-medium text-navy-700 dark:text-white ${
-              isExpanded ? "" : "line-clamp-3"
-            }`}
-          >
-            {item.question}
-          </p>
-        );
-      },
+      render: (item) => (
+        <TableClampCell className="text-sm font-medium text-navy-700 dark:text-white">
+          {item.question}
+        </TableClampCell>
+      ),
     },
     {
       key: "answerDraftRichText",
       header: "Câu trả lời dự thảo",
       width: "50%",
-      render: (item) => {
-        const id = item.candidateId || (item as any).id;
-        const isExpanded = expandedIds.has(id);
-        return (
-          <div
-            className={`tiptap-prose whitespace-normal text-sm text-navy-700 dark:text-gray-300 [&_a:hover]:opacity-80 [&_a]:text-brand-500 [&_a]:underline dark:[&_a]:text-brand-400 [&_p]:inline ${
-              isExpanded ? "" : "line-clamp-3"
-            }`}
-            dangerouslySetInnerHTML={{
-              __html: fixRichTextLinks(item.answerDraftRichText),
-            }}
-          />
-        );
-      },
+      render: (item) => (
+        <TableClampCell
+          className="tiptap-prose text-sm text-navy-700 dark:text-gray-300 [&_a:hover]:opacity-80 [&_a]:text-brand-500 [&_a]:underline dark:[&_a]:text-brand-400 [&_p]:inline"
+          html={fixRichTextLinks(item.answerDraftRichText)}
+        />
+      ),
     },
     {
       key: "status",
@@ -169,15 +153,6 @@ export default function ProposedFAQsPage() {
     });
   };
 
-  const handleToggleExpand = (id: string) => {
-    setExpandedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
   const handleSearch = () => {
     setSearchParams((prev) => {
       if (searchValue) prev.set("search", searchValue);
@@ -196,25 +171,6 @@ export default function ProposedFAQsPage() {
   };
 
   const actions: TableAction<FAQCandidate>[] = [
-    {
-      key: "expand",
-      icon: (item) => {
-        const id = item.candidateId || (item as any).id;
-        return expandedIds.has(id) ? (
-          <MdKeyboardArrowUp className="h-5 w-5" />
-        ) : (
-          <MdKeyboardArrowDown className="h-5 w-5" />
-        );
-      },
-      label: (item) => {
-        const id = item.candidateId || (item as any).id;
-        return expandedIds.has(id) ? "Thu gọn" : "Mở rộng";
-      },
-      className:
-        "bg-blue-500 hover:bg-blue-600 flex h-10 w-10 items-center justify-center rounded-2xl text-white transition-colors",
-      onClick: (item) =>
-        handleToggleExpand(item.candidateId || (item as any).id),
-    },
     {
       key: "view",
       icon: <MdInfoOutline className="h-4 w-4" />,

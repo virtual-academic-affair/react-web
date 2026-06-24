@@ -9,21 +9,22 @@ import {
 import {
   createContext,
   useCallback,
-  useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
+  type ReactNode,
   type RefObject,
 } from "react";
 import {
   MdArrowDownward,
-  MdCheck,
-  MdContentCopy,
+  MdHistory,
   MdSend,
   MdSquare,
 } from "react-icons/md";
+import { LuBookOpen, LuCheck, LuCopy } from "react-icons/lu";
 
-import { MarkdownText } from "@/components/assistant-ui/markdown-text";
+import { MarkdownTextSm } from "@/components/assistant-ui/markdown-text";
 import {
   Reasoning,
   ReasoningContent,
@@ -31,27 +32,28 @@ import {
   ReasoningText,
   ReasoningTrigger,
 } from "@/components/assistant-ui/reasoning";
+import { ScrollFadeArea, useScrollFadeMask } from "@/components/scroll-fade/ScrollFadeArea";
 import { Source, Sources } from "@/components/assistant-ui/sources";
+import Tooltip from "@/components/tooltip/Tooltip";
 
+import { useChatbotLayout } from "../chatbotLayoutContext";
 import { useChatbotShell } from "../chatbotShellContext";
 
-const GEMINI_INPUT_PLACEHOLDER = "Hỏi Chatbot giáo vụ";
-const COPY_BUTTON_HIDE_OFFSET = 300;
+const GEMINI_INPUT_PLACEHOLDER = "Chatbot Giáo vụ số";
+const CHAT_THREAD_MAX_WIDTH_CLASS = "max-w-[700px]";
+const CHAT_COMPOSER_MAX_WIDTH_CLASS = "max-w-[650px]";
+const CHAT_THREAD_GUTTER_CLASS = `mx-auto w-full ${CHAT_THREAD_MAX_WIDTH_CLASS} px-4 sm:px-5`;
+const CHAT_COMPOSER_GUTTER_CLASS = `mx-auto w-full ${CHAT_COMPOSER_MAX_WIDTH_CLASS} px-4 sm:px-5`;
 
 const ChatViewportContext =
   createContext<RefObject<HTMLDivElement | null> | null>(null);
 
 const NEW_CHAT_GREETINGS = [
-  "Cùng bắt đầu nhé, bạn muốn hỏi điều gì?",
-  "Hôm nay bạn cần tra cứu thông tin gì?",
-  "Bạn đang băn khoăn điều gì về học vụ?",
-  "Cùng tìm câu trả lời cho hành trình học tập của bạn.",
-  "Bạn muốn tìm hiểu quy chế hay chương trình đào tạo?",
-  "Có câu hỏi nào về học tập cần mình hỗ trợ không?",
-  "Sẵn sàng rồi, chúng ta cùng tra cứu nhé.",
-  "Bạn cần mình hỗ trợ điều gì hôm nay?",
-  "Cùng tháo gỡ câu hỏi học vụ của bạn nhé.",
-  "Hãy bắt đầu với điều bạn đang quan tâm.",
+  "Khởi động tra cứu ngay",
+  "Bắt đầu câu hỏi của bạn",
+  "Tối ưu hóa thời gian tìm kiếm dữ liệu",
+  "Hãy bắt đầu cuộc hội thoại",
+  "Giải đáp mọi quy trình",
 ] as const;
 
 function parseReasoningParentId(parentId: string | undefined) {
@@ -65,28 +67,51 @@ function parseReasoningParentId(parentId: string | undefined) {
   };
 }
 
-function formatAssistantTimestamp(raw: unknown) {
-  const date = raw instanceof Date ? raw : new Date(String(raw ?? ""));
-  if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat("vi-VN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
+function GeminiAssistantMarkdown() {
+  return <MarkdownTextSm />;
+}
+
+import {
+  assistantActionButtonClass,
+  assistantActionIconClass,
+  assistantActionIconStroke,
+} from "../assistantActionButton";
+
+function GeminiMessageSources({
+  open,
+  sourceCount,
+  children,
+}: {
+  open: boolean;
+  sourceCount: number;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className={`grid min-h-0 transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+        open
+          ? "grid-rows-[1fr] opacity-100"
+          : "pointer-events-none grid-rows-[0fr] opacity-0"
+      }`}
+      aria-hidden={!open}
+    >
+      <div className="min-h-0 overflow-hidden">
+        <Sources sourceCount={sourceCount}>{children}</Sources>
+      </div>
+    </div>
+  );
 }
 
 const geminiUserMessagePartComponents = {
   Reasoning: () => null,
-  Text: MarkdownText,
+  Text: MarkdownTextSm,
   Source,
 };
 
 function GeminiUserMessage() {
   return (
     <MessagePrimitive.Root className="flex w-full justify-end pb-3">
-      <div className="w-fit max-w-[66.666%] rounded-3xl rounded-tr bg-[#e9eef6] px-4 py-3 text-base leading-relaxed text-[#1f1f1f] dark:bg-white/10 dark:text-white">
+      <div className="w-fit max-w-[66.666%] rounded-3xl bg-[#e9eef6] px-4 py-3 text-sm leading-relaxed text-[#1f1f1f] dark:bg-white/10 dark:text-white">
         <MessagePrimitive.Parts
           unstable_showEmptyOnNonTextEnd={false}
           components={geminiUserMessagePartComponents}
@@ -97,30 +122,34 @@ function GeminiUserMessage() {
 }
 
 function GeminiAssistantMessage() {
-  const viewportRef = useContext(ChatViewportContext);
   const messageId = useMessage((state) => state.id);
   const messageContent = useMessage((state) => state.content);
-  const createdAt = useMessage((state) => state.createdAt);
   const messageStatus = useMessage((state) => state.status?.type);
-  const timestampText = formatAssistantTimestamp(createdAt);
   const hasFinalContent = messageContent.some(
     (part) =>
       (part.type === "text" && part.text.trim()) || part.type === "source",
   );
-  const showTimestamp =
-    timestampText &&
+  const sourceParts = useMemo(
+    () => messageContent.filter((part) => part.type === "source"),
+    [messageContent],
+  );
+  const showActions =
     hasFinalContent &&
     messageStatus !== "running" &&
     messageStatus !== "requires-action";
+
   const groupAssistantParts = useCallback((part: PartState) => {
     if (part.type === "reasoning") return ["group-reasoning"] as const;
     if (part.type === "source") return ["group-sources"] as const;
     return null;
   }, []);
 
-  const messageRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
-  const [showCopyBtn, setShowCopyBtn] = useState(true);
+  const [sourcesOpen, setSourcesOpen] = useState(false);
+
+  useEffect(() => {
+    setSourcesOpen(false);
+  }, [messageId]);
 
   const handleCopy = useCallback(() => {
     const text = messageContent
@@ -136,59 +165,46 @@ function GeminiAssistantMessage() {
     });
   }, [messageContent]);
 
-  useEffect(() => {
-    const el = messageRef.current;
-    const viewport = viewportRef?.current;
-    if (!el || !viewport) return;
+  const actionBar = showActions ? (
+    <div className="flex items-center gap-1 pt-2">
+      <Tooltip label={copied ? "Đã sao chép" : "Sao chép"}>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className={assistantActionButtonClass}
+          aria-label={copied ? "Đã sao chép" : "Sao chép"}
+        >
+          {copied ? (
+            <LuCheck className="h-[17px] w-[17px] text-green-500" strokeWidth={2} />
+          ) : (
+            <LuCopy className={assistantActionIconClass} strokeWidth={assistantActionIconStroke} />
+          )}
+        </button>
+      </Tooltip>
 
-    const check = () => {
-      const messageRect = el.getBoundingClientRect();
-      const viewportRect = viewport.getBoundingClientRect();
-      setShowCopyBtn(
-        messageRect.bottom - viewportRect.top > COPY_BUTTON_HIDE_OFFSET,
-      );
-    };
-
-    viewport.addEventListener("scroll", check, { passive: true });
-    window.addEventListener("resize", check);
-    const resizeObserver = new ResizeObserver(check);
-    resizeObserver.observe(el);
-    resizeObserver.observe(viewport);
-    check();
-    return () => {
-      viewport.removeEventListener("scroll", check);
-      window.removeEventListener("resize", check);
-      resizeObserver.disconnect();
-    };
-  }, [viewportRef]);
+      {sourceParts.length > 0 ? (
+        <Tooltip label="Tài liệu tham khảo">
+          <button
+            type="button"
+            onClick={() => setSourcesOpen((current) => !current)}
+            className={`${assistantActionButtonClass} ${
+              sourcesOpen
+                ? "bg-gray-100 text-[#202124] dark:bg-white/10 dark:text-white"
+                : ""
+            }`}
+            aria-expanded={sourcesOpen}
+            aria-label="Tài liệu tham khảo"
+          >
+            <LuBookOpen className={assistantActionIconClass} strokeWidth={assistantActionIconStroke} />
+          </button>
+        </Tooltip>
+      ) : null}
+    </div>
+  ) : null;
 
   return (
     <MessagePrimitive.Root>
-      <div
-        ref={messageRef}
-        className="relative w-full min-w-0 pb-9 text-base leading-relaxed"
-      >
-        {hasFinalContent && (
-          <div
-            className={`sticky top-3 z-10 flex h-0 justify-end transition-opacity duration-200 ${
-              showCopyBtn ? "opacity-100" : "pointer-events-none opacity-0"
-            }`}
-          >
-            <button
-              type="button"
-              onClick={handleCopy}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-[#5f6368] transition-colors hover:bg-gray-100 hover:text-[#202124] dark:text-[#9aa0a6] dark:hover:bg-white/10 dark:hover:text-white"
-              aria-label={copied ? "Đã sao chép" : "Sao chép"}
-              title={copied ? "Đã sao chép" : "Sao chép"}
-            >
-              {copied ? (
-                <MdCheck className="h-[18px] w-[18px] text-green-500" />
-              ) : (
-                <MdContentCopy className="h-[18px] w-[18px]" />
-              )}
-            </button>
-          </div>
-        )}
+      <div className="relative w-full min-w-0 pb-4 text-sm leading-relaxed">
         <div className="space-y-2">
           <MessagePrimitive.GroupedParts groupBy={groupAssistantParts}>
             {({ part, children }) => {
@@ -225,15 +241,18 @@ function GeminiAssistantMessage() {
                 }
                 case "group-sources":
                   return (
-                    <Sources
-                      key={part.indices.join("-")}
-                      sourceCount={part.indices.length}
-                    >
-                      {children}
-                    </Sources>
+                    <div key={part.indices.join("-")} className="space-y-2">
+                      {actionBar}
+                      <GeminiMessageSources
+                        open={sourcesOpen}
+                        sourceCount={part.indices.length}
+                      >
+                        {children}
+                      </GeminiMessageSources>
+                    </div>
                   );
                 case "text":
-                  return <MarkdownText />;
+                  return <GeminiAssistantMarkdown />;
                 case "reasoning":
                   return <Reasoning {...part} />;
                 case "source":
@@ -243,11 +262,8 @@ function GeminiAssistantMessage() {
               }
             }}
           </MessagePrimitive.GroupedParts>
-          {showTimestamp ? (
-            <div className="pt-1 text-right text-xs text-[#9aa0a6] dark:text-[#8f98aa]">
-              Trả lời lúc {timestampText}
-            </div>
-          ) : null}
+
+          {sourceParts.length === 0 ? actionBar : null}
         </div>
       </div>
     </MessagePrimitive.Root>
@@ -262,7 +278,7 @@ function GeminiComposer({ centered = false }: { centered?: boolean }) {
 
   return (
     <ComposerPrimitive.Root
-      className={`group/composer relative w-full rounded-4xl border p-3 transition-[border-color,box-shadow,background-color] duration-300 ${
+      className={`group/composer relative w-full rounded-4xl border px-3 py-2 transition-[border-color,box-shadow,background-color] duration-300 ${
         centered
           ? "dark:bg-navy-800 border-[#d3e3fd]/80 bg-white/90 shadow-[0_18px_70px_-28px_rgba(26,115,232,0.45)] backdrop-blur-xl dark:border-white/10 dark:shadow-[0_20px_70px_-30px_rgba(58,91,246,0.38)]"
           : "dark:bg-navy-800 border-transparent bg-white shadow-[0_2px_8px_-2px_rgba(0,0,0,0.16)]"
@@ -270,29 +286,31 @@ function GeminiComposer({ centered = false }: { centered?: boolean }) {
       data-empty={isEmpty}
       data-running={isRunning}
     >
-      <ComposerPrimitive.Input
-        placeholder={
-          isArchived
-            ? "Cuộc trò chuyện đã lưu trữ chỉ có thể xem lại"
-            : GEMINI_INPUT_PLACEHOLDER
-        }
-        rows={1}
-        disabled={isArchived}
-        className="max-h-40 w-full resize-none bg-transparent py-2 pr-14 pl-2 text-base leading-snug text-[#1f1f1f] outline-none placeholder:text-[#444746] dark:text-white dark:placeholder:text-gray-400"
-      />
+      <ScrollFadeArea className="max-h-36 overflow-y-auto [scrollbar-width:thin]">
+        <ComposerPrimitive.Input
+          placeholder={
+            isArchived
+              ? "Cuộc trò chuyện đã lưu trữ chỉ có thể xem lại"
+              : GEMINI_INPUT_PLACEHOLDER
+          }
+          rows={1}
+          disabled={isArchived}
+          className="w-full resize-none bg-transparent px-3 py-1.5 pt-2 pr-14 text-sm leading-snug text-[#1f1f1f] outline-none placeholder:text-[#444746] dark:text-white dark:placeholder:text-gray-400"
+        />
+      </ScrollFadeArea>
       {isArchived ? null : (
-        <div className="absolute top-1/2 right-3 size-10 -translate-y-1/2">
+        <div className="absolute top-1/2 right-2.5 size-9 -translate-y-1/2">
           <ComposerPrimitive.Send
             className="dark:bg-brand-500 absolute inset-0 flex items-center justify-center rounded-full bg-[#d3e3fd] text-[#062e6f] transition-transform duration-200 ease-out group-data-[empty=true]/composer:pointer-events-none group-data-[empty=true]/composer:scale-0 group-data-[running=true]/composer:pointer-events-none group-data-[running=true]/composer:scale-0 hover:opacity-90 disabled:opacity-40 dark:text-white"
             aria-label="Gửi"
           >
-            <MdSend className="h-5 w-5" />
+            <MdSend className="h-[18px] w-[18px]" />
           </ComposerPrimitive.Send>
           <ComposerPrimitive.Cancel
             className="dark:bg-navy-700 absolute inset-0 flex items-center justify-center rounded-full bg-[#d3e3fd] text-[#062e6f] transition-transform duration-200 ease-out group-data-[running=false]/composer:pointer-events-none group-data-[running=false]/composer:scale-0 hover:opacity-90 dark:text-white"
             aria-label="Dừng"
           >
-            <MdSquare className="h-4 w-4" />
+            <MdSquare className="h-3.5 w-3.5" />
           </ComposerPrimitive.Cancel>
         </div>
       )}
@@ -323,7 +341,7 @@ function GeminiStickyComposer({
       ) : null}
 
       <div
-        className={`mx-auto mb-4 w-full max-w-[860px] px-[3vw] md:px-[4vw] lg:px-0 ${
+        className={`${CHAT_COMPOSER_GUTTER_CLASS} mb-4 ${
           animateFromCenter ? "chatbot-composer-dock-enter" : ""
         }`}
       >
@@ -344,12 +362,16 @@ function ChatbotEmptyState() {
   );
 
   return (
-    <div className="flex min-h-[32rem] w-full flex-1 items-center justify-center px-4 py-12 sm:px-6">
-      <div className="relative z-10 w-full max-w-[820px] -translate-y-[4vh]">
-        <h1 className="mb-8 text-center text-3xl leading-tight font-normal tracking-[-0.03em] text-[#3c4043] sm:text-4xl md:text-[2.65rem] dark:text-[#e8eaed]">
+    <div className="flex min-h-full w-full flex-1 flex-col items-center justify-center py-10 sm:py-12">
+      <div
+        className={`w-full ${CHAT_THREAD_MAX_WIDTH_CLASS} -translate-y-[3vh]`}
+      >
+        <h1 className="mb-10 text-center text-2xl leading-snug font-light tracking-[-0.02em] text-[#3c4043] sm:text-[1.75rem] md:text-3xl dark:text-[#e8eaed]">
           {greeting}
         </h1>
-        <GeminiComposer centered />
+        <div className={`mx-auto w-full ${CHAT_COMPOSER_MAX_WIDTH_CLASS}`}>
+          <GeminiComposer centered />
+        </div>
       </div>
     </div>
   );
@@ -380,9 +402,7 @@ function ChatMessagesSkeletonLoader() {
             <div
               key={lineIdx}
               style={{ width }}
-              className={`h-4 animate-pulse rounded-full bg-[#e9eef6] dark:bg-white/10 ${
-                row.side === "right" ? "rounded-tr-sm" : "rounded-tl-sm"
-              }`}
+              className="h-4 animate-pulse rounded-full bg-[#e9eef6] dark:bg-white/10"
             />
           ))}
         </div>
@@ -396,8 +416,14 @@ export function GeminiThread({ className = "" }: { className?: string }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const messagesCount = useAuiState((s) => s.thread.messages.length);
   const { activeThreadId, isLoadingMessages, sessions } = useChatbotShell();
+  const { onToggleSidebar } = useChatbotLayout();
   const isNewThread = !sessions.find((s) => s.id === activeThreadId)?.serverId;
   const [showScrollBottom, setShowScrollBottom] = useState(false);
+  const viewportFadeStyle = useScrollFadeMask(viewportRef, [
+    messagesCount,
+    activeThreadId,
+    isLoadingMessages,
+  ]);
 
   const updateScrollButton = useCallback(() => {
     const viewport = viewportRef.current;
@@ -460,12 +486,26 @@ export function GeminiThread({ className = "" }: { className?: string }) {
         </div>
       ) : null}
 
+      {onToggleSidebar ? (
+        <button
+          type="button"
+          onClick={onToggleSidebar}
+          className="hover:text-brand-500 dark:bg-navy-900/80 dark:hover:bg-navy-800 absolute top-3 left-3 z-30 flex h-10 w-10 items-center justify-center rounded-full border border-white/50 bg-white/80 text-gray-600 shadow-md backdrop-blur-xl transition-colors hover:bg-white lg:hidden dark:border-white/10 dark:text-gray-300"
+          aria-label="Mở lịch sử chat"
+        >
+          <MdHistory className="h-5 w-5" />
+        </button>
+      ) : null}
+
       <ChatViewportContext.Provider value={viewportRef}>
         <ThreadPrimitive.Viewport
           ref={viewportRef}
-          className="flex min-h-0 w-full flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain"
+          style={viewportFadeStyle}
+          className="flex min-h-0 w-full flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain [scrollbar-width:thin]"
         >
-          <div className="mx-auto flex min-h-full w-full max-w-[860px] flex-col px-[3vw] md:px-[4vw] lg:px-0">
+          <div
+            className={`${CHAT_THREAD_GUTTER_CLASS} flex min-h-full flex-col`}
+          >
             {isLoadingMessages ? (
               <ChatMessagesSkeletonLoader />
             ) : isNewThread && messagesCount === 0 ? (

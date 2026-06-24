@@ -178,7 +178,7 @@ export function Sources({
   const hideCitationNumber = sourceCount === 1;
   return (
     <SourceNumberContext.Provider value={{ hideCitationNumber }}>
-      <div className="mt-3 space-y-2">
+      <div className="pt-2 space-y-2">
         <p className="text-xs font-semibold tracking-wide text-[#5f6368] uppercase dark:text-gray-400">
           Tài liệu tham khảo
         </p>

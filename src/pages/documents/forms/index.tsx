@@ -1,4 +1,5 @@
 import { fixRichTextLinks } from "@/components/fields/RichTextEditor";
+import TableClampCell from "@/components/table/TableClampCell";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import { useState } from "react";
@@ -56,11 +57,9 @@ export default function FormsPage({ isReadOnly = false }: FormsPageProps) {
       header: "Nội dung",
       width: "20%",
       render: (item) => (
-        <div className="flex items-center gap-2 overflow-hidden">
-          <p className="truncate text-sm font-medium text-navy-700 dark:text-white">
-            {item.documentType}
-          </p>
-        </div>
+        <TableClampCell className="text-sm font-medium text-navy-700 dark:text-white">
+          {item.documentType}
+        </TableClampCell>
       ),
     },
     {
@@ -68,11 +67,9 @@ export default function FormsPage({ isReadOnly = false }: FormsPageProps) {
       header: "Link/email thông tin",
       width: "35%",
       render: (item) => (
-        <div
-          className="tiptap-prose line-clamp-1 whitespace-normal text-sm text-navy-700 dark:text-white [&_a:hover]:underline [&_a]:text-brand-500 [&_ol]:list-decimal [&_ol]:pl-4 [&_ul]:list-disc [&_ul]:pl-4 dark:[&_a]:text-brand-400"
-          dangerouslySetInnerHTML={{
-            __html: fixRichTextLinks(item.contentLink || ""),
-          }}
+        <TableClampCell
+          className="tiptap-prose text-sm text-navy-700 dark:text-white [&_a:hover]:underline [&_a]:text-brand-500 [&_ol]:list-decimal [&_ol]:pl-4 [&_ul]:list-disc [&_ul]:pl-4 dark:[&_a]:text-brand-400"
+          html={fixRichTextLinks(item.contentLink || "")}
         />
       ),
     },
@@ -81,11 +78,9 @@ export default function FormsPage({ isReadOnly = false }: FormsPageProps) {
       header: "Ghi chú",
       width: "35%",
       render: (item) => (
-        <div
-          className="tiptap-prose line-clamp-1 whitespace-normal text-sm text-navy-700 dark:text-white [&_a:hover]:underline [&_a]:text-brand-500 [&_ol]:list-decimal [&_ol]:pl-4 [&_ul]:list-disc [&_ul]:pl-4 dark:[&_a]:text-brand-400"
-          dangerouslySetInnerHTML={{
-            __html: fixRichTextLinks(item.notes || ""),
-          }}
+        <TableClampCell
+          className="tiptap-prose text-sm text-navy-700 dark:text-white [&_a:hover]:underline [&_a]:text-brand-500 [&_ol]:list-decimal [&_ol]:pl-4 [&_ul]:list-disc [&_ul]:pl-4 dark:[&_a]:text-brand-400"
+          html={fixRichTextLinks(item.notes || "")}
         />
       ),
     },
