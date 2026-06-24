@@ -336,6 +336,7 @@ export function ReasoningTrigger({
   }, [active]);
 
   const displayTimeMs = active ? elapsedMs : processingTimeMs;
+  // @ts-ignore
   const durationText =
     typeof displayTimeMs === "number" && Number.isFinite(displayTimeMs)
       ? `${formatDuration(displayTimeMs)}`
@@ -356,7 +357,7 @@ export function ReasoningTrigger({
           }`}
         >
           <span className="text-xs font-medium">Suy nghĩ</span>
-          {durationText ? (
+          {/* {durationText ? (
             <span
               className={`text-xs ${
                 active
@@ -366,7 +367,7 @@ export function ReasoningTrigger({
             >
               {durationText}
             </span>
-          ) : null}
+          ) : null} */}
         </span>
         <MdKeyboardArrowRight
           className={`h-4 w-4 shrink-0 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
@@ -392,7 +393,7 @@ export function ReasoningTrigger({
         }`}
       >
         <span className="text-sm font-medium">Suy nghĩ</span>
-        {durationText ? (
+        {/* {durationText ? (
           <span
             className={`text-xs ${
               active
@@ -402,7 +403,7 @@ export function ReasoningTrigger({
           >
             {durationText}
           </span>
-        ) : null}
+        ) : null} */}
       </span>
       <MdKeyboardArrowRight
         className={`h-4 w-4 shrink-0 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${

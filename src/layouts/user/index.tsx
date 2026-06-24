@@ -47,8 +47,7 @@ const UserLayout = () => {
   >(null);
   const sourcePreviewOpen =
     isUserChatbotRoute && sourcePreviewLocationKey === location.key;
-  const { navigationPending, startNavigation } =
-    useRouteNavigationPending();
+  const { navigationPending, startNavigation } = useRouteNavigationPending();
 
   useEffect(() => {
     const handleResize = () => {
@@ -125,7 +124,7 @@ const UserLayout = () => {
           isUserChatbotRoute
             ? "overflow-hidden"
             : "overflow-x-hidden overflow-y-auto overscroll-y-contain"
-        } ${effectiveCollapsed ? "lg:ml-[100px]" : "lg:ml-[343px]"}`}
+        } ${effectiveCollapsed ? "lg:ml-[130px]" : "lg:ml-[343px]"}`}
       >
         {/* Navbar */}
         <div className="mx-auto w-[calc(100vw-6%)] transition-all duration-200 md:w-[calc(100vw-8%)] lg:w-[calc(100%-62px)]">

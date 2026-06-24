@@ -13,10 +13,8 @@ import {
 } from "react";
 import {
   LuCheck,
-  LuCodeXml,
   LuCopy,
   LuExternalLink,
-  LuEye,
   LuFileText,
   LuX,
 } from "react-icons/lu";
@@ -229,6 +227,7 @@ function clampPanelWidth(width: number, containerWidth: number) {
 
 export function SourcePreviewPanel() {
   const { preview, closePreview } = useSourcePreview();
+  // @ts-ignore
   const [mode, setMode] = useState<SourcePreviewMode>("preview");
   const [panelWidth, setPanelWidth] = useState(() =>
     Math.min(720, Math.max(480, window.innerWidth * 0.3)),
@@ -444,7 +443,7 @@ export function SourcePreviewPanel() {
     <aside
       ref={panelRef}
       style={panelStyle}
-      className="dark:bg-navy-800 relative z-50 flex h-dvh min-h-0 w-screen shrink-0 flex-col overflow-hidden bg-white shadow-2xl lg:z-20 lg:my-5 lg:mr-[31px] lg:h-[calc(100dvh-2.5rem)] lg:w-(--source-preview-width) lg:rounded-[24px] lg:border lg:border-gray-200 lg:shadow-xl dark:lg:border-white/10"
+      className="dark:bg-navy-800 relative z-50 flex h-dvh min-h-0 w-screen shrink-0 flex-col overflow-hidden bg-white shadow-2xl lg:z-20 lg:mx-[30px] lg:my-5 lg:h-[calc(100dvh-2.5rem)] lg:w-(--source-preview-width) lg:rounded-[24px] lg:border lg:border-gray-200 lg:shadow-xl dark:lg:border-white/10"
     >
       <button
         type="button"
@@ -472,7 +471,7 @@ export function SourcePreviewPanel() {
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5">
-          <div className="flex items-center rounded-xl bg-gray-100 p-1 dark:bg-white/8">
+          {/* <div className="flex items-center rounded-xl bg-gray-100 p-1 dark:bg-white/8">
             <Tooltip label="Preview" placement="topRight">
               <button
                 type="button"
@@ -501,7 +500,7 @@ export function SourcePreviewPanel() {
                 <LuCodeXml className="h-4 w-4" aria-hidden />
               </button>
             </Tooltip>
-          </div>
+          </div> */}
 
           <Tooltip label={copied ? "Đã sao chép" : "Sao chép"}>
             <button

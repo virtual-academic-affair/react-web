@@ -51,9 +51,7 @@ const AdminLayout: React.FC = () => {
     location.pathname.startsWith("/admin/chatbot/");
 
   const [open, setOpen] = useState(() => window.innerWidth >= 1024);
-  const [isDesktop, setIsDesktop] = useState(
-    () => window.innerWidth >= 1024,
-  );
+  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
   const [collapsed, setCollapsed] = useState(false);
   const [sourcePreviewLocationKey, setSourcePreviewLocationKey] = useState<
     string | null
@@ -63,8 +61,7 @@ const AdminLayout: React.FC = () => {
   >(null);
   const sourcePreviewOpen =
     isAdminChatbotRoute && sourcePreviewLocationKey === location.key;
-  const { navigationPending, startNavigation } =
-    useRouteNavigationPending();
+  const { navigationPending, startNavigation } = useRouteNavigationPending();
 
   useEffect(() => {
     const handleResize = () => {
@@ -92,12 +89,15 @@ const AdminLayout: React.FC = () => {
     isAdminChatbotRoute && appSidebarLocationKey !== location.key;
   const effectiveCollapsed = isDesktop && collapsed;
 
-  const handleSourcePreviewOpenChange = useCallback((isOpen: boolean) => {
-    setSourcePreviewLocationKey(isOpen ? location.key : null);
-    if (isOpen && window.innerWidth >= 1024) {
-      setCollapsed(true);
-    }
-  }, [location.key]);
+  const handleSourcePreviewOpenChange = useCallback(
+    (isOpen: boolean) => {
+      setSourcePreviewLocationKey(isOpen ? location.key : null);
+      if (isOpen && window.innerWidth >= 1024) {
+        setCollapsed(true);
+      }
+    },
+    [location.key],
+  );
   useMobileBodyScrollLock(open || sourcePreviewOpen);
 
   const mobileCanvasPosition = sourcePreviewOpen
@@ -145,7 +145,7 @@ const AdminLayout: React.FC = () => {
           isAdminChatbotRoute
             ? "overflow-hidden"
             : "overflow-x-hidden overflow-y-auto overscroll-y-contain"
-        } ${effectiveCollapsed ? "lg:ml-[100px]" : "lg:ml-[343px]"}`}
+        } ${effectiveCollapsed ? "lg:ml-[130px]" : "lg:ml-[343px]"}`}
       >
         {/* Navbar */}
         <div className="mx-auto w-[calc(100vw-6%)] transition-all duration-200 md:w-[calc(100vw-8%)] lg:w-[calc(100%-62px)]">
