@@ -6,7 +6,7 @@ import type { FAQCandidate } from "@/types/faqs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import { useState } from "react";
-import { MdInfoOutline, MdList, MdPendingActions } from "react-icons/md";
+import { MdInfoOutline, MdKeyboardArrowDown, MdKeyboardArrowUp } from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
 import CandidateDetailDrawer from "../components/CandidateDetailDrawer";
 import CandidateStatusSelector from "../components/CandidateStatusSelector";
@@ -26,6 +26,7 @@ export default function ProposedFAQsPage() {
   // UI state
   const [searchValue, setSearchValue] = useState(search);
   const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   // Data fetching
   const {
@@ -109,24 +110,38 @@ export default function ProposedFAQsPage() {
       key: "question",
       header: "Câu hỏi đề xuất",
       width: "40%",
-      render: (item) => (
-        <p className="text-navy-700 line-clamp-1 text-sm font-medium whitespace-normal dark:text-white">
-          {item.question}
-        </p>
-      ),
+      render: (item) => {
+        const id = item.candidateId || (item as any).id;
+        const isExpanded = expandedIds.has(id);
+        return (
+          <p
+            className={`whitespace-normal text-sm font-medium text-navy-700 dark:text-white ${
+              isExpanded ? "" : "line-clamp-3"
+            }`}
+          >
+            {item.question}
+          </p>
+        );
+      },
     },
     {
       key: "answerDraftRichText",
       header: "Câu trả lời dự thảo",
       width: "50%",
-      render: (item) => (
-        <div
-          className="tiptap-prose text-navy-700 [&_a]:text-brand-500 dark:[&_a]:text-brand-400 line-clamp-1 text-sm whitespace-normal dark:text-gray-300 [&_a]:underline [&_a:hover]:opacity-80 [&_p]:inline"
-          dangerouslySetInnerHTML={{
-            __html: fixRichTextLinks(item.answerDraftRichText),
-          }}
-        />
-      ),
+      render: (item) => {
+        const id = item.candidateId || (item as any).id;
+        const isExpanded = expandedIds.has(id);
+        return (
+          <div
+            className={`tiptap-prose whitespace-normal text-sm text-navy-700 dark:text-gray-300 [&_a:hover]:opacity-80 [&_a]:text-brand-500 [&_a]:underline dark:[&_a]:text-brand-400 [&_p]:inline ${
+              isExpanded ? "" : "line-clamp-3"
+            }`}
+            dangerouslySetInnerHTML={{
+              __html: fixRichTextLinks(item.answerDraftRichText),
+            }}
+          />
+        );
+      },
     },
     {
       key: "status",
@@ -154,6 +169,15 @@ export default function ProposedFAQsPage() {
     });
   };
 
+  const handleToggleExpand = (id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const handleSearch = () => {
     setSearchParams((prev) => {
       if (searchValue) prev.set("search", searchValue);
@@ -172,6 +196,25 @@ export default function ProposedFAQsPage() {
   };
 
   const actions: TableAction<FAQCandidate>[] = [
+    {
+      key: "expand",
+      icon: (item) => {
+        const id = item.candidateId || (item as any).id;
+        return expandedIds.has(id) ? (
+          <MdKeyboardArrowUp className="h-5 w-5" />
+        ) : (
+          <MdKeyboardArrowDown className="h-5 w-5" />
+        );
+      },
+      label: (item) => {
+        const id = item.candidateId || (item as any).id;
+        return expandedIds.has(id) ? "Thu gọn" : "Mở rộng";
+      },
+      className:
+        "bg-blue-500 hover:bg-blue-600 flex h-10 w-10 items-center justify-center rounded-2xl text-white transition-colors",
+      onClick: (item) =>
+        handleToggleExpand(item.candidateId || (item as any).id),
+    },
     {
       key: "view",
       icon: <MdInfoOutline className="h-4 w-4" />,
@@ -222,27 +265,27 @@ export default function ProposedFAQsPage() {
           searchPlaceholder="Tìm câu hỏi, câu trả lời đề xuất..."
           middleSlot={
             <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-              <div className="dark:bg-navy-800 flex rounded-xl bg-gray-100 p-1">
+              <div className="grid grid-cols-2 rounded-2xl bg-gray-100 p-1 dark:bg-white/8">
                 <button
+                  type="button"
                   onClick={() => handleTabChange("pending")}
-                  className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-xs font-bold ${
+                  className={`rounded-xl px-4 py-1.5 text-xs font-semibold transition ${
                     view === "pending"
-                      ? "dark:bg-navy-700 text-brand-500 bg-white shadow-sm"
-                      : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                      ? "text-navy-700 dark:bg-navy-700 bg-white shadow-sm dark:text-white"
+                      : "hover:text-navy-700 text-gray-600 dark:text-gray-300 dark:hover:text-white"
                   }`}
                 >
-                  <MdPendingActions className="h-4 w-4" />
                   Chờ duyệt
                 </button>
                 <button
+                  type="button"
                   onClick={() => handleTabChange("all")}
-                  className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-xs font-bold ${
+                  className={`rounded-xl px-4 py-1.5 text-xs font-semibold transition ${
                     view === "all"
-                      ? "dark:bg-navy-700 text-brand-500 bg-white shadow-sm"
-                      : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                      ? "text-navy-700 dark:bg-navy-700 bg-white shadow-sm dark:text-white"
+                      : "hover:text-navy-700 text-gray-600 dark:text-gray-300 dark:hover:text-white"
                   }`}
                 >
-                  <MdList className="h-4 w-4" />
                   Tất cả
                 </button>
               </div>
@@ -271,14 +314,6 @@ export default function ProposedFAQsPage() {
                   ? "Không có câu hỏi nào đang chờ duyệt."
                   : "Không có lịch sử đề xuất nào."}
               </p>
-              {view === "pending" && (
-                <button
-                  onClick={() => triggerSynth()}
-                  className="text-brand-500 text-sm font-medium hover:underline"
-                >
-                  Nhấn vào đây để chạy tổng hợp từ hội thoại email
-                </button>
-              )}
             </div>
           }
         />

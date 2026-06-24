@@ -365,7 +365,7 @@ const UsersPage: React.FC<UsersPageProps> = () => {
         actions={actions}
         onPageChange={handlePageChange}
         middleSlot={
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
             {/* Filter pills */}
             <div className="flex flex-wrap items-center gap-2">
               <span className="shrink-0 text-xs font-medium text-gray-400">
@@ -402,16 +402,15 @@ const UsersPage: React.FC<UsersPageProps> = () => {
                 </button>
               )}
             </div>
+
+            <button
+              type="button"
+              onClick={() => setCreateOpen(true)}
+              className="bg-brand-500 hover:bg-brand-600 flex items-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-semibold text-white transition-colors"
+            >
+              Thêm
+            </button>
           </div>
-        }
-        rightSlot={
-          <button
-            type="button"
-            onClick={() => setCreateOpen(true)}
-            className="bg-brand-500 hover:bg-brand-600 rounded-2xl px-5 py-2.5 text-sm font-semibold text-white transition-colors"
-          >
-            Thêm
-          </button>
         }
         detailDrawer={
           <UserDetailDrawer

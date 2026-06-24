@@ -52,7 +52,8 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
       console.error("Logout error", error);
     } finally {
       clearAuth();
-      navigate("/auth/login", { replace: true });
+      // Hard redirect to clear in-memory states and stop background requests
+      window.location.href = "/auth/login";
     }
   };
 

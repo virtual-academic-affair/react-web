@@ -19,8 +19,8 @@ export interface TableColumn<T> {
 
 export interface TableAction<T> {
   key: string;
-  icon: React.ReactNode;
-  label: string;
+  icon: React.ReactNode | ((item: T) => React.ReactNode);
+  label: string | ((item: T) => string);
   onClick: (item: T) => void;
   className?: string;
   render?: (item: T) => React.ReactNode;
@@ -279,11 +279,19 @@ function TableLayout<T extends { id: number | string }>({
                                 const customRendered = action.render
                                   ? action.render(item)
                                   : undefined;
+
+                                const actionLabel =
+                                  typeof action.label === "function"
+                                    ? action.label(item)
+                                    : action.label;
+
+                                const actionIcon =
+                                  typeof action.icon === "function"
+                                    ? action.icon(item)
+                                    : action.icon;
+
                                 return (
-                                  <Tooltip
-                                    key={action.key}
-                                    label={action.label}
-                                  >
+                                  <Tooltip key={action.key} label={actionLabel}>
                                     {customRendered !== undefined ? (
                                       customRendered
                                     ) : (
@@ -293,13 +301,13 @@ function TableLayout<T extends { id: number | string }>({
                                           e.stopPropagation();
                                           action.onClick(item);
                                         }}
-                                        aria-label={action.label}
+                                        aria-label={actionLabel}
                                         className={
                                           action.className ||
                                           "bg-brand-500 hover:bg-brand-600 dark:bg-brand-500 dark:hover:bg-brand-400 flex h-10 w-10 items-center justify-center rounded-2xl text-white dark:text-white"
                                         }
                                       >
-                                        {action.icon}
+                                        {actionIcon}
                                       </button>
                                     )}
                                   </Tooltip>

@@ -70,7 +70,7 @@ const YearRangeInput: React.FC<YearRangeInputProps> = ({
     <label className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
       {label}{" "}
       <span className="font-normal text-gray-400 normal-case">
-        (để trống = áp dụng tất cả)
+        (để trống = Tất cả)
       </span>
     </label>
     <div className="flex items-center gap-2">
@@ -175,9 +175,8 @@ export const UploadForm: React.FC<UploadFormProps> = ({
   );
 
   const buildYearRange = (from: string, to: string) => {
-    const fromNum = from ? parseInt(from, 10) : null;
-    const toNum = to ? parseInt(to, 10) : null;
-    if (fromNum === null && toNum === null) return null;
+    const fromNum = from.trim() ? parseInt(from, 10) : 0;
+    const toNum = to.trim() ? parseInt(to, 10) : 9999;
     return { fromYear: fromNum, toYear: toNum };
   };
 

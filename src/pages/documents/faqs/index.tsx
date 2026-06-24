@@ -5,7 +5,7 @@ import type { FAQ } from "@/types/faqs";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import { useState } from "react";
-import { MdDeleteOutline, MdInfoOutline } from "react-icons/md";
+import { MdDeleteOutline, MdInfoOutline, MdKeyboardArrowDown, MdKeyboardArrowUp } from "react-icons/md";
 import { fixRichTextLinks } from "@/components/fields/RichTextEditor";
 import { useSearchParams } from "react-router-dom";
 import FAQBulkImportModal from "./components/FAQBulkImportModal";
@@ -30,6 +30,7 @@ export default function FAQsPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<FAQ | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   // Data fetching
   const { data: result, isLoading } = useQuery({
@@ -48,22 +49,38 @@ export default function FAQsPage() {
       key: "question",
       header: "Câu hỏi",
       width: "40%",
-      render: (item) => (
-        <p className="line-clamp-1 whitespace-normal text-sm font-medium text-navy-700 dark:text-white">
-          {item.question}
-        </p>
-      ),
+      render: (item) => {
+        const id = item.faqId || (item as any).id;
+        const isExpanded = expandedIds.has(id);
+        return (
+          <p
+            className={`whitespace-normal text-sm font-medium text-navy-700 dark:text-white ${
+              isExpanded ? "" : "line-clamp-3"
+            }`}
+          >
+            {item.question}
+          </p>
+        );
+      },
     },
     {
       key: "answerRichText",
       header: "Câu trả lời",
       width: "50%",
-      render: (item) => (
-        <div
-          className="tiptap-prose line-clamp-1 whitespace-normal text-sm text-navy-700 dark:text-gray-300 [&_a:hover]:opacity-80 [&_a]:text-brand-500 [&_a]:underline dark:[&_a]:text-brand-400"
-          dangerouslySetInnerHTML={{ __html: fixRichTextLinks(item.answerRichText) }}
-        />
-      ),
+      render: (item) => {
+        const id = item.faqId || (item as any).id;
+        const isExpanded = expandedIds.has(id);
+        return (
+          <div
+            className={`tiptap-prose whitespace-normal text-sm text-navy-700 dark:text-gray-300 [&_a:hover]:opacity-80 [&_a]:text-brand-500 [&_a]:underline dark:[&_a]:text-brand-400 ${
+              isExpanded ? "" : "line-clamp-3"
+            }`}
+            dangerouslySetInnerHTML={{
+              __html: fixRichTextLinks(item.answerRichText),
+            }}
+          />
+        );
+      },
     },
   ];
 
@@ -71,6 +88,15 @@ export default function FAQsPage() {
     setSearchParams((prev) => {
       prev.set("id", id);
       return prev;
+    });
+  };
+
+  const handleToggleExpand = (id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
     });
   };
 
@@ -101,6 +127,24 @@ export default function FAQsPage() {
   };
 
   const actions: TableAction<FAQ>[] = [
+    {
+      key: "expand",
+      icon: (item) => {
+        const id = item.faqId || (item as any).id;
+        return expandedIds.has(id) ? (
+          <MdKeyboardArrowUp className="h-5 w-5" />
+        ) : (
+          <MdKeyboardArrowDown className="h-5 w-5" />
+        );
+      },
+      label: (item) => {
+        const id = item.faqId || (item as any).id;
+        return expandedIds.has(id) ? "Thu gọn" : "Mở rộng";
+      },
+      className:
+        "bg-blue-500 hover:bg-blue-600 flex h-10 w-10 items-center justify-center rounded-2xl text-white transition-colors",
+      onClick: (item) => handleToggleExpand(item.faqId || (item as any).id),
+    },
     {
       key: "view",
       icon: <MdInfoOutline className="h-4 w-4" />,
