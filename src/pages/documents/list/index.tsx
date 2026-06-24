@@ -13,7 +13,6 @@ import {
   MdDeleteOutline,
   MdFileDownload,
   MdInfoOutline,
-  MdUpload,
 } from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
 
@@ -80,8 +79,8 @@ const formatYearRange = (
   const to = normalizeYear(range.toYear);
   if (from === null && to === null) return allLabel;
   if (from === to) return String(from ?? to);
-  if (from === null) return `— ${to}`;
-  if (to === null) return `${from} —`;
+  if (from === null) return `Đến ${to}`;
+  if (to === null) return `Từ ${from}`;
   return `${from} – ${to}`;
 };
 
@@ -394,7 +393,7 @@ const DocumentListPage = () => {
               <span className="font-medium">
                 {formatYearRange(
                   x.customMetadata?.enrollmentYear,
-                  "Áp dụng mọi khóa",
+                  "Tất cả",
                 )}
               </span>
             </div>
@@ -403,7 +402,7 @@ const DocumentListPage = () => {
               <span className="font-medium">
                 {formatYearRange(
                   x.customMetadata?.academicYear,
-                  "Áp dụng mọi năm",
+                  "Tất cả",
                 )}
               </span>
             </div>
@@ -490,7 +489,7 @@ const DocumentListPage = () => {
           setSearchParams(next, { replace: true });
         }}
         middleSlot={
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
             {/* Filter pills */}
             <div className="flex flex-wrap items-center gap-2">
               <span className="shrink-0 text-xs font-medium text-gray-400">
@@ -533,18 +532,16 @@ const DocumentListPage = () => {
                 </button>
               )}
             </div>
+
+            <button
+              type="button"
+              id="btn-upload-document"
+              onClick={() => setUploadOpen(true)}
+              className="bg-brand-500 hover:bg-brand-600 flex items-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors"
+            >
+              Thêm
+            </button>
           </div>
-        }
-        rightSlot={
-          <button
-            type="button"
-            id="btn-upload-document"
-            onClick={() => setUploadOpen(true)}
-            className="bg-brand-500 hover:bg-brand-600 flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors"
-          >
-            <MdUpload className="h-4 w-4" />
-            Tải lên
-          </button>
         }
       />
 

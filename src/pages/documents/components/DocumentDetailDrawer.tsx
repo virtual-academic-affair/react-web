@@ -58,8 +58,8 @@ const formatYearRangeDisplay = (
   const to = normalizeYear(range.toYear);
   if (from === null && to === null) return allLabel;
   if (from === to) return String(from ?? to);
-  if (from === null) return `— ${to}`;
-  if (to === null) return `${from} —`;
+  if (from === null) return `Đến ${to}`;
+  if (to === null) return `Từ ${from}`;
   return `${from} – ${to}`;
 };
 
@@ -158,9 +158,8 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
   const buildYearRange = (from: string, to: string) => {
-    const f = from ? parseInt(from, 10) : null;
-    const t = to ? parseInt(to, 10) : null;
-    if (f === null && t === null) return null;
+    const f = from.trim() ? parseInt(from, 10) : 0;
+    const t = to.trim() ? parseInt(to, 10) : 9999;
     return { fromYear: f, toYear: t };
   };
 
@@ -194,12 +193,11 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
     if (!fileId || !hasChanges) return;
     setSaving(true);
     try {
-      const customMetadata: Record<string, unknown> = {};
-      if (docType) customMetadata.type = docType;
-      const enroll = buildYearRange(enrollFromYear, enrollToYear);
-      if (enroll) customMetadata.enrollmentYear = enroll;
-      const academic = buildYearRange(academicFromYear, academicToYear);
-      if (academic) customMetadata.academicYear = academic;
+      const customMetadata: Record<string, unknown> = {
+        type: docType || "",
+        enrollmentYear: buildYearRange(enrollFromYear, enrollToYear),
+        academicYear: buildYearRange(academicFromYear, academicToYear),
+      };
 
       await DocumentsService.updateFileMetadata(fileId, {
         displayName: displayName.trim() || undefined,
@@ -404,7 +402,7 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
               <p className="text-navy-700 text-sm dark:text-white">
                 {formatYearRangeDisplay(
                   fileDetail?.customMetadata?.enrollmentYear,
-                  "Áp dụng cho mọi khóa",
+                  "Tất cả",
                 )}
               </p>
             ) : (
@@ -431,7 +429,7 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
                   />
                 </div>
                 <p className="mt-1 text-xs text-gray-400">
-                  Để trống = áp dụng mọi khóa
+                  Để trống = Tất cả
                 </p>
               </>
             )}
@@ -443,7 +441,7 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
               <p className="text-navy-700 text-sm dark:text-white">
                 {formatYearRangeDisplay(
                   fileDetail?.customMetadata?.academicYear,
-                  "Áp dụng cho mọi năm học",
+                  "Tất cả",
                 )}
               </p>
             ) : (
@@ -470,7 +468,7 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
                   />
                 </div>
                 <p className="mt-1 text-xs text-gray-400">
-                  Để trống = áp dụng mọi năm
+                  Để trống = Tất cả
                 </p>
               </>
             )}

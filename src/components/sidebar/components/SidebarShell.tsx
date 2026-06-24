@@ -10,8 +10,6 @@ import {
   RiMoonFill,
   RiSunFill,
 } from "react-icons/ri";
-import { useNavigate } from "react-router-dom";
-
 interface SidebarShellProps {
   open: boolean;
   collapsed?: boolean;
@@ -27,7 +25,6 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
   contentMode = "list",
   children,
 }) => {
-  const navigate = useNavigate();
   const clearAuth = useAuthStore((s) => s.clearAuth);
   const [userInfo, setUserInfo] = React.useState<UserInfo>({});
   const [isLoadingUser, setIsLoadingUser] = React.useState(true);
@@ -52,7 +49,8 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
       console.error("Logout error", error);
     } finally {
       clearAuth();
-      navigate("/auth/login", { replace: true });
+      // Hard redirect to clear in-memory states and stop background requests
+      window.location.href = "/auth/login";
     }
   };
 
