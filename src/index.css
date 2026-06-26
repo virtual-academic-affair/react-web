@@ -20,7 +20,7 @@
 
   --color-white: #ffffff;
   --color-black: #000000;
-  --color-lightPrimary: #fcfdff;
+  --color-lightPrimary: #fcfcfc;
   --color-blueSecondary: #4318ff;
   --color-brandLinear: #868cff;
 
@@ -502,6 +502,28 @@ html.dark {
   background-clip: content-box;
 }
 
+.app-scrollbar-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.app-scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+textarea.app-scrollbar-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+textarea.app-scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 input[type="number"] {
   appearance: textfield;
   -moz-appearance: textfield;
@@ -801,6 +823,19 @@ body.dark .ant-notification-notice {
   animation: chat-message-enter 0.25s ease-out;
 }
 
+.chatbot-composer-root textarea {
+  field-sizing: content;
+  overflow: hidden !important;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.chatbot-composer-root textarea::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 @keyframes chatbot-composer-dock-enter {
   from {
     transform: translateY(calc(-50vh + 7rem)) scale(1.015);
@@ -951,11 +986,32 @@ body.dark .ant-notification-notice {
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
+.chatbot-nav-logo--toolbar {
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid rgb(255 255 255 / 0.5);
+  background-color: rgb(255 255 255 / 0.8);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.dark .chatbot-nav-logo--toolbar {
+  background-color: rgb(11 20 55 / 0.8);
+  border-color: rgb(255 255 255 / 0.1);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
 .chatbot-nav-logo-icon {
   width: 1.5rem;
   height: 1.5rem;
   object-fit: contain;
   transition: filter 0.2s ease;
+}
+
+.chatbot-nav-logo-icon--toolbar {
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .chatbot-nav-logo:hover,

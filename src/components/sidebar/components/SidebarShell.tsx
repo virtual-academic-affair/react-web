@@ -1,15 +1,11 @@
 import Card from "@/components/card";
 import Dropdown from "@/components/dropdown";
+import { ThemeModeControl } from "@/components/theme/ThemeModeControl";
 import { authService } from "@/services/auth";
 import { useAuthStore } from "@/stores/auth.store";
 import type { UserInfo } from "@/utils/auth.util";
 import React from "react";
-import {
-  RiArrowLeftSLine,
-  RiArrowRightSLine,
-  RiMoonFill,
-  RiSunFill,
-} from "react-icons/ri";
+import { RiArrowLeftSLine, RiArrowRightSLine } from "react-icons/ri";
 interface SidebarShellProps {
   open: boolean;
   collapsed?: boolean;
@@ -28,9 +24,6 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
   const clearAuth = useAuthStore((s) => s.clearAuth);
   const [userInfo, setUserInfo] = React.useState<UserInfo>({});
   const [isLoadingUser, setIsLoadingUser] = React.useState(true);
-  const [darkmode, setDarkmode] = React.useState(
-    document.body.classList.contains("dark"),
-  );
 
   React.useEffect(() => {
     authService
@@ -52,19 +45,6 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
       // Hard redirect to clear in-memory states and stop background requests
       window.location.href = "/auth/login";
     }
-  };
-
-  const toggleDarkMode = () => {
-    if (darkmode) {
-      document.body.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-      setDarkmode(false);
-      return;
-    }
-
-    document.body.classList.add("dark");
-    localStorage.setItem("theme", "dark");
-    setDarkmode(true);
   };
 
   return (
@@ -107,10 +87,15 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
 
       <Card extra="rounded-[30px] px-3 py-3">
         <div
-          className={`flex items-center transition-all duration-200 ease-in-out ${
-            collapsed ? "justify-center" : "justify-between"
+          className={`flex transition-all duration-200 ease-in-out ${
+            collapsed ? "items-center justify-center" : "flex-col gap-3"
           }`}
         >
+          <div
+            className={`flex items-center ${
+              collapsed ? "justify-center" : "justify-between"
+            }`}
+          >
           <Dropdown
             button={
               <div className="flex items-center gap-3">
@@ -163,21 +148,9 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
             classNames="py-2 bottom-full mb-2 -left-[10px] w-max"
             animation="origin-bottom-left transition-all duration-200 ease-in-out"
           />
+          </div>
 
-          {!collapsed && (
-            <button
-              type="button"
-              aria-label={darkmode ? "Bật giao diện sáng" : "Bật giao diện tối"}
-              className="dark:bg-navy-700 flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-600 dark:text-white"
-              onClick={toggleDarkMode}
-            >
-              {darkmode ? (
-                <RiSunFill className="h-4 w-4" />
-              ) : (
-                <RiMoonFill className="h-4 w-4" />
-              )}
-            </button>
-          )}
+          {!collapsed ? <ThemeModeControl /> : null}
         </div>
       </Card>
     </div>

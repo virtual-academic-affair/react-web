@@ -3,12 +3,13 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { initTheme, watchSystemTheme } from "./utils/theme";
 
-// Restore dark mode preference before first render to avoid flash
-if (localStorage.getItem("theme") === "dark") {
-  document.body.classList.add("dark");
-  document.documentElement.classList.add("dark");
-}
+initTheme();
+
+watchSystemTheme(() => {
+  // Body class is updated in applyThemeMode; MutationObserver in App/useTheme syncs UI.
+});
 
 const syncDocumentTheme = () => {
   const isDark = document.body.classList.contains("dark");

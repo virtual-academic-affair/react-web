@@ -14,7 +14,7 @@ export function getChatbotReturnPath(
 }
 
 export function getChatbotReturnLabel(path: string): string {
-  if (path.includes("/auth/students")) return "DS Sinh viên";
+  if (path.includes("/auth/students")) return "DS sinh viên";
   if (path.includes("/email/config")) return "Dashboard";
   if (path.includes("/class-registration")) return "Thống kê đăng kí lớp";
   if (path.includes("/inquiry")) return "Thống kê thắc mắc";

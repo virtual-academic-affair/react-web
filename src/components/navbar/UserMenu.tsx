@@ -1,14 +1,13 @@
-import { useTheme } from "@/hooks/useTheme";
 import { USER_PROFILE_QUERY_KEY, useUserProfile } from "@/hooks/useUserProfile";
 import { authService } from "@/services/auth";
 import { useAuthStore } from "@/stores/auth.store";
-import Tooltip from "@/components/tooltip/Tooltip";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { MdPerson, MdSettings } from "react-icons/md";
-import { RiMoonFill, RiSunFill } from "react-icons/ri";
 import { useNavigate } from "react-router-dom";
+
+import { ThemeModeControl } from "@/components/theme/ThemeModeControl";
 
 import {
   chatbotSidebarCollapsedNeutralIconClass,
@@ -97,7 +96,6 @@ export function UserMenu({
   const queryClient = useQueryClient();
   const clearAuth = useAuthStore((s) => s.clearAuth);
   const { userInfo, isLoadingUser } = useUserProfile();
-  const { darkmode, toggleDarkMode } = useTheme();
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const settingsRef = useRef<HTMLButtonElement>(null);
@@ -149,11 +147,14 @@ export function UserMenu({
 
   const updateSidebarMenuPos = () => {
     if (!settingsRef.current) return;
-    const rect = settingsRef.current.getBoundingClientRect();
+    const triggerRect = settingsRef.current.getBoundingClientRect();
+    const anchorRect = menuRef.current?.getBoundingClientRect() ?? triggerRect;
+    const minWidth = Math.max(anchorRect.width, 208);
+
     setSidebarMenuPos({
-      bottom: window.innerHeight - rect.top + 8,
-      left: rect.left,
-      minWidth: Math.max(rect.width, 208),
+      bottom: window.innerHeight - triggerRect.top + 8,
+      left: anchorRect.left,
+      minWidth,
     });
   };
 
@@ -223,21 +224,7 @@ export function UserMenu({
         ) : null}
       </div>
 
-      <button
-        type="button"
-        role="menuitem"
-        onClick={() => {
-          toggleDarkMode();
-        }}
-        className={`${menuItemClass} justify-between`}
-      >
-        <span>Giao diện</span>
-        {darkmode ? (
-          <RiSunFill className="h-4 w-4 shrink-0" />
-        ) : (
-          <RiMoonFill className="h-4 w-4 shrink-0" />
-        )}
-      </button>
+      <ThemeModeControl className="px-1 pb-1" />
 
       <button
         type="button"
@@ -254,8 +241,8 @@ export function UserMenu({
     return (
       <div ref={menuRef} className="relative w-full">
         {collapsed ? (
-          <div className="flex w-9 flex-col items-center gap-1.5 py-1">
-            <Tooltip label="Cài đặt" placement="right">
+          <div className="flex w-full justify-center py-1">
+            <div className="flex flex-col items-center gap-1.5">
               <button
                 ref={settingsRef}
                 type="button"
@@ -267,14 +254,14 @@ export function UserMenu({
               >
                 <MdSettings className="h-4 w-4" />
               </button>
-            </Tooltip>
-            <UserAvatar
-              isLoadingUser={isLoadingUser}
-              avatarUrl={avatarUrl}
-              userName={userName}
-              avatarInitial={avatarInitial}
-              className={avatarSizeClass}
-            />
+              <UserAvatar
+                isLoadingUser={isLoadingUser}
+                avatarUrl={avatarUrl}
+                userName={userName}
+                avatarInitial={avatarInitial}
+                className={avatarSizeClass}
+              />
+            </div>
           </div>
         ) : (
           <div className="flex w-full items-center gap-3 px-1 py-1">
@@ -288,19 +275,17 @@ export function UserMenu({
             <span className="text-navy-700 min-w-0 flex-1 truncate text-left text-sm font-medium dark:text-white">
               {isLoadingUser ? "—" : (userName ?? "—")}
             </span>
-            <Tooltip label="Cài đặt" placement="top">
-              <button
-                ref={settingsRef}
-                type="button"
-                onClick={() => setOpen((current) => !current)}
-                className={chatbotSidebarSettingsIconClass}
-                aria-expanded={open}
-                aria-haspopup="menu"
-                aria-label="Cài đặt"
-              >
-                <MdSettings className="h-5 w-5" />
-              </button>
-            </Tooltip>
+            <button
+              ref={settingsRef}
+              type="button"
+              onClick={() => setOpen((current) => !current)}
+              className={chatbotSidebarSettingsIconClass}
+              aria-expanded={open}
+              aria-haspopup="menu"
+              aria-label="Cài đặt"
+            >
+              <MdSettings className="h-5 w-5" />
+            </button>
           </div>
         )}
 

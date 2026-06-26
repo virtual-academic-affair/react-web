@@ -1,6 +1,8 @@
 import SelectField, {
   type SelectOption,
 } from "@/components/fields/SelectField";
+import { PageTitle } from "@/components/layouts/PageTitle";
+import { LuChartColumn } from "react-icons/lu";
 import React from "react";
 import AcceptedOpenClassesCard from "./components/AcceptedOpenClassesCard";
 import DetailedStatsChart from "./components/DetailedStatsChart";
@@ -31,6 +33,7 @@ const ClassRegistrationStatisticsPage: React.FC = () => {
 
   return (
     <div className="mb-5 flex flex-col gap-5">
+      <PageTitle title="Thống kê đăng kí lớp" icon={LuChartColumn} />
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-4">
         {/* Left Side: Charts (3/4 width) */}
         <div className="flex flex-col gap-5 lg:col-span-3">

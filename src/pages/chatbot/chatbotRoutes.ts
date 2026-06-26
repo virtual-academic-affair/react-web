@@ -29,16 +29,22 @@ export function useChatbotRoutes() {
 
   const navigateToThread = useCallback(
     (threadId: string, options?: { replace?: boolean }) => {
-      navigate(`${chatbotBasePath}/chat/${encodeURIComponent(threadId)}`, {
-        replace: options?.replace,
-      });
+      navigate(
+        {
+          pathname: `${chatbotBasePath}/chat/${encodeURIComponent(threadId)}`,
+          search: "",
+        },
+        { replace: options?.replace },
+      );
     },
     [chatbotBasePath, navigate],
   );
 
   const navigateToChatbotRoot = useCallback(
     (options?: { replace?: boolean }) => {
-      navigate(chatbotBasePath, { replace: options?.replace });
+      navigate({ pathname: chatbotBasePath, search: "" }, {
+        replace: options?.replace,
+      });
     },
     [chatbotBasePath, navigate],
   );

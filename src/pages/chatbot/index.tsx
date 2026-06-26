@@ -1,13 +1,18 @@
 import "katex/dist/katex.min.css";
 import React, { useEffect, useRef } from "react";
 import { MdClose, MdErrorOutline } from "react-icons/md";
+import { Route, Routes } from "react-router-dom";
 import "streamdown/styles.css";
 
 import { useSourcePreview } from "@/components/assistant-ui/source-preview-context";
 
+import FAQCreationDrawer from "@/pages/documents/faqs/components/FAQCreationDrawer";
+
 import { ChatbotErrorBoundary } from "./ChatbotErrorBoundary";
 import { useChatbotLayout } from "./chatbotLayoutContext";
 import { useChatbotShell } from "./chatbotShellContext";
+import { ChatbotInfoView } from "./components/ChatbotInfoPanel";
+import { ChatbotMobileMenuButton } from "./components/ChatbotMobileMenuButton";
 import { GeminiThread } from "./components/GeminiThread";
 import { useChatbotKeyboardShortcuts } from "./useChatbotKeyboardShortcuts";
 
@@ -23,9 +28,17 @@ function ChatbotKeyboardShortcuts() {
   return null;
 }
 
-function ChatbotPageInner() {
+function ChatbotChatView() {
   const { errorMessage, clearError, activeThreadId } = useChatbotShell();
-  const { closePreview } = useSourcePreview();
+  const {
+    closePreview,
+  } = useSourcePreview();
+  const {
+    infoPanelAudience,
+    faqDrawerOpen,
+    faqInitialDraft,
+    closeFaqDrawer,
+  } = useChatbotLayout();
   const previousThreadIdRef = useRef(activeThreadId);
 
   useEffect(() => {
@@ -36,8 +49,7 @@ function ChatbotPageInner() {
   }, [activeThreadId, closePreview]);
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-transparent">
-      <ChatbotKeyboardShortcuts />
+    <>
       {errorMessage ? (
         <div className="mx-auto mt-3 mb-2 flex w-[calc(100%-2rem)] max-w-[700px] shrink-0 items-start gap-3 rounded-2xl border border-red-200/80 bg-white/95 px-4 py-3 shadow-sm backdrop-blur-sm dark:border-red-300/15 dark:bg-[#131f49]/95">
           <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-500 dark:bg-red-400/10 dark:text-red-300">
@@ -59,16 +71,41 @@ function ChatbotPageInner() {
           </button>
         </div>
       ) : null}
-      <div className="flex min-h-0 flex-1 items-stretch">
+      <div className="flex min-h-0 flex-1 items-stretch pt-12 lg:pt-0">
         <div className="flex min-h-0 min-w-0 flex-1">
-          {/* key forces a clean remount when switching sessions so
-              ThreadPrimitive.Root re-subscribes to the correct thread */}
           <GeminiThread
             key={activeThreadId}
             className="min-h-0 w-full flex-1"
           />
         </div>
       </div>
+
+      {infoPanelAudience === "admin" ? (
+        <FAQCreationDrawer
+          open={faqDrawerOpen}
+          onClose={closeFaqDrawer}
+          initialQuestion={faqInitialDraft.question}
+          initialAnswer={faqInitialDraft.answer}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function ChatbotPageInner() {
+  return (
+    <div className="relative flex h-full min-h-0 w-full flex-col overflow-hidden bg-transparent">
+      <ChatbotMobileMenuButton />
+      <ChatbotKeyboardShortcuts />
+      <Routes>
+        <Route index element={<ChatbotChatView />} />
+        <Route path="chat/:threadId" element={<ChatbotChatView />} />
+        <Route
+          path="documents"
+          element={<ChatbotInfoView type="documents" />}
+        />
+        <Route path="forms" element={<ChatbotInfoView type="forms" />} />
+      </Routes>
     </div>
   );
 }

@@ -7,6 +7,10 @@ import {
   STREAMDOWN_CONTROLS,
   STREAMDOWN_LINK_SAFETY,
 } from "@/components/markdown/streamdown-config";
+import {
+  mergeStreamdownComponents,
+  STREAMDOWN_LIST_PROSE_CLASS,
+} from "@/components/markdown/streamdown-prose";
 import { useStreamdownMathPlugins } from "@/components/markdown/useStreamdownMathPlugins";
 
 function toolArgsToMarkdown(argsText: string): string {
@@ -72,7 +76,8 @@ function ToolMarkdownBlock({
           controls={STREAMDOWN_CONTROLS}
           linkSafety={STREAMDOWN_LINK_SAFETY}
           plugins={plugins}
-          className="text-sm text-[#1f1f1f] dark:text-[#e3e3e3]"
+          components={mergeStreamdownComponents()}
+          className={`text-sm text-[#1f1f1f] dark:text-[#e3e3e3] ${STREAMDOWN_LIST_PROSE_CLASS}`}
         >
           {markdown}
         </Streamdown>

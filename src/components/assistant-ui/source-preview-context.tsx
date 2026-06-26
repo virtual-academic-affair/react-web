@@ -3,6 +3,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type PropsWithChildren,
@@ -12,16 +13,26 @@ export type SourcePreviewData = {
   key: string;
   title?: string;
   fileName?: string;
-  pageLabel: string;
+  fileId?: string;
   pages?: string[];
   markdownUrl?: string;
   pdfUrl?: string;
 };
 
+export type SourceFilePreviewData = {
+  fileId?: string;
+  fileUrl?: string;
+  fileName: string;
+  initialPage?: number;
+};
+
 type SourcePreviewContextValue = {
   preview: SourcePreviewData | null;
+  filePreview: SourceFilePreviewData | null;
   openPreview: (preview: SourcePreviewData) => void;
+  openFilePreview: (preview: SourceFilePreviewData) => void;
   closePreview: () => void;
+  closeFilePreview: () => void;
 };
 
 const SourcePreviewContext = createContext<SourcePreviewContextValue | null>(
@@ -35,23 +46,48 @@ export function SourcePreviewProvider({
   onOpenChange?: (open: boolean) => void;
 }>) {
   const [preview, setPreview] = useState<SourcePreviewData | null>(null);
-
-  const openPreview = useCallback(
-    (nextPreview: SourcePreviewData) => {
-      setPreview(nextPreview);
-      onOpenChange?.(true);
-    },
-    [onOpenChange],
+  const [filePreview, setFilePreview] = useState<SourceFilePreviewData | null>(
+    null,
   );
+
+  useEffect(() => {
+    onOpenChange?.(!!preview);
+  }, [onOpenChange, preview]);
+
+  const openPreview = useCallback((nextPreview: SourcePreviewData) => {
+    setFilePreview(null);
+    setPreview(nextPreview);
+  }, []);
+
+  const openFilePreview = useCallback((nextPreview: SourceFilePreviewData) => {
+    setFilePreview(nextPreview);
+  }, []);
 
   const closePreview = useCallback(() => {
     setPreview(null);
-    onOpenChange?.(false);
-  }, [onOpenChange]);
+  }, []);
+
+  const closeFilePreview = useCallback(() => {
+    setFilePreview(null);
+  }, []);
 
   const value = useMemo(
-    () => ({ preview, openPreview, closePreview }),
-    [closePreview, openPreview, preview],
+    () => ({
+      preview,
+      filePreview,
+      openPreview,
+      openFilePreview,
+      closePreview,
+      closeFilePreview,
+    }),
+    [
+      closeFilePreview,
+      closePreview,
+      filePreview,
+      openFilePreview,
+      openPreview,
+      preview,
+    ],
   );
 
   return (
@@ -69,4 +105,8 @@ export function useSourcePreview() {
     );
   }
   return context;
+}
+
+export function useSourcePreviewOptional() {
+  return useContext(SourcePreviewContext);
 }

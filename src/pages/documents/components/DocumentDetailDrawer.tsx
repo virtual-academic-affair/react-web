@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React, { useEffect, useState } from "react";
-import { MdDeleteOutline, MdPreview, MdSave, MdFileDownload } from "react-icons/md";
+import { MdDeleteOutline, MdDescription, MdSave, MdFileDownload } from "react-icons/md";
 
 import Drawer from "@/components/drawer/Drawer";
+import { ScrollFadeArea } from "@/components/scroll-fade/ScrollFadeArea";
 import ConfirmModal from "@/components/modal/ConfirmModal";
 import Tag from "@/components/tag/Tag";
 import Tooltip from "@/components/tooltip/Tooltip";
@@ -106,7 +107,6 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
   const [academicToYear, setAcademicToYear] = useState("");
   const [saving, setSaving] = useState(false);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
-  const [isTocExpanded, setIsTocExpanded] = useState(false);
 
   // ── Fetch file detail ───────────────────────────────────────────────────────
   const {
@@ -145,7 +145,6 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
 
   // ── Reset when no file selected ─────────────────────────────────────────────
   useEffect(() => {
-    setIsTocExpanded(false);
     if (!fileId) {
       setDisplayName("");
       setDocType("");
@@ -260,7 +259,7 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
             onClick={onPreview}
             className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500 text-white transition-all hover:bg-blue-600 active:scale-95"
           >
-            <MdPreview className="h-4 w-4" />
+            <MdDescription className="h-4 w-4" />
           </button>
         </Tooltip>
       )}
@@ -285,7 +284,7 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
             onClick={onPreview}
             className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500 text-white transition-all hover:bg-blue-600 active:scale-95 disabled:opacity-50"
           >
-            <MdPreview className="h-4 w-4" />
+            <MdDescription className="h-4 w-4" />
           </button>
         </Tooltip>
       )}
@@ -494,25 +493,19 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
               <Row label="Mục lục">
                 {Array.isArray(fileDetail?.tableOfContents) &&
                 fileDetail.tableOfContents.length > 0 ? (
-                  <div className="flex flex-col gap-2">
+                  <ScrollFadeArea
+                    className="custom-scrollbar max-h-48 overflow-y-auto [scrollbar-width:thin]"
+                    topFadeRem={1.25}
+                    bottomFadeRem={1.75}
+                    thresholdPx={4}
+                    watchDeps={[fileDetail.tableOfContents]}
+                  >
                     <ul className="list-disc space-y-1 pl-5 text-sm text-gray-700 dark:text-gray-300">
-                      {(isTocExpanded
-                        ? fileDetail.tableOfContents
-                        : fileDetail.tableOfContents.slice(0, 5)
-                      ).map((item: string, idx: number) => (
+                      {fileDetail.tableOfContents.map((item: string, idx: number) => (
                         <li key={`${idx}-${item}`}>{item}</li>
                       ))}
                     </ul>
-                    {fileDetail.tableOfContents.length > 5 && (
-                      <button
-                        type="button"
-                        onClick={() => setIsTocExpanded(!isTocExpanded)}
-                        className="text-brand-500 hover:text-brand-600 dark:hover:text-brand-400 self-start text-s underline underline-offset-2 transition-all active:scale-95"
-                      >
-                        {isTocExpanded ? "Thu gọn" : `Xem thêm (${fileDetail.tableOfContents.length - 5} mục)`}
-                      </button>
-                    )}
-                  </div>
+                  </ScrollFadeArea>
                 ) : (
                   <p className="text-sm text-gray-500">—</p>
                 )}

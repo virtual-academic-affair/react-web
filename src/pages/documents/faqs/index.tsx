@@ -1,4 +1,6 @@
 import TableLayout from "@/components/table/TableLayout";
+import { PageTitle } from "@/components/layouts/PageTitle";
+import { LuCircleHelp } from "react-icons/lu";
 import type { TableAction, TableColumn } from "@/components/table/TableLayout";
 import TableClampCell from "@/components/table/TableClampCell";
 import { faqsService } from "@/services/documents/faqs.service";
@@ -121,12 +123,18 @@ export default function FAQsPage() {
   return (
     <>
       <div className="flex flex-col gap-4">
+        <PageTitle
+          title="Danh sách câu hỏi"
+          tabTitle="DS câu hỏi"
+          icon={LuCircleHelp}
+        />
         <TableLayout
           result={result || null}
           loading={isLoading}
           page={page}
           pageSize={PAGE_SIZE}
           columns={columns}
+          rowAlign="top"
           actions={actions}
           onPageChange={(p) =>
             setSearchParams((prev) => {

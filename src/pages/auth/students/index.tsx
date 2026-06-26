@@ -2,6 +2,8 @@ import ConfirmModal from "@/components/modal/ConfirmModal";
 import Drawer from "@/components/drawer/Drawer";
 import FilePickerField from "@/components/fields/FilePickerField";
 import DetailFormLayout, { FormRow } from "@/components/layouts/DetailFormLayout";
+import { PageTitle } from "@/components/layouts/PageTitle";
+import { LuGraduationCap } from "react-icons/lu";
 import TableLayout, {
   type TableAction,
   type TableColumn,
@@ -308,6 +310,11 @@ const StudentsPage: React.FC = () => {
   return (
     <>
       <div className="flex flex-col gap-4">
+        <PageTitle
+          title="Danh sách sinh viên"
+          tabTitle="DS sinh viên"
+          icon={LuGraduationCap}
+        />
         <TableLayout<Student>
           result={result}
           loading={loading}

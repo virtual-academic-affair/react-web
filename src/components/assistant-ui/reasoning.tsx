@@ -16,6 +16,10 @@ import {
   STREAMDOWN_CONTROLS,
   STREAMDOWN_LINK_SAFETY,
 } from "@/components/markdown/streamdown-config";
+import {
+  mergeStreamdownComponents,
+  STREAMDOWN_LIST_PROSE_CLASS,
+} from "@/components/markdown/streamdown-prose";
 import { ScrollFadeArea } from "@/components/scroll-fade/ScrollFadeArea";
 import { useStreamdownMathPlugins } from "@/components/markdown/useStreamdownMathPlugins";
 
@@ -81,7 +85,8 @@ function ReasoningMarkdown({ text }: { text: string }) {
       controls={STREAMDOWN_CONTROLS}
       linkSafety={STREAMDOWN_LINK_SAFETY}
       plugins={plugins}
-      className="text-xs leading-relaxed text-[#3c4043] italic dark:text-[#d9e2ff]"
+      components={mergeStreamdownComponents()}
+      className={`text-xs leading-relaxed text-[#3c4043] italic dark:text-[#d9e2ff] ${STREAMDOWN_LIST_PROSE_CLASS}`}
     >
       {text}
     </Streamdown>

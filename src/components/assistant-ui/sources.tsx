@@ -1,6 +1,10 @@
 import type { SourceMessagePartProps } from "@assistant-ui/react";
 import {
+  Children,
   createContext,
+  isValidElement,
+  lazy,
+  Suspense,
   useCallback,
   useContext,
   useEffect,
@@ -11,34 +15,42 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
-import {
-  LuCheck,
-  LuCopy,
-  LuExternalLink,
-  LuFileText,
-  LuX,
-} from "react-icons/lu";
-import {
-  MdArrowDownward,
-  MdArrowUpward,
-  MdArticle,
-  MdPictureAsPdf,
-} from "react-icons/md";
 import { Streamdown } from "streamdown";
+import { MdArrowDownward, MdArrowUpward, MdCheck, MdClose, MdContentCopy, MdDescription } from "react-icons/md";
 
 import { copyTextToClipboard } from "@/components/copyable/copyTextToClipboard";
+import { ScrollFadeArea } from "@/components/scroll-fade/ScrollFadeArea";
+import Tooltip from "@/components/tooltip/Tooltip";
+import {
+  buildDocumentViewUrl,
+  VIEW_DOCUMENT_FORMAT_MARKDOWN,
+} from "@/utils/documentViewUrl";
 import {
   STREAMDOWN_CONTROLS,
   STREAMDOWN_LINK_SAFETY,
 } from "@/components/markdown/streamdown-config";
+import {
+  SOURCE_PREVIEW_STREAMDOWN_CLASS,
+  SOURCE_PREVIEW_STREAMDOWN_COMPONENTS,
+} from "@/components/markdown/streamdown-prose";
 import { useStreamdownMathPlugins } from "@/components/markdown/useStreamdownMathPlugins";
 
-import Tooltip from "../tooltip/Tooltip";
+import {
+  buildInAppPreviewKey,
+  InAppMarkdownAnchor,
+  SourcePreviewScrollContext,
+} from "./in-app-markdown-anchor";
 import { useSourcePreview } from "./source-preview-context";
+
+const FilePreviewModal = lazy(
+  () => import("@/pages/documents/components/FilePreviewModal"),
+);
 
 type SourceMeta = {
   citationId?: number;
+  fileId?: string;
   fileName?: string;
+  titles?: string[];
   pages?: string[];
   markdownUrl?: string;
 };
@@ -55,13 +67,37 @@ type HighlightRange = {
   reason: "line" | "page" | "title" | "none";
 };
 
-type SourcePreviewMode = "preview" | "code";
-
 const HIGHLIGHT_START_VIEWPORT_ANCHOR = 0.35;
 
-function getPageLabel(pages?: string[]) {
-  if (!pages?.length) return "";
-  return pages.length === 1 ? `Dòng ${pages[0]}` : `Dòng ${pages.join(", ")}`;
+function parseInitialPage(pages?: string[]) {
+  if (!pages?.length) return undefined;
+  const match = pages[0].match(/(\d+)/);
+  if (!match) return undefined;
+  const value = Number(match[1]);
+  return Number.isFinite(value) ? value : undefined;
+}
+
+function fileIdFromUrl(url: string) {
+  const match = url.match(/\/api\/files\/([^/?#]+)/);
+  return match?.[1] ?? null;
+}
+
+function resolveSourceFileId(meta: SourceMeta, url: string) {
+  return meta.fileId?.trim() || fileIdFromUrl(url) || null;
+}
+
+function getDisplayTitles(
+  titles: string[] | undefined,
+  fileName: string | undefined,
+  url: string,
+) {
+  const trimmedUrl = url.trim();
+  const trimmedFileName = fileName?.trim() || "";
+  const merged = (titles ?? []).map((item) => item.trim()).filter(Boolean);
+
+  return [...new Set(merged)].filter(
+    (item) => item !== trimmedUrl && item !== trimmedFileName,
+  );
 }
 
 function parsePageRanges(pages?: string[]) {
@@ -166,25 +202,49 @@ function findHighlightRange(
   return { start: -1, end: -1, ranges: [], reason: "none" };
 }
 
-const SourceNumberContext = createContext({ hideCitationNumber: false });
+const SourceIndexContext = createContext(0);
+
+const sourcePreviewIconButtonNeutralClass =
+  "flex h-10 w-10 items-center justify-center rounded-2xl bg-gray-100 text-gray-600 transition-all hover:bg-gray-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-white/10 dark:text-gray-200 dark:hover:bg-white/15";
+
+const sourcePreviewIconButtonPrimaryClass =
+  "flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500 text-white transition-all hover:bg-blue-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50";
+
+const sourcePreviewJumpButtonClass =
+  "flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-[#5f6368] shadow-md transition-all hover:bg-gray-100 hover:text-[#202124] active:scale-95 dark:border-white/10 dark:bg-navy-800 dark:text-[#9aa0a6] dark:hover:bg-white/10 dark:hover:text-white";
+
+const PANEL_TRANSITION_MS = 300;
+
+const SOURCE_LINK_CLASS =
+  "cursor-pointer text-sm font-normal text-[#1a73e8] underline-offset-2 hover:underline dark:text-[#a8c7fa]";
+
+const SOURCE_FILE_LINK_CLASS =
+  "cursor-pointer text-sm font-normal text-[#5f6368] underline-offset-2 hover:underline dark:text-gray-300";
 
 export function Sources({
   children,
-  sourceCount,
 }: {
   children: ReactNode;
   sourceCount?: number;
 }) {
-  const hideCitationNumber = sourceCount === 1;
+  let index = 0;
+  const numberedChildren = Children.map(children, (child) => {
+    if (!isValidElement(child)) return child;
+    index += 1;
+    return (
+      <SourceIndexContext.Provider key={index} value={index}>
+        {child}
+      </SourceIndexContext.Provider>
+    );
+  });
+
   return (
-    <SourceNumberContext.Provider value={{ hideCitationNumber }}>
-      <div className="pt-2 space-y-2">
-        <p className="text-xs font-semibold tracking-wide text-[#5f6368] uppercase dark:text-gray-400">
-          Tài liệu tham khảo
-        </p>
-        <div className="space-y-2">{children}</div>
-      </div>
-    </SourceNumberContext.Provider>
+    <div className="pt-1">
+      <p className="py-1 text-xs font-medium text-[#5f6368] dark:text-gray-400">
+        Tài liệu tham khảo
+      </p>
+      <ul className="my-1 list-none space-y-1.5">{numberedChildren}</ul>
+    </div>
   );
 }
 
@@ -219,16 +279,24 @@ function buildMarkdownSegments(lines: string[], ranges: PageRange[]) {
   return segments;
 }
 
-function clampPanelWidth(width: number, containerWidth: number) {
-  const minWidth = Math.min(420, containerWidth);
-  const maxWidth = Math.max(minWidth, containerWidth - 360);
+const SOURCE_PREVIEW_MIN_WIDTH = 320;
+const SOURCE_PREVIEW_MIN_MAIN_WIDTH = 400;
+
+function clampPanelWidth(width: number, rowWidth: number) {
+  const minWidth = Math.min(SOURCE_PREVIEW_MIN_WIDTH, rowWidth);
+  const maxWidth = Math.max(
+    minWidth,
+    rowWidth - SOURCE_PREVIEW_MIN_MAIN_WIDTH,
+  );
   return Math.min(Math.max(width, minWidth), maxWidth);
 }
 
+function getSourcePreviewRow(panel: HTMLElement | null) {
+  return panel?.closest<HTMLElement>("[data-source-preview-row]") ?? null;
+}
+
 export function SourcePreviewPanel() {
-  const { preview, closePreview } = useSourcePreview();
-  // @ts-ignore
-  const [mode, setMode] = useState<SourcePreviewMode>("preview");
+  const { preview, closePreview, openFilePreview } = useSourcePreview();
   const [panelWidth, setPanelWidth] = useState(() =>
     Math.min(720, Math.max(480, window.innerWidth * 0.3)),
   );
@@ -236,6 +304,8 @@ export function SourcePreviewPanel() {
   const [loading, setLoading] = useState(Boolean(preview?.markdownUrl));
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const closingRef = useRef(false);
   const panelRef = useRef<HTMLElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const scrollRafRef = useRef<number | null>(null);
@@ -247,6 +317,37 @@ export function SourcePreviewPanel() {
   const markdownUrl = preview?.markdownUrl;
   const title = preview?.title;
   const pages = preview?.pages;
+
+  const previewStreamdownComponents = useMemo(
+    () => ({
+      ...SOURCE_PREVIEW_STREAMDOWN_COMPONENTS,
+      a: InAppMarkdownAnchor,
+    }),
+    [],
+  );
+
+  useLayoutEffect(() => {
+    closingRef.current = false;
+    setVisible(false);
+    const frame = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(frame);
+  }, [preview?.key]);
+
+  const handleCloseAnimated = useCallback(() => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    setVisible(false);
+    window.setTimeout(() => {
+      closePreview();
+      closingRef.current = false;
+    }, PANEL_TRANSITION_MS);
+  }, [closePreview]);
+
+  useEffect(() => {
+    setLoading(Boolean(markdownUrl));
+    setContent("");
+    setError("");
+  }, [markdownUrl, preview?.key]);
 
   useEffect(() => {
     if (!markdownUrl) return;
@@ -357,7 +458,7 @@ export function SourcePreviewPanel() {
     if (loading || !content || highlight.start < 0) return;
     scrollToHighlight();
     handleScroll();
-  }, [content, handleScroll, highlight, loading, mode, scrollToHighlight]);
+  }, [content, handleScroll, highlight, loading, scrollToHighlight]);
 
   useEffect(() => {
     if (loading || !content || highlight.start < 0) return;
@@ -381,174 +482,186 @@ export function SourcePreviewPanel() {
       frames.forEach(cancelAnimationFrame);
       timers.forEach(window.clearTimeout);
     };
-  }, [content, handleScroll, highlight, loading, mode, scrollToHighlight]);
+  }, [content, handleScroll, highlight, loading, scrollToHighlight]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") closePreview();
+      if (event.key === "Escape") handleCloseAnimated();
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [closePreview]);
+  }, [handleCloseAnimated]);
 
   const handleResizeStart = useCallback(
-    (event: React.PointerEvent<HTMLButtonElement>) => {
+    (event: React.PointerEvent<HTMLDivElement>) => {
       if (event.button !== 0) return;
-      const container = panelRef.current?.parentElement;
-      if (!container) return;
+      const row = getSourcePreviewRow(panelRef.current);
+      if (!row) return;
 
       event.preventDefault();
-      const containerRect = container.getBoundingClientRect();
-      const previousCursor = document.body.style.cursor;
+      const handleEl = event.currentTarget;
+      handleEl.setPointerCapture(event.pointerId);
+      const rowRect = row.getBoundingClientRect();
       const previousUserSelect = document.body.style.userSelect;
-      document.body.style.cursor = "col-resize";
+      const previousCursor = document.body.style.cursor;
       document.body.style.userSelect = "none";
+      document.body.style.cursor = "ew-resize";
 
       const handlePointerMove = (moveEvent: PointerEvent) => {
         setPanelWidth(
-          clampPanelWidth(
-            containerRect.right - moveEvent.clientX,
-            containerRect.width,
-          ),
+          clampPanelWidth(rowRect.right - moveEvent.clientX, rowRect.width),
         );
       };
-      const handlePointerUp = () => {
-        document.body.style.cursor = previousCursor;
+      const handlePointerUp = (upEvent: PointerEvent) => {
+        if (handleEl.hasPointerCapture(upEvent.pointerId)) {
+          handleEl.releasePointerCapture(upEvent.pointerId);
+        }
         document.body.style.userSelect = previousUserSelect;
+        document.body.style.cursor = previousCursor;
         window.removeEventListener("pointermove", handlePointerMove);
         window.removeEventListener("pointerup", handlePointerUp);
+        window.removeEventListener("pointercancel", handlePointerUp);
       };
 
       window.addEventListener("pointermove", handlePointerMove);
       window.addEventListener("pointerup", handlePointerUp);
+      window.addEventListener("pointercancel", handlePointerUp);
     },
     [],
   );
 
   const handleCopy = useCallback(async () => {
-    const success = await copyTextToClipboard(content);
+    const fileId =
+      preview?.fileId?.trim() ||
+      (preview?.pdfUrl ? fileIdFromUrl(preview.pdfUrl) : null);
+    if (!fileId) return;
+
+    const success = await copyTextToClipboard(
+      buildDocumentViewUrl(fileId, {
+        format: preview?.markdownUrl
+          ? VIEW_DOCUMENT_FORMAT_MARKDOWN
+          : undefined,
+      }),
+    );
     if (!success) return;
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1600);
-  }, [content]);
+  }, [preview]);
 
   if (!preview) return null;
 
-  const headerTitle = preview.fileName || preview.title || "Tài liệu tham khảo";
+  const headerFileName =
+    preview.fileName?.trim() || preview.title?.trim() || "Tài liệu";
+  const resolvedFileId =
+    preview.fileId?.trim() ||
+    (preview.pdfUrl ? fileIdFromUrl(preview.pdfUrl) : null);
   const panelStyle = {
     "--source-preview-width": `${panelWidth}px`,
   } as CSSProperties;
 
   return (
-    <aside
-      ref={panelRef}
-      style={panelStyle}
-      className="dark:bg-navy-800 relative z-50 flex h-dvh min-h-0 w-screen shrink-0 flex-col overflow-hidden bg-white shadow-2xl lg:z-20 lg:mx-[30px] lg:my-5 lg:h-[calc(100dvh-2.5rem)] lg:w-(--source-preview-width) lg:rounded-[24px] lg:border lg:border-gray-200 lg:shadow-xl dark:lg:border-white/10"
-    >
-      <button
-        type="button"
-        onPointerDown={handleResizeStart}
-        className="group absolute inset-y-0 -left-2 z-30 hidden w-4 cursor-col-resize items-center justify-center lg:flex"
-        aria-label="Điều chỉnh độ rộng bản xem trước"
+    <SourcePreviewScrollContext.Provider value={scrollContainerRef}>
+      <aside
+        ref={panelRef}
+        style={panelStyle}
+        className={`dark:bg-navy-800 relative z-50 flex h-dvh min-h-0 w-screen shrink-0 flex-col bg-white transition-[transform,opacity] duration-300 ease-out lg:z-20 lg:h-full lg:w-(--source-preview-width) ${
+          visible
+            ? "translate-x-0 opacity-100"
+            : "translate-x-full opacity-0 lg:translate-x-0 lg:opacity-0"
+        }`}
       >
-        <span className="h-16 w-1 cursor-col-resize rounded-full bg-gray-300 transition group-hover:bg-[#1a73e8] dark:bg-white/20 dark:group-hover:bg-[#a8c7fa]" />
-      </button>
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Điều chỉnh độ rộng bản xem trước"
+          onPointerDown={handleResizeStart}
+          className="absolute inset-y-0 left-0 z-40 hidden w-4 -translate-x-1/2 cursor-ew-resize touch-none select-none lg:flex lg:justify-center"
+        >
+          <div
+            aria-hidden
+            className="h-full w-px bg-gray-200 dark:bg-white/10"
+          />
+        </div>
 
-      <header className="flex shrink-0 items-center gap-3 border-b border-gray-200 px-4 py-3 dark:border-white/10">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#e8f0fe] text-[#1a73e8] dark:bg-[#1f3760]/60 dark:text-[#a8c7fa]">
-          <LuFileText className="h-5 w-5" aria-hidden />
-        </span>
-        <div className="min-w-0 flex-1">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="flex shrink-0 items-center justify-between gap-2 border-b border-gray-100 px-4 py-3 md:gap-3 md:px-5 md:py-3 dark:border-white/10">
           <h2
-            className="truncate text-sm font-semibold text-[#1f1f1f] dark:text-white"
-            title={headerTitle}
+            className="text-navy-700 min-w-0 flex-1 truncate text-base font-bold dark:text-white"
+            title={headerFileName}
           >
-            {headerTitle}
+            {headerFileName}
           </h2>
-          <p className="mt-0.5 truncate text-xs text-[#5f6368] dark:text-gray-400">
-            {preview.pageLabel || "Không có thông tin dòng"}
-          </p>
-        </div>
 
-        <div className="flex shrink-0 items-center gap-1.5">
-          {/* <div className="flex items-center rounded-xl bg-gray-100 p-1 dark:bg-white/8">
-            <Tooltip label="Preview" placement="topRight">
+          <div className="flex shrink-0 items-center gap-2 md:gap-3">
+            <Tooltip label={copied ? "Đã sao chép link" : "Sao chép link"}>
               <button
                 type="button"
-                onClick={() => setMode("preview")}
-                className={`flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold transition ${
-                  mode === "preview"
-                    ? "bg-white text-[#1a73e8] shadow-sm dark:bg-white/12 dark:text-[#a8c7fa]"
-                    : "text-[#5f6368] hover:text-[#1f1f1f] dark:text-gray-400 dark:hover:text-white"
-                }`}
-                aria-pressed={mode === "preview"}
+                onClick={() => void handleCopy()}
+                disabled={!resolvedFileId}
+                className={sourcePreviewIconButtonNeutralClass}
+                aria-label={copied ? "Đã sao chép link" : "Sao chép link"}
               >
-                <LuEye className="h-4 w-4" aria-hidden />
+                {copied ? (
+                  <MdCheck className="h-4 w-4 text-green-500" />
+                ) : (
+                  <MdContentCopy className="h-4 w-4" />
+                )}
               </button>
             </Tooltip>
-            <Tooltip label="Code" placement="topRight">
-              <button
-                type="button"
-                onClick={() => setMode("code")}
-                className={`flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold transition ${
-                  mode === "code"
-                    ? "bg-white text-[#1a73e8] shadow-sm dark:bg-white/12 dark:text-[#a8c7fa]"
-                    : "text-[#5f6368] hover:text-[#1f1f1f] dark:text-gray-400 dark:hover:text-white"
-                }`}
-                aria-pressed={mode === "code"}
-              >
-                <LuCodeXml className="h-4 w-4" aria-hidden />
-              </button>
-            </Tooltip>
-          </div> */}
 
-          <Tooltip label={copied ? "Đã sao chép" : "Sao chép"}>
+            {resolvedFileId ? (
+              <Tooltip label="File gốc">
+                <button
+                  type="button"
+                  onClick={() =>
+                    openFilePreview({
+                      fileId: resolvedFileId,
+                      fileName: preview.fileName || headerFileName,
+                      initialPage: parseInitialPage(preview.pages),
+                    })
+                  }
+                  className={sourcePreviewIconButtonPrimaryClass}
+                  aria-label="File gốc"
+                >
+                  <MdDescription className="h-4 w-4" />
+                </button>
+              </Tooltip>
+            ) : null}
+
             <button
               type="button"
-              onClick={() => void handleCopy()}
-              disabled={!content}
-              className="flex h-9 items-center gap-1.5 rounded-xl px-2.5 text-xs font-semibold text-[#5f6368] transition hover:bg-gray-100 hover:text-[#1f1f1f] disabled:cursor-not-allowed disabled:opacity-40 dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white"
-              aria-label={copied ? "Đã sao chép" : "Sao chép nội dung"}
+              onClick={handleCloseAnimated}
+              className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-white/10"
+              aria-label="Đóng"
             >
-              {copied ? (
-                <LuCheck className="h-4 w-4 text-green-500" aria-hidden />
-              ) : (
-                <LuCopy className="h-4 w-4" aria-hidden />
-              )}
+              <MdClose className="h-5 w-5" />
             </button>
-          </Tooltip>
+          </div>
+        </header>
 
-          {preview.pdfUrl ? (
-            <Tooltip label="Mở file gốc" placement="topRight">
-              <a
-                href={preview.pdfUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex h-9 w-9 items-center justify-center rounded-xl text-[#5f6368] transition hover:bg-gray-100 hover:text-[#1a73e8] dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-[#a8c7fa]"
-                aria-label="Mở file gốc"
-              >
-                <LuExternalLink className="h-4 w-4" />
-              </a>
-            </Tooltip>
-          ) : null}
-
-          <Tooltip label="Đóng" placement="topRight">
-            <button
-              type="button"
-              onClick={closePreview}
-              className="flex h-9 w-9 items-center justify-center rounded-xl text-[#5f6368] transition hover:bg-gray-100 hover:text-[#1f1f1f] dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white"
-              aria-label="Đóng bản xem trước"
-            >
-              <LuX className="h-5 w-5" aria-hidden />
-            </button>
-          </Tooltip>
-        </div>
-      </header>
-
-      <div className="relative min-h-0 flex-1 bg-[#fbfcfe] dark:bg-[#080f2f]">
+        <div className="relative min-h-0 flex-1 bg-white dark:bg-navy-800">
         {!markdownUrl ? (
           <div className="m-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-100">
-            Tài liệu này chưa có file markdown để xem trực tiếp.
+            {resolvedFileId ? (
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p>Tài liệu này chưa có bản markdown để xem trực tiếp.</p>
+                <button
+                  type="button"
+                  onClick={() =>
+                    openFilePreview({
+                      fileId: resolvedFileId,
+                      fileName: preview.fileName || headerFileName,
+                      initialPage: parseInitialPage(preview.pages),
+                    })
+                  }
+                  className="inline-flex shrink-0 items-center justify-center rounded-xl bg-white px-3 py-2 text-sm font-medium text-[#1a73e8] shadow-sm transition hover:bg-[#f8faff] dark:bg-white/10 dark:text-[#a8c7fa] dark:hover:bg-white/15"
+                >
+                  Xem file gốc
+                </button>
+              </div>
+            ) : (
+              "Tài liệu này chưa có file markdown để xem trực tiếp."
+            )}
           </div>
         ) : loading ? (
           <div className="flex h-full items-center justify-center text-sm text-[#5f6368] dark:text-gray-300">
@@ -559,158 +672,186 @@ export function SourcePreviewPanel() {
             {error}
           </div>
         ) : content ? (
-          <div
+          <ScrollFadeArea
             ref={scrollContainerRef}
+            wrapperClassName="h-full min-h-0"
+            className="h-full min-h-0 overflow-auto px-4 py-5 [scrollbar-width:thin] md:px-5 md:py-6"
+            topFadeRem={1.25}
+            bottomFadeRem={1.75}
+            thresholdPx={4}
+            watchDeps={[content, markdownSegments]}
             onScroll={handleScroll}
-            className="h-full overflow-auto"
           >
-            {mode === "preview" ? (
-              <div className="mx-auto max-w-4xl px-6 py-7">
-                {markdownSegments.map((segment) => (
-                  <div
-                    key={`${segment.start}-${segment.end}`}
-                    data-line-number={segment.start + 1}
-                    data-line-end={segment.end + 1}
-                    className={`rounded-md px-2 ${
-                      segment.highlighted
-                        ? "bg-[#fff3a3] text-[#1f1f1f] dark:bg-[#5c4a00]/65 dark:text-[#fff7cc]"
-                        : ""
-                    }`}
+            <article className="mx-auto w-full max-w-3xl">
+              {markdownSegments.map((segment) => (
+                <div
+                  key={`${segment.start}-${segment.end}`}
+                  data-line-number={segment.start + 1}
+                  data-line-end={segment.end + 1}
+                  className={
+                    segment.highlighted
+                      ? "bg-[#fff3a3] text-[#1f1f1f] dark:bg-[#5c4a00]/55 dark:text-[#fff7cc]"
+                      : undefined
+                  }
+                >
+                  <Streamdown
+                    mode="static"
+                    controls={STREAMDOWN_CONTROLS}
+                    linkSafety={STREAMDOWN_LINK_SAFETY}
+                    plugins={plugins}
+                    components={previewStreamdownComponents}
+                    className={SOURCE_PREVIEW_STREAMDOWN_CLASS}
                   >
-                    <Streamdown
-                      mode="static"
-                      controls={STREAMDOWN_CONTROLS}
-                      linkSafety={STREAMDOWN_LINK_SAFETY}
-                      plugins={plugins}
-                      className="text-[15px] leading-7 text-[#24292f] dark:text-[#e6edf3]"
-                    >
-                      {segment.content || " "}
-                    </Streamdown>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="min-w-max py-3 font-mono text-xs leading-6">
-                {lines.map((line, index) => {
-                  const highlighted = highlight.ranges.some(
-                    (range) => index >= range.start && index <= range.end,
-                  );
-
-                  return (
-                    <div
-                      key={`${index}-${line.slice(0, 12)}`}
-                      data-line-number={index + 1}
-                      data-line-end={index + 1}
-                      className={`grid grid-cols-[3.5rem_minmax(0,1fr)] gap-3 px-4 ${
-                        highlighted
-                          ? "bg-[#fff3a3] text-[#1f1f1f] dark:bg-[#5c4a00]/65 dark:text-[#fff7cc]"
-                          : "text-[#3c4043] dark:text-[#d9e2ff]"
-                      }`}
-                    >
-                      <span className="text-right text-[#80868b] select-none dark:text-[#7d89b0]">
-                        {index + 1}
-                      </span>
-                      <pre className="min-w-0 font-mono whitespace-pre">
-                        {line || " "}
-                      </pre>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                    {segment.content || " "}
+                  </Streamdown>
+                </div>
+              ))}
+            </article>
+          </ScrollFadeArea>
         ) : null}
 
         {jumpState.up ? (
-          <button
-            type="button"
-            onClick={() => scrollToRange(jumpState.up!)}
-            className="absolute top-4 left-1/2 z-10 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full bg-gray-900/80 text-white shadow-md backdrop-blur transition hover:bg-gray-900 dark:bg-[#1f3760] dark:text-[#a8c7fa] dark:hover:bg-[#1a73e8] dark:hover:text-white"
-            aria-label="Đoạn đánh dấu trước đó"
-          >
-            <MdArrowUpward className="h-5 w-5" />
-          </button>
+          <Tooltip label="Đoạn trước">
+            <button
+              type="button"
+              onClick={() => scrollToRange(jumpState.up!)}
+              className={`absolute top-4 left-1/2 z-10 -translate-x-1/2 ${sourcePreviewJumpButtonClass}`}
+              aria-label="Đoạn trước"
+            >
+              <MdArrowUpward className="h-4 w-4" aria-hidden />
+            </button>
+          </Tooltip>
         ) : null}
         {jumpState.down ? (
-          <button
-            type="button"
-            onClick={() => scrollToRange(jumpState.down!)}
-            className="absolute bottom-4 left-1/2 z-10 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full bg-gray-900/80 text-white shadow-md backdrop-blur transition hover:bg-gray-900 dark:bg-[#1f3760] dark:text-[#a8c7fa] dark:hover:bg-[#1a73e8] dark:hover:text-white"
-            aria-label="Đoạn đánh dấu tiếp theo"
-          >
-            <MdArrowDownward className="h-5 w-5" />
-          </button>
+          <Tooltip label="Đoạn sau">
+            <button
+              type="button"
+              onClick={() => scrollToRange(jumpState.down!)}
+              className={`absolute bottom-4 left-1/2 z-10 -translate-x-1/2 ${sourcePreviewJumpButtonClass}`}
+              aria-label="Đoạn sau"
+            >
+              <MdArrowDownward className="h-4 w-4" aria-hidden />
+            </button>
+          </Tooltip>
         ) : null}
       </div>
+        </div>
     </aside>
+    </SourcePreviewScrollContext.Provider>
   );
 }
 
 export function SourcePreviewCanvas() {
-  const { preview } = useSourcePreview();
-  return preview ? <SourcePreviewPanel key={preview.key} /> : null;
+  const { preview, filePreview, closeFilePreview } = useSourcePreview();
+
+  return (
+    <>
+      {preview ? <SourcePreviewPanel key={preview.key} /> : null}
+      {filePreview ? (
+        <Suspense fallback={null}>
+          <FilePreviewModal
+            fileId={filePreview.fileId}
+            fileUrl={filePreview.fileUrl}
+            fileName={filePreview.fileName}
+            isOpen
+            initialPage={filePreview.initialPage ?? 1}
+            onClose={closeFilePreview}
+          />
+        </Suspense>
+      ) : null}
+    </>
+  );
 }
 
 export function Source(props: SourceMessagePartProps) {
-  const { url, title } = props;
+  const { url: sourceUrl } = props;
+  if (!sourceUrl) return null;
+
   const meta = props as SourceMessagePartProps & SourceMeta;
-  const { hideCitationNumber } = useContext(SourceNumberContext);
-  const { openPreview } = useSourcePreview();
-  const fileName = meta.fileName?.trim();
-  const label = title?.trim() || fileName || url;
-  const pageLabel = getPageLabel(meta.pages);
-  const citationLabel =
-    !hideCitationNumber && typeof meta.citationId === "number"
-      ? `#${meta.citationId}`
-      : null;
+  const sourceIndex = useContext(SourceIndexContext);
+  const { openPreview, openFilePreview } = useSourcePreview();
+  const resolvedFileId = resolveSourceFileId(meta, sourceUrl);
+  const trimmedFileName = meta.fileName?.trim() || "";
+  const displayTitles = getDisplayTitles(meta.titles, trimmedFileName, sourceUrl);
+  const citationNumber =
+    typeof meta.citationId === "number" ? meta.citationId : sourceIndex;
+  const citationLabel = citationNumber > 0 ? `[${citationNumber}]` : null;
+
+  const openMarkdownPreview = (selectedTitle: string) => {
+    openPreview({
+      key: buildInAppPreviewKey(meta, sourceUrl, selectedTitle),
+      title: selectedTitle,
+      fileName: trimmedFileName || undefined,
+      fileId: resolvedFileId ?? undefined,
+      pages: meta.pages,
+      markdownUrl: meta.markdownUrl,
+      pdfUrl: sourceUrl,
+    });
+  };
+
+  const handleOpenTitle = (selectedTitle: string) => {
+    if (meta.markdownUrl) {
+      openMarkdownPreview(selectedTitle);
+      return;
+    }
+
+    if (resolvedFileId) {
+      openFilePreview({
+        fileId: resolvedFileId,
+        fileName: trimmedFileName || selectedTitle,
+        initialPage: parseInitialPage(meta.pages),
+      });
+    }
+  };
+
+  const handleOpenOriginalFile = () => {
+    if (!resolvedFileId) return;
+    openFilePreview({
+      fileId: resolvedFileId,
+      fileName: trimmedFileName || "Tài liệu gốc",
+      initialPage: parseInitialPage(meta.pages),
+    });
+  };
 
   return (
-    <button
-      type="button"
-      onClick={() =>
-        openPreview({
-          key: [
-            meta.markdownUrl || url || fileName || label,
-            meta.pages?.join(",") || "",
-          ].join(":"),
-          title: label,
-          fileName,
-          pageLabel,
-          pages: meta.pages,
-          markdownUrl: meta.markdownUrl,
-          pdfUrl: url,
-        })
-      }
-      className="source-card-shimmer group flex w-full min-w-0 items-start gap-3 rounded-2xl border border-[#dadce0] bg-[#f8fafd] px-3 py-3 text-left text-[#1f1f1f] transition hover:border-[#1a73e8]/45 hover:bg-[#f1f6ff] dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:border-[#a8c7fa]/45 dark:hover:bg-white/[0.07]"
-    >
-      <span
-        className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#e8f0fe] text-[#1a73e8] dark:bg-[#1f3760]/60 dark:text-[#a8c7fa]"
-        aria-hidden
-      >
-        <MdPictureAsPdf className="h-5 w-5" />
-      </span>
+    <li className="text-sm leading-relaxed text-[#1f1f1f] dark:text-[#e3e3e3]">
+      {citationLabel ? (
+        <span className="mr-1 text-sm font-normal text-gray-500 dark:text-gray-400">
+          {citationLabel}
+        </span>
+      ) : null}
 
-      <span className="min-w-0 flex-1">
-        <span className="flex min-w-0 flex-wrap items-center gap-2">
-          {citationLabel ? (
-            <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-[#062e6f] ring-1 ring-[#d3e3fd] dark:bg-white/10 dark:text-[#d3e3fd] dark:ring-white/10">
-              {citationLabel}
+      {displayTitles.length > 0 ? (
+        <span className="inline">
+          {displayTitles.map((item, index) => (
+            <span key={`${item}-${index}`}>
+              {index > 0 ? <span className="text-gray-400">, </span> : null}
+              <button
+                type="button"
+                onClick={() => handleOpenTitle(item)}
+                className={SOURCE_LINK_CLASS}
+              >
+                {item}
+              </button>
             </span>
+          ))}
+        </span>
+      ) : null}
+
+      {resolvedFileId ? (
+        <>
+          {displayTitles.length > 0 ? (
+            <span className="text-gray-400"> · </span>
           ) : null}
-          <span className="truncate text-sm leading-5 font-semibold">
-            {fileName || label}
-          </span>
-        </span>
-
-        <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#5f6368] dark:text-gray-400">
-          {pageLabel ? <span>{pageLabel}</span> : "Không có thông tin dòng"}
-        </span>
-      </span>
-
-      <MdArticle
-        className="mt-1 h-4 w-4 shrink-0 text-[#5f6368] transition group-hover:text-[#1a73e8] dark:text-gray-400 dark:group-hover:text-[#a8c7fa]"
-        aria-hidden
-      />
-    </button>
+          <button
+            type="button"
+            onClick={handleOpenOriginalFile}
+            className={SOURCE_FILE_LINK_CLASS}
+          >
+            {trimmedFileName || "Xem file gốc"}
+          </button>
+        </>
+      ) : null}
+    </li>
   );
 }

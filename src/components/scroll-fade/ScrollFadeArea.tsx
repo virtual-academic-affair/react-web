@@ -9,6 +9,7 @@ import {
   type ReactNode,
   type Ref,
   type RefObject,
+  type UIEventHandler,
 } from "react";
 
 type ScrollFadeOptions = {
@@ -114,6 +115,7 @@ type ScrollFadeAreaProps = {
   wrapperClassName?: string;
   style?: CSSProperties;
   watchDeps?: unknown[];
+  onScroll?: UIEventHandler<HTMLDivElement>;
 } & ScrollFadeOptions;
 
 function mergeRefs<T>(...refs: Array<Ref<T> | undefined>) {
@@ -140,6 +142,7 @@ export const ScrollFadeArea = forwardRef<HTMLDivElement, ScrollFadeAreaProps>(
       topFadeRem,
       bottomFadeRem,
       watchDeps = [],
+      onScroll,
     },
     forwardedRef,
   ) {
@@ -156,6 +159,7 @@ export const ScrollFadeArea = forwardRef<HTMLDivElement, ScrollFadeAreaProps>(
           ref={mergeRefs(scrollRef, forwardedRef)}
           className={className}
           style={{ ...style, ...maskStyle }}
+          onScroll={onScroll}
         >
           {children}
         </div>

@@ -18,6 +18,7 @@ interface FilterGroupProps {
   options: FilterOption[];
   selected: string[];
   onChange: (next: string[]) => void;
+  multiple?: boolean;
 }
 
 /**
@@ -31,6 +32,7 @@ const FilterGroup: React.FC<FilterGroupProps> = ({
   options,
   selected,
   onChange,
+  multiple = true,
 }) => {
   const [open, setOpen] = useState(false);
   const [dropPos, setDropPos] = useState<FloatingPosition>({ left: 0 });
@@ -76,6 +78,11 @@ const FilterGroup: React.FC<FilterGroupProps> = ({
   }, [open]);
 
   const toggle = (value: string) => {
+    if (!multiple) {
+      onChange(selected.includes(value) ? [] : [value]);
+      return;
+    }
+
     onChange(
       selected.includes(value)
         ? selected.filter((v) => v !== value)

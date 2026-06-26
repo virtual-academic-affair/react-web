@@ -30,7 +30,7 @@ const routes: RoutesType[] = [
         path: "inquiry/statistics",
       },
       {
-        name: "DS Sinh viên",
+        name: "DS sinh viên",
         layout: "/admin",
         path: "auth/students",
       },
@@ -48,7 +48,7 @@ const routes: RoutesType[] = [
         path: "documents/list",
       },
       {
-        name: "DS biểu mẫu, KTT",
+        name: "DS biểu mẫu & KTT",
         layout: "/admin",
         path: "documents/forms",
       },

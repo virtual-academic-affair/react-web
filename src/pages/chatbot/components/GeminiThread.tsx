@@ -16,13 +16,8 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import {
-  MdArrowDownward,
-  MdHistory,
-  MdSend,
-  MdSquare,
-} from "react-icons/md";
-import { LuBookOpen, LuCheck, LuCopy } from "react-icons/lu";
+import { LuBookOpen, LuCheck, LuCopy, LuThumbsUp } from "react-icons/lu";
+import { MdArrowDownward, MdSend, MdSquare } from "react-icons/md";
 
 import { MarkdownTextSm } from "@/components/assistant-ui/markdown-text";
 import {
@@ -32,14 +27,26 @@ import {
   ReasoningText,
   ReasoningTrigger,
 } from "@/components/assistant-ui/reasoning";
-import { ScrollFadeArea, useScrollFadeMask } from "@/components/scroll-fade/ScrollFadeArea";
 import { Source, Sources } from "@/components/assistant-ui/sources";
+import {
+  ScrollFadeArea,
+  useScrollFadeMask,
+} from "@/components/scroll-fade/ScrollFadeArea";
 import Tooltip from "@/components/tooltip/Tooltip";
+import { copyTextToClipboard } from "@/components/copyable/copyTextToClipboard";
+import { useAuthStore } from "@/stores/auth.store";
+import { Role } from "@/types/users";
 
-import { useChatbotLayout } from "../chatbotLayoutContext";
+import {
+  assistantActionButtonClass,
+  assistantActionIconClass,
+  assistantActionIconStroke,
+} from "../assistantActionButton";
+import { useChatbotLayoutOptional } from "../chatbotLayoutContext";
 import { useChatbotShell } from "../chatbotShellContext";
+import { chatMarkdownToFaqHtml } from "@/utils/chatMarkdownToFaqHtml";
 
-const GEMINI_INPUT_PLACEHOLDER = "Chatbot Giáo vụ số";
+const GEMINI_INPUT_PLACEHOLDER = "Tra cứu với Giáo vụ số";
 const CHAT_THREAD_MAX_WIDTH_CLASS = "max-w-[700px]";
 const CHAT_COMPOSER_MAX_WIDTH_CLASS = "max-w-[650px]";
 const CHAT_THREAD_GUTTER_CLASS = `mx-auto w-full ${CHAT_THREAD_MAX_WIDTH_CLASS} px-4 sm:px-5`;
@@ -67,15 +74,22 @@ function parseReasoningParentId(parentId: string | undefined) {
   };
 }
 
+function getMessageTextContent(
+  content: readonly { type: string; text?: string }[],
+): string {
+  return content
+    .filter(
+      (part): part is { type: "text"; text: string } =>
+        part.type === "text" && typeof part.text === "string",
+    )
+    .map((part) => part.text)
+    .join("\n")
+    .trim();
+}
+
 function GeminiAssistantMarkdown() {
   return <MarkdownTextSm />;
 }
-
-import {
-  assistantActionButtonClass,
-  assistantActionIconClass,
-  assistantActionIconStroke,
-} from "../assistantActionButton";
 
 function GeminiMessageSources({
   open,
@@ -125,6 +139,15 @@ function GeminiAssistantMessage() {
   const messageId = useMessage((state) => state.id);
   const messageContent = useMessage((state) => state.content);
   const messageStatus = useMessage((state) => state.status?.type);
+  const isLastAssistantMessage = useAuiState((s) => {
+    const messages = s.thread.messages;
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      if (messages[i].role === "assistant") {
+        return messages[i].id === messageId;
+      }
+    }
+    return false;
+  });
   const hasFinalContent = messageContent.some(
     (part) =>
       (part.type === "text" && part.text.trim()) || part.type === "source",
@@ -145,39 +168,78 @@ function GeminiAssistantMessage() {
   }, []);
 
   const [copied, setCopied] = useState(false);
+  const [liked, setLiked] = useState(false);
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  const userRole = useAuthStore((s) => s.userRole);
+  const isAdmin = userRole === Role.Admin;
+  const chatbotLayout = useChatbotLayoutOptional();
+
+  const assistantAnswerText = useMemo(
+    () =>
+      getMessageTextContent(
+        messageContent.filter((part) => part.type === "text"),
+      ),
+    [messageContent],
+  );
+
+  const precedingUserQuestion = useAuiState((s) => {
+    const messages = s.thread.messages;
+    const currentIndex = messages.findIndex((m) => m.id === messageId);
+    if (currentIndex <= 0) return "";
+
+    for (let i = currentIndex - 1; i >= 0; i -= 1) {
+      const message = messages[i];
+      if (message.role === "user") {
+        return getMessageTextContent(message.content);
+      }
+    }
+
+    return "";
+  });
 
   useEffect(() => {
     setSourcesOpen(false);
+    setLiked(false);
   }, [messageId]);
 
-  const handleCopy = useCallback(() => {
-    const text = messageContent
-      .filter(
-        (part): part is Extract<typeof part, { type: "text" }> =>
-          part.type === "text",
-      )
-      .map((part) => part.text)
-      .join("\n\n");
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+  const handleCopy = useCallback(async () => {
+    const text = assistantAnswerText.trim();
+    if (!text) return;
+    const success = await copyTextToClipboard(text);
+    if (!success) return;
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 2000);
+  }, [assistantAnswerText]);
+
+  const handleLike = useCallback(() => {
+    setLiked(true);
+    chatbotLayout?.openFaqDrawer({
+      question: precedingUserQuestion,
+      answer: chatMarkdownToFaqHtml(assistantAnswerText),
     });
-  }, [messageContent]);
+    window.setTimeout(() => setLiked(false), 2000);
+  }, [assistantAnswerText, chatbotLayout, precedingUserQuestion]);
 
   const actionBar = showActions ? (
     <div className="flex items-center gap-1 pt-2">
-      <Tooltip label={copied ? "Đã sao chép" : "Sao chép"}>
+      <Tooltip label={copied ? "Đã sao chép" : "Sao chép câu trả lời"}>
         <button
           type="button"
-          onClick={handleCopy}
+          onClick={() => void handleCopy()}
+          disabled={!assistantAnswerText.trim()}
           className={assistantActionButtonClass}
-          aria-label={copied ? "Đã sao chép" : "Sao chép"}
+          aria-label={copied ? "Đã sao chép" : "Sao chép câu trả lời"}
         >
           {copied ? (
-            <LuCheck className="h-[17px] w-[17px] text-green-500" strokeWidth={2} />
+            <LuCheck
+              className="h-[17px] w-[17px] text-green-500"
+              strokeWidth={2}
+            />
           ) : (
-            <LuCopy className={assistantActionIconClass} strokeWidth={assistantActionIconStroke} />
+            <LuCopy
+              className={assistantActionIconClass}
+              strokeWidth={assistantActionIconStroke}
+            />
           )}
         </button>
       </Tooltip>
@@ -195,7 +257,36 @@ function GeminiAssistantMessage() {
             aria-expanded={sourcesOpen}
             aria-label="Tài liệu tham khảo"
           >
-            <LuBookOpen className={assistantActionIconClass} strokeWidth={assistantActionIconStroke} />
+            <LuBookOpen
+              className={assistantActionIconClass}
+              strokeWidth={assistantActionIconStroke}
+            />
+          </button>
+        </Tooltip>
+      ) : null}
+
+      {isAdmin ? (
+        <Tooltip label={liked ? "Đã thích" : "Thêm FAQ"}>
+          <button
+            type="button"
+            onClick={handleLike}
+            className={`${assistantActionButtonClass} transition-transform duration-200 ${
+              liked ? "scale-110" : ""
+            }`}
+            aria-label={liked ? "Đã thích" : "Thêm FAQ từ câu hỏi"}
+            aria-pressed={liked}
+          >
+            {liked ? (
+              <LuCheck
+                className="h-[17px] w-[17px] text-green-500"
+                strokeWidth={2}
+              />
+            ) : (
+              <LuThumbsUp
+                className={assistantActionIconClass}
+                strokeWidth={assistantActionIconStroke}
+              />
+            )}
           </button>
         </Tooltip>
       ) : null}
@@ -265,6 +356,12 @@ function GeminiAssistantMessage() {
 
           {sourceParts.length === 0 ? actionBar : null}
         </div>
+
+        {isLastAssistantMessage && showActions ? (
+          <p className="pt-1 text-[10px] leading-snug text-[#80868b] dark:text-gray-500">
+            AI có thể mắc lỗi. Hãy kiểm tra lại với các tài liệu liên quan.
+          </p>
+        ) : null}
       </div>
     </MessagePrimitive.Root>
   );
@@ -275,10 +372,16 @@ function GeminiComposer({ centered = false }: { centered?: boolean }) {
   const isRunning = useAuiState((s) => s.thread.isRunning);
   const { activeSessionStatus } = useChatbotShell();
   const isArchived = activeSessionStatus === "archived";
+  const composerScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isEmpty || !composerScrollRef.current) return;
+    composerScrollRef.current.scrollTop = 0;
+  }, [isEmpty]);
 
   return (
     <ComposerPrimitive.Root
-      className={`group/composer relative w-full rounded-4xl border px-3 py-2 transition-[border-color,box-shadow,background-color] duration-300 ${
+      className={`chatbot-composer-root group/composer relative w-full rounded-4xl border px-3 py-2 transition-[border-color,box-shadow,background-color] duration-300 ${
         centered
           ? "dark:bg-navy-800 border-[#d3e3fd]/80 bg-white/90 shadow-[0_18px_70px_-28px_rgba(26,115,232,0.45)] backdrop-blur-xl dark:border-white/10 dark:shadow-[0_20px_70px_-30px_rgba(58,91,246,0.38)]"
           : "dark:bg-navy-800 border-transparent bg-white shadow-[0_2px_8px_-2px_rgba(0,0,0,0.16)]"
@@ -286,7 +389,12 @@ function GeminiComposer({ centered = false }: { centered?: boolean }) {
       data-empty={isEmpty}
       data-running={isRunning}
     >
-      <ScrollFadeArea className="max-h-36 overflow-y-auto [scrollbar-width:thin]">
+      <ScrollFadeArea
+        ref={composerScrollRef}
+        className={`app-scrollbar-hidden max-h-36 ${
+          isEmpty ? "overflow-y-hidden" : "overflow-y-auto"
+        }`}
+      >
         <ComposerPrimitive.Input
           placeholder={
             isArchived
@@ -295,11 +403,11 @@ function GeminiComposer({ centered = false }: { centered?: boolean }) {
           }
           rows={1}
           disabled={isArchived}
-          className="w-full resize-none bg-transparent px-3 py-1.5 pt-2 pr-14 text-sm leading-snug text-[#1f1f1f] outline-none placeholder:text-[#444746] dark:text-white dark:placeholder:text-gray-400"
+          className="app-scrollbar-hidden [field-sizing:content] w-full resize-none overflow-hidden bg-transparent px-3 py-1.5 pt-2 pr-14 text-sm leading-snug text-[#1f1f1f] outline-none placeholder:text-[#444746] dark:text-white dark:placeholder:text-gray-400"
         />
       </ScrollFadeArea>
       {isArchived ? null : (
-        <div className="absolute top-1/2 right-2.5 size-9 -translate-y-1/2">
+        <div className="absolute right-2.5 bottom-2 size-9">
           <ComposerPrimitive.Send
             className="dark:bg-brand-500 absolute inset-0 flex items-center justify-center rounded-full bg-[#d3e3fd] text-[#062e6f] transition-transform duration-200 ease-out group-data-[empty=true]/composer:pointer-events-none group-data-[empty=true]/composer:scale-0 group-data-[running=true]/composer:pointer-events-none group-data-[running=true]/composer:scale-0 hover:opacity-90 disabled:opacity-40 dark:text-white"
             aria-label="Gửi"
@@ -328,7 +436,7 @@ function GeminiStickyComposer({
   animateFromCenter: boolean;
 }) {
   return (
-    <div className="bg-lightPrimary dark:bg-navy-900 relative z-20 w-full shrink-0 pt-2">
+    <div className="bg-lightPrimary dark:bg-navy-900 relative z-20 w-full shrink-0 pt-2 lg:-translate-y-1">
       {showScrollBottom ? (
         <button
           type="button"
@@ -346,10 +454,6 @@ function GeminiStickyComposer({
         }`}
       >
         <GeminiComposer />
-        <p className="mx-auto mt-2 max-w-lg text-center text-xs leading-snug text-[#444746] dark:text-gray-400">
-          Câu trả lời của AI chỉ mang tính chất tham khảo. Xác thực lại với các
-          tài liệu gợi ý.
-        </p>
       </div>
     </div>
   );
@@ -416,7 +520,7 @@ export function GeminiThread({ className = "" }: { className?: string }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const messagesCount = useAuiState((s) => s.thread.messages.length);
   const { activeThreadId, isLoadingMessages, sessions } = useChatbotShell();
-  const { onToggleSidebar } = useChatbotLayout();
+  const { sidebarOpen, sidebarCollapsed } = useChatbotLayoutOptional() ?? {};
   const isNewThread = !sessions.find((s) => s.id === activeThreadId)?.serverId;
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const viewportFadeStyle = useScrollFadeMask(viewportRef, [
@@ -471,6 +575,11 @@ export function GeminiThread({ className = "" }: { className?: string }) {
     };
   }, [updateScrollButton]);
 
+  useEffect(() => {
+    const frameId = window.requestAnimationFrame(updateScrollButton);
+    return () => window.cancelAnimationFrame(frameId);
+  }, [sidebarOpen, sidebarCollapsed, updateScrollButton]);
+
   const showEmptyState =
     isNewThread && messagesCount === 0 && !isLoadingMessages;
 
@@ -486,22 +595,11 @@ export function GeminiThread({ className = "" }: { className?: string }) {
         </div>
       ) : null}
 
-      {onToggleSidebar ? (
-        <button
-          type="button"
-          onClick={onToggleSidebar}
-          className="hover:text-brand-500 dark:bg-navy-900/80 dark:hover:bg-navy-800 absolute top-3 left-3 z-30 flex h-10 w-10 items-center justify-center rounded-full border border-white/50 bg-white/80 text-gray-600 shadow-md backdrop-blur-xl transition-colors hover:bg-white lg:hidden dark:border-white/10 dark:text-gray-300"
-          aria-label="Mở lịch sử chat"
-        >
-          <MdHistory className="h-5 w-5" />
-        </button>
-      ) : null}
-
       <ChatViewportContext.Provider value={viewportRef}>
         <ThreadPrimitive.Viewport
           ref={viewportRef}
           style={viewportFadeStyle}
-          className="flex min-h-0 w-full flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain [scrollbar-width:thin]"
+          className="flex min-h-0 w-full flex-1 [scrollbar-width:thin] flex-col overflow-x-hidden overflow-y-auto overscroll-contain"
         >
           <div
             className={`${CHAT_THREAD_GUTTER_CLASS} flex min-h-full flex-col`}

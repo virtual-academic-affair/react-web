@@ -17,6 +17,9 @@ export interface TableColumn<T> {
   render: (item: T, index: number) => React.ReactNode;
 }
 
+/** Vertical alignment for table body cells. Default: middle. */
+export type TableRowAlign = "top" | "middle";
+
 export interface TableAction<T> {
   key: string;
   icon: React.ReactNode | ((item: T) => React.ReactNode);
@@ -58,6 +61,8 @@ interface TableLayoutProps<T> {
   // Table
   columns: TableColumn<T>[];
   emptyMessage?: React.ReactNode;
+  /** Vertical alignment for row cells. Use "top" for multi-line text tables. */
+  rowAlign?: TableRowAlign;
 
   // Actions
   actions?: TableAction<T>[];
@@ -92,6 +97,7 @@ function TableLayout<T extends { id: number | string }>({
   hideSearchBar = false,
   columns,
   emptyMessage = "Không tìm thấy dữ liệu.",
+  rowAlign = "middle",
   actions = [],
   onRowClick,
   onPageChange,
@@ -128,6 +134,10 @@ function TableLayout<T extends { id: number | string }>({
 
     return null;
   }, [paginationProp, result, pageSize]);
+
+  const cellAlignClass = rowAlign === "top" ? "align-top" : "align-middle";
+  const actionFlexAlignClass =
+    rowAlign === "top" ? "items-start" : "items-center";
 
   return (
     <div className="flex flex-col gap-4 pb-5">
@@ -176,7 +186,7 @@ function TableLayout<T extends { id: number | string }>({
                   {columns.map((col) => (
                     <th
                       key={col.key}
-                      className={`px-4 py-3 text-left align-top text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500 table-column-header-${col.key}`}
+                      className={`px-4 py-3 text-left ${cellAlignClass} text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500 table-column-header-${col.key}`}
                       style={{
                         width: col.width,
                         maxWidth: col.maxWidth,
@@ -187,7 +197,7 @@ function TableLayout<T extends { id: number | string }>({
                   ))}
                   {actions.length > 0 && (
                     <th
-                      className="dark:bg-navy-800 sticky right-0 z-20 bg-white px-4 py-3 text-center align-top text-xs font-semibold tracking-wide whitespace-nowrap text-gray-400 uppercase dark:text-gray-500"
+                      className={`dark:bg-navy-800 sticky right-0 z-20 bg-white px-4 py-3 text-center ${cellAlignClass} text-xs font-semibold tracking-wide whitespace-nowrap text-gray-400 uppercase dark:text-gray-500`}
                       style={{
                         width: `${Math.max(100, actions.length * 55)}px`,
                         boxShadow: "-10px 0 10px -10px rgba(0,0,0,0.15)",
@@ -208,7 +218,7 @@ function TableLayout<T extends { id: number | string }>({
                       {columns.map((col) => (
                         <td
                           key={col.key}
-                          className="px-4 py-3 align-top"
+                          className={`px-4 py-3 ${cellAlignClass}`}
                           style={{
                             width: col.width,
                             maxWidth: col.maxWidth,
@@ -219,7 +229,7 @@ function TableLayout<T extends { id: number | string }>({
                       ))}
                       {actions.length > 0 && (
                         <td
-                          className="dark:bg-navy-800 sticky right-0 z-10 bg-white px-4 py-3 align-top"
+                          className={`dark:bg-navy-800 sticky right-0 z-10 bg-white px-4 py-3 ${cellAlignClass}`}
                           style={{
                             boxShadow: "-10px 0 10px -10px rgba(0,0,0,0.15)",
                           }}
@@ -256,7 +266,7 @@ function TableLayout<T extends { id: number | string }>({
                         {columns.map((col) => (
                           <td
                             key={col.key}
-                            className="max-w-px px-4 py-3 align-top"
+                            className={`max-w-px px-4 py-3 ${cellAlignClass}`}
                             style={{
                               width: col.width,
                               maxWidth: col.maxWidth,
@@ -269,12 +279,14 @@ function TableLayout<T extends { id: number | string }>({
                         ))}
                         {actions.length > 0 && (
                           <td
-                            className="group-hover:bg-lightPrimary dark:bg-navy-800 dark:group-hover:bg-navy-700 sticky right-0 z-10 bg-white px-4 py-3 align-top whitespace-nowrap"
+                            className={`group-hover:bg-lightPrimary dark:bg-navy-800 dark:group-hover:bg-navy-700 sticky right-0 z-10 bg-white px-4 py-3 ${cellAlignClass} whitespace-nowrap`}
                             style={{
                               boxShadow: "-10px 0 10px -10px rgba(0,0,0,0.15)",
                             }}
                           >
-                            <div className="flex items-start justify-center gap-2">
+                            <div
+                              className={`flex ${actionFlexAlignClass} justify-center gap-2`}
+                            >
                               {actions.map((action) => {
                                 const customRendered = action.render
                                   ? action.render(item)

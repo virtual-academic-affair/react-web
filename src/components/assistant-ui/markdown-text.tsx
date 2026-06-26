@@ -1,12 +1,18 @@
-import type { StreamdownTextComponents } from "@assistant-ui/react-streamdown";
 import { StreamdownTextPrimitive } from "@assistant-ui/react-streamdown";
 import {
   STREAMDOWN_CONTROLS,
   STREAMDOWN_LINK_SAFETY,
 } from "@/components/markdown/streamdown-config";
+import {
+  mergeStreamdownComponents,
+  STREAMDOWN_LIST_PROSE_CLASS,
+} from "@/components/markdown/streamdown-prose";
 import { useStreamdownMathPlugins } from "@/components/markdown/useStreamdownMathPlugins";
 
-const MARKDOWN_COMPONENTS = {
+import { InAppMarkdownAnchor } from "./in-app-markdown-anchor";
+
+const MARKDOWN_COMPONENTS = mergeStreamdownComponents({
+  a: InAppMarkdownAnchor,
   table: ({ children, ...props }) => (
     <div className="my-4 w-full overflow-x-auto">
       <table
@@ -44,7 +50,7 @@ const MARKDOWN_COMPONENTS = {
       {children}
     </td>
   ),
-} satisfies StreamdownTextComponents;
+});
 
 export function MarkdownText() {
   const plugins = useStreamdownMathPlugins();
@@ -56,8 +62,8 @@ export function MarkdownText() {
       linkSafety={STREAMDOWN_LINK_SAFETY}
       plugins={plugins}
       components={MARKDOWN_COMPONENTS}
-      className="text-[#1f1f1f] dark:text-[#e3e3e3]"
-      containerClassName="min-w-0 text-base leading-relaxed"
+      className={`text-[#1f1f1f] dark:text-[#e3e3e3] ${STREAMDOWN_LIST_PROSE_CLASS}`}
+      containerClassName={`min-w-0 text-base leading-relaxed ${STREAMDOWN_LIST_PROSE_CLASS}`}
     />
   );
 }
@@ -72,8 +78,8 @@ export function MarkdownTextSm() {
       linkSafety={STREAMDOWN_LINK_SAFETY}
       plugins={plugins}
       components={MARKDOWN_COMPONENTS}
-      className="text-[#1f1f1f] dark:text-[#e3e3e3]"
-      containerClassName="min-w-0 text-sm leading-relaxed"
+      className={`text-[#1f1f1f] dark:text-[#e3e3e3] ${STREAMDOWN_LIST_PROSE_CLASS}`}
+      containerClassName={`min-w-0 text-sm leading-relaxed ${STREAMDOWN_LIST_PROSE_CLASS}`}
     />
   );
 }

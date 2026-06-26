@@ -1,10 +1,12 @@
 import { refreshTokens } from "@/services/http";
 import { useAuthStore } from "@/stores/auth.store";
 import { hasTempAuth } from "@/utils/tempAuth.util";
+import { viewDocumentLocationSearch } from "@/utils/documentViewUrl";
 import { useEffect, useState } from "react";
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 export default function ProtectedRoute() {
+  const location = useLocation();
   const accessToken = useAuthStore((state) => state.accessToken);
 
   const [status, setStatus] = useState<
@@ -42,7 +44,8 @@ export default function ProtectedRoute() {
   }
 
   if (status === "unauthenticated") {
-    return <Navigate to="/auth/login" replace />;
+    const viewDocSearch = viewDocumentLocationSearch(location.search);
+    return <Navigate to={`/auth/login${viewDocSearch}`} replace />;
   }
 
   return <Outlet />;
