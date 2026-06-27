@@ -1,3 +1,5 @@
+import { isIframeMode } from "./iframeMode";
+
 export type ThemeMode = "light" | "dark" | "system";
 
 export const THEME_STORAGE_KEY = "theme";
@@ -24,18 +26,34 @@ export function resolveIsDark(mode: ThemeMode): boolean {
   return getSystemPrefersDark();
 }
 
+/** Gmail sidebar iframe always uses light theme regardless of user preference. */
+export function applyIframeLightTheme(): void {
+  document.body.classList.remove("dark");
+  document.documentElement.classList.remove("dark");
+  document.documentElement.style.colorScheme = "light";
+}
+
 export function applyThemeMode(mode: ThemeMode): void {
+  if (isIframeMode()) {
+    applyIframeLightTheme();
+    return;
+  }
   localStorage.setItem(THEME_STORAGE_KEY, mode);
   document.body.classList.toggle("dark", resolveIsDark(mode));
 }
 
 export function initTheme(): void {
+  if (isIframeMode()) {
+    applyIframeLightTheme();
+    return;
+  }
   applyThemeMode(getStoredThemeMode());
 }
 
 export function watchSystemTheme(onChange: () => void): () => void {
   const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
   const handler = () => {
+    if (isIframeMode()) return;
     if (getStoredThemeMode() === "system") {
       applyThemeMode("system");
       onChange();
