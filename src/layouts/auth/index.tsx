@@ -61,7 +61,7 @@ export default function AuthLayout() {
 
   return (
     <div className="dark:bg-navy-900! relative float-right h-full min-h-screen w-full !bg-white">
-      <div className="fixed top-4 right-4 z-50 w-[min(100vw-2rem,280px)]">
+      <div className="fixed bottom-4 left-4 z-50 w-[min(100vw-2rem,280px)]">
         <ThemeModeControl />
       </div>
 
