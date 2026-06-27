@@ -1,5 +1,6 @@
 import { StreamdownTextPrimitive } from "@assistant-ui/react-streamdown";
 import { useMessagePartText } from "@assistant-ui/react";
+import type { ComponentPropsWithoutRef } from "react";
 import {
   STREAMDOWN_CONTROLS,
   STREAMDOWN_LINK_SAFETY,
@@ -14,7 +15,7 @@ import { InAppMarkdownAnchor } from "./in-app-markdown-anchor";
 
 const MARKDOWN_COMPONENTS = mergeStreamdownComponents({
   a: InAppMarkdownAnchor,
-  table: ({ children, ...props }) => (
+  table: ({ children, ...props }: ComponentPropsWithoutRef<"table">) => (
     <div className="my-4 w-full overflow-x-auto">
       <table
         {...props}
@@ -24,18 +25,20 @@ const MARKDOWN_COMPONENTS = mergeStreamdownComponents({
       </table>
     </div>
   ),
-  thead: ({ children, ...props }) => (
+  thead: ({ children, ...props }: ComponentPropsWithoutRef<"thead">) => (
     <thead {...props} className="bg-white/[0.04]">
       {children}
     </thead>
   ),
-  tbody: ({ children, ...props }) => <tbody {...props}>{children}</tbody>,
-  tr: ({ children, ...props }) => (
+  tbody: ({ children, ...props }: ComponentPropsWithoutRef<"tbody">) => (
+    <tbody {...props}>{children}</tbody>
+  ),
+  tr: ({ children, ...props }: ComponentPropsWithoutRef<"tr">) => (
     <tr {...props} className="border-0">
       {children}
     </tr>
   ),
-  th: ({ children, ...props }) => (
+  th: ({ children, ...props }: ComponentPropsWithoutRef<"th">) => (
     <th
       {...props}
       className="border border-[#c8d3ef]/40 px-3 py-2 font-semibold text-[#202124] dark:border-white/20 dark:text-white"
@@ -43,7 +46,7 @@ const MARKDOWN_COMPONENTS = mergeStreamdownComponents({
       {children}
     </th>
   ),
-  td: ({ children, ...props }) => (
+  td: ({ children, ...props }: ComponentPropsWithoutRef<"td">) => (
     <td
       {...props}
       className="border border-[#c8d3ef]/40 px-3 py-2 align-top text-[#1f1f1f] dark:border-white/20 dark:text-[#e3e3e3]"

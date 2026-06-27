@@ -10,7 +10,7 @@ import { ThemeModeControl } from "@/components/theme/ThemeModeControl";
 import { refreshTokens } from "@/services/http";
 import { isMarkedAuthenticated, useAuthStore } from "@/stores/auth.store";
 import { hasTempAuth } from "@/utils/tempAuth.util";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 export default function AuthLayout() {
