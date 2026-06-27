@@ -28,6 +28,7 @@ import { FileCard, FileRow } from "./components/FileItems";
 import FilterGroup from "./components/FilterGroup";
 import { GridSkeleton, ListSkeleton } from "./components/Skeletons";
 import YearRangeFilter, { type YearRange } from "./components/YearRangeFilter";
+import { EMPTY_YEAR_RANGE_STRINGS } from "@/utils/yearRange";
 import {
   buildDocumentViewUrl,
   clearViewDocumentParams,
@@ -60,7 +61,7 @@ const DOC_TYPE_FILTER_OPTIONS = DOCUMENT_TYPES.map((t) => ({
   color: t.color,
 }));
 
-const EMPTY_YEAR_RANGE: YearRange = { fromYear: "", toYear: "" };
+const EMPTY_YEAR_RANGE: YearRange = EMPTY_YEAR_RANGE_STRINGS;
 
 // ── Filters type: keys are raw metadata type keys (e.g. "access_scope") ───────
 type UserDocFilters = Record<string, string[]>;
@@ -324,23 +325,12 @@ const UserDocumentsPage: React.FC<{ embedded?: boolean }> = ({
   const handleOpenPreview = useCallback(
     (file: any) => {
       if (embedded && sourcePreview) {
-        const markdownUrl = String(file.markdownFileUrl || "").trim();
         const fileName =
           file.originalFilename || file.displayName || "Tài liệu";
-        const fileId = file.fileId;
-
-        if (markdownUrl) {
-          sourcePreview.openPreview({
-            key: `${fileId}:${markdownUrl}`,
-            fileName,
-            fileId,
-            markdownUrl,
-            pdfUrl: file.fileUrl,
-          });
-          return;
-        }
-
-        sourcePreview.openFilePreview({ fileId, fileName });
+        sourcePreview.openFilePreview({
+          fileId: file.fileId,
+          fileName,
+        });
         return;
       }
 
@@ -697,28 +687,33 @@ const UserDocumentsPage: React.FC<{ embedded?: boolean }> = ({
         onDeleted={() => {}}
         onPreview={() => {
           if (!selectedFileId) return;
+          if (embedded && sourcePreview) {
+            const file = files.find((x: any) => x.fileId === selectedFileId);
+            sourcePreview.openFilePreview({
+              fileId: selectedFileId,
+              fileName:
+                file?.originalFilename || file?.displayName || "Tài liệu",
+            });
+            return;
+          }
           wasDrawerOpen.current = true;
           const next = new URLSearchParams(viewDocumentSearchParams);
           setViewDocumentParams(next, selectedFileId);
-          if (embedded) {
-            setRouterSearchParams(next, { replace: true });
-            return;
-          }
           setSearchParams(next, { replace: true });
         }}
-        onPreviewMarkdown={() => {
-          if (!selectedFileId) return;
-          wasDrawerOpen.current = true;
-          const next = new URLSearchParams(viewDocumentSearchParams);
-          setViewDocumentParams(next, selectedFileId, {
-            format: VIEW_DOCUMENT_FORMAT_MARKDOWN,
-          });
-          if (embedded) {
-            setRouterSearchParams(next, { replace: true });
-            return;
-          }
-          setSearchParams(next, { replace: true });
-        }}
+        {...(!embedded
+          ? {
+              onPreviewMarkdown: () => {
+                if (!selectedFileId) return;
+                wasDrawerOpen.current = true;
+                const next = new URLSearchParams(viewDocumentSearchParams);
+                setViewDocumentParams(next, selectedFileId, {
+                  format: VIEW_DOCUMENT_FORMAT_MARKDOWN,
+                });
+                setSearchParams(next, { replace: true });
+              },
+            }
+          : {})}
       />
 
       {/* ── File Preview Modal ──────────────────────────────────────────── */}

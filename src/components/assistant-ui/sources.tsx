@@ -15,16 +15,17 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
+import {
+  MdArrowDownward,
+  MdArrowUpward,
+  MdCheck,
+  MdClose,
+  MdContentCopy,
+  MdDescription,
+} from "react-icons/md";
 import { Streamdown } from "streamdown";
-import { MdArrowDownward, MdArrowUpward, MdCheck, MdClose, MdContentCopy, MdDescription } from "react-icons/md";
 
 import { copyTextToClipboard } from "@/components/copyable/copyTextToClipboard";
-import { ScrollFadeArea } from "@/components/scroll-fade/ScrollFadeArea";
-import Tooltip from "@/components/tooltip/Tooltip";
-import {
-  buildDocumentViewUrl,
-  VIEW_DOCUMENT_FORMAT_MARKDOWN,
-} from "@/utils/documentViewUrl";
 import {
   STREAMDOWN_CONTROLS,
   STREAMDOWN_LINK_SAFETY,
@@ -34,6 +35,11 @@ import {
   SOURCE_PREVIEW_STREAMDOWN_COMPONENTS,
 } from "@/components/markdown/streamdown-prose";
 import { useStreamdownMathPlugins } from "@/components/markdown/useStreamdownMathPlugins";
+import { ScrollFadeArea } from "@/components/scroll-fade/ScrollFadeArea";
+import Tooltip from "@/components/tooltip/Tooltip";
+import {
+  buildDocumentViewUrl,
+} from "@/utils/documentViewUrl";
 
 import {
   buildInAppPreviewKey,
@@ -284,10 +290,7 @@ const SOURCE_PREVIEW_MIN_MAIN_WIDTH = 400;
 
 function clampPanelWidth(width: number, rowWidth: number) {
   const minWidth = Math.min(SOURCE_PREVIEW_MIN_WIDTH, rowWidth);
-  const maxWidth = Math.max(
-    minWidth,
-    rowWidth - SOURCE_PREVIEW_MIN_MAIN_WIDTH,
-  );
+  const maxWidth = Math.max(minWidth, rowWidth - SOURCE_PREVIEW_MIN_MAIN_WIDTH);
   return Math.min(Math.max(width, minWidth), maxWidth);
 }
 
@@ -536,13 +539,7 @@ export function SourcePreviewPanel() {
       (preview?.pdfUrl ? fileIdFromUrl(preview.pdfUrl) : null);
     if (!fileId) return;
 
-    const success = await copyTextToClipboard(
-      buildDocumentViewUrl(fileId, {
-        format: preview?.markdownUrl
-          ? VIEW_DOCUMENT_FORMAT_MARKDOWN
-          : undefined,
-      }),
-    );
+    const success = await copyTextToClipboard(buildDocumentViewUrl(fileId));
     if (!success) return;
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1600);
@@ -584,159 +581,159 @@ export function SourcePreviewPanel() {
         </div>
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="flex shrink-0 items-center justify-between gap-2 border-b border-gray-100 px-4 py-3 md:gap-3 md:px-5 md:py-3 dark:border-white/10">
-          <h2
-            className="text-navy-700 min-w-0 flex-1 truncate text-base font-bold dark:text-white"
-            title={headerFileName}
-          >
-            {headerFileName}
-          </h2>
+          <header className="flex shrink-0 items-center justify-between gap-2 border-b border-gray-100 px-4 py-3 md:gap-3 md:px-5 md:py-3 dark:border-white/10">
+            <h2
+              className="text-navy-700 min-w-0 flex-1 truncate text-base font-bold dark:text-white"
+              title={headerFileName}
+            >
+              {headerFileName}
+            </h2>
 
-          <div className="flex shrink-0 items-center gap-2 md:gap-3">
-            <Tooltip label={copied ? "Đã sao chép link" : "Sao chép link"}>
-              <button
-                type="button"
-                onClick={() => void handleCopy()}
-                disabled={!resolvedFileId}
-                className={sourcePreviewIconButtonNeutralClass}
-                aria-label={copied ? "Đã sao chép link" : "Sao chép link"}
-              >
-                {copied ? (
-                  <MdCheck className="h-4 w-4 text-green-500" />
-                ) : (
-                  <MdContentCopy className="h-4 w-4" />
-                )}
-              </button>
-            </Tooltip>
-
-            {resolvedFileId ? (
-              <Tooltip label="File gốc">
+            <div className="flex shrink-0 items-center gap-2 md:gap-3">
+              <Tooltip label={copied ? "Đã sao chép link" : "Sao chép link"}>
                 <button
                   type="button"
-                  onClick={() =>
-                    openFilePreview({
-                      fileId: resolvedFileId,
-                      fileName: preview.fileName || headerFileName,
-                      initialPage: parseInitialPage(preview.pages),
-                    })
-                  }
-                  className={sourcePreviewIconButtonPrimaryClass}
-                  aria-label="File gốc"
+                  onClick={() => void handleCopy()}
+                  disabled={!resolvedFileId}
+                  className={sourcePreviewIconButtonNeutralClass}
+                  aria-label={copied ? "Đã sao chép link" : "Sao chép link"}
                 >
-                  <MdDescription className="h-4 w-4" />
+                  {copied ? (
+                    <MdCheck className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <MdContentCopy className="h-4 w-4" />
+                  )}
+                </button>
+              </Tooltip>
+
+              {resolvedFileId ? (
+                <Tooltip label="File gốc">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      openFilePreview({
+                        fileId: resolvedFileId,
+                        fileName: preview.fileName || headerFileName,
+                        initialPage: parseInitialPage(preview.pages),
+                      })
+                    }
+                    className={sourcePreviewIconButtonPrimaryClass}
+                    aria-label="File gốc"
+                  >
+                    <MdDescription className="h-4 w-4" />
+                  </button>
+                </Tooltip>
+              ) : null}
+
+              <button
+                type="button"
+                onClick={handleCloseAnimated}
+                className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-white/10"
+                aria-label="Đóng"
+              >
+                <MdClose className="h-5 w-5" />
+              </button>
+            </div>
+          </header>
+
+          <div className="dark:bg-navy-800 relative min-h-0 flex-1 bg-white">
+            {!markdownUrl ? (
+              <div className="m-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-100">
+                {resolvedFileId ? (
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <p>Tài liệu này chưa có bản markdown để xem trực tiếp.</p>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        openFilePreview({
+                          fileId: resolvedFileId,
+                          fileName: preview.fileName || headerFileName,
+                          initialPage: parseInitialPage(preview.pages),
+                        })
+                      }
+                      className="inline-flex shrink-0 items-center justify-center rounded-xl bg-white px-3 py-2 text-sm font-medium text-[#1a73e8] shadow-sm transition hover:bg-[#f8faff] dark:bg-white/10 dark:text-[#a8c7fa] dark:hover:bg-white/15"
+                    >
+                      Xem file gốc
+                    </button>
+                  </div>
+                ) : (
+                  "Tài liệu này chưa có file markdown để xem trực tiếp."
+                )}
+              </div>
+            ) : loading ? (
+              <div className="flex h-full items-center justify-center text-sm text-[#5f6368] dark:text-gray-300">
+                Đang mở nội dung tài liệu...
+              </div>
+            ) : error ? (
+              <div className="m-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-400/20 dark:bg-red-400/10 dark:text-red-100">
+                {error}
+              </div>
+            ) : content ? (
+              <ScrollFadeArea
+                ref={scrollContainerRef}
+                wrapperClassName="h-full min-h-0"
+                className="h-full min-h-0 [scrollbar-width:thin] overflow-auto px-4 py-5 md:px-5 md:py-6"
+                topFadeRem={1.25}
+                bottomFadeRem={1.75}
+                thresholdPx={4}
+                watchDeps={[content, markdownSegments]}
+                onScroll={handleScroll}
+              >
+                <article className="mx-auto w-full max-w-3xl">
+                  {markdownSegments.map((segment) => (
+                    <div
+                      key={`${segment.start}-${segment.end}`}
+                      data-line-number={segment.start + 1}
+                      data-line-end={segment.end + 1}
+                      className={
+                        segment.highlighted
+                          ? "bg-[#fff3a3] text-[#1f1f1f] dark:bg-[#5c4a00]/55 dark:text-[#fff7cc]"
+                          : undefined
+                      }
+                    >
+                      <Streamdown
+                        mode="static"
+                        controls={STREAMDOWN_CONTROLS}
+                        linkSafety={STREAMDOWN_LINK_SAFETY}
+                        plugins={plugins}
+                        components={previewStreamdownComponents}
+                        className={SOURCE_PREVIEW_STREAMDOWN_CLASS}
+                      >
+                        {segment.content || " "}
+                      </Streamdown>
+                    </div>
+                  ))}
+                </article>
+              </ScrollFadeArea>
+            ) : null}
+
+            {jumpState.up ? (
+              <Tooltip label="Đoạn trước">
+                <button
+                  type="button"
+                  onClick={() => scrollToRange(jumpState.up!)}
+                  className={`absolute top-4 left-1/2 z-10 -translate-x-1/2 ${sourcePreviewJumpButtonClass}`}
+                  aria-label="Đoạn trước"
+                >
+                  <MdArrowUpward className="h-4 w-4" aria-hidden />
                 </button>
               </Tooltip>
             ) : null}
-
-            <button
-              type="button"
-              onClick={handleCloseAnimated}
-              className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-white/10"
-              aria-label="Đóng"
-            >
-              <MdClose className="h-5 w-5" />
-            </button>
-          </div>
-        </header>
-
-        <div className="relative min-h-0 flex-1 bg-white dark:bg-navy-800">
-        {!markdownUrl ? (
-          <div className="m-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-100">
-            {resolvedFileId ? (
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <p>Tài liệu này chưa có bản markdown để xem trực tiếp.</p>
+            {jumpState.down ? (
+              <Tooltip label="Đoạn sau">
                 <button
                   type="button"
-                  onClick={() =>
-                    openFilePreview({
-                      fileId: resolvedFileId,
-                      fileName: preview.fileName || headerFileName,
-                      initialPage: parseInitialPage(preview.pages),
-                    })
-                  }
-                  className="inline-flex shrink-0 items-center justify-center rounded-xl bg-white px-3 py-2 text-sm font-medium text-[#1a73e8] shadow-sm transition hover:bg-[#f8faff] dark:bg-white/10 dark:text-[#a8c7fa] dark:hover:bg-white/15"
+                  onClick={() => scrollToRange(jumpState.down!)}
+                  className={`absolute bottom-4 left-1/2 z-10 -translate-x-1/2 ${sourcePreviewJumpButtonClass}`}
+                  aria-label="Đoạn sau"
                 >
-                  Xem file gốc
+                  <MdArrowDownward className="h-4 w-4" aria-hidden />
                 </button>
-              </div>
-            ) : (
-              "Tài liệu này chưa có file markdown để xem trực tiếp."
-            )}
+              </Tooltip>
+            ) : null}
           </div>
-        ) : loading ? (
-          <div className="flex h-full items-center justify-center text-sm text-[#5f6368] dark:text-gray-300">
-            Đang mở nội dung tài liệu...
-          </div>
-        ) : error ? (
-          <div className="m-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-400/20 dark:bg-red-400/10 dark:text-red-100">
-            {error}
-          </div>
-        ) : content ? (
-          <ScrollFadeArea
-            ref={scrollContainerRef}
-            wrapperClassName="h-full min-h-0"
-            className="h-full min-h-0 overflow-auto px-4 py-5 [scrollbar-width:thin] md:px-5 md:py-6"
-            topFadeRem={1.25}
-            bottomFadeRem={1.75}
-            thresholdPx={4}
-            watchDeps={[content, markdownSegments]}
-            onScroll={handleScroll}
-          >
-            <article className="mx-auto w-full max-w-3xl">
-              {markdownSegments.map((segment) => (
-                <div
-                  key={`${segment.start}-${segment.end}`}
-                  data-line-number={segment.start + 1}
-                  data-line-end={segment.end + 1}
-                  className={
-                    segment.highlighted
-                      ? "bg-[#fff3a3] text-[#1f1f1f] dark:bg-[#5c4a00]/55 dark:text-[#fff7cc]"
-                      : undefined
-                  }
-                >
-                  <Streamdown
-                    mode="static"
-                    controls={STREAMDOWN_CONTROLS}
-                    linkSafety={STREAMDOWN_LINK_SAFETY}
-                    plugins={plugins}
-                    components={previewStreamdownComponents}
-                    className={SOURCE_PREVIEW_STREAMDOWN_CLASS}
-                  >
-                    {segment.content || " "}
-                  </Streamdown>
-                </div>
-              ))}
-            </article>
-          </ScrollFadeArea>
-        ) : null}
-
-        {jumpState.up ? (
-          <Tooltip label="Đoạn trước">
-            <button
-              type="button"
-              onClick={() => scrollToRange(jumpState.up!)}
-              className={`absolute top-4 left-1/2 z-10 -translate-x-1/2 ${sourcePreviewJumpButtonClass}`}
-              aria-label="Đoạn trước"
-            >
-              <MdArrowUpward className="h-4 w-4" aria-hidden />
-            </button>
-          </Tooltip>
-        ) : null}
-        {jumpState.down ? (
-          <Tooltip label="Đoạn sau">
-            <button
-              type="button"
-              onClick={() => scrollToRange(jumpState.down!)}
-              className={`absolute bottom-4 left-1/2 z-10 -translate-x-1/2 ${sourcePreviewJumpButtonClass}`}
-              aria-label="Đoạn sau"
-            >
-              <MdArrowDownward className="h-4 w-4" aria-hidden />
-            </button>
-          </Tooltip>
-        ) : null}
-      </div>
         </div>
-    </aside>
+      </aside>
     </SourcePreviewScrollContext.Provider>
   );
 }
@@ -772,7 +769,11 @@ export function Source(props: SourceMessagePartProps) {
   const { openPreview, openFilePreview } = useSourcePreview();
   const resolvedFileId = resolveSourceFileId(meta, sourceUrl);
   const trimmedFileName = meta.fileName?.trim() || "";
-  const displayTitles = getDisplayTitles(meta.titles, trimmedFileName, sourceUrl);
+  const displayTitles = getDisplayTitles(
+    meta.titles,
+    trimmedFileName,
+    sourceUrl,
+  );
   const citationNumber =
     typeof meta.citationId === "number" ? meta.citationId : sourceIndex;
   const citationLabel = citationNumber > 0 ? `[${citationNumber}]` : null;

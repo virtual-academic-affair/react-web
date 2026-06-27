@@ -153,7 +153,10 @@ function RootRedirect() {
         <Navigate to={`/admin/email/config${viewDocSearch}`} replace />
       );
     }
-    return <Navigate to={`/user/documents${viewDocSearch}`} replace />;
+    const userHome = viewDocSearch
+      ? `/user/chatbot/documents${viewDocSearch}`
+      : "/user/chatbot";
+    return <Navigate to={userHome} replace />;
   }
 
   if (viewDocSearch) {

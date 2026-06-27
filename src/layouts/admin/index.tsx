@@ -6,15 +6,22 @@ import RouteNavigationOverlay from "@/components/loading/RouteNavigationOverlay"
 import TopNavbar, {
   TOP_NAVBAR_PAGE_PADDING_CLASS,
 } from "@/components/navbar/TopNavbar";
+import { DashboardMobileSidebar } from "@/components/sidebar/DashboardMobileSidebar";
 import { useDynamicData } from "@/hooks/useDynamicData";
 import { useMobileBodyScrollLock } from "@/hooks/useMobileBodyScrollLock";
 import { useRouteNavigationPending } from "@/hooks/useRouteNavigationPending";
-import { ChatbotMobileLayoutShell } from "@/layouts/chatbotMobileLayout";
 import { DashboardMobileLayout } from "@/layouts/appMobileLayout";
-import { DashboardMobileSidebar } from "@/components/sidebar/DashboardMobileSidebar";
+import { ChatbotMobileLayoutShell } from "@/layouts/chatbotMobileLayout";
 import { ChatbotLayoutProvider } from "@/pages/chatbot/chatbotLayoutContext";
 import { viewDocumentLocationSearch } from "@/utils/documentViewUrl";
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import routes from "routes";
 

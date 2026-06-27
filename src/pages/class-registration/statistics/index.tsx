@@ -2,8 +2,8 @@ import SelectField, {
   type SelectOption,
 } from "@/components/fields/SelectField";
 import { PageTitle } from "@/components/layouts/PageTitle";
-import { LuChartColumn } from "react-icons/lu";
 import React from "react";
+import { LuChartColumn } from "react-icons/lu";
 import AcceptedOpenClassesCard from "./components/AcceptedOpenClassesCard";
 import DetailedStatsChart from "./components/DetailedStatsChart";
 import PeakDayCard from "./components/PeakDayCard";

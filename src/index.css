@@ -460,6 +460,12 @@ body.dark #root {
   background-color: var(--color-navy-900);
 }
 
+html.iframe-mode,
+html.iframe-mode body,
+html.iframe-mode #root {
+  background-color: transparent !important;
+}
+
 :root {
   --app-scrollbar-thumb: rgba(112, 126, 174, 0.45);
   --app-scrollbar-thumb-hover: rgba(112, 126, 174, 0.72);
@@ -623,8 +629,13 @@ input[type="reset"]:disabled {
 .apexcharts-legend-text {
   font-family: var(--font-momo) !important;
   font-size: 12px !important;
-  font-weight: 600 !important;
+  font-weight: 500 !important;
   margin-left: -10px !important;
+}
+
+.apexcharts-text.apexcharts-xaxis-label,
+.apexcharts-xaxis-label {
+  font-family: var(--font-momo) !important;
 }
 
 .modal-rounded-30 .ant-modal-content {
@@ -991,7 +1002,9 @@ body.dark .ant-notification-notice {
   height: 2.75rem;
   border: 1px solid rgb(255 255 255 / 0.5);
   background-color: rgb(255 255 255 / 0.8);
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
 }
@@ -999,7 +1012,9 @@ body.dark .ant-notification-notice {
 .dark .chatbot-nav-logo--toolbar {
   background-color: rgb(11 20 55 / 0.8);
   border-color: rgb(255 255 255 / 0.1);
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1);
 }
 
 .chatbot-nav-logo-icon {

@@ -1,4 +1,5 @@
 import { StreamdownTextPrimitive } from "@assistant-ui/react-streamdown";
+import { useMessagePartText } from "@assistant-ui/react";
 import {
   STREAMDOWN_CONTROLS,
   STREAMDOWN_LINK_SAFETY,
@@ -54,10 +55,11 @@ const MARKDOWN_COMPONENTS = mergeStreamdownComponents({
 
 export function MarkdownText() {
   const plugins = useStreamdownMathPlugins();
+  const { status } = useMessagePartText();
 
   return (
     <StreamdownTextPrimitive
-      mode="streaming"
+      mode={status.type === "running" ? "streaming" : "static"}
       controls={STREAMDOWN_CONTROLS}
       linkSafety={STREAMDOWN_LINK_SAFETY}
       plugins={plugins}
@@ -70,10 +72,11 @@ export function MarkdownText() {
 
 export function MarkdownTextSm() {
   const plugins = useStreamdownMathPlugins();
+  const { status } = useMessagePartText();
 
   return (
     <StreamdownTextPrimitive
-      mode="streaming"
+      mode={status.type === "running" ? "streaming" : "static"}
       controls={STREAMDOWN_CONTROLS}
       linkSafety={STREAMDOWN_LINK_SAFETY}
       plugins={plugins}

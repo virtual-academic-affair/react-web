@@ -80,6 +80,15 @@ export function useScrollFadeState<T extends HTMLElement>(
       resizeObserver.observe(child);
     }
 
+    const mutationObserver = new MutationObserver(() => {
+      window.requestAnimationFrame(updateFades);
+    });
+    mutationObserver.observe(element, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+
     const frameId = window.requestAnimationFrame(updateFades);
     const delayedId = window.setTimeout(updateFades, 50);
 
@@ -89,6 +98,7 @@ export function useScrollFadeState<T extends HTMLElement>(
       element.removeEventListener("scroll", updateFades);
       window.removeEventListener("resize", updateFades);
       resizeObserver.disconnect();
+      mutationObserver.disconnect();
     };
   }, [ref, updateFades, ...deps]);
 
@@ -154,11 +164,14 @@ export const ScrollFadeArea = forwardRef<HTMLDivElement, ScrollFadeAreaProps>(
     );
 
     return (
-      <div className={`relative min-h-0 ${wrapperClassName ?? ""}`.trim()}>
+      <div
+        className={`relative min-h-0 overflow-hidden ${wrapperClassName ?? ""}`.trim()}
+        style={maskStyle}
+      >
         <div
           ref={mergeRefs(scrollRef, forwardedRef)}
           className={className}
-          style={{ ...style, ...maskStyle }}
+          style={style}
           onScroll={onScroll}
         >
           {children}

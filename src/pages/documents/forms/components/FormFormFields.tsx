@@ -1,4 +1,5 @@
 import RichTextEditor from "@/components/fields/RichTextEditor";
+import { formInputClassWithError } from "@/components/fields/formInputClass";
 import { FormRow } from "@/components/layouts/DetailFormLayout";
 
 interface FormFormFieldsProps {
@@ -15,13 +16,6 @@ interface FormFormFieldsProps {
   };
   disabled?: boolean;
 }
-
-const inputCls = (hasError?: string) =>
-  `w-full min-w-0 rounded-2xl border bg-transparent px-3 py-2 outline-none dark:text-white ${
-    hasError
-      ? "border-red-400 dark:border-red-400"
-      : "border-gray-200 dark:border-white/10"
-  }`;
 
 export function FormFormFields({
   documentType,
@@ -43,7 +37,7 @@ export function FormFormFields({
             value={documentType}
             onChange={(e) => onDocumentTypeChange(e.target.value)}
             disabled={disabled}
-            className={inputCls(errors?.documentType)}
+            className={formInputClassWithError(errors?.documentType)}
           />
           {errors?.documentType && (
             <p className="text-xs text-red-500">{errors.documentType}</p>

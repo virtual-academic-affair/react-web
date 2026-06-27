@@ -1,7 +1,6 @@
 import { CopyableText } from "@/components/copyable/CopyableText";
 import Tag from "@/components/tag/Tag";
 import Tooltip from "@/components/tooltip/Tooltip";
-import { getFloatingDropdownPosition } from "@/utils/floatingPosition";
 import {
   CLASS_REGISTRATION_ITEMS_GLOBAL_PARENT_ID,
   classRegistrationItemsService,
@@ -29,6 +28,7 @@ import {
   MessageStatusColors,
   MessageStatusLabels,
 } from "@/types/messageStatus";
+import { getFloatingDropdownPosition } from "@/utils/floatingPosition";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import {
@@ -407,7 +407,7 @@ function DeeplinkSectionShell({
   children: ReactNode;
 }) {
   return (
-    <section className="dark:bg-navy-950/40 rounded-2xl bg-white p-4">
+    <section className="rounded-2xl p-4">
       {title ? (
         <header className="flex flex-col gap-3">
           <div className="border-brand-500 flex min-w-0 flex-1 items-center gap-2 border-l-4 pl-3">
@@ -989,7 +989,7 @@ const DeeplinkIframeNoThreadDashboard: React.FC<
       </DeeplinkSectionShell>
 
       {openSubject || overviewHasClassRows ? (
-        <DeeplinkSectionShell title="DS đăng kí lớp tiếp nhận">
+        <DeeplinkSectionShell title="DS tiếp nhận đăng kí lớp">
           {openSubject ? (
             <>
               <div className="mt-4 border-b border-gray-100 pb-3 dark:border-white/10">
@@ -1033,10 +1033,9 @@ const DeeplinkIframeNoThreadDashboard: React.FC<
               <div className="mt-4 overflow-x-auto">
                 <table className="w-full min-w-[380px] table-fixed border-collapse text-left text-xs">
                   <colgroup>
-                    <col style={{ width: "5%" }} />
-                    <col style={{ width: "5%" }} />
-                    <col style={{ width: "20%" }} />
-                    <col style={{ width: "20%" }} />
+                    <col style={{ width: "6%" }} />
+                    <col style={{ width: "22%" }} />
+                    <col style={{ width: "22%" }} />
                     <col style={{ width: "25%" }} />
                     <col style={{ width: "25%" }} />
                   </colgroup>
@@ -1051,7 +1050,6 @@ const DeeplinkIframeNoThreadDashboard: React.FC<
                           className="text-brand-600 h-3.5 w-3.5 rounded border-gray-300"
                         />
                       </th>
-                      <th className="py-2 pr-1 align-middle font-medium">#</th>
                       <th className="py-2 pr-2 align-middle font-medium">
                         MSSV
                       </th>
@@ -1105,7 +1103,7 @@ const DeeplinkIframeNoThreadDashboard: React.FC<
                   <tbody>
                     {selectedIds.length > 0 ? (
                       <tr className="border-b border-gray-100 dark:border-white/10">
-                        <td colSpan={6} className="py-3 pr-2">
+                        <td colSpan={5} className="py-3 pr-2">
                           <div className="flex w-full flex-wrap items-center justify-between gap-2">
                             <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
                               Tổng{" "}
@@ -1145,7 +1143,7 @@ const DeeplinkIframeNoThreadDashboard: React.FC<
                     {itemsLoading ? (
                       <tr>
                         <td
-                          colSpan={6}
+                          colSpan={5}
                           className="py-6 text-center text-gray-500 dark:text-gray-400"
                         >
                           Đang tải…
@@ -1154,7 +1152,7 @@ const DeeplinkIframeNoThreadDashboard: React.FC<
                     ) : (itemsPageData?.items ?? []).length === 0 ? (
                       <tr>
                         <td
-                          colSpan={6}
+                          colSpan={5}
                           className="text-navy-800 py-8 text-center dark:text-gray-300"
                         >
                           Không có dữ liệu.
@@ -1184,9 +1182,6 @@ const DeeplinkIframeNoThreadDashboard: React.FC<
                                   }
                                   className="text-brand-600 h-3.5 w-3.5 rounded border-gray-300"
                                 />
-                              </td>
-                              <td className="truncate py-2 pr-1 align-middle text-gray-500 tabular-nums dark:text-gray-400">
-                                {row.parentId ?? "—"}
                               </td>
                               <td className="text-navy-800 min-w-0 py-2 pr-2 align-middle dark:text-gray-100">
                                 <CopyableText

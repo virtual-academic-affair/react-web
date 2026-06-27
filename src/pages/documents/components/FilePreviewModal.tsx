@@ -23,7 +23,6 @@ import {
 import { copyTextToClipboard } from "@/components/copyable/copyTextToClipboard";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import {
-  VIEW_DOCUMENT_FORMAT_MARKDOWN,
   buildDocumentViewUrl,
 } from "@/utils/documentViewUrl";
 import {
@@ -368,13 +367,8 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
 
   const viewUrl = useMemo(() => {
     if (!fileId || !showCopyViewLink) return null;
-    return buildDocumentViewUrl(fileId, {
-      format:
-        downloadFormat === "markdown"
-          ? VIEW_DOCUMENT_FORMAT_MARKDOWN
-          : undefined,
-    });
-  }, [downloadFormat, fileId, showCopyViewLink]);
+    return buildDocumentViewUrl(fileId);
+  }, [fileId, showCopyViewLink]);
 
   const handleCopyViewLink = useCallback(async () => {
     if (!viewUrl) return;

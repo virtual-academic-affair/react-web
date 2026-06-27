@@ -78,10 +78,11 @@ function ThinkingDots() {
 
 function ReasoningMarkdown({ text }: { text: string }) {
   const plugins = useStreamdownMathPlugins();
+  const busy = useContext(ReasoningBusyContext);
 
   return (
     <Streamdown
-      mode="streaming"
+      mode={busy ? "streaming" : "static"}
       controls={STREAMDOWN_CONTROLS}
       linkSafety={STREAMDOWN_LINK_SAFETY}
       plugins={plugins}
@@ -358,6 +359,8 @@ export function ReasoningContent(props: ComponentProps<"div">) {
     variant === "ghost"
       ? "ml-1 mt-2 min-h-0 max-h-60 overflow-x-hidden overflow-y-auto overscroll-contain pr-2 italic [scrollbar-width:thin] sm:pr-3"
       : "";
+  const ghostWrapperClass =
+    variant === "ghost" ? "max-h-60 min-h-0" : undefined;
 
   if (variant === "ghost") {
     return (
@@ -371,15 +374,19 @@ export function ReasoningContent(props: ComponentProps<"div">) {
           aria-hidden={!open}
           {...rest}
         >
-          <ScrollFadeArea
-            wrapperClassName="min-h-0 overflow-hidden"
-            className={[ghostScrollClass, className].filter(Boolean).join(" ")}
-            style={style}
-            thresholdPx={4}
-            watchDeps={[open, busy, children]}
-          >
-            {children}
-          </ScrollFadeArea>
+          <div className="min-h-0 overflow-hidden">
+            <ScrollFadeArea
+              wrapperClassName={ghostWrapperClass}
+              className={[ghostScrollClass, className].filter(Boolean).join(" ")}
+              style={style}
+              topFadeRem={1.25}
+              bottomFadeRem={1.75}
+              thresholdPx={4}
+              watchDeps={[open, busy, children]}
+            >
+              {children}
+            </ScrollFadeArea>
+          </div>
         </div>
       </ReasoningBusyContext.Provider>
     );

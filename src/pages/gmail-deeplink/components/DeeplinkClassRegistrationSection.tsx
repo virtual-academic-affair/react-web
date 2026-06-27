@@ -1,5 +1,6 @@
 import { CopyableText } from "@/components/copyable/CopyableText";
 import Drawer from "@/components/drawer/Drawer";
+import { formInputClass } from "@/components/fields/formInputClass";
 import DetailFormLayout, {
   FormRow,
 } from "@/components/layouts/DetailFormLayout";
@@ -47,11 +48,6 @@ const ITEM_STATUS_HEX: Record<ItemStatus, string> = {
   rejected: ItemStatusColors.rejected.hex,
 };
 
-const ITEM_STATUS_OPTION_COLORS: Record<string, string> = ITEM_STATUS_HEX;
-
-const drawerFormLabelWidth = "w-full sm:min-w-[104px] sm:w-[104px]";
-const drawerInputClass =
-  "min-h-[42px] w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-navy-800 outline-none transition-colors placeholder:text-gray-400 focus-visible:border-brand-500 focus-visible:ring-2 focus-visible:ring-brand-500/20 dark:border-white/10 dark:bg-transparent dark:text-gray-100 dark:placeholder:text-gray-500";
 
 function norm(s: string | undefined | null): string {
   return (s ?? "").trim().toUpperCase();
@@ -184,7 +180,11 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
   const [formSubjectCode, setFormSubjectCode] = useState("");
   const [formSubjectName, setFormSubjectName] = useState("");
   const [formClassName, setFormClassName] = useState("");
-  const [formItemStatus, setFormItemStatus] = useState<ItemStatus>("pending");
+
+  const onFormActionChange = (action: RegistrationAction) => {
+    setFormAction(action);
+    if (action === "requestOpen") setFormClassName("");
+  };
 
   const openAdd = () => {
     setEditingId(null);
@@ -192,7 +192,6 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
     setFormSubjectCode("");
     setFormSubjectName("");
     setFormClassName("");
-    setFormItemStatus("pending");
     setItemDrawerOpen(true);
   };
 
@@ -201,8 +200,7 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
     setFormAction(it.action);
     setFormSubjectCode(it.subjectCode ?? "");
     setFormSubjectName(it.subjectName ?? "");
-    setFormClassName(it.className ?? "");
-    setFormItemStatus(it.status ?? "pending");
+    setFormClassName(it.action === "requestOpen" ? "" : (it.className ?? ""));
     setItemDrawerOpen(true);
   };
 
@@ -214,7 +212,6 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
     setFormSubjectCode("");
     setFormSubjectName("");
     setFormClassName("");
-    setFormItemStatus("pending");
   };
 
   useEffect(() => {
@@ -226,7 +223,6 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
     setFormSubjectCode("");
     setFormSubjectName("");
     setFormClassName("");
-    setFormItemStatus("pending");
   }, [canEdit]);
 
   const saveMutation = useMutation({
@@ -234,29 +230,21 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
       const subjectName = formSubjectName.trim() || "—";
       const subjectCode = formSubjectCode.trim() || undefined;
       const className = formClassName.trim() || undefined;
+      const itemFields =
+        formAction === "requestOpen"
+          ? { action: formAction, subjectName, subjectCode }
+          : { action: formAction, subjectName, subjectCode, className };
+
       if (editingId == null) {
-        const createDto: CreateClassRegistrationItemDto = {
-          action: formAction,
-          subjectName,
-          subjectCode,
-          className,
-        };
-        await classRegistrationItemsService.create(parentId, createDto);
+        await classRegistrationItemsService.create(
+          parentId,
+          itemFields as CreateClassRegistrationItemDto,
+        );
       } else {
-        const updateDto: UpdateClassRegistrationItemDto =
-          formAction === "requestOpen"
-            ? { action: formAction, subjectName, subjectCode, className }
-            : {
-                action: formAction,
-                subjectName,
-                subjectCode,
-                className,
-                status: formItemStatus,
-              };
         await classRegistrationItemsService.update(
           parentId,
           editingId,
-          updateDto,
+          itemFields as UpdateClassRegistrationItemDto,
         );
       }
     },
@@ -655,73 +643,43 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
         }
       >
         <DetailFormLayout className="gap-5">
-          <FormRow
-            label="Loại"
-            labelWidthClassName={drawerFormLabelWidth}
-            dense
-          >
+          <FormRow label="Loại" stacked>
             <RegistrationActionTag
               value={formAction}
-              onChange={setFormAction}
+              onChange={onFormActionChange}
+              allowedActions={
+                editingId == null ? ["register", "cancel"] : undefined
+              }
               className="w-fit shrink-0"
             />
           </FormRow>
-          <FormRow
-            label="Mã môn"
-            labelWidthClassName={drawerFormLabelWidth}
-            dense
-          >
+          <FormRow label="Mã môn" stacked>
             <input
               type="text"
               value={formSubjectCode}
               onChange={(e) => setFormSubjectCode(e.target.value)}
               placeholder="VD: CS101"
-              className={drawerInputClass}
+              className={formInputClass}
             />
           </FormRow>
-          <FormRow
-            label="Tên môn"
-            labelWidthClassName={drawerFormLabelWidth}
-            dense
-          >
+          <FormRow label="Tên môn" stacked>
             <input
               type="text"
               value={formSubjectName}
               onChange={(e) => setFormSubjectName(e.target.value)}
               placeholder="VD: Giải tích 1"
-              className={drawerInputClass}
+              className={formInputClass}
             />
           </FormRow>
-          <FormRow
-            label="Tên lớp"
-            labelWidthClassName={drawerFormLabelWidth}
-            dense
-          >
-            <input
-              type="text"
-              value={formClassName}
-              onChange={(e) => setFormClassName(e.target.value)}
-              placeholder="VD: 22CLC01"
-              className={drawerInputClass}
-            />
-          </FormRow>
-          {editingId != null && formAction !== "requestOpen" ? (
-            <FormRow
-              label="Trạng thái"
-              labelWidthClassName={drawerFormLabelWidth}
-              dense
-            >
-              <Tag
-                variant="selection"
-                value={formItemStatus}
-                color={ITEM_STATUS_HEX[formItemStatus]}
-                options={itemStatusOptions}
-                optionColors={ITEM_STATUS_OPTION_COLORS}
-                className="w-fit shrink-0"
-                onChange={(v) => setFormItemStatus(v as ItemStatus)}
-              >
-                {ItemStatusLabels[formItemStatus]}
-              </Tag>
+          {formAction !== "requestOpen" ? (
+            <FormRow label="Tên lớp" stacked>
+              <input
+                type="text"
+                value={formClassName}
+                onChange={(e) => setFormClassName(e.target.value)}
+                placeholder="VD: 22CLC01"
+                className={formInputClass}
+              />
             </FormRow>
           ) : null}
         </DetailFormLayout>

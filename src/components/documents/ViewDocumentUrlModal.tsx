@@ -11,7 +11,7 @@ const FilePreviewModal = lazy(
 );
 
 const LOCAL_VIEW_DOCUMENT_PATHS = new Set([
-  "/user/documents",
+  "/user/chatbot/documents",
   "/admin/documents/list",
 ]);
 

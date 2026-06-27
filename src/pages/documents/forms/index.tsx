@@ -183,7 +183,7 @@ export default function FormsPage({
           title={
             embedded
               ? "Biểu mẫu và kênh thông tin"
-              : "Danh sách biểu mẫu, kênh thông tin"
+              : "Danh sách biểu mẫu và kênh thông tin"
           }
           tabTitle={embedded ? "Biểu mẫu & KTT" : "DS biểu mẫu & KTT"}
           icon={LuPenLine}

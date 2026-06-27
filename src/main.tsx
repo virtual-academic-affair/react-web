@@ -3,7 +3,10 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { applyIframeModeClass } from "./utils/iframeMode";
 import { initTheme, watchSystemTheme } from "./utils/theme";
+
+applyIframeModeClass();
 
 initTheme();
 

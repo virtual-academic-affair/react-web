@@ -1,4 +1,5 @@
 import Drawer from "@/components/drawer/Drawer";
+import { formInputClass } from "@/components/fields/formInputClass";
 import DetailFormLayout, {
   FormRow,
 } from "@/components/layouts/DetailFormLayout";
@@ -456,7 +457,7 @@ const UsersPage: React.FC<UsersPageProps> = () => {
                 value={newEmail}
                 onChange={(ev) => setNewEmail(ev.target.value)}
                 disabled={creating}
-                className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
+                className={formInputClass}
               />
             </FormRow>
             <FormRow label="Vai trò" required={true}>

@@ -1,4 +1,5 @@
 import Drawer from "@/components/drawer/Drawer.tsx";
+import { formInputClass } from "@/components/fields/formInputClass";
 import Switch from "@/components/switch";
 import { usersService } from "@/services/users";
 import { Role as RoleConst, type Role, type UpdateUserDto, type User, type UserProfile } from "@/types/users.ts";
@@ -341,7 +342,7 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
                         }))
                       }
                       disabled={saving}
-                      className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
+                      className={formInputClass}
                     />
                   </div>
                 </div>
@@ -361,7 +362,7 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
                         }))
                       }
                       disabled={saving}
-                      className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
+                      className={formInputClass}
                     />
                   </div>
                 </div>

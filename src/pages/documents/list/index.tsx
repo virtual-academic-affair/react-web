@@ -30,6 +30,7 @@ import FilterGroup from "@/pages/user/documents/components/FilterGroup";
 import YearRangeFilter, {
   type YearRange,
 } from "@/pages/user/documents/components/YearRangeFilter";
+import { formatYearRange, EMPTY_YEAR_RANGE_STRINGS } from "@/utils/yearRange";
 import { PageTitle } from "@/components/layouts/PageTitle";
 import { LuFileText } from "react-icons/lu";
 import {
@@ -53,7 +54,7 @@ const PAGE_SIZE = 10;
 const DOWNLOAD_FORMAT_ORIGINAL = "original" as const;
 const DOWNLOAD_FORMAT_MARKDOWN = "markdown" as const;
 
-const EMPTY_YEAR_RANGE: YearRange = { fromYear: "", toYear: "" };
+const EMPTY_YEAR_RANGE: YearRange = EMPTY_YEAR_RANGE_STRINGS;
 
 /** Filter options for the document type FilterGroup */
 const DOC_TYPE_FILTER_OPTIONS = DOCUMENT_TYPES.map((t) => ({
@@ -63,33 +64,6 @@ const DOC_TYPE_FILTER_OPTIONS = DOCUMENT_TYPES.map((t) => ({
 }));
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
-
-const ALL_YEARS_SENTINEL_MAX = 9999;
-const ALL_YEARS_SENTINEL_MIN = 0;
-
-/** Normalize a year value — treat 0, null, or 9999+ as "all years" */
-const normalizeYear = (y: number | null | undefined): number | null =>
-  y == null || y <= ALL_YEARS_SENTINEL_MIN || y >= ALL_YEARS_SENTINEL_MAX
-    ? null
-    : y;
-
-/** Format a {fromYear, toYear} range, with a custom fallback label when both are "all" */
-const formatYearRange = (
-  range:
-    | { fromYear?: number | null; toYear?: number | null }
-    | null
-    | undefined,
-  allLabel: string,
-): string => {
-  if (!range) return allLabel;
-  const from = normalizeYear(range.fromYear);
-  const to = normalizeYear(range.toYear);
-  if (from === null && to === null) return allLabel;
-  if (from === to) return String(from ?? to);
-  if (from === null) return `Đến ${to}`;
-  if (to === null) return `Từ ${from}`;
-  return `${from} – ${to}`;
-};
 
 /** Status → display */
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {

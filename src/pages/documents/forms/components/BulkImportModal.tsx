@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from "react";
 import { message as toast } from "antd";
 import Drawer from "@/components/drawer/Drawer";
 import FilePickerField from "@/components/fields/FilePickerField";
+import { formInputClass } from "@/components/fields/formInputClass";
 import DetailFormLayout, { FormRow } from "@/components/layouts/DetailFormLayout";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { formsService } from "@/services/documents/forms.service";
@@ -152,7 +153,7 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
               value={config.documentTypeCol}
               onChange={updateConfig("documentTypeCol")}
               disabled={isPending}
-              className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+              className={formInputClass}
             />
           </FormRow>
 
@@ -163,7 +164,7 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
               value={config.contentLinkCol}
               onChange={updateConfig("contentLinkCol")}
               disabled={isPending}
-              className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+              className={formInputClass}
             />
           </FormRow>
 
@@ -175,7 +176,7 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
               value={config.notesCol}
               onChange={updateConfig("notesCol")}
               disabled={isPending}
-              className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+              className={formInputClass}
             />
           </FormRow>
 
@@ -186,7 +187,7 @@ export default function BulkImportModal({ open, onClose }: BulkImportModalProps)
               value={config.startRow}
               onChange={updateConfig("startRow")}
               disabled={isPending}
-              className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+              className={formInputClass}
             />
           </FormRow>
         </DetailFormLayout>

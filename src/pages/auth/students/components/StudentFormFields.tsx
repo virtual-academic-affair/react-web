@@ -1,4 +1,5 @@
 import { FormRow } from "@/components/layouts/DetailFormLayout";
+import { formInputClassWithError } from "@/components/fields/formInputClass";
 import React from "react";
 
 export interface StudentFormValue {
@@ -39,11 +40,7 @@ const StudentFormFields: React.FC<StudentFormFieldsProps> = ({
                 })
               }
               disabled={disabled}
-              className={`w-full rounded-2xl border bg-transparent px-3 py-2 outline-none dark:text-white ${
-                errors?.studentCode
-                  ? "border-red-400 dark:border-red-400"
-                  : "border-gray-200 dark:border-white/10"
-              }`}
+              className={formInputClassWithError(errors?.studentCode)}
             />
             {errors?.studentCode && (
               <p className="text-xs text-red-500">{errors.studentCode}</p>
@@ -67,11 +64,7 @@ const StudentFormFields: React.FC<StudentFormFieldsProps> = ({
                 })
               }
               disabled={disabled}
-              className={`w-full rounded-2xl border bg-transparent px-3 py-2 outline-none dark:text-white ${
-                errors?.studentName
-                  ? "border-red-400 dark:border-red-400"
-                  : "border-gray-200 dark:border-white/10"
-              }`}
+              className={formInputClassWithError(errors?.studentName)}
             />
             {errors?.studentName && (
               <p className="text-xs text-red-500">{errors.studentName}</p>

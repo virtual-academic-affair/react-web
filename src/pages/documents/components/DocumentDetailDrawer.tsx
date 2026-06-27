@@ -4,7 +4,14 @@ import React, { useEffect, useState } from "react";
 import { MdDeleteOutline, MdDescription, MdSave, MdFileDownload } from "react-icons/md";
 
 import Drawer from "@/components/drawer/Drawer";
+import { formInputClass } from "@/components/fields/formInputClass";
+import YearRangeControl from "@/components/fields/YearRangeControl";
 import { ScrollFadeArea } from "@/components/scroll-fade/ScrollFadeArea";
+import {
+  normalizeYear,
+  yearRangeToStrings,
+  type YearRangeNumbers,
+} from "@/utils/yearRange";
 import ConfirmModal from "@/components/modal/ConfirmModal";
 import Tag from "@/components/tag/Tag";
 import Tooltip from "@/components/tooltip/Tooltip";
@@ -38,30 +45,6 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   processing: { label: "Đang xử lý", color: "#f59e0b" },
   uploading: { label: "Đang tải lên", color: "#f59e0b" },
   failed: { label: "Thất bại", color: "#b2161e" },
-};
-
-const ALL_YEARS_MAX = 9999;
-const ALL_YEARS_MIN = 0;
-
-const normalizeYear = (y: number | null | undefined): number | null =>
-  y == null || y <= ALL_YEARS_MIN || y >= ALL_YEARS_MAX ? null : y;
-
-/** Format a year range for read-only display */
-const formatYearRangeDisplay = (
-  range:
-    | { fromYear?: number | null; toYear?: number | null }
-    | null
-    | undefined,
-  allLabel: string,
-): string => {
-  if (!range) return allLabel;
-  const from = normalizeYear(range.fromYear);
-  const to = normalizeYear(range.toYear);
-  if (from === null && to === null) return allLabel;
-  if (from === to) return String(from ?? to);
-  if (from === null) return `Đến ${to}`;
-  if (to === null) return `Từ ${from}`;
-  return `${from} – ${to}`;
 };
 
 // ── Row layout helper ─────────────────────────────────────────────────────────
@@ -323,10 +306,11 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
     </button>
   );
 
-  const inputClass =
-    "dark:bg-navy-800 w-full min-w-0 rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white placeholder:text-gray-400";
-  const yearRangeClass =
-    "grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2";
+  const enrollmentYearValue = (): YearRangeNumbers | undefined =>
+    fileDetail?.customMetadata?.enrollmentYear as YearRangeNumbers | undefined;
+
+  const academicYearValue = (): YearRangeNumbers | undefined =>
+    fileDetail?.customMetadata?.academicYear as YearRangeNumbers | undefined;
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
@@ -362,7 +346,7 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                className={inputClass}
+                className={formInputClass}
                 placeholder="Tên hiển thị"
               />
             )}
@@ -397,80 +381,51 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
 
           {/* Khóa tuyển sinh */}
           <Row label="Khóa tuyển sinh">
-            {isReadOnly ? (
-              <p className="text-navy-700 text-sm dark:text-white">
-                {formatYearRangeDisplay(
-                  fileDetail?.customMetadata?.enrollmentYear,
-                  "Tất cả",
-                )}
-              </p>
-            ) : (
-              <>
-                <div className={yearRangeClass}>
-                  <input
-                    type="number"
-                    value={enrollFromYear}
-                    onChange={(e) => setEnrollFromYear(e.target.value)}
-                    placeholder="Từ năm"
-                    min={2000}
-                    max={2099}
-                    className={inputClass}
-                  />
-                  <span className="shrink-0 text-sm text-gray-400">—</span>
-                  <input
-                    type="number"
-                    value={enrollToYear}
-                    onChange={(e) => setEnrollToYear(e.target.value)}
-                    placeholder="Đến năm"
-                    min={2000}
-                    max={2099}
-                    className={inputClass}
-                  />
-                </div>
-                <p className="mt-1 text-xs text-gray-400">
-                  Để trống = Tất cả
-                </p>
-              </>
-            )}
+            <YearRangeControl
+              value={
+                isReadOnly
+                  ? yearRangeToStrings(
+                      enrollmentYearValue() ?? {
+                        fromYear: 0,
+                        toYear: 9999,
+                      },
+                    )
+                  : { fromYear: enrollFromYear, toYear: enrollToYear }
+              }
+              onChange={
+                isReadOnly
+                  ? undefined
+                  : ({ fromYear, toYear }) => {
+                      setEnrollFromYear(fromYear);
+                      setEnrollToYear(toYear);
+                    }
+              }
+              showInput={!isReadOnly}
+            />
           </Row>
 
-          {/* Năm học */}
           <Row label="Năm học">
-            {isReadOnly ? (
-              <p className="text-navy-700 text-sm dark:text-white">
-                {formatYearRangeDisplay(
-                  fileDetail?.customMetadata?.academicYear,
-                  "Tất cả",
-                )}
-              </p>
-            ) : (
-              <>
-                <div className={yearRangeClass}>
-                  <input
-                    type="number"
-                    value={academicFromYear}
-                    onChange={(e) => setAcademicFromYear(e.target.value)}
-                    placeholder="Từ năm"
-                    min={2000}
-                    max={2099}
-                    className={inputClass}
-                  />
-                  <span className="shrink-0 text-sm text-gray-400">—</span>
-                  <input
-                    type="number"
-                    value={academicToYear}
-                    onChange={(e) => setAcademicToYear(e.target.value)}
-                    placeholder="Đến năm"
-                    min={2000}
-                    max={2099}
-                    className={inputClass}
-                  />
-                </div>
-                <p className="mt-1 text-xs text-gray-400">
-                  Để trống = Tất cả
-                </p>
-              </>
-            )}
+            <YearRangeControl
+              value={
+                isReadOnly
+                  ? yearRangeToStrings(
+                      academicYearValue() ?? {
+                        fromYear: 0,
+                        toYear: 9999,
+                      },
+                    )
+                  : { fromYear: academicFromYear, toYear: academicToYear }
+              }
+              onChange={
+                isReadOnly
+                  ? undefined
+                  : ({ fromYear, toYear }) => {
+                      setAcademicFromYear(fromYear);
+                      setAcademicToYear(toYear);
+                    }
+              }
+              showInput={!isReadOnly}
+            />
           </Row>
 
           {/* ── Read-only info ───────────────────────────────────── */}

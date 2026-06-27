@@ -70,7 +70,7 @@ function getSessionActivityDate(session: ChatThreadSession) {
 function getSearchResultRowClass(selected: boolean) {
   return `flex h-9 w-full items-center rounded-full px-3 text-xs transition ${
     selected
-      ? "bg-white font-medium text-[#1f1f1f] shadow-sm ring-1 ring-gray-200/80 dark:bg-white/12 dark:text-gray-100 dark:ring-white/15"
+      ? "bg-gray-100 font-medium text-[#1f1f1f] dark:bg-white/10 dark:text-gray-200"
       : "text-[#1f1f1f] hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10"
   }`;
 }

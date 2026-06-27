@@ -1,6 +1,7 @@
 import ConfirmModal from "@/components/modal/ConfirmModal";
 import Drawer from "@/components/drawer/Drawer";
 import FilePickerField from "@/components/fields/FilePickerField";
+import { formInputClass } from "@/components/fields/formInputClass";
 import DetailFormLayout, { FormRow } from "@/components/layouts/DetailFormLayout";
 import { PageTitle } from "@/components/layouts/PageTitle";
 import { LuGraduationCap } from "react-icons/lu";
@@ -410,7 +411,7 @@ const StudentsPage: React.FC = () => {
                 value={importConfig.studentCodeCol}
                 onChange={updateImportConfig("studentCodeCol")}
                 disabled={importing}
-                className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+                className={formInputClass}
               />
             </FormRow>
 
@@ -421,7 +422,7 @@ const StudentsPage: React.FC = () => {
                 value={importConfig.studentNameCol}
                 onChange={updateImportConfig("studentNameCol")}
                 disabled={importing}
-                className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+                className={formInputClass}
               />
             </FormRow>
 
@@ -432,7 +433,7 @@ const StudentsPage: React.FC = () => {
                 value={importConfig.startRow}
                 onChange={updateImportConfig("startRow")}
                 disabled={importing}
-                className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white"
+                className={formInputClass}
               />
             </FormRow>
           </DetailFormLayout>
