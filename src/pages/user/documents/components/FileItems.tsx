@@ -1,34 +1,51 @@
 import React from "react";
-import { MdInfoOutline } from "react-icons/md";
+import { MdMoreVert } from "react-icons/md";
 import Tag from "@/components/tag/Tag";
-import { formatDate } from "@/utils/date";
+import { formatCalendarDate } from "@/utils/date";
 import {
   DOCUMENT_TYPE_MAP,
   DOCUMENT_TYPE_COLOR_MAP,
 } from "@/pages/documents/components/UploadDrawer";
 import FileIcon from "./FileIcon";
+import { useFileActionsMenu } from "./FileActionsMenu";
 
 interface FileItemProps {
   file: any;
   metadataTypes: any[];
-  onDetail: () => void;
   onPreview: () => void;
+  onDownload: () => void;
+  onCopyLink: () => void;
+  /** Chatbot embedded: hover background only, keep text color. */
+  embedded?: boolean;
 }
+
+const itemSurfaceClass =
+  "group relative rounded-2xl bg-white transition-colors duration-150 hover:bg-gray-50 dark:bg-navy-800 dark:hover:bg-white/5";
+
+const menuTriggerClass =
+  "relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-transparent text-gray-400 transition-colors hover:border-gray-300 dark:text-gray-400 dark:hover:border-white/20";
 
 // ── Grid Card ──────────────────────────────────────────────────────────────────
 
 export const FileCard: React.FC<FileItemProps> = ({
   file,
-  onDetail,
   onPreview,
+  onDownload,
+  onCopyLink,
+  embedded = false,
 }) => {
   const name = file.displayName || file.originalFilename || "—";
   const typeKey = file.customMetadata?.type as string | undefined;
   const typeLabel = typeKey ? DOCUMENT_TYPE_MAP[typeKey] : null;
   const typeColor = typeKey ? DOCUMENT_TYPE_COLOR_MAP[typeKey] : null;
+  const { triggerRef, handleContextMenu, toggleTriggerMenu, menu } =
+    useFileActionsMenu({ onDownload, onCopyLink });
 
   return (
-    <div className="group dark:bg-navy-800 relative flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-gray-200 hover:shadow-md dark:border-white/8 dark:hover:border-white/16">
+    <div
+      className={`${itemSurfaceClass} min-w-0 p-3.5`}
+      onContextMenu={handleContextMenu}
+    >
       <button
         type="button"
         aria-label={`Xem trước ${name}`}
@@ -36,43 +53,50 @@ export const FileCard: React.FC<FileItemProps> = ({
         className="absolute inset-0 z-0 rounded-2xl"
       />
 
-      {/* Top: icon + detail action */}
-      <div className="pointer-events-none relative z-10 flex items-start justify-between">
-        <FileIcon filename={file.originalFilename || name} size="md" />
-
-        <button
-          type="button"
-          title="Xem chi tiết"
-          aria-label={`Xem chi tiết ${name}`}
-          onClick={onDetail}
-          className="pointer-events-auto flex h-8 w-8 items-center justify-center rounded-xl bg-gray-100 text-gray-500 transition-colors hover:bg-gray-200 dark:bg-white/8 dark:text-gray-300 dark:hover:bg-white/12"
-        >
-          <MdInfoOutline className="h-4 w-4" />
-        </button>
-      </div>
-
-      {/* Name */}
-      <div className="pointer-events-none relative z-10 text-left">
-        <p className="text-navy-700 group-hover:text-brand-500 dark:group-hover:text-brand-400 line-clamp-2 h-10 text-sm leading-snug font-semibold transition-colors dark:text-white">
-          {name}
-        </p>
-        <p className="mt-0.5 truncate text-xs text-gray-400">
-          {formatDate(file.createdAt)}
-        </p>
-      </div>
-
-      {/* Type chip */}
-      {typeLabel && (
-        <div className="pointer-events-none relative z-10 flex flex-wrap gap-1">
-          <Tag
-            color={typeColor || "#94a3b8"}
-            className="text-[10px]"
-            interactive={false}
-          >
-            {typeLabel}
-          </Tag>
+      <div className="relative z-10 flex min-w-0 items-start gap-2.5">
+        <div className="pointer-events-none shrink-0 pt-0.5">
+          <FileIcon filename={file.originalFilename || name} size="xs" />
         </div>
-      )}
+
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+          <div className="flex min-w-0 items-start gap-1">
+            <p
+              className={`text-navy-700 pointer-events-none line-clamp-2 min-w-0 flex-1 text-sm leading-snug font-medium dark:text-white ${
+                embedded ? "" : "group-hover:text-brand-500 dark:group-hover:text-brand-400 transition-colors"
+              }`}
+            >
+              {name}
+            </p>
+            <button
+              ref={triggerRef}
+              type="button"
+              onClick={toggleTriggerMenu}
+              className={menuTriggerClass}
+              aria-label="Tuỳ chọn tài liệu"
+              aria-haspopup="menu"
+            >
+              <MdMoreVert className="h-4 w-4" aria-hidden />
+            </button>
+          </div>
+
+          <div className="pointer-events-none flex min-w-0 flex-wrap items-center gap-2">
+            <span className="text-xs text-gray-400">
+              {formatCalendarDate(file.createdAt)}
+            </span>
+            {typeLabel ? (
+              <Tag
+                color={typeColor || "#94a3b8"}
+                className="text-[10px]"
+                interactive={false}
+              >
+                {typeLabel}
+              </Tag>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      {menu}
     </div>
   );
 };
@@ -81,16 +105,23 @@ export const FileCard: React.FC<FileItemProps> = ({
 
 export const FileRow: React.FC<FileItemProps> = ({
   file,
-  onDetail,
   onPreview,
+  onDownload,
+  onCopyLink,
+  embedded = false,
 }) => {
   const name = file.displayName || file.originalFilename || "—";
   const typeKey = file.customMetadata?.type as string | undefined;
   const typeLabel = typeKey ? DOCUMENT_TYPE_MAP[typeKey] : null;
   const typeColor = typeKey ? DOCUMENT_TYPE_COLOR_MAP[typeKey] : null;
+  const { triggerRef, handleContextMenu, toggleTriggerMenu, menu } =
+    useFileActionsMenu({ onDownload, onCopyLink });
 
   return (
-    <div className="group dark:bg-navy-800 relative flex items-center gap-4 rounded-2xl border border-gray-100 bg-white px-4 py-3 transition-all duration-150 hover:border-gray-200 hover:shadow-sm dark:border-white/8 dark:hover:border-white/16">
+    <div
+      className={`${itemSurfaceClass} flex items-center gap-4 px-4 py-3`}
+      onContextMenu={handleContextMenu}
+    >
       <button
         type="button"
         aria-label={`Xem trước ${name}`}
@@ -103,15 +134,15 @@ export const FileRow: React.FC<FileItemProps> = ({
       </div>
 
       <div className="pointer-events-none relative z-10 min-w-0 flex-1">
-        <p className="text-navy-700 group-hover:text-brand-500 dark:group-hover:text-brand-400 truncate text-sm font-semibold transition-colors dark:text-white">
+        <p
+          className={`text-navy-700 truncate text-sm font-medium dark:text-white ${
+            embedded ? "" : "group-hover:text-brand-500 dark:group-hover:text-brand-400 transition-colors"
+          }`}
+        >
           {name}
-        </p>
-        <p className="truncate text-xs text-gray-400">
-          {file.originalFilename}
         </p>
       </div>
 
-      {/* Type chip */}
       {typeLabel && (
         <div className="pointer-events-none relative z-10 hidden items-center gap-1.5 sm:flex">
           <Tag
@@ -124,19 +155,22 @@ export const FileRow: React.FC<FileItemProps> = ({
         </div>
       )}
 
-      <p className="pointer-events-none relative z-10 hidden shrink-0 text-xs text-gray-400 lg:block">
-        {formatDate(file.createdAt)}
+      <p className="pointer-events-none relative z-10 hidden shrink-0 text-xs text-gray-400 md:block">
+        {formatCalendarDate(file.createdAt)}
       </p>
 
       <button
+        ref={triggerRef}
         type="button"
-        title="Xem chi tiết"
-        aria-label={`Xem chi tiết ${name}`}
-        onClick={onDetail}
-        className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-500 transition-colors hover:bg-gray-200 dark:bg-white/8 dark:text-gray-300 dark:hover:bg-white/12"
+        onClick={toggleTriggerMenu}
+        className={menuTriggerClass}
+        aria-label="Tuỳ chọn tài liệu"
+        aria-haspopup="menu"
       >
-        <MdInfoOutline className="h-4 w-4" />
+        <MdMoreVert className="h-4 w-4" aria-hidden />
       </button>
+
+      {menu}
     </div>
   );
 };

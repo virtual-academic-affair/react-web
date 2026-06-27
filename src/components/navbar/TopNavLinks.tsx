@@ -89,7 +89,9 @@ function DropdownPanel({
 
           return (
             <div key={`${groupKey}-${childIndex}`}>
-              <p className={groupLabelClass(isChildParentActive)}>{child.name}</p>
+              <p className={groupLabelClass(isChildParentActive)}>
+                {child.name}
+              </p>
               <div className="ml-3 flex flex-col gap-0.5 pb-1">
                 {child.children.map((grandchild, grandchildIndex) => {
                   const grandchildActive = isRouteActive(grandchild);

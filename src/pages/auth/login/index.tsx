@@ -6,18 +6,21 @@
 import { authService } from "@/services/auth";
 import { useAuthStore } from "@/stores/auth.store";
 import { hasTempAuth } from "@/utils/tempAuth.util";
+import { viewDocumentLocationSearch } from "@/utils/documentViewUrl";
 import { message as toast } from "antd";
 import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 
 export default function LoginPage() {
+  const location = useLocation();
   const accessToken = useAuthStore((state) => state.accessToken);
   const [loading, setLoading] = useState(false);
+  const viewDocSearch = viewDocumentLocationSearch(location.search);
 
   // SPA navigation (not hard navigation) guard: token is in memory → redirect to their dashboard
   if (accessToken || hasTempAuth()) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={`/${viewDocSearch}`} replace />;
   }
 
   const handleGoogleSignIn = async () => {

@@ -1,6 +1,9 @@
+import { SegmentedControl } from "@/components/segmented-control/SegmentedControl";
 import { fixRichTextLinks } from "@/components/fields/RichTextEditor";
 import type { TableAction, TableColumn } from "@/components/table/TableLayout";
 import TableLayout from "@/components/table/TableLayout";
+import { PageTitle } from "@/components/layouts/PageTitle";
+import { LuLayers } from "react-icons/lu";
 import TableClampCell from "@/components/table/TableClampCell";
 import { faqsService } from "@/services/documents/faqs.service";
 import type { FAQCandidate } from "@/types/faqs";
@@ -186,6 +189,7 @@ export default function ProposedFAQsPage() {
   return (
     <>
       <div className="flex flex-col gap-4">
+        <PageTitle title="Câu hỏi tổng hợp" icon={LuLayers} />
         {error && (
           <div className="rounded-2xl bg-red-50 p-4 text-sm text-red-500 dark:bg-red-500/10">
             Lỗi khi lấy dữ liệu:{" "}
@@ -199,6 +203,7 @@ export default function ProposedFAQsPage() {
           page={page}
           pageSize={PAGE_SIZE}
           columns={columns}
+          rowAlign="top"
           actions={actions}
           onPageChange={(p) =>
             setSearchParams((prev) => {
@@ -221,30 +226,14 @@ export default function ProposedFAQsPage() {
           searchPlaceholder="Tìm câu hỏi, câu trả lời đề xuất..."
           middleSlot={
             <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-              <div className="grid grid-cols-2 rounded-2xl bg-gray-100 p-1 dark:bg-white/8">
-                <button
-                  type="button"
-                  onClick={() => handleTabChange("pending")}
-                  className={`rounded-xl px-4 py-1.5 text-xs font-semibold transition ${
-                    view === "pending"
-                      ? "text-navy-700 dark:bg-navy-700 bg-white shadow-sm dark:text-white"
-                      : "hover:text-navy-700 text-gray-600 dark:text-gray-300 dark:hover:text-white"
-                  }`}
-                >
-                  Chờ duyệt
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleTabChange("all")}
-                  className={`rounded-xl px-4 py-1.5 text-xs font-semibold transition ${
-                    view === "all"
-                      ? "text-navy-700 dark:bg-navy-700 bg-white shadow-sm dark:text-white"
-                      : "hover:text-navy-700 text-gray-600 dark:text-gray-300 dark:hover:text-white"
-                  }`}
-                >
-                  Tất cả
-                </button>
-              </div>
+              <SegmentedControl
+                value={view === "all" ? "all" : "pending"}
+                onChange={handleTabChange}
+                options={[
+                  { value: "pending", label: "Chờ duyệt" },
+                  { value: "all", label: "Tất cả" },
+                ]}
+              />
 
               <button
                 type="button"

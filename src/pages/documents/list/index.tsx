@@ -14,8 +14,8 @@ import {
   MdFileDownload,
   MdInfoOutline,
 } from "react-icons/md";
-import { useSearchParams } from "react-router-dom";
 
+import { useIsolatedSearchParams } from "@/hooks/useIsolatedSearchParams";
 import TableLayout, {
   type TableAction,
   type TableColumn,
@@ -30,6 +30,15 @@ import FilterGroup from "@/pages/user/documents/components/FilterGroup";
 import YearRangeFilter, {
   type YearRange,
 } from "@/pages/user/documents/components/YearRangeFilter";
+import { formatYearRange, EMPTY_YEAR_RANGE_STRINGS } from "@/utils/yearRange";
+import { PageTitle } from "@/components/layouts/PageTitle";
+import { LuFileText } from "react-icons/lu";
+import {
+  clearViewDocumentParams,
+  parseViewDocumentFromSearchParams,
+  setViewDocumentParams,
+  VIEW_DOCUMENT_FORMAT_MARKDOWN,
+} from "@/utils/documentViewUrl";
 import DocumentDetailDrawer from "../components/DocumentDetailDrawer";
 import UploadDrawer, {
   DOCUMENT_TYPE_COLOR_MAP,
@@ -42,11 +51,10 @@ const FilePreviewModal = lazy(() => import("../components/FilePreviewModal"));
 // ── Constants ──────────────────────────────────────────────────────────────────
 
 const PAGE_SIZE = 10;
-const PREVIEW_TARGET_MARKDOWN = "markdown";
 const DOWNLOAD_FORMAT_ORIGINAL = "original" as const;
 const DOWNLOAD_FORMAT_MARKDOWN = "markdown" as const;
 
-const EMPTY_YEAR_RANGE: YearRange = { fromYear: "", toYear: "" };
+const EMPTY_YEAR_RANGE: YearRange = EMPTY_YEAR_RANGE_STRINGS;
 
 /** Filter options for the document type FilterGroup */
 const DOC_TYPE_FILTER_OPTIONS = DOCUMENT_TYPES.map((t) => ({
@@ -56,33 +64,6 @@ const DOC_TYPE_FILTER_OPTIONS = DOCUMENT_TYPES.map((t) => ({
 }));
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
-
-const ALL_YEARS_SENTINEL_MAX = 9999;
-const ALL_YEARS_SENTINEL_MIN = 0;
-
-/** Normalize a year value — treat 0, null, or 9999+ as "all years" */
-const normalizeYear = (y: number | null | undefined): number | null =>
-  y == null || y <= ALL_YEARS_SENTINEL_MIN || y >= ALL_YEARS_SENTINEL_MAX
-    ? null
-    : y;
-
-/** Format a {fromYear, toYear} range, with a custom fallback label when both are "all" */
-const formatYearRange = (
-  range:
-    | { fromYear?: number | null; toYear?: number | null }
-    | null
-    | undefined,
-  allLabel: string,
-): string => {
-  if (!range) return allLabel;
-  const from = normalizeYear(range.fromYear);
-  const to = normalizeYear(range.toYear);
-  if (from === null && to === null) return allLabel;
-  if (from === to) return String(from ?? to);
-  if (from === null) return `Đến ${to}`;
-  if (to === null) return `Từ ${from}`;
-  return `${from} – ${to}`;
-};
 
 /** Status → display */
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
@@ -94,9 +75,9 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
-const DocumentListPage = () => {
+const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
   const queryClient = useQueryClient();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useIsolatedSearchParams(embedded);
 
   // ── State ────────────────────────────────────────────────────────────────────
   const initialPage =
@@ -157,6 +138,8 @@ const DocumentListPage = () => {
 
   // Sync filter state → URL
   useEffect(() => {
+    if (embedded) return;
+
     const next = new URLSearchParams(searchParams);
     // type
     if (typeFilter.length > 0) next.set("type", typeFilter.join(","));
@@ -174,18 +157,11 @@ const DocumentListPage = () => {
     else next.delete("acadTo");
     setSearchParams(next, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [typeFilter, enrollmentYear, academicYear]);
+  }, [embedded, typeFilter, enrollmentYear, academicYear]);
 
-  // File preview (URL-driven: ?id=fileId&preview=true[&previewPage=n])
-  const isPreview = searchParams.get("preview") === "true";
-  const previewTarget = searchParams.get("previewTarget") || "";
-  const isMarkdownPreview = previewTarget === PREVIEW_TARGET_MARKDOWN;
-  const previewFileId = isPreview ? searchParams.get("id") || null : null;
-  const previewPageParam = Number(searchParams.get("previewPage") ?? "1");
-  const previewPage =
-    Number.isFinite(previewPageParam) && previewPageParam > 0
-      ? Math.floor(previewPageParam)
-      : 1;
+  // File preview (URL-driven: ?viewDocumentId=fileId)
+  const { viewDocumentId, isMarkdownView } =
+    parseViewDocumentFromSearchParams(searchParams);
   const wasDrawerOpenBeforePreview = useRef(false);
 
   const [deletingItem, setDeletingItem] = useState<any | null>(null);
@@ -233,13 +209,13 @@ const DocumentListPage = () => {
   });
 
   const previewFile = useMemo(() => {
-    if (!previewFileId || !result?.items) return null;
-    return result.items.find((f: any) => f.fileId === previewFileId) || null;
-  }, [previewFileId, result]);
+    if (!viewDocumentId || !result?.items) return null;
+    return result.items.find((f: any) => f.fileId === viewDocumentId) || null;
+  }, [viewDocumentId, result]);
 
   const previewFileName = useMemo(() => {
     if (!previewFile) return "";
-    if (isMarkdownPreview) {
+    if (isMarkdownView) {
       const markdownUrl = String(previewFile.markdownFileUrl || "");
       const fromUrl = markdownUrl.split("?")[0].split("/").pop() || "";
       if (fromUrl) return fromUrl;
@@ -248,9 +224,9 @@ const DocumentListPage = () => {
       return baseName ? `${baseName}.md` : "markdown.md";
     }
     return previewFile.originalFilename || previewFile.displayName || "";
-  }, [previewFile, isMarkdownPreview]);
+  }, [previewFile, isMarkdownView]);
 
-  const previewDownloadFormat = isMarkdownPreview
+  const previewDownloadFormat = isMarkdownView
     ? DOWNLOAD_FORMAT_MARKDOWN
     : DOWNLOAD_FORMAT_ORIGINAL;
 
@@ -333,8 +309,7 @@ const DocumentListPage = () => {
               e.stopPropagation();
               wasDrawerOpenBeforePreview.current = false;
               const next = new URLSearchParams(searchParams);
-              next.set("id", x.fileId);
-              next.set("preview", "true");
+              setViewDocumentParams(next, x.fileId);
               setSearchParams(next, { replace: true });
             }}
           >
@@ -470,7 +445,13 @@ const DocumentListPage = () => {
 
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col gap-4">
+    <div className={`flex flex-col gap-4 ${embedded ? "min-h-0" : ""}`}>
+      <PageTitle
+        title={embedded ? "Tài liệu" : "Danh sách tài liệu"}
+        tabTitle={embedded ? "Tài liệu" : "DS tài liệu"}
+        icon={LuFileText}
+        className={embedded ? "mt-10" : undefined}
+      />
       <TableLayout
         result={result as any}
         loading={loading}
@@ -553,7 +534,7 @@ const DocumentListPage = () => {
       <DocumentDetailDrawer
         fileId={selectedFileId}
         metadataTypes={[]}
-        isOpen={selectedFileId !== null && !isPreview}
+        isOpen={selectedFileId !== null && !viewDocumentId}
         isReadOnly={false}
         onClose={handleCloseDetail}
         onDeleted={() => {
@@ -567,33 +548,30 @@ const DocumentListPage = () => {
           if (!selectedFileId) return;
           wasDrawerOpenBeforePreview.current = true;
           const next = new URLSearchParams(searchParams);
-          next.set("preview", "true");
-          next.delete("previewTarget");
+          setViewDocumentParams(next, selectedFileId);
           setSearchParams(next, { replace: true });
         }}
         onPreviewMarkdown={() => {
           if (!selectedFileId) return;
           wasDrawerOpenBeforePreview.current = true;
           const next = new URLSearchParams(searchParams);
-          next.set("preview", "true");
-          next.set("previewTarget", PREVIEW_TARGET_MARKDOWN);
+          setViewDocumentParams(next, selectedFileId, {
+            format: VIEW_DOCUMENT_FORMAT_MARKDOWN,
+          });
           setSearchParams(next, { replace: true });
         }}
       />
 
-      {previewFileId !== null ? (
+      {viewDocumentId !== null ? (
         <Suspense fallback={null}>
           <FilePreviewModal
-            fileId={previewFileId}
+            fileId={viewDocumentId}
             fileName={previewFileName}
             downloadFormat={previewDownloadFormat}
             isOpen
-            initialPage={previewPage}
             onClose={() => {
               const next = new URLSearchParams(searchParams);
-              next.delete("preview");
-              next.delete("previewPage");
-              next.delete("previewTarget");
+              clearViewDocumentParams(next);
               if (!wasDrawerOpenBeforePreview.current) {
                 next.delete("id");
               }

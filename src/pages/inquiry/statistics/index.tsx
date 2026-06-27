@@ -1,6 +1,8 @@
 import SelectField, {
   type SelectOption,
 } from "@/components/fields/SelectField";
+import { PageTitle } from "@/components/layouts/PageTitle";
+import { LuMessageCircleQuestion } from "react-icons/lu";
 import React from "react";
 import InquiryLineChart from "./components/InquiryLineChart";
 import InquiryPeakDayCard from "./components/InquiryPeakDayCard";
@@ -28,6 +30,7 @@ const InquiryStatisticsPage: React.FC = () => {
 
   return (
     <div className="mb-5 flex flex-col gap-5">
+      <PageTitle title="Thống kê thắc mắc" icon={LuMessageCircleQuestion} />
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-4">
         {/* Left Side: Chart (3/4 width) */}
         <div className="flex flex-col gap-5 lg:col-span-3">

@@ -2,6 +2,7 @@ import LabelsCard from "@/pages/emails/config/components/LabelsCard.tsx";
 import type { DynamicDataResponse } from "@/types/shared";
 import React from "react";
 import AllowedDomainsCard from "./components/AllowedDomainsCard";
+import { PageTitle } from "@/components/layouts/PageTitle";
 import ProfileCard from "./components/ProfileCard";
 
 interface GmailConfigPageProps {
@@ -20,6 +21,7 @@ const GmailConfigPage: React.FC<GmailConfigPageProps> = ({
 
   return (
     <div className="flex flex-col gap-6 pb-10">
+      <PageTitle title="Dashboard" display="tabOnly" />
       <ProfileCard data={data} loading={dataLoading} onRefresh={onRefresh} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

@@ -1,5 +1,6 @@
 import Drawer from "@/components/drawer/Drawer";
 import FilePickerField from "@/components/fields/FilePickerField";
+import { formInputClass } from "@/components/fields/formInputClass";
 import DetailFormLayout, { FormRow } from "@/components/layouts/DetailFormLayout";
 import { faqsService } from "@/services/documents/faqs.service";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -12,8 +13,7 @@ interface FAQBulkImportModalProps {
   onClose: () => void;
 }
 
-const numberInputClass =
-  "w-full min-w-0 rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white";
+
 const responsiveRowClass =
   "flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-6";
 const responsiveLabelClass = "w-full sm:w-40";
@@ -158,7 +158,7 @@ export default function FAQBulkImportModal({
                 value={config.questionCol}
                 onChange={(e) => handleConfigChange("questionCol", e.target.value)}
                 disabled={isPending}
-                className={numberInputClass}
+                className={formInputClass}
               />
             </FormRow>
             <FormRow
@@ -172,7 +172,7 @@ export default function FAQBulkImportModal({
                 value={config.answerCol}
                 onChange={(e) => handleConfigChange("answerCol", e.target.value)}
                 disabled={isPending}
-                className={numberInputClass}
+                className={formInputClass}
               />
             </FormRow>
             <FormRow
@@ -186,7 +186,7 @@ export default function FAQBulkImportModal({
                 value={config.academicYearCol}
                 onChange={(e) => handleConfigChange("academicYearCol", e.target.value)}
                 disabled={isPending}
-                className={numberInputClass}
+                className={formInputClass}
               />
             </FormRow>
             <FormRow
@@ -200,7 +200,7 @@ export default function FAQBulkImportModal({
                 value={config.enrollmentYearCol}
                 onChange={(e) => handleConfigChange("enrollmentYearCol", e.target.value)}
                 disabled={isPending}
-                className={numberInputClass}
+                className={formInputClass}
               />
             </FormRow>
           </div>
@@ -216,7 +216,7 @@ export default function FAQBulkImportModal({
               value={config.startRow}
               onChange={(e) => handleConfigChange("startRow", e.target.value)}
               disabled={isPending}
-              className={numberInputClass}
+              className={formInputClass}
             />
           </FormRow>
         </DetailFormLayout>

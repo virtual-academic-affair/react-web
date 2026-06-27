@@ -381,6 +381,10 @@ const RichTextEditor = React.forwardRef<
             .tiptap-editor .tiptap-prose p { margin: 0.35em 0; }
             .tiptap-editor .tiptap-prose p:first-child { margin-top: 0; }
             .tiptap-editor .tiptap-prose p:last-child { margin-bottom: 0; }
+            .tiptap-editor .tiptap-prose p:last-child:empty:not(:only-child),
+            .tiptap-editor .tiptap-prose p:last-child:has(> br:only-child):not(:only-child) {
+              display: none;
+            }
             .tiptap-editor .tiptap-prose ul { list-style: disc; padding-left: 1.25rem; margin: 0.5em 0; }
             .tiptap-editor .tiptap-prose ol { list-style: decimal; padding-left: 1.25rem; margin: 0.5em 0; }
             .tiptap-editor .tiptap-prose li { margin: 0.15em 0; }

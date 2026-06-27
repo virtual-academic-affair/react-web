@@ -1,22 +1,8 @@
-import { useEffect, useState } from "react";
 import type { PluginConfig } from "streamdown";
 
-export function useStreamdownMathPlugins() {
-  const [plugins, setPlugins] = useState<PluginConfig>();
+import { STREAMDOWN_MATH_PLUGINS } from "./streamdown-math";
 
-  useEffect(() => {
-    let mounted = true;
-
-    import("./streamdown-math").then((module) => {
-      if (mounted) {
-        setPlugins(module.STREAMDOWN_MATH_PLUGINS);
-      }
-    });
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  return plugins;
+/** Math plugins must be available on first render so history messages parse LaTeX correctly. */
+export function useStreamdownMathPlugins(): PluginConfig {
+  return STREAMDOWN_MATH_PLUGINS;
 }

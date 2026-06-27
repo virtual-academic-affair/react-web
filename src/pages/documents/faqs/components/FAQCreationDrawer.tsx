@@ -5,23 +5,30 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import { useState, useEffect } from "react";
 import { FAQFormFields } from "./FAQFormFields";
+import { normalizeFaqRichTextHtml } from "@/utils/chatMarkdownToFaqHtml";
 
 interface FAQCreationDrawerProps {
   open: boolean;
   onClose: () => void;
+  initialQuestion?: string;
+  initialAnswer?: string;
 }
+
+const emptyFormData = () => ({
+  question: "",
+  answer: "",
+  academicYear: { fromYear: 0, toYear: 9999 },
+  enrollmentYear: { fromYear: 0, toYear: 9999 },
+});
 
 export default function FAQCreationDrawer({
   open,
   onClose,
+  initialQuestion = "",
+  initialAnswer = "",
 }: FAQCreationDrawerProps) {
   const queryClient = useQueryClient();
-  const [formData, setFormData] = useState({
-    question: "",
-    answer: "",
-    academicYear: { fromYear: 0, toYear: 9999 },
-    enrollmentYear: { fromYear: 0, toYear: 9999 },
-  });
+  const [formData, setFormData] = useState(emptyFormData);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -43,18 +50,20 @@ export default function FAQCreationDrawer({
     },
   });
 
-  // Reset state when drawer closes
   useEffect(() => {
     if (!open) {
-      setFormData({
-        question: "",
-        answer: "",
-        academicYear: { fromYear: 0, toYear: 9999 },
-        enrollmentYear: { fromYear: 0, toYear: 9999 },
-      });
+      setFormData(emptyFormData());
       setErrors({});
+      return;
     }
-  }, [open]);
+
+    setFormData({
+      ...emptyFormData(),
+      question: initialQuestion,
+      answer: normalizeFaqRichTextHtml(initialAnswer),
+    });
+    setErrors({});
+  }, [open, initialQuestion, initialAnswer]);
 
   const handleClose = () => {
     onClose();

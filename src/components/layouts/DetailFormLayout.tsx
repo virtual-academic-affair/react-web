@@ -15,6 +15,8 @@ interface FormRowProps {
   alignTop?: boolean;
   /** Khoảng cách label–field gọn (vd. Gmail deeplink). */
   dense?: boolean;
+  /** Label trên, control dưới (vd. drawer Tải lên tài liệu). */
+  stacked?: boolean;
 }
 
 interface DetailFormSectionProps {
@@ -38,19 +40,26 @@ export const FormRow: React.FC<FormRowProps> = ({
   required = false,
   alignTop = false,
   dense = false,
+  stacked = false,
 }) => {
-  const rowClassName = dense
-    ? `flex gap-3 ${alignTop ? "items-start" : "items-center"}`
-    : `flex flex-col gap-2 sm:flex-row ${
-        alignTop ? "sm:items-start" : "sm:items-center"
-      } sm:gap-6`;
+  const rowClassName = stacked
+    ? "flex flex-col gap-2"
+    : dense
+      ? `flex gap-3 ${alignTop ? "items-start" : "items-center"}`
+      : `flex flex-col gap-2 sm:flex-row ${
+          alignTop ? "sm:items-start" : "sm:items-center"
+        } sm:gap-6`;
 
   return (
     <div
       className={`${rowClassName} ${className ?? ""}`}
     >
       <div
-        className={`${labelWidthClassName} shrink-0 ${alignTop ? "sm:pt-1.5" : ""}`}
+        className={
+          stacked
+            ? ""
+            : `${labelWidthClassName} shrink-0 ${alignTop ? "sm:pt-1.5" : ""}`
+        }
       >
         <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
           {label}

@@ -102,7 +102,8 @@ export const SidebarLinks = (props: {
       if (
         route.layout === "/admin" ||
         route.layout === "/auth" ||
-        route.layout === "/rtl"
+        route.layout === "/rtl" ||
+        route.layout === "/user"
       ) {
         const parentActive = isParentActive(route);
 
@@ -110,7 +111,7 @@ export const SidebarLinks = (props: {
           const groupKey = `${route.path || route.name}-${index}`;
           const isOpen = openGroups[groupKey] ?? parentActive;
           return (
-            <li key={index} className="mb-4">
+            <li key={index} className="mb-2">
               {collapsed ? (
                 <Tooltip label={route.name} className="block w-full">
                   <button
@@ -155,7 +156,7 @@ export const SidebarLinks = (props: {
                     {route.icon ? route.icon : <DashIcon />}
                   </span>
                   <p
-                    className={`ml-4 flex text-base leading-1 font-medium ${
+                    className={`ml-4 flex text-xs leading-1 font-medium ${
                       parentActive
                         ? "text-navy-700 dark:text-white"
                         : "font-medium text-gray-600"
@@ -176,7 +177,7 @@ export const SidebarLinks = (props: {
               <ul
                 className={`mt-1.5 ml-12 flex flex-col overflow-hidden transition-all duration-200 ease-in-out ${
                   !collapsed && isOpen
-                    ? "mt-1 max-h-80 gap-1 opacity-100"
+                    ? "mt-1 max-h-80 gap-0.5 opacity-100"
                     : "mt-0 max-h-0 gap-0 opacity-0"
                 }`}
               >
@@ -205,7 +206,7 @@ export const SidebarLinks = (props: {
                           className="my-0.75 flex w-full items-center px-1 py-0.5 pr-5 text-left"
                         >
                           <p
-                            className={`flex text-sm font-medium transition-colors ${
+                            className={`flex text-xs font-medium transition-colors ${
                               isChildParentActive
                                 ? "text-navy-700 dark:text-white"
                                 : "text-gray-600 dark:text-gray-300"
@@ -225,7 +226,7 @@ export const SidebarLinks = (props: {
                         <ul
                           className={`ml-1 flex flex-col overflow-hidden transition-all duration-200 ease-in-out ${
                             isChildOpen
-                              ? "mt-1 max-h-80 gap-1 opacity-100"
+                              ? "mt-1 max-h-80 gap-0.5 opacity-100"
                               : "mt-0 max-h-0 gap-0 opacity-0"
                           }`}
                         >
@@ -244,7 +245,7 @@ export const SidebarLinks = (props: {
                                       if (!grandchildActive) onNavigateStart?.();
                                       onNavigate?.();
                                     }}
-                                    className={`mt-1 flex items-center gap-2 rounded-lg py-0.5 text-sm transition-colors ${
+                                    className={`mt-1 flex items-center gap-2 rounded-lg py-0.5 text-xs transition-colors ${
                                       grandchildActive
                                         ? "text-navy-700 dark:text-white"
                                         : "text-gray-600 dark:text-gray-300"
@@ -274,7 +275,7 @@ export const SidebarLinks = (props: {
                           if (!childActive) onNavigateStart?.();
                           onNavigate?.();
                         }}
-                        className={`mt-1 ml-1 block rounded-lg py-0.5 text-sm font-medium transition-colors ${
+                        className={`mt-1 ml-1 block rounded-lg py-0.5 text-xs font-medium transition-colors ${
                           childActive
                             ? "text-navy-700 dark:text-white"
                             : "text-gray-600 dark:text-gray-300"
@@ -292,7 +293,7 @@ export const SidebarLinks = (props: {
 
         const active = isRouteActive(route);
         const iconNode = (
-          <div className="mb-4 flex hover:cursor-pointer">
+          <div className="mb-2 flex hover:cursor-pointer">
             <li
               className={`my-0.75 flex cursor-pointer items-center py-0.5 ${
                 collapsed ? "w-full justify-center px-0" : "px-4"
@@ -309,7 +310,7 @@ export const SidebarLinks = (props: {
               </span>
               {!collapsed && (
                 <p
-                  className={`ml-4 flex text-base leading-1 font-medium ${
+                  className={`ml-4 flex text-xs leading-1 font-medium ${
                     active ? "text-navy-700 dark:text-white" : "text-gray-600"
                   }`}
                 >

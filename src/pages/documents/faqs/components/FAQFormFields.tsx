@@ -1,4 +1,5 @@
 import RichTextEditor from "@/components/fields/RichTextEditor";
+import { formInputClassWithError } from "@/components/fields/formInputClass";
 import YearRangeField from "@/components/fields/YearRangeField";
 import { FormRow } from "@/components/layouts/DetailFormLayout";
 import type { YearRange } from "@/types/faqs";
@@ -18,13 +19,6 @@ interface FAQFormFieldsProps {
   };
   disabled?: boolean;
 }
-
-const inputCls = (hasError?: string) =>
-  `w-full min-w-0 rounded-2xl border bg-transparent px-3 py-2 outline-none dark:text-white ${
-    hasError
-      ? "border-red-400 dark:border-red-400"
-      : "border-gray-200 dark:border-white/10"
-  }`;
 
 export function FAQFormFields({
   question,
@@ -47,7 +41,7 @@ export function FAQFormFields({
             value={question}
             onChange={(e) => onQuestionChange(e.target.value)}
             disabled={disabled}
-            className={`${inputCls(errors?.question)} min-h-[100px] resize-none`}
+            className={`${formInputClassWithError(errors?.question)} min-h-[100px] resize-none`}
           />
           {errors?.question && (
             <p className="text-xs text-red-500">{errors.question}</p>

@@ -20,6 +20,7 @@ export function ChatbotSidebar({
       open={open}
       collapsed={collapsed}
       onToggleCollapse={onToggleCollapse}
+      onClose={onClose}
     >
       <ChatbotThreadToolbar onNavigate={onClose} collapsed={collapsed} />
     </ChatbotSidebarShell>

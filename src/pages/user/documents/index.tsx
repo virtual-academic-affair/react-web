@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { message as toast } from "antd";
 import React, {
   lazy,
   Suspense,
@@ -8,14 +9,17 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { useSearchParams as useRouterSearchParams } from "react-router-dom";
 import {
   MdDescription,
   MdGridView,
   MdSearch,
   MdTableRows,
 } from "react-icons/md";
-import { useSearchParams } from "react-router-dom";
 
+import { copyTextToClipboard } from "@/components/copyable/copyTextToClipboard";
+import { useIsolatedSearchParams } from "@/hooks/useIsolatedSearchParams";
+import { useSourcePreviewOptional } from "@/components/assistant-ui/source-preview-context";
 import DocumentDetailDrawer from "@/pages/documents/components/DocumentDetailDrawer";
 import { DOCUMENT_TYPES } from "@/pages/documents/components/UploadDrawer";
 import { DocumentsService, MetadataService } from "@/services/documents";
@@ -24,6 +28,17 @@ import { FileCard, FileRow } from "./components/FileItems";
 import FilterGroup from "./components/FilterGroup";
 import { GridSkeleton, ListSkeleton } from "./components/Skeletons";
 import YearRangeFilter, { type YearRange } from "./components/YearRangeFilter";
+import { EMPTY_YEAR_RANGE_STRINGS } from "@/utils/yearRange";
+import {
+  buildDocumentViewUrl,
+  clearViewDocumentParams,
+  parseViewDocumentFromSearchParams,
+  setViewDocumentParams,
+  VIEW_DOCUMENT_FORMAT_MARKDOWN,
+  VIEW_DOCUMENT_ID_PARAM,
+} from "@/utils/documentViewUrl";
+import { PageTitle } from "@/components/layouts/PageTitle";
+import { LuFileText } from "react-icons/lu";
 
 const FilePreviewModal = lazy(
   () => import("@/pages/documents/components/FilePreviewModal"),
@@ -46,7 +61,7 @@ const DOC_TYPE_FILTER_OPTIONS = DOCUMENT_TYPES.map((t) => ({
   color: t.color,
 }));
 
-const EMPTY_YEAR_RANGE: YearRange = { fromYear: "", toYear: "" };
+const EMPTY_YEAR_RANGE: YearRange = EMPTY_YEAR_RANGE_STRINGS;
 
 // ── Filters type: keys are raw metadata type keys (e.g. "access_scope") ───────
 type UserDocFilters = Record<string, string[]>;
@@ -60,7 +75,8 @@ const RESERVED_URL_PARAMS = new Set([
   "keyword",
   "page",
   "id",
-  "preview",
+  VIEW_DOCUMENT_ID_PARAM,
+  "viewDocumentFormat",
   "enrollFrom",
   "enrollTo",
   "acadFrom",
@@ -69,11 +85,18 @@ const RESERVED_URL_PARAMS = new Set([
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
-const UserDocumentsPage: React.FC = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+const UserDocumentsPage: React.FC<{ embedded?: boolean }> = ({
+  embedded = false,
+}) => {
+  const [searchParams, setSearchParams] = useIsolatedSearchParams(embedded);
+  const [routerSearchParams, setRouterSearchParams] = useRouterSearchParams();
+  const viewDocumentSearchParams = embedded ? routerSearchParams : searchParams;
+  const sourcePreview = useSourcePreviewOptional();
 
-  // View mode
+  // View mode (chatbot embedded: list only)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const showListOnly = embedded;
+  const effectiveViewMode = showListOnly ? "list" : viewMode;
 
   // Search
   const [keyword, setKeyword] = useState(searchParams.get("keyword") ?? "");
@@ -106,10 +129,8 @@ const UserDocumentsPage: React.FC = () => {
   );
 
   // URL-driven detail / preview
-  const isPreview = searchParams.get("preview") === "true";
-  const previewTarget = searchParams.get("previewTarget") || "";
-  const isMarkdownPreview = previewTarget === "markdown";
-  const previewFileId = isPreview ? searchParams.get("id") || null : null;
+  const { viewDocumentId, isMarkdownView } =
+    parseViewDocumentFromSearchParams(viewDocumentSearchParams);
   const selectedFileId = searchParams.get("id") || null;
   const wasDrawerOpen = useRef(false);
 
@@ -216,13 +237,13 @@ const UserDocumentsPage: React.FC = () => {
   const pagination = result?.pagination;
 
   const previewFile = useMemo(() => {
-    if (!previewFileId || !files.length) return null;
-    return files.find((x: any) => x.fileId === previewFileId) || null;
-  }, [previewFileId, files]);
+    if (!viewDocumentId || !files.length) return null;
+    return files.find((x: any) => x.fileId === viewDocumentId) || null;
+  }, [viewDocumentId, files]);
 
   const previewFileName = useMemo(() => {
     if (!previewFile) return "";
-    if (isMarkdownPreview) {
+    if (isMarkdownView) {
       const markdownUrl = String(previewFile.markdownFileUrl || "");
       const fromUrl = markdownUrl.split("?")[0].split("/").pop() || "";
       if (fromUrl) return fromUrl;
@@ -231,15 +252,15 @@ const UserDocumentsPage: React.FC = () => {
       return baseName ? `${baseName}.md` : "markdown.md";
     }
     return previewFile.originalFilename || previewFile.displayName || "";
-  }, [previewFile, isMarkdownPreview]);
+  }, [previewFile, isMarkdownView]);
 
-  const previewDownloadFormat = isMarkdownPreview
+  const previewDownloadFormat = isMarkdownView
     ? ("markdown" as const)
     : ("original" as const);
 
-  // ── Sync URL ──────────────────────────────────────────────────────────────
-
   useEffect(() => {
+    if (embedded) return;
+
     const next = new URLSearchParams();
     if (keyword) next.set("keyword", keyword);
     next.set("page", String(page));
@@ -254,18 +275,38 @@ const UserDocumentsPage: React.FC = () => {
     if (academicYear.fromYear) next.set("acadFrom", academicYear.fromYear);
     if (academicYear.toYear) next.set("acadTo", academicYear.toYear);
     if (selectedFileId) next.set("id", selectedFileId);
-    if (isPreview) next.set("preview", "true");
+    if (!embedded && viewDocumentId) {
+      setViewDocumentParams(next, viewDocumentId, {
+        format: isMarkdownView ? VIEW_DOCUMENT_FORMAT_MARKDOWN : undefined,
+      });
+    }
     setSearchParams(next, { replace: true });
   }, [
+    embedded,
     keyword,
     page,
     filters,
     enrollmentYear,
     academicYear,
     selectedFileId,
-    isPreview,
+    viewDocumentId,
+    isMarkdownView,
     setSearchParams,
   ]);
+
+  useEffect(() => {
+    if (!embedded) return;
+
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+
+    if (selectedFileId) params.set("id", selectedFileId);
+    else params.delete("id");
+
+    const search = params.toString();
+    const href = search ? `${url.pathname}?${search}` : url.pathname;
+    window.history.replaceState(null, "", href);
+  }, [embedded, selectedFileId]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -275,16 +316,6 @@ const UserDocumentsPage: React.FC = () => {
     setPage(1);
   };
 
-  const handleOpenDetail = useCallback(
-    (file: any) => {
-      const next = new URLSearchParams(searchParams);
-      next.set("id", file.fileId);
-      next.delete("preview");
-      setSearchParams(next, { replace: true });
-    },
-    [searchParams, setSearchParams],
-  );
-
   const handleCloseDetail = useCallback(() => {
     const next = new URLSearchParams(searchParams);
     next.delete("id");
@@ -293,22 +324,55 @@ const UserDocumentsPage: React.FC = () => {
 
   const handleOpenPreview = useCallback(
     (file: any) => {
-      wasDrawerOpen.current = !!selectedFileId && !isPreview;
-      const next = new URLSearchParams(searchParams);
-      next.set("id", file.fileId);
-      next.set("preview", "true");
+      if (embedded && sourcePreview) {
+        const fileName =
+          file.originalFilename || file.displayName || "Tài liệu";
+        sourcePreview.openFilePreview({
+          fileId: file.fileId,
+          fileName,
+        });
+        return;
+      }
+
+      wasDrawerOpen.current = !!selectedFileId && !viewDocumentId;
+      const next = new URLSearchParams(viewDocumentSearchParams);
+      setViewDocumentParams(next, file.fileId);
+      if (embedded) {
+        setRouterSearchParams(next, { replace: true });
+        return;
+      }
       setSearchParams(next, { replace: true });
     },
-    [searchParams, setSearchParams, selectedFileId, isPreview],
+    [
+      embedded,
+      sourcePreview,
+      setRouterSearchParams,
+      setSearchParams,
+      selectedFileId,
+      viewDocumentId,
+      viewDocumentSearchParams,
+    ],
   );
 
   const handleClosePreview = useCallback(() => {
+    if (embedded) {
+      const next = new URLSearchParams(routerSearchParams);
+      clearViewDocumentParams(next);
+      setRouterSearchParams(next, { replace: true });
+      return;
+    }
+
     const next = new URLSearchParams(searchParams);
-    next.delete("preview");
-    next.delete("previewTarget");
+    clearViewDocumentParams(next);
     if (!wasDrawerOpen.current) next.delete("id");
     setSearchParams(next, { replace: true });
-  }, [searchParams, setSearchParams]);
+  }, [
+    embedded,
+    routerSearchParams,
+    searchParams,
+    setRouterSearchParams,
+    setSearchParams,
+  ]);
 
   const handleFilterChange = useCallback((typeKey: string, next: string[]) => {
     setFilters((prev) => ({ ...prev, [typeKey]: next }));
@@ -332,6 +396,37 @@ const UserDocumentsPage: React.FC = () => {
     setPage(1);
   }, []);
 
+  const handleDownloadFile = useCallback(async (file: any) => {
+    try {
+      const fileUrl =
+        file.fileUrl ||
+        (await DocumentsService.getFileDetail(file.fileId)).fileUrl;
+      if (!fileUrl) {
+        toast.error("Không thể tải xuống tệp.");
+        return;
+      }
+      const res = await fetch(fileUrl);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = file.originalFilename || file.displayName || "document";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Không thể tải xuống tệp.");
+    }
+  }, []);
+
+  const handleCopyFileLink = useCallback(async (file: any) => {
+    const success = await copyTextToClipboard(buildDocumentViewUrl(file.fileId));
+    if (success) {
+      toast.success("Đã sao chép liên kết xem tài liệu");
+      return;
+    }
+    toast.error("Không thể sao chép liên kết");
+  }, []);
+
   const totalPages = pagination?.totalPages || 1;
   const hasTagFilters = Object.values(filters).some(
     (v) => Array.isArray(v) && v.length > 0,
@@ -344,31 +439,38 @@ const UserDocumentsPage: React.FC = () => {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="relative min-h-screen">
-      {/* ── Hero header + search ────────────────────────────────────────── */}
-      <div className="mx-auto mb-8 max-w-3xl text-center">
-        <h1 className="text-navy-700 mb-2 text-2xl font-bold dark:text-white">
-          Tài liệu giáo vụ
-        </h1>
-        <p className="mb-6 text-sm text-gray-400">
-          Tổng hợp tài liệu giáo vụ liên quan đến các vấn đề học tập, quy chế
-        </p>
+    <div
+      className={
+        embedded ? "flex min-h-0 flex-col gap-4" : "relative min-h-screen"
+      }
+    >
+      {embedded ? (
+        <PageTitle title="Tài liệu" icon={LuFileText} className="mt-10" />
+      ) : (
+        <PageTitle
+          title="Tài liệu giáo vụ"
+          description="Tổng hợp tài liệu giáo vụ liên quan đến các vấn đề học tập, quy chế"
+          className="mx-auto mb-4 max-w-3xl"
+        />
+      )}
 
-        <form
-          onSubmit={handleSearch}
-          className="dark:bg-navy-800 focus-within:border-brand-400 focus-within:ring-brand-400/20 dark:focus-within:border-brand-500 flex w-full items-center gap-2 rounded-2xl border border-gray-200 bg-white p-2 pl-4 shadow-sm transition-all focus-within:ring-2 dark:border-white/10"
-        >
-          <MdSearch className="h-5 w-5 shrink-0 text-gray-400" />
-          <input
-            id="user-documents-search"
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Tìm tài liệu, công văn, quyết định..."
-            className="min-w-0 flex-1 bg-transparent py-1 text-sm text-gray-700 outline-none dark:text-white dark:placeholder-gray-500"
-          />
-        </form>
-      </div>
+      <form
+        onSubmit={handleSearch}
+        className={`dark:bg-navy-800 flex w-full items-center gap-2 rounded-2xl bg-white px-3 py-2 ${
+          embedded ? "" : "mx-auto mb-8 max-w-3xl"
+        }`}
+      >
+        <MdSearch className="h-5 w-5 shrink-0 text-gray-400 dark:text-gray-500" />
+        <input
+          id="user-documents-search"
+          name="keyword"
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          placeholder="Tìm tài liệu, công văn, quyết định..."
+          className="w-full bg-transparent py-1 text-sm text-gray-700 outline-none placeholder:text-gray-500 dark:bg-transparent dark:text-white dark:placeholder:text-gray-400"
+        />
+      </form>
 
       {/* ── Filter bar + view toggle ────────────────────────────────────── */}
       <div className="mb-4 flex flex-wrap items-start gap-2">
@@ -427,6 +529,7 @@ const UserDocumentsPage: React.FC = () => {
         </div>
 
         {/* View toggle */}
+        {!showListOnly ? (
         <div className="dark:bg-navy-800 ml-auto flex shrink-0 items-center gap-0.5 rounded-xl border border-gray-200 bg-white p-0.5 dark:border-white/10">
           <button
             type="button"
@@ -453,6 +556,7 @@ const UserDocumentsPage: React.FC = () => {
             <MdTableRows className="h-4 w-4" />
           </button>
         </div>
+        ) : null}
       </div>
 
       {/* ── Results count ──────────────────────────────────────────────── */}
@@ -467,7 +571,7 @@ const UserDocumentsPage: React.FC = () => {
 
       {/* ── Files ──────────────────────────────────────────────────────── */}
       {isLoading ? (
-        viewMode === "grid" ? (
+        effectiveViewMode === "grid" ? (
           <GridSkeleton />
         ) : (
           <ListSkeleton />
@@ -502,15 +606,17 @@ const UserDocumentsPage: React.FC = () => {
             </button>
           )}
         </div>
-      ) : viewMode === "grid" ? (
-        <div className="grid grid-cols-2 gap-4 pb-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+      ) : effectiveViewMode === "grid" ? (
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,240px),1fr))] gap-4 pb-5">
           {files.map((file: any) => (
             <FileCard
               key={file.fileId}
               file={file}
               metadataTypes={metadataTypes}
-              onDetail={() => handleOpenDetail(file)}
+              embedded={embedded}
               onPreview={() => handleOpenPreview(file)}
+              onDownload={() => void handleDownloadFile(file)}
+              onCopyLink={() => void handleCopyFileLink(file)}
             />
           ))}
         </div>
@@ -521,8 +627,10 @@ const UserDocumentsPage: React.FC = () => {
               key={file.fileId}
               file={file}
               metadataTypes={metadataTypes}
-              onDetail={() => handleOpenDetail(file)}
+              embedded={embedded}
               onPreview={() => handleOpenPreview(file)}
+              onDownload={() => void handleDownloadFile(file)}
+              onCopyLink={() => void handleCopyFileLink(file)}
             />
           ))}
         </div>
@@ -573,33 +681,46 @@ const UserDocumentsPage: React.FC = () => {
       <DocumentDetailDrawer
         fileId={selectedFileId}
         metadataTypes={metadataTypes}
-        isOpen={selectedFileId !== null && !isPreview}
+        isOpen={selectedFileId !== null && !viewDocumentId}
         isReadOnly={true}
         onClose={handleCloseDetail}
         onDeleted={() => {}}
         onPreview={() => {
           if (!selectedFileId) return;
+          if (embedded && sourcePreview) {
+            const file = files.find((x: any) => x.fileId === selectedFileId);
+            sourcePreview.openFilePreview({
+              fileId: selectedFileId,
+              fileName:
+                file?.originalFilename || file?.displayName || "Tài liệu",
+            });
+            return;
+          }
           wasDrawerOpen.current = true;
-          const next = new URLSearchParams(searchParams);
-          next.set("preview", "true");
-          next.delete("previewTarget");
+          const next = new URLSearchParams(viewDocumentSearchParams);
+          setViewDocumentParams(next, selectedFileId);
           setSearchParams(next, { replace: true });
         }}
-        onPreviewMarkdown={() => {
-          if (!selectedFileId) return;
-          wasDrawerOpen.current = true;
-          const next = new URLSearchParams(searchParams);
-          next.set("preview", "true");
-          next.set("previewTarget", "markdown");
-          setSearchParams(next, { replace: true });
-        }}
+        {...(!embedded
+          ? {
+              onPreviewMarkdown: () => {
+                if (!selectedFileId) return;
+                wasDrawerOpen.current = true;
+                const next = new URLSearchParams(viewDocumentSearchParams);
+                setViewDocumentParams(next, selectedFileId, {
+                  format: VIEW_DOCUMENT_FORMAT_MARKDOWN,
+                });
+                setSearchParams(next, { replace: true });
+              },
+            }
+          : {})}
       />
 
       {/* ── File Preview Modal ──────────────────────────────────────────── */}
-      {previewFileId !== null ? (
+      {!embedded && viewDocumentId !== null ? (
         <Suspense fallback={null}>
           <FilePreviewModal
-            fileId={previewFileId}
+            fileId={viewDocumentId}
             fileName={previewFileName}
             downloadFormat={previewDownloadFormat}
             isOpen

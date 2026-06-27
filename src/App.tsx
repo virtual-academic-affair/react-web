@@ -4,6 +4,7 @@ import PageLoader from "@/components/loading/PageLoader";
 import { refreshTokens } from "@/services/http";
 import { useAuthStore } from "@/stores/auth.store";
 import { hasTempAuth } from "@/utils/tempAuth.util";
+import { viewDocumentLocationSearch } from "@/utils/documentViewUrl";
 import { ConfigProvider, theme, message as toast } from "antd";
 import viVN from "antd/locale/vi_VN";
 import dayjs from "dayjs";
@@ -144,9 +145,22 @@ function RootRedirect() {
 
   // Re-read from store after refresh
   const { accessToken: token, userRole: role } = useAuthStore.getState();
+  const viewDocSearch = viewDocumentLocationSearch(location.search);
+
   if (token) {
-    if (role === "admin") return <Navigate to="/admin" replace />;
-    return <Navigate to="/user" replace />;
+    if (role === "admin") {
+      return (
+        <Navigate to={`/admin/email/config${viewDocSearch}`} replace />
+      );
+    }
+    const userHome = viewDocSearch
+      ? `/user/chatbot/documents${viewDocSearch}`
+      : "/user/chatbot";
+    return <Navigate to={userHome} replace />;
+  }
+
+  if (viewDocSearch) {
+    return <Navigate to={`/auth/login${viewDocSearch}`} replace />;
   }
 
   return <UserDashboard />;

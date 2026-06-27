@@ -5,6 +5,7 @@ import type { Message } from "@/types/email";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { applyIframeModeClass } from "@/utils/iframeMode";
 import BusinessCardsView from "./components/BusinessCardsView";
 import DeeplinkIframeNoThreadDashboard from "./components/DeeplinkIframeNoThreadDashboard";
 import GmailAccessBlocked from "./components/GmailAccessBlocked";
@@ -20,6 +21,10 @@ const GmailDeeplinkPage = () => {
 
   const fromIframe = params.get("iframe") === "true";
   const email = params.get("email") ?? "";
+
+  useEffect(() => {
+    applyIframeModeClass();
+  }, [fromIframe]);
   const gmailMessageId = params.get("messageId") ?? "";
   const threadId = params.get("threadId") ?? "";
   const hasFullParams = !!email && !!gmailMessageId && !!threadId;

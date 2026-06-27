@@ -35,11 +35,17 @@ export function getFileType(filename: string): FileType {
 
 interface FileIconProps {
   filename: string;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
 }
 
-const sizeIconMap = { sm: "h-5 w-5", md: "h-7 w-7", lg: "h-12 w-12" };
+const sizeIconMap = {
+  xs: "h-3.5 w-3.5",
+  sm: "h-5 w-5",
+  md: "h-7 w-7",
+  lg: "h-12 w-12",
+};
 const sizeWrapMap = {
+  xs: "h-7 w-7 rounded-lg",
   sm: "h-9 w-9 rounded-xl",
   md: "h-12 w-12 rounded-2xl",
   lg: "h-20 w-20 rounded-3xl",

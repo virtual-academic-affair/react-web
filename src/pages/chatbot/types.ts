@@ -41,8 +41,10 @@ export type ChatThreadSession = {
 
 export interface ChatSourceItem {
   title: string;
+  titles?: string[];
   url: string;
   citationId?: number;
+  fileId?: string;
   fileName?: string;
   pages?: string[];
   markdownUrl?: string;

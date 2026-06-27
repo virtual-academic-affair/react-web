@@ -4,6 +4,11 @@ import { MdClose, MdCloudUpload, MdDescription } from "react-icons/md";
 
 import Drawer from "@/components/drawer/Drawer";
 import SelectField from "@/components/fields/SelectField";
+import { formInputClass } from "@/components/fields/formInputClass";
+import YearRangeControl from "@/components/fields/YearRangeControl";
+import DetailFormLayout, {
+  FormRow,
+} from "@/components/layouts/DetailFormLayout";
 import { DocumentsService } from "@/services/documents";
 import { parseError } from "@/utils/parseError";
 
@@ -48,54 +53,6 @@ export const DOCUMENT_TYPE_MAP: Record<string, string> = Object.fromEntries(
 
 export const DOCUMENT_TYPE_COLOR_MAP: Record<string, string> =
   Object.fromEntries(DOCUMENT_TYPES.map((t) => [t.value, t.color]));
-
-// ── Year range input ──────────────────────────────────────────────────────────
-
-interface YearRangeInputProps {
-  label: string;
-  fromYear: string;
-  toYear: string;
-  onFromChange: (v: string) => void;
-  onToChange: (v: string) => void;
-}
-
-const YearRangeInput: React.FC<YearRangeInputProps> = ({
-  label,
-  fromYear,
-  toYear,
-  onFromChange,
-  onToChange,
-}) => (
-  <div className="flex flex-col gap-1.5">
-    <label className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-      {label}{" "}
-      <span className="font-normal text-gray-400 normal-case">
-        (để trống = Tất cả)
-      </span>
-    </label>
-    <div className="flex items-center gap-2">
-      <input
-        type="number"
-        value={fromYear}
-        onChange={(e) => onFromChange(e.target.value)}
-        placeholder="Từ năm"
-        min={2000}
-        max={2099}
-        className="dark:bg-navy-800 w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none placeholder:text-gray-400 dark:border-white/10 dark:text-white dark:placeholder:text-white/30"
-      />
-      <span className="shrink-0 text-sm text-gray-400">—</span>
-      <input
-        type="number"
-        value={toYear}
-        onChange={(e) => onToChange(e.target.value)}
-        placeholder="Đến năm"
-        min={2000}
-        max={2099}
-        className="dark:bg-navy-800 w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none placeholder:text-gray-400 dark:border-white/10 dark:text-white dark:placeholder:text-white/30"
-      />
-    </div>
-  </div>
-);
 
 // ── UploadForm ────────────────────────────────────────────────────────────────
 
@@ -240,121 +197,112 @@ export const UploadForm: React.FC<UploadFormProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-5">
-      {/* ── File drop zone ─────────────────────────────────────────── */}
-      {!selectedFile ? (
-        <div
-          className={`flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 transition-colors ${
-            dragOver
-              ? "border-brand-500 bg-brand-50 dark:bg-brand-500/10"
-              : "border-gray-300 dark:border-gray-600"
-          }`}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragOver(true);
-          }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={handleDrop}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept={ALLOWED_EXTENSIONS.join(",")}
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) handleFileSelect(file);
+    <DetailFormLayout className="gap-5">
+      <FormRow label="File tài liệu" stacked required>
+        {!selectedFile ? (
+          <div
+            className={`flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 transition-colors ${
+              dragOver
+                ? "border-brand-500 bg-brand-50 dark:bg-brand-500/10"
+                : "border-gray-300 dark:border-gray-600"
+            }`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
             }}
-            className="hidden"
-          />
-          <MdCloudUpload className="mb-3 h-10 w-10 text-gray-400" />
-          <p className="mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
-            Kéo thả file vào đây
-          </p>
-          <p className="mb-3 text-xs text-gray-500">hoặc</p>
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="bg-brand-500 hover:bg-brand-600 rounded-xl px-5 py-2 text-sm font-medium text-white transition-colors"
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
           >
-            Chọn file
-          </button>
-          <p className="mt-3 text-xs text-gray-500">
-            .pdf, .doc, .docx, .xls, .xlsx, .ppt, .pptx,... | Tối đa 20MB
-          </p>
-        </div>
-      ) : (
-        <div className="dark:bg-navy-800 flex items-center justify-between rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-white/10">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="bg-brand-500 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white">
-              <MdDescription className="h-5 w-5" />
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-gray-800 dark:text-white">
-                {selectedFile.name}
-              </p>
-              <p className="text-xs text-gray-500">
-                {formatFileSize(selectedFile.size)}
-              </p>
-            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={ALLOWED_EXTENSIONS.join(",")}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleFileSelect(file);
+              }}
+              className="hidden"
+            />
+            <MdCloudUpload className="mb-3 h-10 w-10 text-gray-400" />
+            <p className="mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+              Kéo thả file vào đây
+            </p>
+            <p className="mb-3 text-xs text-gray-500">hoặc</p>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="bg-brand-500 hover:bg-brand-600 rounded-xl px-5 py-2 text-sm font-medium text-white transition-colors"
+            >
+              Chọn file
+            </button>
+            <p className="mt-3 text-xs text-gray-500">
+              .pdf, .doc, .docx, .xls, .xlsx, .ppt, .pptx,... | Tối đa 20MB
+            </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setSelectedFile(null)}
-            className="ml-2 shrink-0 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-200 dark:hover:bg-white/10"
-          >
-            <MdClose className="h-5 w-5" />
-          </button>
-        </div>
-      )}
+        ) : (
+          <div className="dark:bg-navy-800 flex items-center justify-between rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-white/10">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="bg-brand-500 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white">
+                <MdDescription className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-gray-800 dark:text-white">
+                  {selectedFile.name}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {formatFileSize(selectedFile.size)}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedFile(null)}
+              className="ml-2 shrink-0 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-200 dark:hover:bg-white/10"
+            >
+              <MdClose className="h-5 w-5" />
+            </button>
+          </div>
+        )}
+      </FormRow>
 
-      {/* ── Tên hiển thị ───────────────────────────────────────────── */}
-      <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-          Tên hiển thị{" "}
-          <span className="font-normal text-gray-400 normal-case">
-            (tùy chọn)
-          </span>
-        </label>
+      <FormRow label="Tên hiển thị">
         <input
           type="text"
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
-          className="dark:bg-navy-800 w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none placeholder:text-gray-400 dark:border-white/10 dark:text-white dark:placeholder:text-white/30"
+          className={formInputClass}
           placeholder="Nhập tên hiển thị của tài liệu"
         />
-      </div>
+      </FormRow>
 
-      {/* ── Loại tài liệu ──────────────────────────────────────────── */}
-      <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
-          Loại tài liệu
-        </label>
+      <FormRow label="Loại tài liệu">
         <SelectField
           value={docType}
           onChange={setDocType}
           options={[{ value: "", label: "— Chọn loại —" }, ...DOCUMENT_TYPES]}
         />
-      </div>
+      </FormRow>
 
-      {/* ── Năm tuyển sinh ─────────────────────────────────────────── */}
-      <YearRangeInput
-        label="Khóa tuyển sinh"
-        fromYear={enrollFromYear}
-        toYear={enrollToYear}
-        onFromChange={setEnrollFromYear}
-        onToChange={setEnrollToYear}
-      />
+      <FormRow label="Khóa tuyển sinh" stacked>
+        <YearRangeControl
+          value={{ fromYear: enrollFromYear, toYear: enrollToYear }}
+          onChange={({ fromYear, toYear }) => {
+            setEnrollFromYear(fromYear);
+            setEnrollToYear(toYear);
+          }}
+        />
+      </FormRow>
 
-      {/* ── Năm học ────────────────────────────────────────────────── */}
-      <YearRangeInput
-        label="Năm học"
-        fromYear={academicFromYear}
-        toYear={academicToYear}
-        onFromChange={setAcademicFromYear}
-        onToChange={setAcademicToYear}
-      />
+      <FormRow label="Năm học" stacked>
+        <YearRangeControl
+          value={{ fromYear: academicFromYear, toYear: academicToYear }}
+          onChange={({ fromYear, toYear }) => {
+            setAcademicFromYear(fromYear);
+            setAcademicToYear(toYear);
+          }}
+        />
+      </FormRow>
 
-      {/* ── Action buttons ─────────────────────────────────────────── */}
       <div className={actionsClassName}>
         {onCancel && (
           <button
@@ -384,7 +332,7 @@ export const UploadForm: React.FC<UploadFormProps> = ({
           )}
         </button>
       </div>
-    </div>
+    </DetailFormLayout>
   );
 };
 
@@ -401,12 +349,7 @@ const UploadDrawer: React.FC<UploadDrawerProps> = ({
   onClose,
   onSuccess,
 }) => (
-  <Drawer
-    isOpen={open}
-    onClose={onClose}
-    title="Tải lên tài liệu mới"
-    width="max-w-xl"
-  >
+  <Drawer isOpen={open} onClose={onClose} title="Tải lên tài liệu mới">
     <UploadForm
       onSuccess={() => {
         onSuccess();

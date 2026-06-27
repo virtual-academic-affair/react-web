@@ -1,15 +1,17 @@
-import React, { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { MdClose, MdExpandMore } from "react-icons/md";
+import YearRangeControl from "@/components/fields/YearRangeControl";
+import {
+  formatYearRangeStrings,
+  type YearRangeStrings,
+} from "@/utils/yearRange";
 import {
   getFloatingDropdownPosition,
   type FloatingPosition,
 } from "@/utils/floatingPosition";
+import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { MdClose, MdExpandMore } from "react-icons/md";
 
-export interface YearRange {
-  fromYear: string;
-  toYear: string;
-}
+export type YearRange = YearRangeStrings;
 
 interface YearRangeFilterProps {
   label: string;
@@ -18,7 +20,7 @@ interface YearRangeFilterProps {
 }
 
 /**
- * A pill button that opens a portal-based dropdown with two year inputs.
+ * A pill button that opens a portal-based dropdown with year range inputs.
  * Uses same visual pattern as FilterGroup for consistency.
  */
 const YearRangeFilter: React.FC<YearRangeFilterProps> = ({
@@ -45,7 +47,6 @@ const YearRangeFilter: React.FC<YearRangeFilterProps> = ({
     setOpen((p) => !p);
   };
 
-  // Close on outside click
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
@@ -61,7 +62,6 @@ const YearRangeFilter: React.FC<YearRangeFilterProps> = ({
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
-  // Close on scroll / resize
   useEffect(() => {
     if (!open) return;
     const close = () => setOpen(false);
@@ -74,6 +74,7 @@ const YearRangeFilter: React.FC<YearRangeFilterProps> = ({
   }, [open]);
 
   const hasActive = Boolean(value.fromYear || value.toYear);
+  const appliedLabel = formatYearRangeStrings(value);
 
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -92,7 +93,6 @@ const YearRangeFilter: React.FC<YearRangeFilterProps> = ({
 
   return (
     <>
-      {/* Trigger pill */}
       <button
         ref={triggerRef}
         type="button"
@@ -104,6 +104,9 @@ const YearRangeFilter: React.FC<YearRangeFilterProps> = ({
         }`}
       >
         {label}
+        {hasActive ? (
+          <span className="text-xs font-normal opacity-80">({appliedLabel})</span>
+        ) : null}
         {hasActive ? (
           <button
             type="button"
@@ -117,7 +120,6 @@ const YearRangeFilter: React.FC<YearRangeFilterProps> = ({
         )}
       </button>
 
-      {/* Dropdown via portal */}
       {open &&
         createPortal(
           <div
@@ -128,48 +130,13 @@ const YearRangeFilter: React.FC<YearRangeFilterProps> = ({
               left: dropPos.left,
             }}
             className="dark:bg-navy-900 fixed z-9999 w-[280px] max-w-[calc(100vw-24px)] rounded-2xl border border-gray-100 bg-white p-4 shadow-xl dark:border-white/10"
+            onKeyDown={handleKeyDown}
           >
-            <div className="flex items-center gap-2">
-              <div className="flex-1">
-                <label className="mb-1 block text-[10px] font-medium text-gray-400">
-                  Từ năm
-                </label>
-                <input
-                  type="number"
-                  value={localValue.fromYear}
-                  onChange={(e) =>
-                    setLocalValue({ ...localValue, fromYear: e.target.value })
-                  }
-                  onKeyDown={handleKeyDown}
-                  placeholder="VD: 2020"
-                  min={2000}
-                  max={2099}
-                  className="dark:bg-navy-800 w-full rounded-xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none placeholder:text-gray-400 dark:border-white/10 dark:text-white dark:placeholder:text-white/30"
-                />
-              </div>
-              <span className="mt-4 shrink-0 text-sm text-gray-400">—</span>
-              <div className="flex-1">
-                <label className="mb-1 block text-[10px] font-medium text-gray-400">
-                  Đến năm
-                </label>
-                <input
-                  type="number"
-                  value={localValue.toYear}
-                  onChange={(e) =>
-                    setLocalValue({ ...localValue, toYear: e.target.value })
-                  }
-                  onKeyDown={handleKeyDown}
-                  placeholder="VD: 2025"
-                  min={2000}
-                  max={2099}
-                  className="dark:bg-navy-800 w-full rounded-xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none placeholder:text-gray-400 dark:border-white/10 dark:text-white dark:placeholder:text-white/30"
-                />
-              </div>
-            </div>
-
-            <p className="mt-2 text-[10px] text-gray-400">
-              Để trống cả hai = áp dụng tất cả
-            </p>
+            <YearRangeControl
+              value={localValue}
+              onChange={setLocalValue}
+              compact
+            />
 
             <button
               type="button"

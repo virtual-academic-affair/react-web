@@ -1,7 +1,10 @@
 import Drawer from "@/components/drawer/Drawer";
+import { formInputClass } from "@/components/fields/formInputClass";
 import DetailFormLayout, {
   FormRow,
 } from "@/components/layouts/DetailFormLayout";
+import { PageTitle } from "@/components/layouts/PageTitle";
+import { LuUsers } from "react-icons/lu";
 import Switch from "@/components/switch";
 import TableLayout, {
   type TableAction,
@@ -70,9 +73,8 @@ const UsersPage: React.FC<UsersPageProps> = () => {
 
   // Derive isActive from statusFilter for the API
   const apiIsActive = React.useMemo(() => {
-    if (statusFilter.length === 0 || statusFilter.length === 2)
-      return undefined;
-    return statusFilter.includes("active");
+    if (statusFilter.length === 0) return undefined;
+    return statusFilter[0] === "active";
   }, [statusFilter]);
 
   const hasFilters = roleFilter.length > 0 || statusFilter.length > 0;
@@ -352,7 +354,13 @@ const UsersPage: React.FC<UsersPageProps> = () => {
 
   return (
     <>
-      <TableLayout
+      <div className="flex flex-col gap-4">
+        <PageTitle
+          title="Danh sách tài khoản"
+          tabTitle="DS tài khoản"
+          icon={LuUsers}
+        />
+        <TableLayout
         result={result}
         loading={loading}
         page={page}
@@ -383,6 +391,7 @@ const UsersPage: React.FC<UsersPageProps> = () => {
                 typeKey="status"
                 options={STATUS_OPTIONS}
                 selected={statusFilter}
+                multiple={false}
                 onChange={(next) => {
                   setStatusFilter(next);
                   setPage(1);
@@ -433,6 +442,7 @@ const UsersPage: React.FC<UsersPageProps> = () => {
           />
         }
       />
+      </div>
 
       <Drawer
         isOpen={createOpen}
@@ -447,7 +457,7 @@ const UsersPage: React.FC<UsersPageProps> = () => {
                 value={newEmail}
                 onChange={(ev) => setNewEmail(ev.target.value)}
                 disabled={creating}
-                className="w-full rounded-2xl border border-gray-200 bg-transparent px-3 py-2 outline-none dark:border-white/10 dark:text-white"
+                className={formInputClass}
               />
             </FormRow>
             <FormRow label="Vai trò" required={true}>

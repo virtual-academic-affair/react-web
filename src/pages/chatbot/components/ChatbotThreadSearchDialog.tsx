@@ -1,18 +1,20 @@
-import Checkbox from "@/components/checkbox";
+import { SegmentedControl } from "@/components/segmented-control/SegmentedControl";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { formatSessionActivityLabel } from "@/utils/date";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { MdChatBubbleOutline, MdClose, MdSearch } from "react-icons/md";
+import { MdClose, MdSearch } from "react-icons/md";
 
 import type { ChatThreadSession } from "../types";
 
 type ChatbotThreadSearchDialogProps = {
   activeSessions: ChatThreadSession[];
   archivedSessions: ChatThreadSession[];
-  activeThreadId: string;
   onClose: () => void;
   onSelect: (session: ChatThreadSession) => void;
 };
+
+type StatusFilter = "active" | "archived";
 
 function normalizeSearchText(value: string) {
   return value
@@ -61,10 +63,21 @@ function getFuzzyScore(title: string, query: string) {
   return 250 - firstMatch - gapPenalty * 2;
 }
 
+function getSessionActivityDate(session: ChatThreadSession) {
+  return session.lastMessageAt ?? session.updatedAt;
+}
+
+function getSearchResultRowClass(selected: boolean) {
+  return `flex h-9 w-full items-center rounded-full px-3 text-xs transition ${
+    selected
+      ? "bg-gray-100 font-medium text-[#1f1f1f] dark:bg-white/10 dark:text-gray-200"
+      : "text-[#1f1f1f] hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10"
+  }`;
+}
+
 export function ChatbotThreadSearchDialog({
   activeSessions,
   archivedSessions,
-  activeThreadId,
   onClose,
   onSelect,
 }: ChatbotThreadSearchDialogProps) {
@@ -72,11 +85,11 @@ export function ChatbotThreadSearchDialog({
   useBodyScrollLock(true);
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [searchArchived, setSearchArchived] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
 
   const searchableSessions = useMemo(
-    () => (searchArchived ? [...activeSessions, ...archivedSessions] : activeSessions),
-    [activeSessions, archivedSessions, searchArchived],
+    () => (statusFilter === "archived" ? archivedSessions : activeSessions),
+    [activeSessions, archivedSessions, statusFilter],
   );
 
   const results = useMemo(() => {
@@ -113,7 +126,7 @@ export function ChatbotThreadSearchDialog({
 
   useEffect(() => {
     setSelectedIndex(0);
-  }, [searchArchived]);
+  }, [statusFilter]);
 
   const activeResultIndex = results.length
     ? Math.min(selectedIndex, results.length - 1)
@@ -160,83 +173,74 @@ export function ChatbotThreadSearchDialog({
           }
         }}
       >
-        <div className="flex shrink-0 items-center gap-3 border-b border-gray-200 px-5 py-4 dark:border-white/10">
-          <MdSearch
-            className="h-6 w-6 shrink-0 text-gray-500 dark:text-gray-400"
-            aria-hidden
-          />
-          <input
-            ref={inputRef}
-            value={query}
-            onChange={(event) => {
-              setQuery(event.target.value);
-              setSelectedIndex(0);
-            }}
-            placeholder="Tìm kiếm cuộc trò chuyện..."
-            className="min-w-0 flex-1 bg-transparent text-base text-[#1f1f1f] outline-none placeholder:text-gray-500 dark:text-white dark:placeholder:text-gray-400"
-            aria-label="Tìm kiếm cuộc trò chuyện"
-          />
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-white"
-            aria-label="Đóng tìm kiếm"
-          >
-            <MdClose className="h-5 w-5" />
-          </button>
+        <div className="shrink-0 px-5 pt-5 pb-3">
+          <div className="dark:bg-navy-900/60 flex items-center gap-2 rounded-2xl bg-gray-50 px-3 py-2 dark:bg-white/5">
+            <MdSearch
+              className="h-5 w-5 shrink-0 text-gray-400 dark:text-gray-500"
+              aria-hidden
+            />
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setSelectedIndex(0);
+              }}
+              placeholder="Tìm kiếm cuộc trò chuyện..."
+              className="min-w-0 flex-1 bg-transparent py-1 text-sm text-[#1f1f1f] outline-none placeholder:text-gray-500 dark:text-white dark:placeholder:text-gray-400"
+              aria-label="Tìm kiếm cuộc trò chuyện"
+            />
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-transparent text-gray-400 transition-colors hover:border-gray-300 dark:text-gray-400 dark:hover:border-white/20"
+              aria-label="Đóng tìm kiếm"
+            >
+              <MdClose className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
-        <label className="flex shrink-0 cursor-pointer items-center gap-2 border-b border-gray-100 px-5 py-3 text-sm text-gray-600 dark:border-white/10 dark:text-gray-300">
-          <Checkbox
-            checked={searchArchived}
-            onChange={(event: ChangeEvent<HTMLInputElement>) =>
-              setSearchArchived(event.target.checked)
-            }
+        <div className="shrink-0 px-5 pb-3">
+          <SegmentedControl
+            value={statusFilter}
+            onChange={setStatusFilter}
+            fullWidth
+            aria-label="Lọc cuộc trò chuyện"
+            options={[
+              { value: "active", label: "Đang hoạt động" },
+              { value: "archived", label: "Lưu trữ" },
+            ]}
           />
-          <span>Tìm trong lưu trữ</span>
-        </label>
+        </div>
 
         <h2 id="chat-search-title" className="sr-only">
           Tìm kiếm cuộc trò chuyện
         </h2>
 
-        <div className="min-h-0 overflow-y-auto p-3">
+        <div className="min-h-0 overflow-y-auto px-3 pb-3">
           {results.length ? (
-            <div className="space-y-1">
+            <div>
               {results.map(({ session }, index) => {
                 const isSelected = index === activeResultIndex;
-                const isActive = session.id === activeThreadId;
+                const activityLabel = formatSessionActivityLabel(
+                  getSessionActivityDate(session),
+                );
+
                 return (
                   <button
                     key={session.id}
                     type="button"
                     onClick={() => selectResult(session)}
                     onMouseEnter={() => setSelectedIndex(index)}
-                    className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition ${
-                      isSelected
-                        ? "bg-gray-100 dark:bg-white/10"
-                        : "hover:bg-gray-50 dark:hover:bg-white/[0.06]"
-                    }`}
+                    className={getSearchResultRowClass(isSelected)}
                   >
-                    <MdChatBubbleOutline
-                      className="h-5 w-5 shrink-0 text-[#5f6368] dark:text-gray-300"
-                      aria-hidden
-                    />
-                    <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[#1f1f1f] dark:text-white">
+                    <span className="min-w-0 flex-1 truncate text-left font-medium">
                       {session.title?.trim() || "Cuộc trò chuyện mới"}
                     </span>
-                    {session.status === "archived" ? (
-                      <span className="shrink-0 text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Lưu trữ
-                      </span>
-                    ) : null}
-                    {isActive ? (
-                      <span className="shrink-0 text-xs font-medium text-[#1a73e8] dark:text-[#a8c7fa]">
-                        Đang mở
-                      </span>
-                    ) : index === activeResultIndex ? (
-                      <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400">
-                        Enter
+                    {activityLabel ? (
+                      <span className="shrink-0 pl-2 text-[#5f6368] dark:text-gray-400">
+                        {activityLabel}
                       </span>
                     ) : null}
                   </button>
@@ -245,7 +249,9 @@ export function ChatbotThreadSearchDialog({
             </div>
           ) : (
             <div className="px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
-              Không tìm thấy cuộc trò chuyện phù hợp.
+              {statusFilter === "archived"
+                ? "Không có cuộc trò chuyện lưu trữ."
+                : "Không tìm thấy cuộc trò chuyện."}
             </div>
           )}
         </div>

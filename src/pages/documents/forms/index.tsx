@@ -4,12 +4,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import { useState } from "react";
 import { MdDeleteOutline, MdInfoOutline } from "react-icons/md";
-import { useSearchParams } from "react-router-dom";
 
+import { useIsolatedSearchParams } from "@/hooks/useIsolatedSearchParams";
 import ConfirmModal from "@/components/modal/ConfirmModal";
 import type { TableAction, TableColumn } from "@/components/table/TableLayout";
 import TableLayout from "@/components/table/TableLayout";
 
+import { PageTitle } from "@/components/layouts/PageTitle";
+import { LuPenLine } from "react-icons/lu";
 import { formsService } from "@/services/documents/forms.service";
 import type { Form } from "@/types/forms";
 
@@ -21,11 +23,15 @@ const PAGE_SIZE = 10;
 
 interface FormsPageProps {
   isReadOnly?: boolean;
+  embedded?: boolean;
 }
 
-export default function FormsPage({ isReadOnly = false }: FormsPageProps) {
+export default function FormsPage({
+  isReadOnly = false,
+  embedded = false,
+}: FormsPageProps) {
   const queryClient = useQueryClient();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useIsolatedSearchParams(embedded);
 
   // State từ URL
   const page = parseInt(searchParams.get("page") || "1", 10);
@@ -142,16 +148,18 @@ export default function FormsPage({ isReadOnly = false }: FormsPageProps) {
     });
   };
 
-  const actions: TableAction<Form>[] = isReadOnly
-    ? [
-        {
-          key: "view",
-          icon: <MdInfoOutline className="h-4 w-4" />,
-          label: "Chi tiết",
-          onClick: (item) => handleEdit(item.id),
-        },
-      ]
-    : [
+  const actions: TableAction<Form>[] = embedded
+    ? []
+    : isReadOnly
+      ? [
+          {
+            key: "view",
+            icon: <MdInfoOutline className="h-4 w-4" />,
+            label: "Chi tiết",
+            onClick: (item) => handleEdit(item.id),
+          },
+        ]
+      : [
         {
           key: "view",
           icon: <MdInfoOutline className="h-4 w-4" />,
@@ -170,13 +178,24 @@ export default function FormsPage({ isReadOnly = false }: FormsPageProps) {
 
   return (
     <>
-      <div className="flex flex-col gap-4">
+      <div className={`flex flex-col gap-4 ${embedded ? "min-h-0" : ""}`}>
+        <PageTitle
+          title={
+            embedded
+              ? "Biểu mẫu và kênh thông tin"
+              : "Danh sách biểu mẫu và kênh thông tin"
+          }
+          tabTitle={embedded ? "Biểu mẫu & KTT" : "DS biểu mẫu & KTT"}
+          icon={LuPenLine}
+          className={embedded ? "mt-10" : undefined}
+        />
         <TableLayout
           result={result || null}
           loading={isFetching}
           page={page}
           pageSize={PAGE_SIZE}
           columns={columns}
+          rowAlign="top"
           actions={actions}
           onPageChange={handlePageChange}
           searchValue={searchValue}
@@ -184,7 +203,7 @@ export default function FormsPage({ isReadOnly = false }: FormsPageProps) {
           onSearch={handleSearch}
           searchPlaceholder="Tìm biểu mẫu..."
           middleSlot={
-            !isReadOnly ? (
+            embedded || isReadOnly ? undefined : (
               <div className="flex justify-end gap-3">
                 <button
                   type="button"
@@ -201,7 +220,7 @@ export default function FormsPage({ isReadOnly = false }: FormsPageProps) {
                   Thêm hàng loạt
                 </button>
               </div>
-            ) : undefined
+            )
           }
         />
       </div>
@@ -216,7 +235,7 @@ export default function FormsPage({ isReadOnly = false }: FormsPageProps) {
       <FormDetailDrawer
         id={selectedId}
         open={!!selectedId}
-        isReadOnly={isReadOnly}
+        isReadOnly={embedded || isReadOnly}
         onClose={() => {
           setSearchParams((prev) => {
             prev.delete("id");

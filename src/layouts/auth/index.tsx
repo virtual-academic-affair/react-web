@@ -6,18 +6,15 @@
 
 import authImg from "@/assets/img/auth/auth.webp";
 import LogoBgWhite from "@/assets/img/logo/logo-bg-white-circle.svg";
+import { ThemeModeControl } from "@/components/theme/ThemeModeControl";
 import { refreshTokens } from "@/services/http";
 import { isMarkedAuthenticated, useAuthStore } from "@/stores/auth.store";
 import { hasTempAuth } from "@/utils/tempAuth.util";
-import React, { useEffect, useState } from "react";
-import { RiMoonFill, RiSunFill } from "react-icons/ri";
+import { useEffect, useState } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 export default function AuthLayout() {
   const accessToken = useAuthStore((s) => s.accessToken);
-  const [darkmode, setDarkmode] = React.useState(
-    document.body.classList.contains("dark"),
-  );
 
   const location = useLocation();
   const isBanned = location.pathname.includes("/banned");
@@ -62,30 +59,11 @@ export default function AuthLayout() {
   const { accessToken: token } = useAuthStore.getState();
   if ((token || hasTempAuth()) && !isBanned) return <Navigate to="/" replace />;
 
-  const toggleDark = () => {
-    if (darkmode) {
-      document.body.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-      setDarkmode(false);
-    } else {
-      document.body.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-      setDarkmode(true);
-    }
-  };
-
   return (
     <div className="dark:bg-navy-900! relative float-right h-full min-h-screen w-full !bg-white">
-      <button
-        onClick={toggleDark}
-        className="dark:bg-navy-700 dark:hover:bg-navy-600 fixed top-4 right-4 z-50 flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-600 shadow-md transition-colors hover:bg-gray-200 dark:text-white"
-      >
-        {darkmode ? (
-          <RiSunFill className="h-4 w-4" />
-        ) : (
-          <RiMoonFill className="h-4 w-4" />
-        )}
-      </button>
+      <div className="fixed bottom-4 left-4 z-50 w-[min(100vw-2rem,280px)]">
+        <ThemeModeControl />
+      </div>
 
       <main className="mx-auto min-h-screen">
         <div className="relative flex">

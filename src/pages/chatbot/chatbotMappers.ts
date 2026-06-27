@@ -124,6 +124,20 @@ function firstNonEmptyString(...values: unknown[]) {
   );
 }
 
+function parseSourceTitles(raw: {
+  title?: unknown;
+  titles?: unknown;
+}): string[] | undefined {
+  if (Array.isArray(raw.titles)) {
+    const items = raw.titles
+      .filter((value): value is string => typeof value === "string" && !!value.trim())
+      .map((value) => value.trim());
+    if (items.length) return [...new Set(items)];
+  }
+
+  return undefined;
+}
+
 function historySourceToStore(
   raw: NonNullable<ChatHistoryMessage["sources"]>[number],
 ) {
@@ -134,14 +148,23 @@ function historySourceToStore(
     ? raw.pages.filter((page): page is string => typeof page === "string")
     : undefined;
   const fileName = firstNonEmptyString(raw.fileName);
+  const fileId = firstNonEmptyString(raw.fileId);
   const markdownUrl = firstNonEmptyString(raw.markdownUrl);
+  const titles = parseSourceTitles(raw);
+  const fallbackTitle = firstNonEmptyString(raw.title) ?? fileName ?? url;
 
   const sourceItem: ChatSourceItem = {
-    title: firstNonEmptyString(raw.title) ?? url,
+    title: titles?.[0] ?? fallbackTitle,
     url,
   };
+  if (titles?.length) {
+    sourceItem.titles = titles;
+  }
   if (typeof raw.citationId === "number") {
     sourceItem.citationId = raw.citationId;
+  }
+  if (fileId) {
+    sourceItem.fileId = fileId;
   }
   if (fileName) {
     sourceItem.fileName = fileName;
@@ -244,7 +267,9 @@ export function convertMessage(m: ChatStoreMessage): ThreadMessageLike {
         id: string;
         url: string;
         title?: string;
+        titles?: string[];
         fileName?: string;
+        fileId?: string;
         pages?: string[];
         markdownUrl?: string;
         citationId?: number;
@@ -278,7 +303,9 @@ export function convertMessage(m: ChatStoreMessage): ThreadMessageLike {
       id: s.url,
       url: s.url,
       title: s.title,
+      titles: s.titles,
       fileName: s.fileName,
+      fileId: s.fileId,
       pages: s.pages,
       markdownUrl: s.markdownUrl,
       citationId: s.citationId,
@@ -324,21 +351,28 @@ export function sourceItemsFromStream(rawSources: unknown[]) {
       const candidate = source as Record<string, unknown>;
       const urlRaw = candidate.originalUrl;
       if (typeof urlRaw !== "string" || !urlRaw.trim()) return null;
-      const titleRaw = candidate.title ?? candidate.fileName;
+      const fileName = firstNonEmptyString(candidate.fileName);
+      const title = firstNonEmptyString(candidate.title);
+      const titles = parseSourceTitles(candidate);
       const pagesRaw = candidate.pages;
       const pages = Array.isArray(pagesRaw)
         ? pagesRaw.filter((page): page is string => typeof page === "string")
         : undefined;
       const item: ChatSourceItem = {
-        title:
-          typeof titleRaw === "string" && titleRaw.trim() ? titleRaw : urlRaw,
+        title: titles?.[0] ?? title ?? fileName ?? urlRaw,
         url: urlRaw,
       };
+      if (titles?.length) {
+        item.titles = titles;
+      }
       if (typeof candidate.citationId === "number") {
         item.citationId = candidate.citationId;
       }
-      if (typeof candidate.fileName === "string" && candidate.fileName.trim()) {
-        item.fileName = candidate.fileName;
+      if (fileName) {
+        item.fileName = fileName;
+      }
+      if (typeof candidate.fileId === "string" && candidate.fileId.trim()) {
+        item.fileId = candidate.fileId;
       }
       if (pages?.length) {
         item.pages = pages;

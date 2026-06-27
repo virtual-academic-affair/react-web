@@ -1,13 +1,21 @@
-import type { StreamdownTextComponents } from "@assistant-ui/react-streamdown";
 import { StreamdownTextPrimitive } from "@assistant-ui/react-streamdown";
+import { useMessagePartText } from "@assistant-ui/react";
+import type { ComponentPropsWithoutRef } from "react";
 import {
   STREAMDOWN_CONTROLS,
   STREAMDOWN_LINK_SAFETY,
 } from "@/components/markdown/streamdown-config";
+import {
+  mergeStreamdownComponents,
+  STREAMDOWN_LIST_PROSE_CLASS,
+} from "@/components/markdown/streamdown-prose";
 import { useStreamdownMathPlugins } from "@/components/markdown/useStreamdownMathPlugins";
 
-const MARKDOWN_COMPONENTS = {
-  table: ({ children, ...props }) => (
+import { InAppMarkdownAnchor } from "./in-app-markdown-anchor";
+
+const MARKDOWN_COMPONENTS = mergeStreamdownComponents({
+  a: InAppMarkdownAnchor,
+  table: ({ children, ...props }: ComponentPropsWithoutRef<"table">) => (
     <div className="my-4 w-full overflow-x-auto">
       <table
         {...props}
@@ -17,18 +25,20 @@ const MARKDOWN_COMPONENTS = {
       </table>
     </div>
   ),
-  thead: ({ children, ...props }) => (
+  thead: ({ children, ...props }: ComponentPropsWithoutRef<"thead">) => (
     <thead {...props} className="bg-white/[0.04]">
       {children}
     </thead>
   ),
-  tbody: ({ children, ...props }) => <tbody {...props}>{children}</tbody>,
-  tr: ({ children, ...props }) => (
+  tbody: ({ children, ...props }: ComponentPropsWithoutRef<"tbody">) => (
+    <tbody {...props}>{children}</tbody>
+  ),
+  tr: ({ children, ...props }: ComponentPropsWithoutRef<"tr">) => (
     <tr {...props} className="border-0">
       {children}
     </tr>
   ),
-  th: ({ children, ...props }) => (
+  th: ({ children, ...props }: ComponentPropsWithoutRef<"th">) => (
     <th
       {...props}
       className="border border-[#c8d3ef]/40 px-3 py-2 font-semibold text-[#202124] dark:border-white/20 dark:text-white"
@@ -36,7 +46,7 @@ const MARKDOWN_COMPONENTS = {
       {children}
     </th>
   ),
-  td: ({ children, ...props }) => (
+  td: ({ children, ...props }: ComponentPropsWithoutRef<"td">) => (
     <td
       {...props}
       className="border border-[#c8d3ef]/40 px-3 py-2 align-top text-[#1f1f1f] dark:border-white/20 dark:text-[#e3e3e3]"
@@ -44,36 +54,38 @@ const MARKDOWN_COMPONENTS = {
       {children}
     </td>
   ),
-} satisfies StreamdownTextComponents;
+});
 
 export function MarkdownText() {
   const plugins = useStreamdownMathPlugins();
+  const { status } = useMessagePartText();
 
   return (
     <StreamdownTextPrimitive
-      mode="streaming"
+      mode={status.type === "running" ? "streaming" : "static"}
       controls={STREAMDOWN_CONTROLS}
       linkSafety={STREAMDOWN_LINK_SAFETY}
       plugins={plugins}
       components={MARKDOWN_COMPONENTS}
-      className="text-[#1f1f1f] dark:text-[#e3e3e3]"
-      containerClassName="min-w-0 text-base leading-relaxed"
+      className={`text-[#1f1f1f] dark:text-[#e3e3e3] ${STREAMDOWN_LIST_PROSE_CLASS}`}
+      containerClassName={`min-w-0 text-base leading-relaxed ${STREAMDOWN_LIST_PROSE_CLASS}`}
     />
   );
 }
 
 export function MarkdownTextSm() {
   const plugins = useStreamdownMathPlugins();
+  const { status } = useMessagePartText();
 
   return (
     <StreamdownTextPrimitive
-      mode="streaming"
+      mode={status.type === "running" ? "streaming" : "static"}
       controls={STREAMDOWN_CONTROLS}
       linkSafety={STREAMDOWN_LINK_SAFETY}
       plugins={plugins}
       components={MARKDOWN_COMPONENTS}
-      className="text-[#1f1f1f] dark:text-[#e3e3e3]"
-      containerClassName="min-w-0 text-sm leading-relaxed"
+      className={`text-[#1f1f1f] dark:text-[#e3e3e3] ${STREAMDOWN_LIST_PROSE_CLASS}`}
+      containerClassName={`min-w-0 text-sm leading-relaxed ${STREAMDOWN_LIST_PROSE_CLASS}`}
     />
   );
 }

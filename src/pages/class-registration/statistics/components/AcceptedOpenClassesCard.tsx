@@ -55,6 +55,15 @@ const MESSAGE_STATUSES_IFRAME = ["staged"] as const;
 
 const SUPER_EMAIL_SETTING_KEY = ["email.superEmail"] as const;
 
+/** Cùng style hàng menu chatbot (ChatbotThreadRow / Tìm kiếm). */
+function chatMenuRowClass(active = false) {
+  return `flex h-9 w-full items-center rounded-full px-3 text-xs transition ${
+    active
+      ? "bg-gray-100 font-medium text-[#1f1f1f] dark:bg-white/10 dark:text-gray-200"
+      : "text-[#1f1f1f] hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10"
+  }`;
+}
+
 const AcceptedOpenClassesCard: React.FC<AcceptedOpenClassesCardProps> = ({
   timeRange,
 }) => {
@@ -147,18 +156,26 @@ const AcceptedOpenClassesCard: React.FC<AcceptedOpenClassesCardProps> = ({
         DS yêu cầu mở lớp
       </h3>
 
-      <div className="flex min-h-[200px] flex-col lg:flex-row lg:items-stretch">
-        <div className="min-w-0 flex-1 overflow-x-auto pb-1 lg:pr-6 lg:pb-0">
+      <div
+        className={`flex min-h-[200px] flex-col ${
+          selected ? "lg:flex-row lg:items-stretch" : ""
+        }`}
+      >
+        <div
+          className={`min-w-0 flex-1 overflow-x-auto pb-1 ${
+            selected ? "lg:pr-6 lg:pb-0" : ""
+          }`}
+        >
           {overviewLoading ? (
-            <p className="text-center text-sm text-gray-500 dark:text-gray-400">
+            <p className="mt-5 text-center text-sm text-gray-500 dark:text-gray-400">
               Đang tải…
             </p>
           ) : sections.length === 0 ? (
-            <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-              Không có dữ liệu.
+            <p className="mt-10 text-center text-sm text-gray-500 dark:text-gray-400">
+              Không có yêu cầu nào.
             </p>
           ) : (
-            <ul className="mt-5 flex min-w-[280px] flex-col gap-2.5">
+            <ul className="mt-5 flex min-w-[280px] flex-col">
               {sections.map((sec) => {
                 const isSel = selected?.subjectName === sec.subjectName;
                 return (
@@ -177,13 +194,9 @@ const AcceptedOpenClassesCard: React.FC<AcceptedOpenClassesCardProps> = ({
                         setPage(1);
                       }
                     }}
-                    className={`flex w-full items-center gap-3 rounded-full px-4 py-2.5 text-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
-                      isSel
-                        ? "bg-brand-50 dark:border-brand-500/40 dark:bg-brand-500/15"
-                        : "border-gray-100 bg-white hover:bg-gray-50/90 dark:border-white/10 dark:bg-white/3 dark:hover:bg-white/10"
-                    } cursor-pointer`}
+                    className={`${chatMenuRowClass(isSel)} cursor-pointer gap-2 outline-none focus-visible:ring-2 focus-visible:ring-offset-2`}
                   >
-                    <div className="text-navy-900 flex min-w-0 flex-1 flex-wrap items-center gap-x-1 gap-y-1 dark:text-white">
+                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1 gap-y-1">
                       {sec.subjectCode ? (
                         <>
                           <CopyableText
@@ -211,7 +224,7 @@ const AcceptedOpenClassesCard: React.FC<AcceptedOpenClassesCardProps> = ({
                       )}
                     </div>
                     <Tooltip label="Mở lớp (tổng các lớp)" className="shrink-0">
-                      <span className="text-navy-800 font-semibold whitespace-nowrap tabular-nums dark:text-gray-200">
+                      <span className="shrink-0 font-medium whitespace-nowrap tabular-nums">
                         {sec.requestOpenTotal}
                       </span>
                     </Tooltip>
@@ -222,17 +235,15 @@ const AcceptedOpenClassesCard: React.FC<AcceptedOpenClassesCardProps> = ({
           )}
         </div>
 
-        <div className="flex w-full shrink-0 flex-col border-t border-gray-200 pt-4 max-lg:mt-1 lg:max-w-sm lg:border-t-0 lg:border-l lg:border-gray-200 lg:pt-0 lg:pl-6 dark:border-white/10">
-          {!selected ? (
-            <p className="m-auto text-center text-xs text-gray-500 dark:text-gray-400">
-              Chọn một môn bên trái để xem danh sách MSSV.
-            </p>
-          ) : (
-            <>
-              {itemsLoading ? (
-                <p className="text-center text-xs text-gray-500">Đang tải…</p>
-              ) : (
-                <ul className="max-h-[320px] space-y-1 overflow-y-auto text-sm">
+        {selected ? (
+          <div className="flex min-w-0 flex-1 flex-col overflow-x-auto pb-1 border-t border-gray-200 lg:border-t-0 lg:border-l lg:pl-6 dark:border-white/10">
+            {itemsLoading ? (
+              <p className="mt-5 text-center text-sm text-gray-500 dark:text-gray-400">
+                Đang tải…
+              </p>
+            ) : (
+              <>
+                <ul className="mt-5 flex min-w-[280px] flex-col max-h-[320px] overflow-y-auto">
                   {(itemsPage?.items ?? []).map((it) => {
                     const gmailMessageId = getItemGmailMessageId(it);
                     const gmailUrl =
@@ -242,69 +253,63 @@ const AcceptedOpenClassesCard: React.FC<AcceptedOpenClassesCardProps> = ({
                     return (
                       <li
                         key={it.id}
-                        className="text-navy-800 flex items-center justify-between gap-2 dark:text-gray-100"
+                        className={`${chatMenuRowClass()} gap-2`}
                       >
+                        {gmailUrl ? (
+                          <Tooltip label="Mở tin nhắn Gmail">
+                            <a
+                              href={gmailUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex shrink-0 items-center text-[#444746] transition-colors hover:text-brand-600 dark:text-gray-300 dark:hover:text-brand-400"
+                              aria-label="Mở tin nhắn Gmail"
+                            >
+                              <SiGmail className="h-3.5 w-3.5" aria-hidden />
+                            </a>
+                          </Tooltip>
+                        ) : null}
                         <CopyableText
                           text={getItemStudentCode(it)}
                           emptyLabel="—"
-                          variant="plain"
+                          variant="field"
                           tooltip="Sao chép MSSV"
-                          className="min-w-0 shrink"
+                          className="min-w-0 flex-1 truncate"
                         />
-                        {gmailUrl ? (
-                          <a
-                            href={gmailUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 inline-flex shrink-0 items-center gap-1 rounded-md p-0.5 transition-colors"
-                            aria-label="Mở tin nhắn Gmail xem yêu cầu"
-                            title="Mở Gmail"
-                          >
-                            <SiGmail className="h-3.5 w-3.5" aria-hidden />
-                            <span className="font-sans text-[10px] font-medium">
-                              Gmail
-                            </span>
-                          </a>
-                        ) : (
-                          <span className="shrink-0 font-sans text-[10px] text-gray-400 dark:text-gray-500">
-                            —
-                          </span>
-                        )}
                       </li>
                     );
                   })}
                 </ul>
-              )}
-              {itemsPage && itemsPage.pagination.totalPages > 1 ? (
-                <div className="mt-3 flex items-center justify-between gap-2 text-xs">
-                  <button
-                    type="button"
-                    disabled={page <= 1}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    className="rounded-full border border-gray-300 px-2 py-1 disabled:opacity-50 dark:border-white/20"
-                  >
-                    Trước
-                  </button>
-                  <span className="text-gray-500 tabular-nums">
-                    {page}/{itemsPage.pagination.totalPages}
-                  </span>
-                  <button
-                    type="button"
-                    disabled={page >= itemsPage.pagination.totalPages}
-                    onClick={() =>
-                      setPage((p) =>
-                        Math.min(itemsPage.pagination.totalPages, p + 1),
-                      )
-                    }
-                    className="rounded-full border border-gray-300 px-2 py-1 disabled:opacity-50 dark:border-white/20"
-                  >
-                    Sau
-                  </button>
-                </div>
-              ) : null}
-            </>
-          )}
-        </div>
+                {itemsPage && itemsPage.pagination.totalPages > 1 ? (
+                  <div className="mt-3 flex items-center justify-between gap-2 text-xs">
+                    <button
+                      type="button"
+                      disabled={page <= 1}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      className="rounded-full border border-gray-300 px-2 py-1 disabled:opacity-50 dark:border-white/20"
+                    >
+                      Trước
+                    </button>
+                    <span className="text-gray-500 tabular-nums">
+                      {page}/{itemsPage.pagination.totalPages}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={page >= itemsPage.pagination.totalPages}
+                      onClick={() =>
+                        setPage((p) =>
+                          Math.min(itemsPage.pagination.totalPages, p + 1),
+                        )
+                      }
+                      className="rounded-full border border-gray-300 px-2 py-1 disabled:opacity-50 dark:border-white/20"
+                    >
+                      Sau
+                    </button>
+                  </div>
+                ) : null}
+              </>
+            )}
+          </div>
+        ) : null}
       </div>
     </div>
   );

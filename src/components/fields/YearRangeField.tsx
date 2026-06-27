@@ -1,61 +1,32 @@
-
-
-interface YearRange {
-  fromYear: number;
-  toYear: number;
-}
+import YearRangeControl from "@/components/fields/YearRangeControl";
+import {
+  yearRangeFromStrings,
+  yearRangeToStrings,
+  type YearRangeNumbers,
+} from "@/utils/yearRange";
 
 interface YearRangeFieldProps {
-  label?: string;
-  value: YearRange;
-  onChange: (value: YearRange) => void;
+  value: YearRangeNumbers;
+  onChange: (value: YearRangeNumbers) => void;
   disabled?: boolean;
+  showInput?: boolean;
+  showSummary?: boolean;
 }
 
 export default function YearRangeField({
-  label,
   value,
   onChange,
   disabled,
+  showInput = true,
+  showSummary = true,
 }: YearRangeFieldProps) {
-  const handleChange = (field: keyof YearRange, val: string) => {
-    const numVal = val === "" ? (field === "fromYear" ? 0 : 9999) : parseInt(val);
-    onChange({ ...value, [field]: numVal });
-  };
-
-  const displayVal = (val: number | undefined) =>
-    val === undefined || val === 0 || val === 9999 ? "" : val.toString();
-
-  const inputCls = `w-full min-w-0 rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10 dark:text-white`;
-
   return (
-    <div className="flex flex-col gap-1 w-full">
-      {label && (
-        <label className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500 ml-1">
-          {label}
-        </label>
-      )}
-      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
-        <input
-          type="number"
-          placeholder="Từ năm"
-          value={displayVal(value?.fromYear)}
-          onChange={(e) => handleChange("fromYear", e.target.value)}
-          disabled={disabled}
-          className={inputCls}
-        />
-        <span className="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
-          đến
-        </span>
-        <input
-          type="number"
-          placeholder="Đến năm"
-          value={displayVal(value?.toYear)}
-          onChange={(e) => handleChange("toYear", e.target.value)}
-          disabled={disabled}
-          className={inputCls}
-        />
-      </div>
-    </div>
+    <YearRangeControl
+      value={yearRangeToStrings(value)}
+      onChange={(next) => onChange(yearRangeFromStrings(next))}
+      disabled={disabled}
+      showInput={showInput}
+      showSummary={showSummary}
+    />
   );
 }

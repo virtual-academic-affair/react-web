@@ -10,15 +10,21 @@ import React, {
 } from "react";
 import { createPortal } from "react-dom";
 import {
+  MdCheck,
   MdChevronLeft,
   MdChevronRight,
   MdClose,
+  MdContentCopy,
   MdDescription,
   MdErrorOutline,
   MdFileDownload,
 } from "react-icons/md";
 
+import { copyTextToClipboard } from "@/components/copyable/copyTextToClipboard";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import {
+  buildDocumentViewUrl,
+} from "@/utils/documentViewUrl";
 import {
   type DownloadFileFormat,
   DocumentsService,
@@ -83,6 +89,11 @@ function getExtension(filename: string): string {
   return (filename.split(".").pop() || "").toLowerCase();
 }
 
+function extensionFromUrl(url: string): string {
+  const last = url.split("?")[0].split("/").pop() || "";
+  return getExtension(last);
+}
+
 type FileCategory = "pdf" | "text" | "image" | "docx" | "unsupported";
 
 function categorizeFile(filename: string): FileCategory {
@@ -91,6 +102,80 @@ function categorizeFile(filename: string): FileCategory {
   if (TEXT_EXTENSIONS.includes(ext)) return "text";
   if (IMAGE_EXTENSIONS.includes(ext)) return "image";
   if (ext === "docx" || ext === "doc") return "docx";
+  return "unsupported";
+}
+
+function categorizeFromMimeType(mime?: string): FileCategory | null {
+  if (!mime) return null;
+  const normalized = mime.toLowerCase();
+  if (normalized === "application/pdf") return "pdf";
+  if (
+    normalized.includes("wordprocessingml") ||
+    normalized.includes("msword") ||
+    normalized === "application/doc"
+  ) {
+    return "docx";
+  }
+  if (normalized.startsWith("image/")) return "image";
+  if (
+    normalized.startsWith("text/") ||
+    normalized === "application/json" ||
+    normalized === "application/xml"
+  ) {
+    return "text";
+  }
+  return null;
+}
+
+function resolvePreviewFileName(
+  fileName: string,
+  fileDetail: Record<string, unknown> | undefined,
+  downloadFormat: DownloadFileFormat,
+  publicUrl: string | null,
+): string {
+  const detailOriginal = String(fileDetail?.originalFilename ?? "").trim();
+  const detailDisplay = String(fileDetail?.displayName ?? "").trim();
+
+  if (downloadFormat === "markdown") {
+    const markdownUrl = String(
+      fileDetail?.markdownFileUrl ?? publicUrl ?? "",
+    );
+    const fromUrl = markdownUrl.split("?")[0].split("/").pop() || "";
+    if (fromUrl) return fromUrl;
+    const baseName = detailDisplay || detailOriginal || fileName;
+    return baseName ? `${baseName}.md` : "markdown.md";
+  }
+
+  if (detailOriginal) return detailOriginal;
+  if (detailDisplay && getExtension(detailDisplay)) return detailDisplay;
+
+  if (publicUrl) {
+    const fromUrl = publicUrl.split("?")[0].split("/").pop() || "";
+    if (getExtension(fromUrl)) return fromUrl;
+  }
+
+  return fileName || detailDisplay || "document";
+}
+
+function resolveFileCategory(
+  fileName: string,
+  publicUrl: string | null,
+  mimeType?: string,
+): FileCategory {
+  const fromMime = categorizeFromMimeType(mimeType);
+  if (fromMime) return fromMime;
+
+  const fromName = categorizeFile(fileName);
+  if (fromName !== "unsupported") return fromName;
+
+  if (publicUrl) {
+    const ext = extensionFromUrl(publicUrl);
+    if (ext) {
+      const fromUrl = categorizeFile(`file.${ext}`);
+      if (fromUrl !== "unsupported") return fromUrl;
+    }
+  }
+
   return "unsupported";
 }
 
@@ -106,7 +191,8 @@ function PreviewLoading() {
 // ── Props ────────────────────────────────────────────────────────────────────
 
 interface FilePreviewModalProps {
-  fileId: string | null;
+  fileId?: string | null;
+  fileUrl?: string | null;
   fileName: string;
   downloadFormat?: DownloadFileFormat;
   isOpen: boolean;
@@ -152,19 +238,69 @@ const UnsupportedPreview: React.FC<{
 // ── Main Component ───────────────────────────────────────────────────────────
 
 const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
-  fileId,
+  fileId = null,
+  fileUrl = null,
   fileName,
   downloadFormat = "original",
   isOpen,
   initialPage = 1,
   onClose,
 }) => {
-  const category = useMemo(() => categorizeFile(fileName), [fileName]);
+  const useFileDetail = isOpen && Boolean(fileId) && !fileUrl;
+
+  const {
+    data: fileDetail,
+    isLoading: isDetailLoading,
+    error: detailError,
+  } = useQuery({
+    queryKey: ["file-detail-preview", fileId],
+    queryFn: () => DocumentsService.getFileDetail(fileId!),
+    enabled: useFileDetail,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+
+  const publicUrl = useMemo(() => {
+    if (fileUrl) return fileUrl;
+    if (!fileDetail) return null;
+    return downloadFormat === "markdown"
+      ? fileDetail.markdownFileUrl
+      : fileDetail.fileUrl;
+  }, [fileDetail, downloadFormat, fileUrl]);
+
+  const isLoading = useFileDetail && isDetailLoading;
+  const error = useFileDetail ? detailError : null;
+
+  const effectiveFileName = useMemo(
+    () =>
+      resolvePreviewFileName(
+        fileName,
+        fileDetail,
+        downloadFormat,
+        publicUrl,
+      ),
+    [downloadFormat, fileDetail, fileName, publicUrl],
+  );
+
+  const category = useMemo(
+    () =>
+      resolveFileCategory(
+        effectiveFileName,
+        publicUrl,
+        typeof fileDetail?.mimeType === "string"
+          ? fileDetail.mimeType
+          : typeof fileDetail?.contentType === "string"
+            ? fileDetail.contentType
+            : undefined,
+      ),
+    [effectiveFileName, fileDetail, publicUrl],
+  );
 
   // Lifted PDF states for toolbar rendering on modal header
   const [numPages, setNumPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [scale, setScale] = useState(1.2);
+  const [copied, setCopied] = useState(false);
   const pdfScrollRef = useRef<(page: number) => void>(undefined);
 
   useEffect(() => {
@@ -194,26 +330,6 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
     setScale((s) => Math.min(3, s + 0.2));
   }, []);
 
-  // Fetch the file detail metadata instead of downloading the whole blob via Python RAG proxy
-  const {
-    data: fileDetail,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ["file-detail-preview", fileId],
-    queryFn: () => DocumentsService.getFileDetail(fileId!),
-    enabled: isOpen && Boolean(fileId),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-  });
-
-  const publicUrl = useMemo(() => {
-    if (!fileDetail) return null;
-    return downloadFormat === "markdown"
-      ? fileDetail.markdownFileUrl
-      : fileDetail.fileUrl;
-  }, [fileDetail, downloadFormat]);
-
   useBodyScrollLock(isOpen);
 
   // Keyboard handler
@@ -235,13 +351,51 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
       const url = URL.createObjectURL(dlBlob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = fileName;
+      a.download = effectiveFileName;
       a.click();
       URL.revokeObjectURL(url);
     } catch {
       toast.error("Không thể tải xuống tệp.");
     }
-  }, [publicUrl, fileName]);
+  }, [effectiveFileName, publicUrl]);
+
+  const showCopyViewLink =
+    Boolean(fileId) &&
+    (category === "pdf" ||
+      downloadFormat === "markdown" ||
+      (category === "text" && getExtension(effectiveFileName) === "md"));
+
+  const viewUrl = useMemo(() => {
+    if (!fileId || !showCopyViewLink) return null;
+    return buildDocumentViewUrl(fileId);
+  }, [fileId, showCopyViewLink]);
+
+  const handleCopyViewLink = useCallback(async () => {
+    if (!viewUrl) return;
+    const success = await copyTextToClipboard(viewUrl);
+    if (!success) {
+      toast.error("Không thể sao chép liên kết");
+      return;
+    }
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1600);
+  }, [viewUrl]);
+
+  const copyViewLinkButton = showCopyViewLink ? (
+    <button
+      type="button"
+      onClick={() => void handleCopyViewLink()}
+      disabled={!viewUrl}
+      className="flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition-all hover:bg-white/12 hover:text-white active:scale-92 disabled:opacity-40"
+      title={copied ? "Đã sao chép link" : "Sao chép link xem"}
+    >
+      {copied ? (
+        <MdCheck className="h-5 w-5 text-green-400" />
+      ) : (
+        <MdContentCopy className="h-5 w-5" />
+      )}
+    </button>
+  ) : null;
 
   if (!isOpen) return null;
 
@@ -290,7 +444,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
       case "text":
         return (
           <Suspense fallback={<PreviewLoading />}>
-            {getExtension(fileName) === "md" ? (
+            {getExtension(effectiveFileName) === "md" ? (
               <MarkdownPreview url={publicUrl} />
             ) : (
               <PlainTextPreview url={publicUrl} />
@@ -307,7 +461,10 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
         );
       case "unsupported":
         return (
-          <UnsupportedPreview fileName={fileName} onDownload={handleDownload} />
+          <UnsupportedPreview
+            fileName={effectiveFileName}
+            onDownload={handleDownload}
+          />
         );
       default:
         return null;
@@ -332,15 +489,16 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
                 </div>
                 <div className="min-w-0">
                   <p className="max-w-[180px] truncate text-sm font-semibold text-white sm:max-w-[360px] md:max-w-[480px]">
-                    {fileName}
+                    {effectiveFileName}
                   </p>
                   <p className="text-xs text-gray-400 uppercase">
-                    {getExtension(fileName)} file
+                    {getExtension(effectiveFileName) || "file"} file
                   </p>
                 </div>
               </div>
 
               <div className="flex shrink-0 items-center justify-end gap-1 md:hidden">
+                {copyViewLinkButton}
                 <button
                   type="button"
                   onClick={handleDownload}
@@ -411,6 +569,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
 
             {/* Actions */}
             <div className="hidden flex-1 items-center justify-end gap-1 md:flex">
+              {copyViewLinkButton}
               <button
                 type="button"
                 onClick={handleDownload}

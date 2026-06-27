@@ -25,7 +25,7 @@ const UserDashboard: React.FC = () => {
       if (userRole === "admin") {
         navigate("/admin/email/config", { replace: true });
       } else {
-        navigate("/user", { replace: true });
+        navigate("/user/chatbot", { replace: true });
       }
     } else {
       navigate("/auth/login");
