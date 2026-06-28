@@ -460,10 +460,30 @@ body.dark #root {
   background-color: var(--color-navy-900);
 }
 
+html.iframe-mode {
+  color-scheme: light;
+}
+
 html.iframe-mode,
 html.iframe-mode body,
-html.iframe-mode #root {
+html.iframe-mode #root,
+html.iframe-mode.dark,
+html.iframe-mode.dark body,
+html.iframe-mode.dark #root {
   background-color: transparent !important;
+}
+
+/* Page chrome is transparent; explicit light surfaces stay opaque white/gray. */
+html.iframe-mode .bg-white {
+  background-color: #ffffff;
+}
+
+html.iframe-mode .bg-gray-50 {
+  background-color: var(--color-gray-50);
+}
+
+html.iframe-mode .bg-gray-100 {
+  background-color: var(--color-gray-100);
 }
 
 :root {

@@ -1,4 +1,4 @@
-import { isIframeMode } from "./iframeMode";
+import { applyIframeLightTheme, isIframeMode } from "./iframeMode";
 
 export type ThemeMode = "light" | "dark" | "system";
 
@@ -24,13 +24,6 @@ export function resolveIsDark(mode: ThemeMode): boolean {
   if (mode === "dark") return true;
   if (mode === "light") return false;
   return getSystemPrefersDark();
-}
-
-/** Gmail sidebar iframe always uses light theme regardless of user preference. */
-export function applyIframeLightTheme(): void {
-  document.body.classList.remove("dark");
-  document.documentElement.classList.remove("dark");
-  document.documentElement.style.colorScheme = "light";
 }
 
 export function applyThemeMode(mode: ThemeMode): void {

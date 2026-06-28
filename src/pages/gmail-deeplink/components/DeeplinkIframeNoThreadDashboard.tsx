@@ -407,7 +407,7 @@ function DeeplinkSectionShell({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-2xl p-4">
+    <section className="rounded-2xl bg-white p-4">
       {title ? (
         <header className="flex flex-col gap-3">
           <div className="border-brand-500 flex min-w-0 flex-1 items-center gap-2 border-l-4 pl-3">

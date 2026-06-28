@@ -3,11 +3,10 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
-import { applyIframeModeClass } from "./utils/iframeMode";
+import { applyIframeEmbedMode, applyIframeLightTheme, isIframeMode } from "./utils/iframeMode";
 import { initTheme, watchSystemTheme } from "./utils/theme";
 
-applyIframeModeClass();
-
+applyIframeEmbedMode();
 initTheme();
 
 watchSystemTheme(() => {
@@ -15,6 +14,10 @@ watchSystemTheme(() => {
 });
 
 const syncDocumentTheme = () => {
+  if (isIframeMode()) {
+    applyIframeLightTheme();
+    return;
+  }
   const isDark = document.body.classList.contains("dark");
   document.documentElement.classList.toggle("dark", isDark);
   document.documentElement.style.colorScheme = isDark ? "dark" : "light";
