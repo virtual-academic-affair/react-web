@@ -1,4 +1,5 @@
 import { API_CONFIG, API_ENDPOINTS } from "@/config/api.config";
+import { useAuthStore } from "@/stores/auth.store";
 import http from "../http";
 import ragHttp from "../rag-http";
 
@@ -104,10 +105,15 @@ export const DocumentsService = {
     const wsUrl = `${getRagWsBaseUrl()}${API_ENDPOINTS.rag.files.progress(clientId)}`;
     const socket = new WebSocket(wsUrl);
 
-    socket.onopen = () => handlers.onOpen?.();
+    socket.onopen = () => {
+      const token = useAuthStore.getState().accessToken;
+      socket.send(JSON.stringify({ type: "auth", token: token ?? "" }));
+      handlers.onOpen?.();
+    };
     socket.onmessage = (evt) => {
       try {
         const payload = JSON.parse(evt.data) as UploadProgressEvent;
+        if ((payload as { type?: string }).type === "auth_ok") return;
         handlers.onMessage?.(payload);
       } catch {
         // ignore malformed messages
