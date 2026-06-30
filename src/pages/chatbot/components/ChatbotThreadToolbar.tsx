@@ -92,7 +92,7 @@ export function ChatbotThreadToolbar({
   const modKeyLabel = useChatbotModKeyLabel();
   const newChatShortcutKeys = [modKeyLabel, "⇧", "O"];
   const searchShortcutKeys = [modKeyLabel, "⇧", "K"];
-  const [historyExpanded, setHistoryExpanded] = useState(false);
+  const [historyExpanded, setHistoryExpanded] = useState(true);
   const [infoExpanded, setInfoExpanded] = useState(true);
   const activeSessionsQuery = useChatbotSessionsQuery("active", true);
   const archivedSessionsQuery = useChatbotSessionsQuery("archived", searchOpen);

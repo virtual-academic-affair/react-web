@@ -1,20 +1,20 @@
-import TableLayout from "@/components/table/TableLayout";
+import { fixRichTextLinks } from "@/components/fields/RichTextEditor";
 import { PageTitle } from "@/components/layouts/PageTitle";
-import { LuCircleHelp } from "react-icons/lu";
-import type { TableAction, TableColumn } from "@/components/table/TableLayout";
+import ConfirmModal from "@/components/modal/ConfirmModal";
 import TableClampCell from "@/components/table/TableClampCell";
+import type { TableAction, TableColumn } from "@/components/table/TableLayout";
+import TableLayout from "@/components/table/TableLayout";
 import { faqsService } from "@/services/documents/faqs.service";
 import type { FAQ } from "@/types/faqs";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import { useState } from "react";
+import { LuCircleHelp } from "react-icons/lu";
 import { MdDeleteOutline, MdInfoOutline } from "react-icons/md";
-import { fixRichTextLinks } from "@/components/fields/RichTextEditor";
 import { useSearchParams } from "react-router-dom";
 import FAQBulkImportModal from "./components/FAQBulkImportModal";
 import FAQCreationDrawer from "./components/FAQCreationDrawer";
 import FAQDetailDrawer from "./components/FAQDetailDrawer";
-import ConfirmModal from "@/components/modal/ConfirmModal";
 
 const PAGE_SIZE = 10;
 
@@ -52,7 +52,7 @@ export default function FAQsPage() {
       header: "Câu hỏi",
       width: "40%",
       render: (item) => (
-        <TableClampCell className="text-sm font-medium text-navy-700 dark:text-white">
+        <TableClampCell className="text-navy-700 text-sm font-medium dark:text-white">
           {item.question}
         </TableClampCell>
       ),
@@ -63,7 +63,7 @@ export default function FAQsPage() {
       width: "50%",
       render: (item) => (
         <TableClampCell
-          className="tiptap-prose text-sm text-navy-700 dark:text-gray-300 [&_a:hover]:opacity-80 [&_a]:text-brand-500 [&_a]:underline dark:[&_a]:text-brand-400"
+          className="tiptap-prose text-navy-700 [&_a]:text-brand-500 dark:[&_a]:text-brand-400 text-sm dark:text-gray-300 [&_a]:underline [&_a:hover]:opacity-80"
           html={fixRichTextLinks(item.answerRichText)}
         />
       ),
@@ -124,8 +124,8 @@ export default function FAQsPage() {
     <>
       <div className="flex flex-col gap-4">
         <PageTitle
-          title="Danh sách câu hỏi"
-          tabTitle="DS câu hỏi"
+          title="Danh sách câu hỏi thường gặp (FAQ)"
+          tabTitle="Danh sách câu hỏi thường gặp (FAQ)"
           icon={LuCircleHelp}
         />
         <TableLayout

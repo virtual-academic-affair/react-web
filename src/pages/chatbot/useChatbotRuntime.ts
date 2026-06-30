@@ -43,6 +43,7 @@ export function useChatbotRuntime() {
   sessionsRef.current = sessions;
   const messageLoadTokenRef = useRef(0);
   const selectedByUserRef = useRef<string | null>(null);
+  const threadIdAliasRef = useRef<Record<string, string>>({});
 
   const messages = useMemo(
     () => sessions.find((s) => s.id === activeThreadId)?.messages ?? [],
@@ -61,6 +62,15 @@ export function useChatbotRuntime() {
     await queryClient.invalidateQueries({
       queryKey: chatbotQueryKeys.sessionsRoot(),
     });
+  }, [queryClient]);
+
+  const refreshActiveSessions = useCallback(async () => {
+    const activeSessions = await fetchChatbotSessions("active");
+    queryClient.setQueryData(
+      chatbotQueryKeys.sessions("active"),
+      activeSessions,
+    );
+    return activeSessions;
   }, [queryClient]);
 
   const removeSessionFromQueryCache = useCallback(
@@ -135,6 +145,51 @@ export function useChatbotRuntime() {
     if (!activeSessions) return;
 
     if (initialResolvedRef.current) {
+      const activeThreadId = activeThreadIdRef.current;
+      const currentActive = sessionsRef.current.find(
+        (session) => session.id === activeThreadId,
+      );
+      const latestSession = activeSessions[0];
+      const latestSessionId = latestSession?.serverId ?? latestSession?.id;
+
+      if (
+        currentActive &&
+        !currentActive.serverId &&
+        currentActive.messages.length > 0 &&
+        selectedByUserRef.current === currentActive.id &&
+        latestSessionId
+      ) {
+        threadIdAliasRef.current[currentActive.id] = latestSessionId;
+        selectedByUserRef.current = latestSessionId;
+        setActiveThreadId(latestSessionId);
+        navigateToThread(latestSessionId, { replace: true });
+        setSessions((prev) => {
+          const draftSession =
+            prev.find((session) => session.id === currentActive.id) ??
+            currentActive;
+          const resolvedSession: ChatThreadSession = {
+            ...latestSession,
+            id: latestSessionId,
+            serverId: latestSessionId,
+            messages: draftSession.messages,
+            messagesLoaded: draftSession.messagesLoaded,
+          };
+          const remainingFetched = activeSessions.filter(
+            (session) => session.id !== latestSessionId,
+          );
+          const remainingCurrent = prev.filter(
+            (session) =>
+              session.id !== currentActive.id && session.id !== latestSessionId,
+          );
+          return mergeFetchedSessions(
+            [resolvedSession, ...remainingFetched],
+            remainingCurrent,
+          );
+        });
+        setIsResolvingInitial(false);
+        return;
+      }
+
       setSessions((prev) => mergeFetchedSessions(activeSessions, prev));
       setIsResolvingInitial(false);
       return;
@@ -232,8 +287,9 @@ export function useChatbotRuntime() {
     setActiveThreadId,
     setSystemError,
     selectedByUserRef,
+    threadIdAliasRef,
     navigateToThread,
-    invalidateSessionQueries,
+    refreshActiveSessions,
   });
 
   const switchToThread = useCallback(

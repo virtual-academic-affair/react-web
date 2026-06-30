@@ -19,7 +19,6 @@ import {
 
 import { copyTextToClipboard } from "@/components/copyable/copyTextToClipboard";
 import { useIsolatedSearchParams } from "@/hooks/useIsolatedSearchParams";
-import { useSourcePreviewOptional } from "@/components/assistant-ui/source-preview-context";
 import DocumentDetailDrawer from "@/pages/documents/components/DocumentDetailDrawer";
 import { DOCUMENT_TYPES } from "@/pages/documents/components/UploadDrawer";
 import { DocumentsService, MetadataService } from "@/services/documents";
@@ -91,8 +90,6 @@ const UserDocumentsPage: React.FC<{ embedded?: boolean }> = ({
   const [searchParams, setSearchParams] = useIsolatedSearchParams(embedded);
   const [routerSearchParams, setRouterSearchParams] = useRouterSearchParams();
   const viewDocumentSearchParams = embedded ? routerSearchParams : searchParams;
-  const sourcePreview = useSourcePreviewOptional();
-
   // View mode (chatbot embedded: list only)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const showListOnly = embedded;
@@ -324,18 +321,13 @@ const UserDocumentsPage: React.FC<{ embedded?: boolean }> = ({
 
   const handleOpenPreview = useCallback(
     (file: any) => {
-      if (embedded && sourcePreview) {
-        const fileName =
-          file.originalFilename || file.displayName || "Tài liệu";
-        sourcePreview.openFilePreview({
-          fileId: file.fileId,
-          fileName,
-        });
-        return;
-      }
-
       wasDrawerOpen.current = !!selectedFileId && !viewDocumentId;
       const next = new URLSearchParams(viewDocumentSearchParams);
+      if (wasDrawerOpen.current && selectedFileId) {
+        next.set("id", selectedFileId);
+      } else {
+        next.delete("id");
+      }
       setViewDocumentParams(next, file.fileId);
       if (embedded) {
         setRouterSearchParams(next, { replace: true });
@@ -345,7 +337,6 @@ const UserDocumentsPage: React.FC<{ embedded?: boolean }> = ({
     },
     [
       embedded,
-      sourcePreview,
       setRouterSearchParams,
       setSearchParams,
       selectedFileId,
@@ -358,6 +349,7 @@ const UserDocumentsPage: React.FC<{ embedded?: boolean }> = ({
     if (embedded) {
       const next = new URLSearchParams(routerSearchParams);
       clearViewDocumentParams(next);
+      if (!wasDrawerOpen.current) next.delete("id");
       setRouterSearchParams(next, { replace: true });
       return;
     }
@@ -687,18 +679,14 @@ const UserDocumentsPage: React.FC<{ embedded?: boolean }> = ({
         onDeleted={() => {}}
         onPreview={() => {
           if (!selectedFileId) return;
-          if (embedded && sourcePreview) {
-            const file = files.find((x: any) => x.fileId === selectedFileId);
-            sourcePreview.openFilePreview({
-              fileId: selectedFileId,
-              fileName:
-                file?.originalFilename || file?.displayName || "Tài liệu",
-            });
-            return;
-          }
           wasDrawerOpen.current = true;
           const next = new URLSearchParams(viewDocumentSearchParams);
+          next.set("id", selectedFileId);
           setViewDocumentParams(next, selectedFileId);
+          if (embedded) {
+            setRouterSearchParams(next, { replace: true });
+            return;
+          }
           setSearchParams(next, { replace: true });
         }}
         {...(!embedded
@@ -717,7 +705,7 @@ const UserDocumentsPage: React.FC<{ embedded?: boolean }> = ({
       />
 
       {/* ── File Preview Modal ──────────────────────────────────────────── */}
-      {!embedded && viewDocumentId !== null ? (
+      {viewDocumentId !== null ? (
         <Suspense fallback={null}>
           <FilePreviewModal
             fileId={viewDocumentId}

@@ -4,6 +4,7 @@ export const VIEW_DOCUMENT_FORMAT_MARKDOWN = "markdown";
 
 export type ViewDocumentUrlOptions = {
   format?: typeof VIEW_DOCUMENT_FORMAT_MARKDOWN;
+  pathname?: string;
 };
 
 const LEGACY_PREVIEW_PARAMS = [
@@ -54,7 +55,8 @@ export function buildDocumentViewUrl(
   fileId: string,
   options?: ViewDocumentUrlOptions,
 ): string {
-  const url = new URL(window.location.origin);
+  const pathname = options?.pathname ?? window.location.pathname;
+  const url = new URL(pathname || "/", window.location.origin);
   setViewDocumentParams(url.searchParams, fileId, options);
   return url.toString();
 }
