@@ -17,7 +17,7 @@ import {
   type RefObject,
 } from "react";
 import { LuBookOpen, LuCheck, LuCopy, LuFileQuestion } from "react-icons/lu";
-import { MdArrowDownward, MdSend, MdSquare } from "react-icons/md";
+import { MdArrowDownward, MdSend, MdSquare, MdUnarchive } from "react-icons/md";
 
 import { MarkdownTextSm } from "@/components/assistant-ui/markdown-text";
 import {
@@ -521,9 +521,12 @@ function ChatMessagesSkeletonLoader() {
 export function GeminiThread({ className = "" }: { className?: string }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const messagesCount = useAuiState((s) => s.thread.messages.length);
-  const { activeThreadId, isLoadingMessages, sessions } = useChatbotShell();
+  const { activeThreadId, isLoadingMessages, sessions, unarchiveThread } =
+    useChatbotShell();
   const { sidebarOpen, sidebarCollapsed } = useChatbotLayoutOptional() ?? {};
-  const isNewThread = !sessions.find((s) => s.id === activeThreadId)?.serverId;
+  const activeSession = sessions.find((s) => s.id === activeThreadId);
+  const isNewThread = !activeSession?.serverId;
+  const isArchivedThread = activeSession?.status === "archived";
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const viewportFadeStyle = useScrollFadeMask(viewportRef, [
     messagesCount,
@@ -589,6 +592,20 @@ export function GeminiThread({ className = "" }: { className?: string }) {
     <ThreadPrimitive.Root
       className={`relative isolate flex h-full min-h-0 min-w-0 flex-col bg-transparent text-base text-[#1f1f1f] dark:text-white ${className}`.trim()}
     >
+      {isArchivedThread && activeSession ? (
+        <div className="pointer-events-none absolute top-3 right-4 z-20 flex justify-end sm:right-5">
+          <button
+            type="button"
+            onClick={() => void unarchiveThread(activeSession)}
+            className="pointer-events-auto inline-flex h-9 items-center gap-2 rounded-full border border-gray-200 bg-white/95 px-3 text-xs font-semibold text-[#444746] shadow-sm backdrop-blur transition hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-[#1a73e8]/30 focus-visible:outline-none dark:border-white/10 dark:bg-navy-800/95 dark:text-gray-200 dark:hover:bg-white/10"
+            aria-label="Khôi phục cuộc trò chuyện"
+          >
+            <MdUnarchive className="h-4 w-4 shrink-0" aria-hidden />
+            Khôi phục
+          </button>
+        </div>
+      ) : null}
+
       {showEmptyState ? (
         <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
           <span className="chatbot-ambient-light chatbot-ambient-light-one" />

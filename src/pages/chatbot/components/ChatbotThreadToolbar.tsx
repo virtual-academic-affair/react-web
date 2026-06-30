@@ -75,6 +75,7 @@ export function ChatbotThreadToolbar({
     switchToNewThread,
     renameThread,
     archiveThread,
+    unarchiveThread,
     deleteThread,
   } = useChatbotShell();
 
@@ -146,6 +147,10 @@ export function ChatbotThreadToolbar({
 
   const handleArchive = (session: ChatThreadSession) => {
     void archiveThread(session.id);
+  };
+
+  const handleUnarchive = (session: ChatThreadSession) => {
+    void unarchiveThread(session);
   };
 
   const handleDelete = (session: ChatThreadSession) => {
@@ -454,6 +459,10 @@ export function ChatbotThreadToolbar({
           archivedSessions={archivedSessions}
           onClose={() => setSearchOpen(false)}
           onSelect={handleSearchSelect}
+          onRename={(session, title) => renameThread(session.id, title)}
+          onArchive={handleArchive}
+          onUnarchive={handleUnarchive}
+          onDelete={handleDelete}
         />
       ) : null}
 

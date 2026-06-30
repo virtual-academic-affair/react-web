@@ -34,10 +34,10 @@ const StandardModal: React.FC<StandardModalProps> = ({
   return createPortal(
     <>
       <div
-        className="fixed inset-0 z-999 bg-black/20 backdrop-blur-[2px]"
+        className="fixed inset-0 z-[10001] bg-black/20 backdrop-blur-[2px]"
         onClick={onCancel}
       />
-      <div className="fixed top-1/2 left-1/2 z-1000 w-[min(100%,28rem)] max-w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 px-3 sm:px-4 md:w-full md:max-w-2xl md:px-0">
+      <div className="fixed top-1/2 left-1/2 z-[10002] w-[min(100%,28rem)] max-w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 px-3 sm:px-4 md:w-full md:max-w-2xl md:px-0">
         <Card extra="p-4 shadow-2xl border border-gray-200 dark:border-white/10 dark:bg-navy-800 sm:p-5">
           <div className="flex flex-col gap-3 sm:gap-4">
             {title && (
