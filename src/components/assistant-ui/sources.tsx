@@ -37,9 +37,7 @@ import {
 import { useStreamdownMathPlugins } from "@/components/markdown/useStreamdownMathPlugins";
 import { ScrollFadeArea } from "@/components/scroll-fade/ScrollFadeArea";
 import Tooltip from "@/components/tooltip/Tooltip";
-import {
-  buildDocumentViewUrl,
-} from "@/utils/documentViewUrl";
+import { buildDocumentViewUrl } from "@/utils/documentViewUrl";
 
 import {
   buildInAppPreviewKey,
@@ -217,7 +215,7 @@ const sourcePreviewIconButtonPrimaryClass =
   "flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500 text-white transition-all hover:bg-blue-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50";
 
 const sourcePreviewJumpButtonClass =
-  "flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-[#5f6368] shadow-md transition-all hover:bg-gray-100 hover:text-[#202124] active:scale-95 dark:border-white/10 dark:bg-navy-800 dark:text-[#9aa0a6] dark:hover:bg-white/10 dark:hover:text-white";
+  "flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-[#5f6368] shadow-md transition-all hover:bg-gray-100 hover:text-[#202124] active:scale-95 dark:border-white/10 dark:bg-navy-800 dark:text-[#9aa0a6] dark:hover:bg-navy-700 dark:hover:text-white";
 
 const PANEL_TRANSITION_MS = 300;
 
@@ -708,28 +706,24 @@ export function SourcePreviewPanel() {
             ) : null}
 
             {jumpState.up ? (
-              <Tooltip label="Đoạn trước">
-                <button
-                  type="button"
-                  onClick={() => scrollToRange(jumpState.up!)}
-                  className={`absolute top-4 left-1/2 z-10 -translate-x-1/2 ${sourcePreviewJumpButtonClass}`}
-                  aria-label="Đoạn trước"
-                >
-                  <MdArrowUpward className="h-4 w-4" aria-hidden />
-                </button>
-              </Tooltip>
+              <button
+                type="button"
+                onClick={() => scrollToRange(jumpState.up!)}
+                className={`absolute top-4 left-1/2 z-10 -translate-x-1/2 ${sourcePreviewJumpButtonClass}`}
+                aria-label="Đoạn trước"
+              >
+                <MdArrowUpward className="h-4 w-4" aria-hidden />
+              </button>
             ) : null}
             {jumpState.down ? (
-              <Tooltip label="Đoạn sau">
-                <button
-                  type="button"
-                  onClick={() => scrollToRange(jumpState.down!)}
-                  className={`absolute bottom-4 left-1/2 z-10 -translate-x-1/2 ${sourcePreviewJumpButtonClass}`}
-                  aria-label="Đoạn sau"
-                >
-                  <MdArrowDownward className="h-4 w-4" aria-hidden />
-                </button>
-              </Tooltip>
+              <button
+                type="button"
+                onClick={() => scrollToRange(jumpState.down!)}
+                className={`absolute bottom-4 left-1/2 z-10 -translate-x-1/2 ${sourcePreviewJumpButtonClass}`}
+                aria-label="Đoạn sau"
+              >
+                <MdArrowDownward className="h-4 w-4" aria-hidden />
+              </button>
             ) : null}
           </div>
         </div>

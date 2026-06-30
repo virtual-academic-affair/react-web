@@ -16,7 +16,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { LuBookOpen, LuCheck, LuCopy, LuThumbsUp } from "react-icons/lu";
+import { LuBookOpen, LuCheck, LuCopy, LuFileQuestion } from "react-icons/lu";
 import { MdArrowDownward, MdSend, MdSquare } from "react-icons/md";
 
 import { MarkdownTextSm } from "@/components/assistant-ui/markdown-text";
@@ -28,15 +28,16 @@ import {
   ReasoningTrigger,
 } from "@/components/assistant-ui/reasoning";
 import { Source, Sources } from "@/components/assistant-ui/sources";
+import { copyTextToClipboard } from "@/components/copyable/copyTextToClipboard";
 import {
   ScrollFadeArea,
   useScrollFadeMask,
 } from "@/components/scroll-fade/ScrollFadeArea";
 import Tooltip from "@/components/tooltip/Tooltip";
-import { copyTextToClipboard } from "@/components/copyable/copyTextToClipboard";
 import { useAuthStore } from "@/stores/auth.store";
 import { Role } from "@/types/users";
 
+import { chatMarkdownToFaqHtml } from "@/utils/chatMarkdownToFaqHtml";
 import {
   assistantActionButtonClass,
   assistantActionIconClass,
@@ -44,7 +45,6 @@ import {
 } from "../assistantActionButton";
 import { useChatbotLayoutOptional } from "../chatbotLayoutContext";
 import { useChatbotShell } from "../chatbotShellContext";
-import { chatMarkdownToFaqHtml } from "@/utils/chatMarkdownToFaqHtml";
 
 const GEMINI_INPUT_PLACEHOLDER = "Tra cứu với Giáo vụ số";
 const CHAT_THREAD_MAX_WIDTH_CLASS = "max-w-[700px]";
@@ -168,7 +168,7 @@ function GeminiAssistantMessage() {
   }, []);
 
   const [copied, setCopied] = useState(false);
-  const [liked, setLiked] = useState(false);
+  const [faqSaved, setFaqSaved] = useState(false);
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const userRole = useAuthStore((s) => s.userRole);
   const isAdmin = userRole === Role.Admin;
@@ -199,7 +199,7 @@ function GeminiAssistantMessage() {
 
   useEffect(() => {
     setSourcesOpen(false);
-    setLiked(false);
+    setFaqSaved(false);
   }, [messageId]);
 
   const handleCopy = useCallback(async () => {
@@ -211,13 +211,15 @@ function GeminiAssistantMessage() {
     window.setTimeout(() => setCopied(false), 2000);
   }, [assistantAnswerText]);
 
-  const handleLike = useCallback(() => {
-    setLiked(true);
+  const handleAddFaq = useCallback(() => {
     chatbotLayout?.openFaqDrawer({
       question: precedingUserQuestion,
       answer: chatMarkdownToFaqHtml(assistantAnswerText),
+      onCreated: () => {
+        setFaqSaved(true);
+        window.setTimeout(() => setFaqSaved(false), 2000);
+      },
     });
-    window.setTimeout(() => setLiked(false), 2000);
   }, [assistantAnswerText, chatbotLayout, precedingUserQuestion]);
 
   const actionBar = showActions ? (
@@ -266,23 +268,23 @@ function GeminiAssistantMessage() {
       ) : null}
 
       {isAdmin ? (
-        <Tooltip label={liked ? "Đã thích" : "Thêm FAQ"}>
+        <Tooltip label={faqSaved ? "Đã thêm FAQ" : "Thêm FAQ"}>
           <button
             type="button"
-            onClick={handleLike}
+            onClick={handleAddFaq}
             className={`${assistantActionButtonClass} transition-transform duration-200 ${
-              liked ? "scale-110" : ""
+              faqSaved ? "scale-110" : ""
             }`}
-            aria-label={liked ? "Đã thích" : "Thêm FAQ từ câu hỏi"}
-            aria-pressed={liked}
+            aria-label={faqSaved ? "Đã thêm FAQ" : "Thêm FAQ từ câu hỏi"}
+            aria-pressed={faqSaved}
           >
-            {liked ? (
+            {faqSaved ? (
               <LuCheck
                 className="h-[17px] w-[17px] text-green-500"
                 strokeWidth={2}
               />
             ) : (
-              <LuThumbsUp
+              <LuFileQuestion
                 className={assistantActionIconClass}
                 strokeWidth={assistantActionIconStroke}
               />

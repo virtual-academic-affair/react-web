@@ -18,6 +18,7 @@ export type ChatbotInfoPanelType = "documents" | "forms";
 export type FaqDrawerDraft = {
   question: string;
   answer: string;
+  onCreated?: () => void;
 };
 
 type ChatbotLayoutContextValue = {

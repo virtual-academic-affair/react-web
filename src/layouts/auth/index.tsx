@@ -61,8 +61,12 @@ export default function AuthLayout() {
 
   return (
     <div className="dark:bg-navy-900! relative float-right h-full min-h-screen w-full !bg-white">
-      <div className="fixed bottom-4 left-4 z-50 w-[min(100vw-2rem,280px)]">
-        <ThemeModeControl />
+      <div className="pointer-events-none fixed inset-x-0 bottom-4 z-50">
+        <div className="mx-auto w-full md:max-w-[75%] lg:max-w-[1013px] lg:px-8 xl:max-w-[1383px] xl:px-0 xl:pl-[70px]">
+          <div className="pr-5 pl-5 md:pr-0 md:pl-12 lg:max-w-[48%] lg:pl-0 xl:max-w-full">
+            <ThemeModeControl className="pointer-events-auto w-full max-w-[420px]" />
+          </div>
+        </div>
       </div>
 
       <main className="mx-auto min-h-screen">
