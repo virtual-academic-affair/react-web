@@ -75,6 +75,7 @@ export function ChatbotThreadToolbar({
     switchToNewThread,
     renameThread,
     archiveThread,
+    unarchiveThread,
     deleteThread,
   } = useChatbotShell();
 
@@ -92,7 +93,7 @@ export function ChatbotThreadToolbar({
   const modKeyLabel = useChatbotModKeyLabel();
   const newChatShortcutKeys = [modKeyLabel, "⇧", "O"];
   const searchShortcutKeys = [modKeyLabel, "⇧", "K"];
-  const [historyExpanded, setHistoryExpanded] = useState(false);
+  const [historyExpanded, setHistoryExpanded] = useState(true);
   const [infoExpanded, setInfoExpanded] = useState(true);
   const activeSessionsQuery = useChatbotSessionsQuery("active", true);
   const archivedSessionsQuery = useChatbotSessionsQuery("archived", searchOpen);
@@ -146,6 +147,10 @@ export function ChatbotThreadToolbar({
 
   const handleArchive = (session: ChatThreadSession) => {
     void archiveThread(session.id);
+  };
+
+  const handleUnarchive = (session: ChatThreadSession) => {
+    void unarchiveThread(session);
   };
 
   const handleDelete = (session: ChatThreadSession) => {
@@ -454,6 +459,10 @@ export function ChatbotThreadToolbar({
           archivedSessions={archivedSessions}
           onClose={() => setSearchOpen(false)}
           onSelect={handleSearchSelect}
+          onRename={(session, title) => renameThread(session.id, title)}
+          onArchive={handleArchive}
+          onUnarchive={handleUnarchive}
+          onDelete={handleDelete}
         />
       ) : null}
 

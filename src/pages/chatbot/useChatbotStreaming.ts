@@ -14,7 +14,7 @@ import {
   newChatbotId,
   sourceItemsFromStream,
 } from "./chatbotMappers";
-import { CHAT_SYSTEM_BUSY_MESSAGE } from "./constants";
+// import { CHAT_SYSTEM_BUSY_MESSAGE } from "./constants";
 import type {
   ChatReasoningStep,
   ChatStoreMessage,
@@ -33,19 +33,31 @@ type UseChatbotStreamingArgs = {
   setActiveThreadId: Dispatch<SetStateAction<string>>;
   setSystemError: Dispatch<SetStateAction<string | null>>;
   selectedByUserRef: MutableRef<string | null>;
+  threadIdAliasRef: MutableRef<Record<string, string>>;
   navigateToThread: (threadId: string, options?: { replace?: boolean }) => void;
-  invalidateSessionQueries: () => void;
+  refreshActiveSessions: () => Promise<ChatThreadSession[]>;
 };
+
+function matchesStreamingThread(
+  session: ChatThreadSession,
+  threadId: string,
+  threadIdAlias: Record<string, string>,
+) {
+  return session.id === threadId || session.id === threadIdAlias[threadId];
+}
 
 function updateAssistantMessage(
   setSessions: Dispatch<SetStateAction<ChatThreadSession[]>>,
   threadId: string,
+  threadIdAlias: Record<string, string>,
   assistantId: string,
   updater: (message: ChatStoreMessage) => ChatStoreMessage,
 ) {
   setSessions((prev) =>
     prev.map((session) => {
-      if (session.id !== threadId) return session;
+      if (!matchesStreamingThread(session, threadId, threadIdAlias)) {
+        return session;
+      }
       return {
         ...session,
         messages: session.messages.map((item) =>
@@ -123,8 +135,9 @@ export function useChatbotStreaming({
   setActiveThreadId,
   setSystemError,
   selectedByUserRef,
+  threadIdAliasRef,
   navigateToThread,
-  invalidateSessionQueries,
+  refreshActiveSessions,
 }: UseChatbotStreamingArgs) {
   const [isRunning, setIsRunning] = useState(false);
 
@@ -134,6 +147,8 @@ export function useChatbotStreaming({
         const sessionAtSendTime =
           sessionsRef.current.find((s) => s.id === threadId) ?? null;
         const sessionIdToSend = sessionAtSendTime?.serverId ?? undefined;
+        const isNewSession = !sessionIdToSend;
+        let returnedSessionIdFromStream: string | null = null;
 
         await streamChat(
           {
@@ -151,6 +166,7 @@ export function useChatbotStreaming({
               updateAssistantMessage(
                 setSessions,
                 threadId,
+                threadIdAliasRef.current,
                 assistantId,
                 (item) => appendReasoningStep(item, eventType, textChunk),
               );
@@ -162,6 +178,7 @@ export function useChatbotStreaming({
               updateAssistantMessage(
                 setSessions,
                 threadId,
+                threadIdAliasRef.current,
                 assistantId,
                 (item) => ({
                   ...item,
@@ -188,19 +205,33 @@ export function useChatbotStreaming({
                 (typeof doneEvent.sessionId === "string" &&
                   doneEvent.sessionId) ||
                 null;
+              returnedSessionIdFromStream = returnedSessionId;
               const processingTimeMs =
                 typeof doneEvent.processingTimeMs === "number"
                   ? doneEvent.processingTimeMs
                   : undefined;
 
               if (errorText) {
-                setSystemError(CHAT_SYSTEM_BUSY_MESSAGE);
+                // setSystemError(CHAT_SYSTEM_BUSY_MESSAGE);
+                setSystemError(errorText);
               }
 
               const nowIso = new Date().toISOString();
+              if (returnedSessionId) {
+                threadIdAliasRef.current[threadId] = returnedSessionId;
+              }
+
               setSessions((prev) =>
                 prev.map((session) => {
-                  if (session.id !== threadId) return session;
+                  if (
+                    !matchesStreamingThread(
+                      session,
+                      threadId,
+                      threadIdAliasRef.current,
+                    )
+                  ) {
+                    return session;
+                  }
                   const nextId =
                     !session.serverId && returnedSessionId
                       ? returnedSessionId
@@ -233,24 +264,92 @@ export function useChatbotStreaming({
               if (
                 returnedSessionId &&
                 !sessionAtSendTime?.serverId &&
-                activeThreadIdRef.current === threadId
+                (activeThreadIdRef.current === threadId ||
+                  activeThreadIdRef.current === threadIdAliasRef.current[threadId])
               ) {
                 selectedByUserRef.current = returnedSessionId;
                 setActiveThreadId(returnedSessionId);
                 navigateToThread(returnedSessionId, { replace: true });
               }
-              invalidateSessionQueries();
               return;
             }
           },
           abortRef.current?.signal,
         );
+
+        let activeSessionsAfterStream: ChatThreadSession[] = [];
+        try {
+          activeSessionsAfterStream = await refreshActiveSessions();
+        } catch {
+          activeSessionsAfterStream = [];
+        }
+
+        if (
+          isNewSession &&
+          !returnedSessionIdFromStream &&
+          (activeThreadIdRef.current === threadId ||
+            activeThreadIdRef.current === threadIdAliasRef.current[threadId])
+        ) {
+          const latestSession = activeSessionsAfterStream[0];
+          const latestSessionId = latestSession?.serverId ?? latestSession?.id;
+          if (latestSessionId) {
+            threadIdAliasRef.current[threadId] = latestSessionId;
+            selectedByUserRef.current = latestSessionId;
+            setActiveThreadId(latestSessionId);
+            setSessions((prev) => {
+              const draftSession =
+                prev.find((session) => session.id === threadId) ??
+                prev.find((session) => session.id === latestSessionId);
+              const resolvedSession: ChatThreadSession = {
+                ...(latestSession ?? draftSession),
+                id: latestSessionId,
+                serverId: latestSessionId,
+                title:
+                  latestSession?.title ??
+                  draftSession?.title ??
+                  DEFAULT_NEW_TITLE,
+                status:
+                  latestSession?.status ?? draftSession?.status ?? "active",
+                messages:
+                  draftSession?.messages ?? latestSession?.messages ?? [],
+                messagesLoaded:
+                  draftSession?.messagesLoaded ??
+                  latestSession?.messagesLoaded ??
+                  true,
+                lastMessageAt:
+                  latestSession?.lastMessageAt ??
+                  draftSession?.lastMessageAt ??
+                  null,
+                updatedAt:
+                  latestSession?.updatedAt ?? draftSession?.updatedAt ?? null,
+              };
+
+              return [
+                resolvedSession,
+                ...prev.filter(
+                  (session) =>
+                    session.id !== threadId && session.id !== latestSessionId,
+                ),
+              ];
+            });
+            navigateToThread(latestSessionId, { replace: true });
+          }
+        }
       } catch (error) {
         if ((error as Error)?.name === "AbortError") return;
-        setSystemError(CHAT_SYSTEM_BUSY_MESSAGE);
+        // setSystemError(CHAT_SYSTEM_BUSY_MESSAGE + (error as Error)?.message);
+        setSystemError((error as Error)?.message);
         setSessions((prev) =>
           prev.map((session) => {
-            if (session.id !== threadId) return session;
+            if (
+              !matchesStreamingThread(
+                session,
+                threadId,
+                threadIdAliasRef.current,
+              )
+            ) {
+              return session;
+            }
             return {
               ...session,
               messages: session.messages.map((item) =>
@@ -267,9 +366,10 @@ export function useChatbotStreaming({
     [
       abortRef,
       activeThreadIdRef,
-      invalidateSessionQueries,
+      refreshActiveSessions,
       navigateToThread,
       selectedByUserRef,
+      threadIdAliasRef,
       sessionsRef,
       setActiveThreadId,
       setSessions,
@@ -333,7 +433,6 @@ export function useChatbotStreaming({
 
       if (!sessionAtSendTime?.serverId) {
         selectedByUserRef.current = threadId;
-        navigateToThread(threadId, { replace: true });
       }
 
       abortRef.current?.abort();
@@ -345,7 +444,6 @@ export function useChatbotStreaming({
     [
       abortRef,
       activeThreadIdRef,
-      navigateToThread,
       runStreamForAssistant,
       selectedByUserRef,
       sessionsRef,

@@ -191,6 +191,7 @@ export function UserMenu({
     : isSidebar
       ? "h-9 w-9 shrink-0 rounded-full"
       : "h-9 w-9 shrink-0 rounded-full";
+  const dropdownAvatarSizeClass = "h-10 w-10 shrink-0 rounded-full";
 
   const dropdownPositionClass = isSidebar
     ? "absolute bottom-full left-0 right-0 z-60 pb-2"
@@ -213,15 +214,24 @@ export function UserMenu({
 
   const dropdownContent = (
     <div className={dropdownPanelClass} role="menu">
-      <div className="px-3 py-2">
-        <p className="text-navy-700 text-sm font-medium dark:text-white">
-          {userName ?? "—"}
-        </p>
-        {userEmail ? (
-          <p className="mt-0.5 text-xs text-gray-600 dark:text-gray-400">
-            {userEmail}
+      <div className="flex items-center gap-3 px-3 py-2">
+        <UserAvatar
+          isLoadingUser={isLoadingUser}
+          avatarUrl={avatarUrl}
+          userName={userName}
+          avatarInitial={avatarInitial}
+          className={dropdownAvatarSizeClass}
+        />
+        <div className="min-w-0 flex-1">
+          <p className="text-navy-700 truncate text-sm font-medium dark:text-white">
+            {userName ?? "—"}
           </p>
-        ) : null}
+          {userEmail ? (
+            <p className="mt-0.5 truncate text-xs text-gray-600 dark:text-gray-400">
+              {userEmail}
+            </p>
+          ) : null}
+        </div>
       </div>
 
       <ThemeModeControl className="px-1 pb-1" />

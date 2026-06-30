@@ -16,8 +16,8 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { LuBookOpen, LuCheck, LuCopy, LuThumbsUp } from "react-icons/lu";
-import { MdArrowDownward, MdSend, MdSquare } from "react-icons/md";
+import { LuBookOpen, LuCheck, LuCopy, LuFileQuestion } from "react-icons/lu";
+import { MdArrowDownward, MdSend, MdSquare, MdUnarchive } from "react-icons/md";
 
 import { MarkdownTextSm } from "@/components/assistant-ui/markdown-text";
 import {
@@ -28,15 +28,16 @@ import {
   ReasoningTrigger,
 } from "@/components/assistant-ui/reasoning";
 import { Source, Sources } from "@/components/assistant-ui/sources";
+import { copyTextToClipboard } from "@/components/copyable/copyTextToClipboard";
 import {
   ScrollFadeArea,
   useScrollFadeMask,
 } from "@/components/scroll-fade/ScrollFadeArea";
 import Tooltip from "@/components/tooltip/Tooltip";
-import { copyTextToClipboard } from "@/components/copyable/copyTextToClipboard";
 import { useAuthStore } from "@/stores/auth.store";
 import { Role } from "@/types/users";
 
+import { chatMarkdownToFaqHtml } from "@/utils/chatMarkdownToFaqHtml";
 import {
   assistantActionButtonClass,
   assistantActionIconClass,
@@ -44,7 +45,6 @@ import {
 } from "../assistantActionButton";
 import { useChatbotLayoutOptional } from "../chatbotLayoutContext";
 import { useChatbotShell } from "../chatbotShellContext";
-import { chatMarkdownToFaqHtml } from "@/utils/chatMarkdownToFaqHtml";
 
 const GEMINI_INPUT_PLACEHOLDER = "Tra cứu với Giáo vụ số";
 const CHAT_THREAD_MAX_WIDTH_CLASS = "max-w-[700px]";
@@ -168,7 +168,7 @@ function GeminiAssistantMessage() {
   }, []);
 
   const [copied, setCopied] = useState(false);
-  const [liked, setLiked] = useState(false);
+  const [faqSaved, setFaqSaved] = useState(false);
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const userRole = useAuthStore((s) => s.userRole);
   const isAdmin = userRole === Role.Admin;
@@ -199,7 +199,7 @@ function GeminiAssistantMessage() {
 
   useEffect(() => {
     setSourcesOpen(false);
-    setLiked(false);
+    setFaqSaved(false);
   }, [messageId]);
 
   const handleCopy = useCallback(async () => {
@@ -211,13 +211,15 @@ function GeminiAssistantMessage() {
     window.setTimeout(() => setCopied(false), 2000);
   }, [assistantAnswerText]);
 
-  const handleLike = useCallback(() => {
-    setLiked(true);
+  const handleAddFaq = useCallback(() => {
     chatbotLayout?.openFaqDrawer({
       question: precedingUserQuestion,
       answer: chatMarkdownToFaqHtml(assistantAnswerText),
+      onCreated: () => {
+        setFaqSaved(true);
+        window.setTimeout(() => setFaqSaved(false), 2000);
+      },
     });
-    window.setTimeout(() => setLiked(false), 2000);
   }, [assistantAnswerText, chatbotLayout, precedingUserQuestion]);
 
   const actionBar = showActions ? (
@@ -266,23 +268,23 @@ function GeminiAssistantMessage() {
       ) : null}
 
       {isAdmin ? (
-        <Tooltip label={liked ? "Đã thích" : "Thêm FAQ"}>
+        <Tooltip label={faqSaved ? "Đã thêm FAQ" : "Thêm FAQ"}>
           <button
             type="button"
-            onClick={handleLike}
+            onClick={handleAddFaq}
             className={`${assistantActionButtonClass} transition-transform duration-200 ${
-              liked ? "scale-110" : ""
+              faqSaved ? "scale-110" : ""
             }`}
-            aria-label={liked ? "Đã thích" : "Thêm FAQ từ câu hỏi"}
-            aria-pressed={liked}
+            aria-label={faqSaved ? "Đã thêm FAQ" : "Thêm FAQ từ câu hỏi"}
+            aria-pressed={faqSaved}
           >
-            {liked ? (
+            {faqSaved ? (
               <LuCheck
                 className="h-[17px] w-[17px] text-green-500"
                 strokeWidth={2}
               />
             ) : (
-              <LuThumbsUp
+              <LuFileQuestion
                 className={assistantActionIconClass}
                 strokeWidth={assistantActionIconStroke}
               />
@@ -519,9 +521,12 @@ function ChatMessagesSkeletonLoader() {
 export function GeminiThread({ className = "" }: { className?: string }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const messagesCount = useAuiState((s) => s.thread.messages.length);
-  const { activeThreadId, isLoadingMessages, sessions } = useChatbotShell();
+  const { activeThreadId, isLoadingMessages, sessions, unarchiveThread } =
+    useChatbotShell();
   const { sidebarOpen, sidebarCollapsed } = useChatbotLayoutOptional() ?? {};
-  const isNewThread = !sessions.find((s) => s.id === activeThreadId)?.serverId;
+  const activeSession = sessions.find((s) => s.id === activeThreadId);
+  const isNewThread = !activeSession?.serverId;
+  const isArchivedThread = activeSession?.status === "archived";
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const viewportFadeStyle = useScrollFadeMask(viewportRef, [
     messagesCount,
@@ -587,6 +592,20 @@ export function GeminiThread({ className = "" }: { className?: string }) {
     <ThreadPrimitive.Root
       className={`relative isolate flex h-full min-h-0 min-w-0 flex-col bg-transparent text-base text-[#1f1f1f] dark:text-white ${className}`.trim()}
     >
+      {isArchivedThread && activeSession ? (
+        <div className="pointer-events-none absolute top-3 right-4 z-20 flex justify-end sm:right-5">
+          <button
+            type="button"
+            onClick={() => void unarchiveThread(activeSession)}
+            className="pointer-events-auto inline-flex h-9 items-center gap-2 rounded-full border border-gray-200 bg-white/95 px-3 text-xs font-semibold text-[#444746] shadow-sm backdrop-blur transition hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-[#1a73e8]/30 focus-visible:outline-none dark:border-white/10 dark:bg-navy-800/95 dark:text-gray-200 dark:hover:bg-white/10"
+            aria-label="Khôi phục cuộc trò chuyện"
+          >
+            <MdUnarchive className="h-4 w-4 shrink-0" aria-hidden />
+            Khôi phục
+          </button>
+        </div>
+      ) : null}
+
       {showEmptyState ? (
         <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
           <span className="chatbot-ambient-light chatbot-ambient-light-one" />

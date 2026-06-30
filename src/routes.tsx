@@ -58,7 +58,7 @@ const routes: RoutesType[] = [
         path: "documents/questions",
         children: [
           {
-            name: "DS câu hỏi",
+            name: "DS câu hỏi thường gặp",
             layout: "/admin",
             path: "documents/faqs",
           },

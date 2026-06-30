@@ -10,6 +10,7 @@ import { normalizeFaqRichTextHtml } from "@/utils/chatMarkdownToFaqHtml";
 interface FAQCreationDrawerProps {
   open: boolean;
   onClose: () => void;
+  onCreated?: () => void;
   initialQuestion?: string;
   initialAnswer?: string;
 }
@@ -24,6 +25,7 @@ const emptyFormData = () => ({
 export default function FAQCreationDrawer({
   open,
   onClose,
+  onCreated,
   initialQuestion = "",
   initialAnswer = "",
 }: FAQCreationDrawerProps) {
@@ -43,6 +45,7 @@ export default function FAQCreationDrawer({
     onSuccess: () => {
       toast.success("Thêm câu hỏi thành công");
       queryClient.invalidateQueries({ queryKey: ["faqs"] });
+      onCreated?.();
       handleClose();
     },
     onError: (error: any) => {

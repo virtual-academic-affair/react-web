@@ -3,7 +3,26 @@ import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { formatSessionActivityLabel } from "@/utils/date";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { MdClose, MdSearch } from "react-icons/md";
+import {
+  MdArchive,
+  MdCheck,
+  MdClose,
+  MdDelete,
+  MdEdit,
+  MdMoreVert,
+  MdSearch,
+  MdUnarchive,
+} from "react-icons/md";
+
+import {
+  dropdownMenuItemClass,
+  dropdownMenuItemDangerClass,
+  dropdownMenuPanelClass,
+} from "@/components/navbar/UserMenu";
+import {
+  getFloatingDropdownPosition,
+  type FloatingPosition,
+} from "@/utils/floatingPosition";
 
 import type { ChatThreadSession } from "../types";
 
@@ -12,6 +31,10 @@ type ChatbotThreadSearchDialogProps = {
   archivedSessions: ChatThreadSession[];
   onClose: () => void;
   onSelect: (session: ChatThreadSession) => void;
+  onRename: (session: ChatThreadSession, title: string) => Promise<void>;
+  onArchive: (session: ChatThreadSession) => void;
+  onUnarchive: (session: ChatThreadSession) => void;
+  onDelete: (session: ChatThreadSession) => void;
 };
 
 type StatusFilter = "active" | "archived";
@@ -68,11 +91,280 @@ function getSessionActivityDate(session: ChatThreadSession) {
 }
 
 function getSearchResultRowClass(selected: boolean) {
-  return `flex h-9 w-full items-center rounded-full px-3 text-xs transition ${
+  return `group relative flex h-9 w-full items-center rounded-full px-3 text-xs transition ${
     selected
       ? "bg-gray-100 font-medium text-[#1f1f1f] dark:bg-white/10 dark:text-gray-200"
       : "text-[#1f1f1f] hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10"
   }`;
+}
+
+type SearchResultRowProps = {
+  session: ChatThreadSession;
+  selected: boolean;
+  activityLabel: string;
+  onHover: () => void;
+  onSelect: () => void;
+  onRename: (title: string) => Promise<void>;
+  onArchive: () => void;
+  onUnarchive: () => void;
+  onDelete: () => void;
+};
+
+function ChatbotThreadSearchResultRow({
+  session,
+  selected,
+  activityLabel,
+  onHover,
+  onSelect,
+  onRename,
+  onArchive,
+  onUnarchive,
+  onDelete,
+}: SearchResultRowProps) {
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState(session.title);
+  const [menuPosition, setMenuPosition] = useState<FloatingPosition>({
+    left: 0,
+  });
+  const isArchived = session.status === "archived";
+
+  useEffect(() => {
+    setDraft(session.title);
+  }, [session.title]);
+
+  useEffect(() => {
+    if (isEditing) {
+      requestAnimationFrame(() => {
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      });
+    }
+  }, [isEditing]);
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        !triggerRef.current?.contains(target) &&
+        !menuRef.current?.contains(target)
+      ) {
+        setIsMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMenuOpen]);
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const close = () => setIsMenuOpen(false);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [isMenuOpen]);
+
+  const toggleMenu = () => {
+    if (!isMenuOpen && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setMenuPosition(
+        getFloatingDropdownPosition(rect, {
+          gap: 8,
+          width: 208,
+          maxHeight: 220,
+        }),
+      );
+    }
+    setIsMenuOpen((current) => !current);
+  };
+
+  const runMenuAction = (action: () => void) => {
+    setIsMenuOpen(false);
+    action();
+  };
+
+  const cancelEdit = () => {
+    setDraft(session.title);
+    setIsEditing(false);
+  };
+
+  const commitEdit = async () => {
+    const next = draft.trim();
+    if (!next || next === session.title) {
+      cancelEdit();
+      return;
+    }
+    setIsEditing(false);
+    await onRename(next);
+  };
+
+  return (
+    <div
+      className={getSearchResultRowClass(selected)}
+      onMouseEnter={onHover}
+      onFocus={onHover}
+    >
+      {isEditing ? (
+        <>
+          <input
+            ref={inputRef}
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={(event) => {
+              event.stopPropagation();
+              if (event.key === "Enter") {
+                event.preventDefault();
+                void commitEdit();
+              } else if (event.key === "Escape") {
+                event.preventDefault();
+                cancelEdit();
+              }
+            }}
+            className="dark:bg-navy-700 min-w-0 flex-1 rounded-md border border-[#1a73e8]/40 bg-white px-2 py-1 text-sm text-[#1f1f1f] outline-none focus-visible:ring-2 focus-visible:ring-[#1a73e8]/30 dark:text-white"
+            aria-label="Tên cuộc trò chuyện"
+          />
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              void commitEdit();
+            }}
+            className="flex h-7 w-7 items-center justify-center rounded-full text-[#1a73e8] hover:bg-black/[0.06] dark:text-[#a8c7fa] dark:hover:bg-white/10"
+            aria-label="Lưu tên mới"
+          >
+            <MdCheck className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              cancelEdit();
+            }}
+            className="flex h-7 w-7 items-center justify-center rounded-full text-[#444746] hover:bg-black/[0.06] dark:text-gray-300 dark:hover:bg-white/10"
+            aria-label="Huỷ đổi tên"
+          >
+            <MdClose className="h-4 w-4" />
+          </button>
+        </>
+      ) : (
+        <>
+          <button
+            type="button"
+            onClick={onSelect}
+            className={`min-w-0 flex-1 truncate text-left font-medium transition-[padding] duration-150 ${
+              isMenuOpen ? "pr-1" : "group-hover:pr-1 group-focus-within:pr-1"
+            }`}
+            title={session.title}
+          >
+            {session.title?.trim() || "Cuộc trò chuyện mới"}
+          </button>
+          {activityLabel ? (
+            <span className="shrink-0 pl-2 text-[#5f6368] dark:text-gray-400">
+              {activityLabel}
+            </span>
+          ) : null}
+          <button
+            ref={triggerRef}
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              toggleMenu();
+            }}
+            onKeyDown={(event) => event.stopPropagation()}
+            className={`flex h-7 shrink-0 items-center justify-center overflow-hidden rounded-full text-[#444746] transition-all duration-150 hover:bg-black/[0.06] focus:w-7 focus:opacity-100 dark:text-gray-300 dark:hover:bg-white/10 ${
+              isMenuOpen
+                ? "w-7 opacity-100"
+                : "w-0 opacity-0 group-hover:w-7 group-hover:opacity-100 group-focus-within:w-7 group-focus-within:opacity-100"
+            }`}
+            aria-label="Mở tuỳ chọn cuộc trò chuyện"
+            aria-haspopup="menu"
+            aria-expanded={isMenuOpen}
+            title="Tuỳ chọn"
+          >
+            <MdMoreVert className="h-4 w-4 shrink-0" />
+          </button>
+
+          {isMenuOpen
+            ? createPortal(
+                <div
+                  ref={menuRef}
+                  role="menu"
+                  style={{
+                    top: menuPosition.top,
+                    bottom: menuPosition.bottom,
+                    left: menuPosition.left,
+                    width: menuPosition.width,
+                  }}
+                  className={`${dropdownMenuPanelClass} fixed z-[99999]`}
+                >
+                  {!isArchived ? (
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        runMenuAction(() => setIsEditing(true));
+                      }}
+                      className={dropdownMenuItemClass}
+                      role="menuitem"
+                    >
+                      <MdEdit className="h-4 w-4 shrink-0" />
+                      <span>Đổi tên</span>
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      runMenuAction(isArchived ? onUnarchive : onArchive);
+                    }}
+                    className={dropdownMenuItemClass}
+                    role="menuitem"
+                  >
+                    {isArchived ? (
+                      <MdUnarchive className="h-4 w-4 shrink-0" />
+                    ) : (
+                      <MdArchive className="h-4 w-4 shrink-0" />
+                    )}
+                    <span>{isArchived ? "Khôi phục" : "Lưu trữ"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      runMenuAction(onDelete);
+                    }}
+                    className={dropdownMenuItemDangerClass}
+                    role="menuitem"
+                  >
+                    <MdDelete className="h-4 w-4 shrink-0" />
+                    <span>Xoá</span>
+                  </button>
+                </div>,
+                document.body,
+              )
+            : null}
+        </>
+      )}
+    </div>
+  );
 }
 
 export function ChatbotThreadSearchDialog({
@@ -80,6 +372,10 @@ export function ChatbotThreadSearchDialog({
   archivedSessions,
   onClose,
   onSelect,
+  onRename,
+  onArchive,
+  onUnarchive,
+  onDelete,
 }: ChatbotThreadSearchDialogProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   useBodyScrollLock(true);
@@ -228,22 +524,18 @@ export function ChatbotThreadSearchDialog({
                 );
 
                 return (
-                  <button
+                  <ChatbotThreadSearchResultRow
                     key={session.id}
-                    type="button"
-                    onClick={() => selectResult(session)}
-                    onMouseEnter={() => setSelectedIndex(index)}
-                    className={getSearchResultRowClass(isSelected)}
-                  >
-                    <span className="min-w-0 flex-1 truncate text-left font-medium">
-                      {session.title?.trim() || "Cuộc trò chuyện mới"}
-                    </span>
-                    {activityLabel ? (
-                      <span className="shrink-0 pl-2 text-[#5f6368] dark:text-gray-400">
-                        {activityLabel}
-                      </span>
-                    ) : null}
-                  </button>
+                    session={session}
+                    selected={isSelected}
+                    activityLabel={activityLabel}
+                    onHover={() => setSelectedIndex(index)}
+                    onSelect={() => selectResult(session)}
+                    onRename={(title) => onRename(session, title)}
+                    onArchive={() => onArchive(session)}
+                    onUnarchive={() => onUnarchive(session)}
+                    onDelete={() => onDelete(session)}
+                  />
                 );
               })}
             </div>

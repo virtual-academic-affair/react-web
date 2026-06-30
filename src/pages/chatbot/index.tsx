@@ -84,6 +84,7 @@ function ChatbotChatView() {
         <FAQCreationDrawer
           open={faqDrawerOpen}
           onClose={closeFaqDrawer}
+          onCreated={faqInitialDraft.onCreated}
           initialQuestion={faqInitialDraft.question}
           initialAnswer={faqInitialDraft.answer}
         />
