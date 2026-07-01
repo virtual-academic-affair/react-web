@@ -1,18 +1,20 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 export function useRouteNavigationPending() {
   const location = useLocation();
-  const [pendingFromLocationKey, setPendingFromLocationKey] = useState<
-    string | null
-  >(null);
+  const [navigationPending, setNavigationPending] = useState(false);
 
-  const startNavigation = useCallback(() => {
-    setPendingFromLocationKey(location.key);
+  useEffect(() => {
+    setNavigationPending(false);
   }, [location.key]);
 
+  const startNavigation = useCallback(() => {
+    setNavigationPending(true);
+  }, []);
+
   return {
-    navigationPending: pendingFromLocationKey === location.key,
+    navigationPending,
     startNavigation,
   };
 }
