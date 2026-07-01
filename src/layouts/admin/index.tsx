@@ -58,6 +58,9 @@ const DYNAMIC_DATA_KEYS = [
   "email.gmailHistoryId",
 ] as const;
 
+const SOURCE_PREVIEW_SIDEBAR_DELAY_MS = 300;
+const SOURCE_PREVIEW_MOBILE_DRAWER_DELAY_MS = 200;
+
 const AdminLayout: React.FC = () => {
   const location = useLocation();
   const isAdminChatbotRoute =
@@ -121,24 +124,46 @@ const AdminLayout: React.FC = () => {
 
   const effectiveCollapsed = isDesktop && collapsed;
 
+  const handleSourcePreviewBeforeOpen = useCallback(() => {
+    const isDesktopViewport = window.innerWidth >= 1024;
+
+    if (!sidebarStateBeforePreviewRef.current) {
+      sidebarStateBeforePreviewRef.current = {
+        open: openRef.current,
+        collapsed: collapsedRef.current,
+      };
+    }
+
+    if (isDesktopViewport) {
+      if (!collapsedRef.current) {
+        setCollapsed(true);
+        return SOURCE_PREVIEW_SIDEBAR_DELAY_MS;
+      }
+      return 0;
+    }
+
+    if (openRef.current) {
+      setOpen(false);
+      return SOURCE_PREVIEW_MOBILE_DRAWER_DELAY_MS;
+    }
+
+    return 0;
+  }, []);
+
   const handleSourcePreviewOpenChange = useCallback(
     (isOpen: boolean) => {
       setSourcePreviewLocationKey(isOpen ? location.key : null);
-      const isDesktopViewport = window.innerWidth >= 1024;
-
       if (isOpen) {
-        sidebarStateBeforePreviewRef.current = {
-          open: openRef.current,
-          collapsed: collapsedRef.current,
-        };
-        if (isDesktopViewport) {
-          setCollapsed(true);
-        } else if (openRef.current) {
-          setOpen(false);
+        if (!sidebarStateBeforePreviewRef.current) {
+          sidebarStateBeforePreviewRef.current = {
+            open: openRef.current,
+            collapsed: collapsedRef.current,
+          };
         }
         return;
       }
 
+      const isDesktopViewport = window.innerWidth >= 1024;
       const saved = sidebarStateBeforePreviewRef.current;
       sidebarStateBeforePreviewRef.current = null;
       if (!saved) return;
@@ -310,6 +335,7 @@ const AdminLayout: React.FC = () => {
               onCloseSidebar={() => setOpen(false)}
             >
               <SourcePreviewProvider
+                onBeforeOpen={handleSourcePreviewBeforeOpen}
                 onOpenChange={handleSourcePreviewOpenChange}
               >
                 {layoutContent}
