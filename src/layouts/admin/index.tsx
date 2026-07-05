@@ -1,4 +1,7 @@
-import { SourcePreviewProvider } from "@/components/assistant-ui/source-preview-context";
+import {
+  SourcePreviewProvider,
+  type SourceFilePreviewData,
+} from "@/components/assistant-ui/source-preview-context";
 import { SourcePreviewCanvas } from "@/components/assistant-ui/sources";
 import { ViewDocumentUrlModal } from "@/components/documents/ViewDocumentUrlModal";
 import PageLoader from "@/components/loading/PageLoader";
@@ -13,7 +16,11 @@ import { useRouteNavigationPending } from "@/hooks/useRouteNavigationPending";
 import { DashboardMobileLayout } from "@/layouts/appMobileLayout";
 import { ChatbotMobileLayoutShell } from "@/layouts/chatbotMobileLayout";
 import { ChatbotLayoutProvider } from "@/pages/chatbot/chatbotLayoutContext";
-import { viewDocumentLocationSearch } from "@/utils/documentViewUrl";
+import {
+  fileIdFromDocumentUrl,
+  setViewDocumentParams,
+  viewDocumentLocationSearch,
+} from "@/utils/documentViewUrl";
 import {
   lazy,
   Suspense,
@@ -22,7 +29,13 @@ import {
   useRef,
   useState,
 } from "react";
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import {
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useSearchParams,
+} from "react-router-dom";
 import routes from "routes";
 
 const UsersPage = lazy(() => import("@/pages/auth/accounts"));
@@ -63,6 +76,7 @@ const SOURCE_PREVIEW_MOBILE_DRAWER_DELAY_MS = 200;
 
 const AdminLayout: React.FC = () => {
   const location = useLocation();
+  const [, setSearchParams] = useSearchParams();
   const isAdminChatbotRoute =
     location.pathname === "/admin/chatbot" ||
     location.pathname.startsWith("/admin/chatbot/");
@@ -176,6 +190,22 @@ const AdminLayout: React.FC = () => {
     },
     [location.key],
   );
+
+  const handleSourceFilePreviewOpen = useCallback(
+    (preview: SourceFilePreviewData) => {
+      const fileId =
+        preview.fileId?.trim() ||
+        (preview.fileUrl ? fileIdFromDocumentUrl(preview.fileUrl) : null);
+      if (!fileId) return false;
+
+      const next = new URLSearchParams(location.search);
+      setViewDocumentParams(next, fileId);
+      setSearchParams(next, { replace: true });
+      return true;
+    },
+    [location.search, setSearchParams],
+  );
+
   useEffect(() => {
     if (isAdminChatbotRoute) return;
     setMobileMenuOpen(false);
@@ -336,6 +366,7 @@ const AdminLayout: React.FC = () => {
             >
               <SourcePreviewProvider
                 onBeforeOpen={handleSourcePreviewBeforeOpen}
+                onFilePreviewOpen={handleSourceFilePreviewOpen}
                 onOpenChange={handleSourcePreviewOpenChange}
               >
                 {layoutContent}

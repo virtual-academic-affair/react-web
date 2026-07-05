@@ -43,9 +43,11 @@ const SourcePreviewContext = createContext<SourcePreviewContextValue | null>(
 export function SourcePreviewProvider({
   children,
   onBeforeOpen,
+  onFilePreviewOpen,
   onOpenChange,
 }: PropsWithChildren<{
   onBeforeOpen?: () => number | void;
+  onFilePreviewOpen?: (preview: SourceFilePreviewData) => boolean | void;
   onOpenChange?: (open: boolean) => void;
 }>) {
   const [preview, setPreview] = useState<SourcePreviewData | null>(null);
@@ -105,9 +107,16 @@ export function SourcePreviewProvider({
     [clearOpenDelay, onBeforeOpen, preview],
   );
 
-  const openFilePreview = useCallback((nextPreview: SourceFilePreviewData) => {
-    setFilePreview(nextPreview);
-  }, []);
+  const openFilePreview = useCallback(
+    (nextPreview: SourceFilePreviewData) => {
+      if (onFilePreviewOpen?.(nextPreview)) {
+        setFilePreview(null);
+        return;
+      }
+      setFilePreview(nextPreview);
+    },
+    [onFilePreviewOpen],
+  );
 
   const closePreview = useCallback(() => {
     clearOpenDelay();

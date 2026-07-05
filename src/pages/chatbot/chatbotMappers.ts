@@ -148,7 +148,7 @@ function historySourceToStore(
     ? raw.pages.filter((page): page is string => typeof page === "string")
     : undefined;
   const fileName = firstNonEmptyString(raw.fileName);
-  const fileId = firstNonEmptyString(raw.fileId);
+  const fileId = firstNonEmptyString(raw.fileId, raw.file_id);
   const markdownUrl = firstNonEmptyString(raw.markdownUrl);
   const titles = parseSourceTitles(raw);
   const fallbackTitle = firstNonEmptyString(raw.title) ?? fileName ?? url;
@@ -371,8 +371,12 @@ export function sourceItemsFromStream(rawSources: unknown[]) {
       if (fileName) {
         item.fileName = fileName;
       }
-      if (typeof candidate.fileId === "string" && candidate.fileId.trim()) {
-        item.fileId = candidate.fileId;
+      const fileId = firstNonEmptyString(
+        candidate.fileId,
+        candidate.file_id,
+      );
+      if (fileId) {
+        item.fileId = fileId;
       }
       if (pages?.length) {
         item.pages = pages;
