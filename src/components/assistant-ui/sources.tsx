@@ -37,7 +37,10 @@ import {
 import { useStreamdownMathPlugins } from "@/components/markdown/useStreamdownMathPlugins";
 import { ScrollFadeArea } from "@/components/scroll-fade/ScrollFadeArea";
 import Tooltip from "@/components/tooltip/Tooltip";
-import { buildDocumentViewUrl } from "@/utils/documentViewUrl";
+import {
+  buildDocumentViewUrl,
+  fileIdFromDocumentUrl,
+} from "@/utils/documentViewUrl";
 
 import {
   buildInAppPreviewKey,
@@ -53,6 +56,7 @@ const FilePreviewModal = lazy(
 type SourceMeta = {
   citationId?: number;
   fileId?: string;
+  file_id?: string;
   fileName?: string;
   titles?: string[];
   pages?: string[];
@@ -81,13 +85,10 @@ function parseInitialPage(pages?: string[]) {
   return Number.isFinite(value) ? value : undefined;
 }
 
-function fileIdFromUrl(url: string) {
-  const match = url.match(/\/api\/files\/([^/?#]+)/);
-  return match?.[1] ?? null;
-}
-
 function resolveSourceFileId(meta: SourceMeta, url: string) {
-  return meta.fileId?.trim() || fileIdFromUrl(url) || null;
+  return (
+    meta.fileId?.trim() || meta.file_id?.trim() || fileIdFromDocumentUrl(url)
+  );
 }
 
 function getDisplayTitles(
@@ -231,12 +232,14 @@ export function Sources({
   children: ReactNode;
   sourceCount?: number;
 }) {
-  let index = 0;
-  const numberedChildren = Children.map(children, (child) => {
+  const childArray = Children.toArray(children);
+  const numberedChildren = childArray.map((child, childIndex) => {
     if (!isValidElement(child)) return child;
-    index += 1;
+    const sourceIndex = childArray
+      .slice(0, childIndex + 1)
+      .filter(isValidElement).length;
     return (
-      <SourceIndexContext.Provider key={index} value={index}>
+      <SourceIndexContext.Provider key={sourceIndex} value={sourceIndex}>
         {child}
       </SourceIndexContext.Provider>
     );
@@ -534,7 +537,7 @@ export function SourcePreviewPanel() {
   const handleCopy = useCallback(async () => {
     const fileId =
       preview?.fileId?.trim() ||
-      (preview?.pdfUrl ? fileIdFromUrl(preview.pdfUrl) : null);
+      (preview?.pdfUrl ? fileIdFromDocumentUrl(preview.pdfUrl) : null);
     if (!fileId) return;
 
     const success = await copyTextToClipboard(buildDocumentViewUrl(fileId));
@@ -549,7 +552,7 @@ export function SourcePreviewPanel() {
     preview.fileName?.trim() || preview.title?.trim() || "Tài liệu";
   const resolvedFileId =
     preview.fileId?.trim() ||
-    (preview.pdfUrl ? fileIdFromUrl(preview.pdfUrl) : null);
+    (preview.pdfUrl ? fileIdFromDocumentUrl(preview.pdfUrl) : null);
   const panelStyle = {
     "--source-preview-width": `${panelWidth}px`,
   } as CSSProperties;
@@ -755,12 +758,13 @@ export function SourcePreviewCanvas() {
 }
 
 export function Source(props: SourceMessagePartProps) {
-  const { url: sourceUrl } = props;
-  if (!sourceUrl) return null;
-
   const meta = props as SourceMessagePartProps & SourceMeta;
   const sourceIndex = useContext(SourceIndexContext);
   const { openPreview, openFilePreview } = useSourcePreview();
+  const sourceUrl = props.url ?? "";
+
+  if (!sourceUrl) return null;
+
   const resolvedFileId = resolveSourceFileId(meta, sourceUrl);
   const trimmedFileName = meta.fileName?.trim() || "";
   const displayTitles = getDisplayTitles(

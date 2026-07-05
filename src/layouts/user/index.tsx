@@ -4,16 +4,29 @@
  */
 
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import {
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useSearchParams,
+} from "react-router-dom";
 
-import { SourcePreviewProvider } from "@/components/assistant-ui/source-preview-context";
+import {
+  SourcePreviewProvider,
+  type SourceFilePreviewData,
+} from "@/components/assistant-ui/source-preview-context";
 import { SourcePreviewCanvas } from "@/components/assistant-ui/sources";
 import { ViewDocumentUrlModal } from "@/components/documents/ViewDocumentUrlModal";
 import PageLoader from "@/components/loading/PageLoader";
 import { useMobileBodyScrollLock } from "@/hooks/useMobileBodyScrollLock";
 import { ChatbotMobileLayoutShell } from "@/layouts/chatbotMobileLayout";
 import { ChatbotLayoutProvider } from "@/pages/chatbot/chatbotLayoutContext";
-import { viewDocumentLocationSearch } from "@/utils/documentViewUrl";
+import {
+  fileIdFromDocumentUrl,
+  setViewDocumentParams,
+  viewDocumentLocationSearch,
+} from "@/utils/documentViewUrl";
 
 const ChatbotPage = lazy(() => import("@/pages/chatbot"));
 const ChatbotRuntimeProvider = lazy(() =>
@@ -32,6 +45,7 @@ const SOURCE_PREVIEW_MOBILE_DRAWER_DELAY_MS = 200;
 
 const UserLayout = () => {
   const location = useLocation();
+  const [, setSearchParams] = useSearchParams();
   const [open, setOpen] = useState(() => window.innerWidth >= 1024);
   const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
   const [collapsed, setCollapsed] = useState(false);
@@ -130,6 +144,21 @@ const UserLayout = () => {
     [location.key],
   );
 
+  const handleSourceFilePreviewOpen = useCallback(
+    (preview: SourceFilePreviewData) => {
+      const fileId =
+        preview.fileId?.trim() ||
+        (preview.fileUrl ? fileIdFromDocumentUrl(preview.fileUrl) : null);
+      if (!fileId) return false;
+
+      const next = new URLSearchParams(location.search);
+      setViewDocumentParams(next, fileId);
+      setSearchParams(next, { replace: true });
+      return true;
+    },
+    [location.search, setSearchParams],
+  );
+
   useMobileBodyScrollLock(open || rightPanelOpen);
 
   const viewDocSearch = viewDocumentLocationSearch(location.search);
@@ -173,6 +202,7 @@ const UserLayout = () => {
           >
             <SourcePreviewProvider
               onBeforeOpen={handleSourcePreviewBeforeOpen}
+              onFilePreviewOpen={handleSourceFilePreviewOpen}
               onOpenChange={handleSourcePreviewOpenChange}
             >
               <ChatbotMobileLayoutShell

@@ -51,6 +51,47 @@ export function parseViewDocumentFromSearchParams(searchParams: URLSearchParams)
   return { viewDocumentId, isMarkdownView };
 }
 
+function decodeUrlSegment(value: string) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+export function fileIdFromDocumentUrl(rawUrl: string) {
+  const trimmedUrl = rawUrl.trim();
+  if (!trimmedUrl) return null;
+
+  let url: URL;
+  try {
+    url = new URL(
+      trimmedUrl,
+      typeof window !== "undefined"
+        ? window.location.origin
+        : "http://localhost",
+    );
+  } catch {
+    return null;
+  }
+
+  const { viewDocumentId } = parseViewDocumentFromSearchParams(
+    url.searchParams,
+  );
+  if (viewDocumentId) return viewDocumentId;
+
+  const pathMatch =
+    url.pathname.match(/\/api\/files\/(?!progress\/)([^/?#]+)/i) ??
+    url.pathname.match(/\/files\/(?!progress\/)([^/?#]+)/i);
+  if (pathMatch?.[1]) return decodeUrlSegment(pathMatch[1]);
+
+  return (
+    url.searchParams.get("fileId")?.trim() ||
+    url.searchParams.get("file_id")?.trim() ||
+    null
+  );
+}
+
 export function buildDocumentViewUrl(
   fileId: string,
   options?: ViewDocumentUrlOptions,

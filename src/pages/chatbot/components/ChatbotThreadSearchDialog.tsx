@@ -270,7 +270,7 @@ function ChatbotThreadSearchResultRow({
             type="button"
             onClick={onSelect}
             className={`min-w-0 flex-1 truncate text-left font-medium transition-[padding] duration-150 ${
-              isMenuOpen ? "pr-1" : "group-hover:pr-1 group-focus-within:pr-1"
+              isMenuOpen ? "pr-1" : "group-focus-within:pr-1 group-hover:pr-1"
             }`}
             title={session.title}
           >
@@ -289,10 +289,10 @@ function ChatbotThreadSearchResultRow({
               toggleMenu();
             }}
             onKeyDown={(event) => event.stopPropagation()}
-            className={`flex h-7 shrink-0 items-center justify-center overflow-hidden rounded-full text-[#444746] transition-all duration-150 hover:bg-black/[0.06] focus:w-7 focus:opacity-100 dark:text-gray-300 dark:hover:bg-white/10 ${
+            className={`ml-2 flex h-7 shrink-0 items-center justify-center overflow-hidden rounded-full text-[#444746] transition-all duration-150 hover:bg-black/[0.06] focus:w-7 focus:opacity-100 dark:text-gray-300 dark:hover:bg-white/10 ${
               isMenuOpen
                 ? "w-7 opacity-100"
-                : "w-0 opacity-0 group-hover:w-7 group-hover:opacity-100 group-focus-within:w-7 group-focus-within:opacity-100"
+                : "w-0 opacity-0 group-focus-within:w-7 group-focus-within:opacity-100 group-hover:w-7 group-hover:opacity-100"
             }`}
             aria-label="Mở tuỳ chọn cuộc trò chuyện"
             aria-haspopup="menu"

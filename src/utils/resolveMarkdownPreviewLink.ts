@@ -1,4 +1,5 @@
 import {
+  fileIdFromDocumentUrl,
   parseViewDocumentFromSearchParams,
   VIEW_DOCUMENT_FORMAT_MARKDOWN,
 } from "@/utils/documentViewUrl";
@@ -16,11 +17,6 @@ export type ResolvedMarkdownPreviewLink =
   | { kind: "fetch-markdown"; fileId: string; preferMarkdown: boolean }
   | { kind: "file"; fileId: string; fileName?: string }
   | { kind: "remote-file"; url: string; fileName?: string };
-
-export function fileIdFromApiUrl(url: string) {
-  const match = url.match(/\/files\/([^/?#]+)/i);
-  return match?.[1] ?? null;
-}
 
 function looksLikeMarkdownUrl(url: URL) {
   const path = url.pathname.toLowerCase();
@@ -95,7 +91,7 @@ export function resolveMarkdownPreviewLink(
     };
   }
 
-  const fileId = fileIdFromApiUrl(url.href);
+  const fileId = fileIdFromDocumentUrl(url.href);
   if (fileId) {
     if (looksLikeMarkdownUrl(url)) {
       return {

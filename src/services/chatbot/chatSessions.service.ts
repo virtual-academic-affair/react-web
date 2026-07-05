@@ -32,6 +32,7 @@ export interface ChatHistorySource {
   title: string;
   titles?: string[];
   fileId: string;
+  file_id?: string;
   pages: string[];
   originalUrl: string;
   markdownUrl: string;

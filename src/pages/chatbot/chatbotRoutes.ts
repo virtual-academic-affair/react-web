@@ -1,6 +1,8 @@
 import { useCallback, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
+import { viewDocumentLocationSearch } from "@/utils/documentViewUrl";
+
 const CHAT_PATH_MARKER = "/chatbot";
 
 export function getChatbotBasePath(pathname: string) {
@@ -26,27 +28,34 @@ export function useChatbotRoutes() {
     () => getThreadIdFromPath(location.pathname),
     [location.pathname],
   );
+  const viewDocumentSearch = useMemo(
+    () => viewDocumentLocationSearch(location.search),
+    [location.search],
+  );
 
   const navigateToThread = useCallback(
     (threadId: string, options?: { replace?: boolean }) => {
       navigate(
         {
           pathname: `${chatbotBasePath}/chat/${encodeURIComponent(threadId)}`,
-          search: "",
+          search: viewDocumentSearch,
         },
         { replace: options?.replace },
       );
     },
-    [chatbotBasePath, navigate],
+    [chatbotBasePath, navigate, viewDocumentSearch],
   );
 
   const navigateToChatbotRoot = useCallback(
     (options?: { replace?: boolean }) => {
-      navigate({ pathname: chatbotBasePath, search: "" }, {
-        replace: options?.replace,
-      });
+      navigate(
+        { pathname: chatbotBasePath, search: viewDocumentSearch },
+        {
+          replace: options?.replace,
+        },
+      );
     },
-    [chatbotBasePath, navigate],
+    [chatbotBasePath, navigate, viewDocumentSearch],
   );
 
   return {
