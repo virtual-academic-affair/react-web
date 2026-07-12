@@ -16,8 +16,14 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { LuBookOpen, LuCheck, LuCopy, LuFileQuestion } from "react-icons/lu";
-import { MdArrowDownward, MdSend, MdSquare, MdUnarchive } from "react-icons/md";
+import { LuBookOpen, LuCheck, LuCopy } from "react-icons/lu";
+import {
+  MdArrowDownward,
+  MdOutlineQuestionAnswer,
+  MdSend,
+  MdSquare,
+  MdUnarchive,
+} from "react-icons/md";
 
 import { MarkdownTextSm } from "@/components/assistant-ui/markdown-text";
 import {
@@ -284,10 +290,7 @@ function GeminiAssistantMessage() {
                 strokeWidth={2}
               />
             ) : (
-              <LuFileQuestion
-                className={assistantActionIconClass}
-                strokeWidth={assistantActionIconStroke}
-              />
+              <MdOutlineQuestionAnswer className={assistantActionIconClass} />
             )}
           </button>
         </Tooltip>
@@ -597,7 +600,7 @@ export function GeminiThread({ className = "" }: { className?: string }) {
           <button
             type="button"
             onClick={() => void unarchiveThread(activeSession)}
-            className="pointer-events-auto inline-flex h-9 items-center gap-2 rounded-full border border-gray-200 bg-white/95 px-3 text-xs font-semibold text-[#444746] shadow-sm backdrop-blur transition hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-[#1a73e8]/30 focus-visible:outline-none dark:border-white/10 dark:bg-navy-800/95 dark:text-gray-200 dark:hover:bg-white/10"
+            className="dark:bg-navy-800/95 pointer-events-auto inline-flex h-9 items-center gap-2 rounded-full border border-gray-200 bg-white/95 px-3 text-xs font-semibold text-[#444746] shadow-sm backdrop-blur transition hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-[#1a73e8]/30 focus-visible:outline-none dark:border-white/10 dark:text-gray-200 dark:hover:bg-white/10"
             aria-label="Khôi phục cuộc trò chuyện"
           >
             <MdUnarchive className="h-4 w-4 shrink-0" aria-hidden />
