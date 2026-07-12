@@ -20,8 +20,8 @@ import {
   MdArrowUpward,
   MdCheck,
   MdClose,
-  MdContentCopy,
   MdDescription,
+  MdInsertLink,
 } from "react-icons/md";
 import { Streamdown } from "streamdown";
 
@@ -602,7 +602,7 @@ export function SourcePreviewPanel() {
                   {copied ? (
                     <MdCheck className="h-4 w-4 text-green-500" />
                   ) : (
-                    <MdContentCopy className="h-4 w-4" />
+                    <MdInsertLink className="h-4 w-4" />
                   )}
                 </button>
               </Tooltip>
