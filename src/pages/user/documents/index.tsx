@@ -22,9 +22,12 @@ import { useIsolatedSearchParams } from "@/hooks/useIsolatedSearchParams";
 import DocumentDetailDrawer from "@/pages/documents/components/DocumentDetailDrawer";
 import { DOCUMENT_TYPES } from "@/pages/documents/components/UploadDrawer";
 import { DocumentsService, MetadataService } from "@/services/documents";
+import { useAuthStore } from "@/stores/auth.store";
+import { Role } from "@/types/users";
 
 import { FileCard, FileRow } from "./components/FileItems";
 import FilterGroup from "./components/FilterGroup";
+import LecturerOnlyFilter from "./components/LecturerOnlyFilter";
 import { GridSkeleton, ListSkeleton } from "./components/Skeletons";
 import YearRangeFilter, { type YearRange } from "./components/YearRangeFilter";
 import { EMPTY_YEAR_RANGE_STRINGS } from "@/utils/yearRange";
@@ -80,6 +83,7 @@ const RESERVED_URL_PARAMS = new Set([
   "enrollTo",
   "acadFrom",
   "acadTo",
+  "lecturerOnly",
 ]);
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
@@ -90,6 +94,9 @@ const UserDocumentsPage: React.FC<{ embedded?: boolean }> = ({
   const [searchParams, setSearchParams] = useIsolatedSearchParams(embedded);
   const [routerSearchParams, setRouterSearchParams] = useRouterSearchParams();
   const viewDocumentSearchParams = embedded ? routerSearchParams : searchParams;
+  const userRole = useAuthStore((s) => s.userRole);
+  const canFilterLecturerOnly =
+    userRole === Role.Admin || userRole === Role.Lecture;
   // View mode (chatbot embedded: list only)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const showListOnly = embedded;
@@ -110,6 +117,11 @@ const UserDocumentsPage: React.FC<{ embedded?: boolean }> = ({
     return result;
   });
 
+  const [lecturerOnlyFilter, setLecturerOnlyFilter] = useState(() => {
+    if (!canFilterLecturerOnly) return false;
+    return searchParams.get("lecturerOnly") === "true";
+  });
+
   // Year range filters (initialized from URL)
   const [enrollmentYear, setEnrollmentYear] = useState<YearRange>(() => ({
     fromYear: searchParams.get("enrollFrom") ?? "",
@@ -119,6 +131,10 @@ const UserDocumentsPage: React.FC<{ embedded?: boolean }> = ({
     fromYear: searchParams.get("acadFrom") ?? "",
     toYear: searchParams.get("acadTo") ?? "",
   }));
+
+  /** Bật lọc → lecturerOnly=true; tắt → không gửi query param */
+  const lecturerOnlyArg =
+    canFilterLecturerOnly && lecturerOnlyFilter ? true : undefined;
 
   // Pagination
   const [page, setPage] = useState(
@@ -206,13 +222,19 @@ const UserDocumentsPage: React.FC<{ embedded?: boolean }> = ({
   const { data: result, isLoading } = useQuery({
     queryKey: [
       "documents-user",
-      { page, keyword, metadataFilter: metadataFilterArg },
+      {
+        page,
+        keyword,
+        lecturerOnly: lecturerOnlyArg,
+        metadataFilter: metadataFilterArg,
+      },
     ],
     queryFn: async () => {
       const res = await DocumentsService.listFiles({
         page,
         limit: PAGE_SIZE,
         keywords: keyword || undefined,
+        lecturerOnly: lecturerOnlyArg,
         metadataFilter: metadataFilterArg,
       });
       return {
@@ -271,6 +293,7 @@ const UserDocumentsPage: React.FC<{ embedded?: boolean }> = ({
     if (enrollmentYear.toYear) next.set("enrollTo", enrollmentYear.toYear);
     if (academicYear.fromYear) next.set("acadFrom", academicYear.fromYear);
     if (academicYear.toYear) next.set("acadTo", academicYear.toYear);
+    if (lecturerOnlyArg === true) next.set("lecturerOnly", "true");
     if (selectedFileId) next.set("id", selectedFileId);
     if (!embedded && viewDocumentId) {
       setViewDocumentParams(next, viewDocumentId, {
@@ -285,6 +308,7 @@ const UserDocumentsPage: React.FC<{ embedded?: boolean }> = ({
     filters,
     enrollmentYear,
     academicYear,
+    lecturerOnlyArg,
     selectedFileId,
     viewDocumentId,
     isMarkdownView,
@@ -373,6 +397,7 @@ const UserDocumentsPage: React.FC<{ embedded?: boolean }> = ({
 
   const handleClearAll = useCallback(() => {
     setFilters({});
+    setLecturerOnlyFilter(false);
     setEnrollmentYear(EMPTY_YEAR_RANGE);
     setAcademicYear(EMPTY_YEAR_RANGE);
     setPage(1);
@@ -426,7 +451,14 @@ const UserDocumentsPage: React.FC<{ embedded?: boolean }> = ({
   const hasYearFilters =
     Boolean(enrollmentYear.fromYear || enrollmentYear.toYear) ||
     Boolean(academicYear.fromYear || academicYear.toYear);
-  const hasFilters = hasTagFilters || hasYearFilters;
+  const hasFilters =
+    hasTagFilters || hasYearFilters || lecturerOnlyFilter;
+
+  useEffect(() => {
+    if (!canFilterLecturerOnly && lecturerOnlyFilter) {
+      setLecturerOnlyFilter(false);
+    }
+  }, [canFilterLecturerOnly, lecturerOnlyFilter]);
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -475,6 +507,15 @@ const UserDocumentsPage: React.FC<{ embedded?: boolean }> = ({
             selected={filters[TYPE_FILTER_KEY] || []}
             onChange={(next) => handleFilterChange(TYPE_FILTER_KEY, next)}
           />
+          {canFilterLecturerOnly ? (
+            <LecturerOnlyFilter
+              checked={lecturerOnlyFilter}
+              onChange={(next) => {
+                setLecturerOnlyFilter(next);
+                setPage(1);
+              }}
+            />
+          ) : null}
           {/* Year range filters */}
           <YearRangeFilter
             label="Khóa tuyển sinh"
@@ -588,6 +629,7 @@ const UserDocumentsPage: React.FC<{ embedded?: boolean }> = ({
                 setInputValue("");
                 setKeyword("");
                 setFilters({});
+                setLecturerOnlyFilter(false);
                 setEnrollmentYear(EMPTY_YEAR_RANGE);
                 setAcademicYear(EMPTY_YEAR_RANGE);
                 setPage(1);

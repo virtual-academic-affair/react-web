@@ -1,18 +1,19 @@
 import Drawer from "@/components/drawer/Drawer";
 import FilePickerField from "@/components/fields/FilePickerField";
 import { formInputClass } from "@/components/fields/formInputClass";
-import DetailFormLayout, { FormRow } from "@/components/layouts/DetailFormLayout";
+import DetailFormLayout, {
+  FormRow,
+} from "@/components/layouts/DetailFormLayout";
 import { faqsService } from "@/services/documents/faqs.service";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
-import { useRef, useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { read, utils } from "xlsx";
 
 interface FAQBulkImportModalProps {
   open: boolean;
   onClose: () => void;
 }
-
 
 const responsiveRowClass =
   "flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-6";
@@ -73,17 +74,22 @@ export default function FAQBulkImportModal({
         const firstSheet = firstSheetName ? wb.Sheets[firstSheetName] : null;
         if (!firstSheet) return;
 
-        const rows = (utils.sheet_to_json(firstSheet, {
-          header: 1,
-          blankrows: false,
-          defval: "",
-        }) as any[][]).map((row) =>
+        const rows = (
+          utils.sheet_to_json(firstSheet, {
+            header: 1,
+            blankrows: false,
+            defval: "",
+          }) as any[][]
+        ).map((row) =>
           row.map((cell) => (cell == null ? "" : String(cell).trim())),
         );
 
         if (!cancelled) {
           setLocalPreviewRows(rows.slice(0, 5));
-          const actualDataRows = Math.max(0, rows.length - (config.startRow - 1));
+          const actualDataRows = Math.max(
+            0,
+            rows.length - (config.startRow - 1),
+          );
           setTotalRows(actualDataRows);
         }
       } catch (err) {
@@ -91,7 +97,9 @@ export default function FAQBulkImportModal({
       }
     };
     parseLocalPreview();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [file, config.startRow]);
 
   const handleConfigChange = (key: keyof typeof config, value: string) => {
@@ -156,7 +164,9 @@ export default function FAQBulkImportModal({
                 type="number"
                 min={1}
                 value={config.questionCol}
-                onChange={(e) => handleConfigChange("questionCol", e.target.value)}
+                onChange={(e) =>
+                  handleConfigChange("questionCol", e.target.value)
+                }
                 disabled={isPending}
                 className={formInputClass}
               />
@@ -170,7 +180,9 @@ export default function FAQBulkImportModal({
                 type="number"
                 min={1}
                 value={config.answerCol}
-                onChange={(e) => handleConfigChange("answerCol", e.target.value)}
+                onChange={(e) =>
+                  handleConfigChange("answerCol", e.target.value)
+                }
                 disabled={isPending}
                 className={formInputClass}
               />
@@ -184,13 +196,15 @@ export default function FAQBulkImportModal({
                 type="number"
                 min={1}
                 value={config.academicYearCol}
-                onChange={(e) => handleConfigChange("academicYearCol", e.target.value)}
+                onChange={(e) =>
+                  handleConfigChange("academicYearCol", e.target.value)
+                }
                 disabled={isPending}
                 className={formInputClass}
               />
             </FormRow>
             <FormRow
-              label="Cột Niên khóa"
+              label="Cột Khóa tuyển sinh"
               className={responsiveRowClass}
               labelWidthClassName={responsiveLabelClass}
             >
@@ -198,7 +212,9 @@ export default function FAQBulkImportModal({
                 type="number"
                 min={1}
                 value={config.enrollmentYearCol}
-                onChange={(e) => handleConfigChange("enrollmentYearCol", e.target.value)}
+                onChange={(e) =>
+                  handleConfigChange("enrollmentYearCol", e.target.value)
+                }
                 disabled={isPending}
                 className={formInputClass}
               />
@@ -224,25 +240,30 @@ export default function FAQBulkImportModal({
         {file && (
           <div className="mt-2">
             {previewError ? (
-              <p className="text-sm text-red-500 py-4 text-center">{previewError}</p>
+              <p className="py-4 text-center text-sm text-red-500">
+                {previewError}
+              </p>
             ) : localPreviewRows.length === 0 ? (
               <p className="text-sm text-gray-500 dark:text-gray-300">
                 Không có dữ liệu mẫu để hiển thị.
               </p>
             ) : (
               <div className="overflow-x-auto rounded-2xl border border-gray-100 dark:border-white/10">
-                <table className="min-w-full w-max text-xs">
+                <table className="w-max min-w-full text-xs">
                   <thead>
                     <tr className="border-b border-gray-100 bg-gray-50 dark:border-white/10 dark:bg-white/5">
-                      <th className="w-12 whitespace-nowrap border-r border-gray-100 px-2 py-1.5 text-center text-xs font-semibold tracking-wide text-gray-400 uppercase dark:border-white/10 dark:text-gray-500">
+                      <th className="w-12 border-r border-gray-100 px-2 py-1.5 text-center text-xs font-semibold tracking-wide whitespace-nowrap text-gray-400 uppercase dark:border-white/10 dark:text-gray-500">
                         #
                       </th>
                       {Array.from({
-                        length: Math.max(1, ...localPreviewRows.map((row) => row.length)),
+                        length: Math.max(
+                          1,
+                          ...localPreviewRows.map((row) => row.length),
+                        ),
                       }).map((_, colIdx) => (
                         <th
                           key={`col-${colIdx + 1}`}
-                          className="whitespace-nowrap border-r border-gray-100 px-2 py-1.5 text-center text-xs font-semibold tracking-wide text-gray-400 uppercase last:border-r-0 dark:border-white/10 dark:text-gray-500"
+                          className="border-r border-gray-100 px-2 py-1.5 text-center text-xs font-semibold tracking-wide whitespace-nowrap text-gray-400 uppercase last:border-r-0 dark:border-white/10 dark:text-gray-500"
                         >
                           Cột {colIdx + 1}
                         </th>
@@ -251,13 +272,22 @@ export default function FAQBulkImportModal({
                   </thead>
                   <tbody>
                     {localPreviewRows.map((row, idx) => (
-                      <tr key={idx} className="border-b border-gray-50 last:border-b-0 dark:border-white/5">
-                        <td className="w-12 whitespace-nowrap border-r border-gray-100 bg-gray-50 px-2 py-1.5 text-center text-xs text-gray-600 dark:border-white/10 dark:bg-white/5 dark:text-gray-300">
+                      <tr
+                        key={idx}
+                        className="border-b border-gray-50 last:border-b-0 dark:border-white/5"
+                      >
+                        <td className="w-12 border-r border-gray-100 bg-gray-50 px-2 py-1.5 text-center text-xs whitespace-nowrap text-gray-600 dark:border-white/10 dark:bg-white/5 dark:text-gray-300">
                           {idx + 1}
                         </td>
                         {row.map((cell, cIdx) => (
-                          <td key={cIdx} className="border-r border-gray-100 px-2 py-1.5 text-sm text-gray-700 last:border-r-0 dark:border-white/10 dark:text-white">
-                            <div className="max-w-[200px] truncate" title={cell}>
+                          <td
+                            key={cIdx}
+                            className="border-r border-gray-100 px-2 py-1.5 text-sm text-gray-700 last:border-r-0 dark:border-white/10 dark:text-white"
+                          >
+                            <div
+                              className="max-w-[200px] truncate"
+                              title={cell}
+                            >
                               {cell || "—"}
                             </div>
                           </td>

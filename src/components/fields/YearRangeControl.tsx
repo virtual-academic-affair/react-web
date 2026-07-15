@@ -34,13 +34,32 @@ export default function YearRangeControl({
   const inputClass = compact ? compactInputClass : formInputClass;
   const summary = formatYearRangeStrings(value, allLabel);
   const editable = showInput && onChange != null && !disabled;
+  /** Summary dưới input: tách khỏi layout để FormRow items-center chỉ căn với ô input. */
+  const summaryOutOfFlow = Boolean(showSummary && showInput && !compact);
 
   const setField = (field: keyof YearRangeStrings, next: string) => {
     onChange?.({ ...value, [field]: next });
   };
 
+  const summaryEl =
+    showSummary && showInput ? (
+      <p
+        className={
+          summaryOutOfFlow
+            ? "absolute top-full left-0 mt-1.5 text-[11px] leading-4 text-gray-500 dark:text-gray-400"
+            : "text-[11px] leading-4 text-gray-500 dark:text-gray-400"
+        }
+      >
+        Phạm vi áp dụng: {summary}
+      </p>
+    ) : showSummary ? (
+      <p className="text-navy-700 text-sm dark:text-white">{summary}</p>
+    ) : null;
+
   return (
-    <div className={`flex w-full min-w-0 flex-col gap-1.5 ${className ?? ""}`}>
+    <div
+      className={`relative w-full min-w-0 ${summaryOutOfFlow ? "" : "flex flex-col gap-1.5"} ${className ?? ""}`}
+    >
       {editable ? (
         <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
           <input
@@ -66,15 +85,7 @@ export default function YearRangeControl({
           />
         </div>
       ) : null}
-      {showSummary ? (
-        showInput ? (
-          <p className="text-[11px] text-gray-500 dark:text-gray-400">
-            Phạm vi áp dụng: {summary}
-          </p>
-        ) : (
-          <p className="text-navy-700 text-sm dark:text-white">{summary}</p>
-        )
-      ) : null}
+      {summaryEl}
     </div>
   );
 }

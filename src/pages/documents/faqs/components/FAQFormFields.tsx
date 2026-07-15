@@ -1,16 +1,20 @@
-import RichTextEditor from "@/components/fields/RichTextEditor";
 import { formInputClassWithError } from "@/components/fields/formInputClass";
+import RichTextEditor from "@/components/fields/RichTextEditor";
 import YearRangeField from "@/components/fields/YearRangeField";
 import { FormRow } from "@/components/layouts/DetailFormLayout";
+import Switch from "@/components/switch";
 import type { YearRange } from "@/types/faqs";
+import type { ChangeEvent } from "react";
 
 interface FAQFormFieldsProps {
   question: string;
   answer: string;
+  lecturerOnly?: boolean;
   academicYear: YearRange;
   enrollmentYear: YearRange;
   onQuestionChange: (val: string) => void;
   onAnswerChange: (val: string) => void;
+  onLecturerOnlyChange?: (val: boolean) => void;
   onAcademicYearChange: (val: YearRange) => void;
   onEnrollmentYearChange: (val: YearRange) => void;
   errors?: {
@@ -23,15 +27,18 @@ interface FAQFormFieldsProps {
 export function FAQFormFields({
   question,
   answer,
+  lecturerOnly,
   academicYear,
   enrollmentYear,
   onQuestionChange,
   onAnswerChange,
+  onLecturerOnlyChange,
   onAcademicYearChange,
   onEnrollmentYearChange,
   errors,
   disabled,
 }: FAQFormFieldsProps) {
+  const showLecturerOnly = typeof onLecturerOnlyChange === "function";
   return (
     <>
       <FormRow alignTop label="Câu hỏi" required={true}>
@@ -61,7 +68,20 @@ export function FAQFormFields({
         </div>
       </FormRow>
 
-      <FormRow label="Năm học áp dụng">
+      {showLecturerOnly && (
+        <FormRow label="Chỉ giảng viên">
+          <Switch
+            checked={Boolean(lecturerOnly)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+              onLecturerOnlyChange?.(e.target.checked)
+            }
+            disabled={disabled}
+            color="red"
+          />
+        </FormRow>
+      )}
+
+      <FormRow label="Năm học" className="pb-5">
         <YearRangeField
           value={academicYear}
           onChange={onAcademicYearChange}
@@ -69,7 +89,7 @@ export function FAQFormFields({
         />
       </FormRow>
 
-      <FormRow label="Niên khóa áp dụng">
+      <FormRow label="Khóa tuyển sinh" className="pb-5">
         <YearRangeField
           value={enrollmentYear}
           onChange={onEnrollmentYearChange}

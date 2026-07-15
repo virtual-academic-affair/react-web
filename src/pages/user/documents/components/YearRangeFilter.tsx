@@ -136,6 +136,7 @@ const YearRangeFilter: React.FC<YearRangeFilterProps> = ({
               value={localValue}
               onChange={setLocalValue}
               compact
+              showSummary={false}
             />
 
             <button

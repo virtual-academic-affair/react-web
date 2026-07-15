@@ -9,6 +9,7 @@ import YearRangeControl from "@/components/fields/YearRangeControl";
 import DetailFormLayout, {
   FormRow,
 } from "@/components/layouts/DetailFormLayout";
+import Switch from "@/components/switch";
 import { DocumentsService } from "@/services/documents";
 import { parseError } from "@/utils/parseError";
 
@@ -74,6 +75,7 @@ export const UploadForm: React.FC<UploadFormProps> = ({
   const [enrollToYear, setEnrollToYear] = useState("");
   const [academicFromYear, setAcademicFromYear] = useState("");
   const [academicToYear, setAcademicToYear] = useState("");
+  const [lecturerOnly, setLecturerOnly] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -96,6 +98,7 @@ export const UploadForm: React.FC<UploadFormProps> = ({
     setEnrollToYear("");
     setAcademicFromYear("");
     setAcademicToYear("");
+    setLecturerOnly(false);
     setUploading(false);
     closeSocket();
   }, [closeSocket]);
@@ -173,6 +176,7 @@ export const UploadForm: React.FC<UploadFormProps> = ({
         formData.append("displayName", displayName.trim());
       }
       formData.append("clientId", clientId);
+      formData.append("lecturerOnly", String(lecturerOnly));
       if (Object.keys(customMetadata).length > 0) {
         formData.append("customMetadata", JSON.stringify(customMetadata));
       }
@@ -283,7 +287,7 @@ export const UploadForm: React.FC<UploadFormProps> = ({
         />
       </FormRow>
 
-      <FormRow label="Khóa tuyển sinh" stacked>
+      <FormRow label="Khóa tuyển sinh" stacked className="pb-5">
         <YearRangeControl
           value={{ fromYear: enrollFromYear, toYear: enrollToYear }}
           onChange={({ fromYear, toYear }) => {
@@ -293,13 +297,24 @@ export const UploadForm: React.FC<UploadFormProps> = ({
         />
       </FormRow>
 
-      <FormRow label="Năm học" stacked>
+      <FormRow label="Năm học" stacked className="pb-5">
         <YearRangeControl
           value={{ fromYear: academicFromYear, toYear: academicToYear }}
           onChange={({ fromYear, toYear }) => {
             setAcademicFromYear(fromYear);
             setAcademicToYear(toYear);
           }}
+        />
+      </FormRow>
+
+      <FormRow label="Chỉ giảng viên">
+        <Switch
+          checked={lecturerOnly}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            setLecturerOnly(e.target.checked)
+          }
+          disabled={uploading}
+          color="red"
         />
       </FormRow>
 

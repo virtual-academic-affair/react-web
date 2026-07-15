@@ -4,8 +4,6 @@ import { createContext, useContext } from "react";
 import type { ChatThreadSession } from "./types";
 
 export type ChatbotShellContextValue = {
-  errorMessage: string | null;
-  clearError: () => void;
   isLoadingSessions: boolean;
   isLoadingMessages: boolean;
   sessions: ChatThreadSession[];

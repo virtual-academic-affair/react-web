@@ -126,7 +126,11 @@ export async function streamChat(
   });
 
   if (!response.ok || !response.body) {
-    throw new Error(`Không thể stream hội thoại (HTTP ${response.status})`);
+    const error = new Error(
+      `Không thể stream hội thoại (HTTP ${response.status})`,
+    ) as Error & { statusCode?: number };
+    error.statusCode = response.status;
+    throw error;
   }
 
   const reader = response.body.getReader();

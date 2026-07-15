@@ -8,15 +8,17 @@ export interface FAQ {
   faqId: string; 
   question: string;
   answerRichText: string;
+  /** true: chỉ admin/lecture được thấy */
+  lecturerOnly: boolean;
   metadataFilter: {
     academicYear: YearRange;
     enrollmentYear: YearRange;
   };
-  isActive: boolean;
   viewCount: number;
   source: string;
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string | null;
 }
 
 export interface FAQListResponse {

@@ -9,36 +9,33 @@ import {
   useRef,
   useState,
 } from "react";
-import {
-  MdDeleteOutline,
-  MdFileDownload,
-  MdInfoOutline,
-} from "react-icons/md";
+import { MdDeleteOutline, MdFileDownload, MdInfoOutline } from "react-icons/md";
 
-import { useIsolatedSearchParams } from "@/hooks/useIsolatedSearchParams";
 import TableLayout, {
   type TableAction,
   type TableColumn,
 } from "@/components/table/TableLayout";
 import Tag from "@/components/tag/Tag";
+import { useIsolatedSearchParams } from "@/hooks/useIsolatedSearchParams";
 import { DocumentsService } from "@/services/documents";
 import { parseError } from "@/utils/parseError";
 
+import { PageTitle } from "@/components/layouts/PageTitle";
 import ConfirmModal from "@/components/modal/ConfirmModal";
 import Tooltip from "@/components/tooltip/Tooltip";
 import FilterGroup from "@/pages/user/documents/components/FilterGroup";
+import LecturerOnlyFilter from "@/pages/user/documents/components/LecturerOnlyFilter";
 import YearRangeFilter, {
   type YearRange,
 } from "@/pages/user/documents/components/YearRangeFilter";
-import { formatYearRange, EMPTY_YEAR_RANGE_STRINGS } from "@/utils/yearRange";
-import { PageTitle } from "@/components/layouts/PageTitle";
-import { LuFileText } from "react-icons/lu";
 import {
   clearViewDocumentParams,
   parseViewDocumentFromSearchParams,
   setViewDocumentParams,
   VIEW_DOCUMENT_FORMAT_MARKDOWN,
 } from "@/utils/documentViewUrl";
+import { EMPTY_YEAR_RANGE_STRINGS, formatYearRange } from "@/utils/yearRange";
+import { LuFileText } from "react-icons/lu";
 import DocumentDetailDrawer from "../components/DocumentDetailDrawer";
 import UploadDrawer, {
   DOCUMENT_TYPE_COLOR_MAP,
@@ -63,16 +60,6 @@ const DOC_TYPE_FILTER_OPTIONS = DOCUMENT_TYPES.map((t) => ({
   color: t.color,
 }));
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
-
-/** Status → display */
-const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  ready: { label: "Sẵn sàng", color: "#22c55e" },
-  processing: { label: "Đang xử lý", color: "#f59e0b" },
-  uploading: { label: "Đang tải lên", color: "#f59e0b" },
-  failed: { label: "Thất bại", color: "#b2161e" },
-};
-
 // ── Component ──────────────────────────────────────────────────────────────────
 
 const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
@@ -96,6 +83,9 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
     const raw = searchParams.get("type");
     return raw ? raw.split(",").filter(Boolean) : [];
   });
+  const [lecturerOnlyFilter, setLecturerOnlyFilter] = useState(
+    () => searchParams.get("lecturerOnly") === "true",
+  );
   const [enrollmentYear, setEnrollmentYear] = useState<YearRange>(() => ({
     fromYear: searchParams.get("enrollFrom") ?? "",
     toYear: searchParams.get("enrollTo") ?? "",
@@ -104,6 +94,9 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
     fromYear: searchParams.get("acadFrom") ?? "",
     toYear: searchParams.get("acadTo") ?? "",
   }));
+
+  /** Bật lọc → lecturerOnly=true; tắt → không gửi query param */
+  const lecturerOnlyArg = lecturerOnlyFilter ? true : undefined;
 
   const metadataFilterArg = useMemo(() => {
     const result: Record<string, unknown> = {};
@@ -126,11 +119,13 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
 
   const hasFilters =
     typeFilter.length > 0 ||
+    lecturerOnlyFilter ||
     Boolean(enrollmentYear.fromYear || enrollmentYear.toYear) ||
     Boolean(academicYear.fromYear || academicYear.toYear);
 
   const handleClearAllFilters = useCallback(() => {
     setTypeFilter([]);
+    setLecturerOnlyFilter(false);
     setEnrollmentYear(EMPTY_YEAR_RANGE);
     setAcademicYear(EMPTY_YEAR_RANGE);
     setPage(1);
@@ -144,6 +139,10 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
     // type
     if (typeFilter.length > 0) next.set("type", typeFilter.join(","));
     else next.delete("type");
+    // lecturerOnly
+    if (lecturerOnlyArg !== undefined)
+      next.set("lecturerOnly", String(lecturerOnlyArg));
+    else next.delete("lecturerOnly");
     // enrollment year
     if (enrollmentYear.fromYear)
       next.set("enrollFrom", enrollmentYear.fromYear);
@@ -157,7 +156,7 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
     else next.delete("acadTo");
     setSearchParams(next, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [embedded, typeFilter, enrollmentYear, academicYear]);
+  }, [embedded, typeFilter, lecturerOnlyArg, enrollmentYear, academicYear]);
 
   // File preview (URL-driven: ?viewDocumentId=fileId)
   const { viewDocumentId, isMarkdownView } =
@@ -175,13 +174,19 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
   const { data: result = null, isLoading: loading } = useQuery({
     queryKey: [
       "documents",
-      { page, keyword, metadataFilter: metadataFilterArg },
+      {
+        page,
+        keyword,
+        lecturerOnly: lecturerOnlyArg,
+        metadataFilter: metadataFilterArg,
+      },
     ],
     queryFn: async () => {
       const res = await DocumentsService.listFiles({
         page,
         limit: PAGE_SIZE,
         keywords: keyword || undefined,
+        lecturerOnly: lecturerOnlyArg,
         metadataFilter: metadataFilterArg,
       });
       return {
@@ -318,15 +323,21 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
               className="block w-full"
               placement="topLeft"
             >
-              <p className="text-navy-700 group-hover:text-brand-500 dark:group-hover:text-brand-400 truncate text-sm font-bold transition-colors group-hover:underline dark:text-white">
+              <p className="text-navy-700 group-hover:text-brand-500 dark:group-hover:text-brand-400 truncate text-sm font-medium transition-colors group-hover:underline dark:text-white">
                 {x.displayName || x.originalFilename}
               </p>
             </Tooltip>
-            <Tooltip label={x.originalFilename} placement="topLeft" wrap>
-              <p className="mt-0.5 truncate text-xs text-gray-500">
-                {x.originalFilename}
-              </p>
-            </Tooltip>
+            {x.lecturerOnly ? (
+              <div className="mt-1">
+                <Tag
+                  color="#ef4444"
+                  className="text-[10px]"
+                  interactive={false}
+                >
+                  Chỉ giảng viên
+                </Tag>
+              </div>
+            ) : null}
           </button>
         ),
       },
@@ -366,36 +377,20 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
                 Khóa tuyển sinh:{" "}
               </span>
               <span className="font-medium">
-                {formatYearRange(
-                  x.customMetadata?.enrollmentYear,
-                  "Tất cả",
-                )}
+                {formatYearRange(x.customMetadata?.enrollmentYear, "Tất cả")}
               </span>
             </div>
             <div className="text-navy-700 dark:text-white">
               <span className="font-normal text-gray-400">Năm học: </span>
               <span className="font-medium">
-                {formatYearRange(
-                  x.customMetadata?.academicYear,
-                  "Tất cả",
-                )}
+                {formatYearRange(x.customMetadata?.academicYear, "Tất cả")}
               </span>
             </div>
           </div>
         ),
       },
-      {
-        key: "status",
-        header: "Trạng thái",
-        render: (x) => {
-          const statusKey = String(x?.status || "").toLowerCase();
-          const cfg = STATUS_CONFIG[statusKey];
-          if (cfg) return <Tag color={cfg.color}>{cfg.label}</Tag>;
-          return <Tag color="#94a3b8">Đang xử lý</Tag>;
-        },
-      },
     ],
-    [searchParams, setSearchParams],
+    [handleUpdateType, searchParams, setSearchParams],
   );
 
   const actions: TableAction<any>[] = useMemo(
@@ -413,7 +408,10 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
         icon: <MdFileDownload className="h-4 w-4" />,
         label: "Tải xuống",
         onClick: async (x) => {
-          if (!x.fileUrl) { toast.error("Không thể tải xuống tệp."); return; }
+          if (!x.fileUrl) {
+            toast.error("Không thể tải xuống tệp.");
+            return;
+          }
           try {
             const res = await fetch(x.fileUrl);
             if (!res.ok) throw new Error("Network error");
@@ -480,6 +478,13 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
                 selected={typeFilter}
                 onChange={(next) => {
                   setTypeFilter(next);
+                  setPage(1);
+                }}
+              />
+              <LecturerOnlyFilter
+                checked={lecturerOnlyFilter}
+                onChange={(next) => {
+                  setLecturerOnlyFilter(next);
                   setPage(1);
                 }}
               />

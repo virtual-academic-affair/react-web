@@ -7,21 +7,15 @@ class FAQsService {
     page?: number;
     limit?: number;
     search?: string;
-    isActive?: boolean;
-    academicYear?: YearRange;
-    enrollmentYear?: YearRange;
+    lecturerOnly?: boolean;
+    metadataFilter?: Record<string, unknown>;
   }) {
-    const { academicYear, enrollmentYear, isActive, ...rest } = params;
-    
-    // Convert separate metadata filters into a single JSON string as required by the backend
-    const metadataFilter: any = {};
-    if (academicYear) metadataFilter.academic_year = academicYear;
-    if (enrollmentYear) metadataFilter.enrollment_year = enrollmentYear;
-    
-    const queryParams: any = { ...rest };
-    if (isActive !== undefined) queryParams.isActive = isActive;
-    if (Object.keys(metadataFilter).length > 0) {
-      queryParams.metadataFilter = JSON.stringify(metadataFilter);
+    const queryParams: Record<string, unknown> = { ...params };
+    if (params.metadataFilter) {
+      queryParams.metadataFilter = JSON.stringify(params.metadataFilter);
+    }
+    if (params.lecturerOnly === undefined) {
+      delete queryParams.lecturerOnly;
     }
 
     const response = await ragHttp.get<FAQListResponse>(
@@ -91,12 +85,14 @@ class FAQsService {
   async createFAQ(data: {
     question: string;
     answer: string;
+    lecturerOnly?: boolean;
     academicYear?: YearRange;
     enrollmentYear?: YearRange;
   }) {
     const payload = {
       question: data.question,
       answerRichText: data.answer,
+      lecturerOnly: data.lecturerOnly ?? false,
       metadataFilter: {
         academicYear: data.academicYear || { fromYear: 0, toYear: 9999 },
         enrollmentYear: data.enrollmentYear || { fromYear: 0, toYear: 9999 },
@@ -112,14 +108,14 @@ class FAQsService {
   async updateFAQ(id: string, data: {
     question?: string;
     answer?: string;
+    lecturerOnly?: boolean;
     academicYear?: YearRange;
     enrollmentYear?: YearRange;
-    isActive?: boolean;
   }) {
     const payload: any = {};
     if (data.question) payload.question = data.question;
     if (data.answer) payload.answerRichText = data.answer;
-    if (data.isActive !== undefined) payload.isActive = data.isActive;
+    if (data.lecturerOnly !== undefined) payload.lecturerOnly = data.lecturerOnly;
     
     if (data.academicYear || data.enrollmentYear) {
       payload.metadataFilter = {

@@ -67,11 +67,15 @@ export const DocumentsService = {
     page?: number;
     limit?: number;
     keywords?: string;
+    lecturerOnly?: boolean;
     metadataFilter?: Record<string, unknown>;
   }): Promise<{ files: unknown[]; total: number }> {
     const queryParams: Record<string, unknown> = { ...params };
     if (params?.metadataFilter) {
       queryParams.metadataFilter = JSON.stringify(params.metadataFilter);
+    }
+    if (params?.lecturerOnly === undefined) {
+      delete queryParams.lecturerOnly;
     }
     const { data } = await ragHttp.get(API_ENDPOINTS.rag.files.base, {
       params: queryParams,
@@ -164,6 +168,7 @@ export const DocumentsService = {
     fileId: string,
     updates: {
       displayName?: string;
+      lecturerOnly?: boolean;
       customMetadata?: Record<string, unknown>;
     },
   ): Promise<any> {
@@ -171,6 +176,7 @@ export const DocumentsService = {
       API_ENDPOINTS.rag.files.byId(fileId),
       {
         displayName: updates.displayName,
+        lecturerOnly: updates.lecturerOnly,
         customMetadata: updates.customMetadata,
       },
     );

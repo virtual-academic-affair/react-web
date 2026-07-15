@@ -4,19 +4,26 @@ import ConfirmModal from "@/components/modal/ConfirmModal";
 import TableClampCell from "@/components/table/TableClampCell";
 import type { TableAction, TableColumn } from "@/components/table/TableLayout";
 import TableLayout from "@/components/table/TableLayout";
+import Tag from "@/components/tag/Tag";
 import { faqsService } from "@/services/documents/faqs.service";
 import type { FAQ } from "@/types/faqs";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
-import { useState } from "react";
-import { LuCircleHelp } from "react-icons/lu";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { HiMiniDocumentCheck } from "react-icons/hi2";
 import { MdDeleteOutline, MdInfoOutline } from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
+import LecturerOnlyFilter from "@/pages/user/documents/components/LecturerOnlyFilter";
+import YearRangeFilter, {
+  type YearRange,
+} from "@/pages/user/documents/components/YearRangeFilter";
+import { EMPTY_YEAR_RANGE_STRINGS } from "@/utils/yearRange";
 import FAQBulkImportModal from "./components/FAQBulkImportModal";
 import FAQCreationDrawer from "./components/FAQCreationDrawer";
 import FAQDetailDrawer from "./components/FAQDetailDrawer";
 
 const PAGE_SIZE = 10;
+const EMPTY_YEAR_RANGE: YearRange = EMPTY_YEAR_RANGE_STRINGS;
 
 export default function FAQsPage() {
   const queryClient = useQueryClient();
@@ -34,14 +41,105 @@ export default function FAQsPage() {
   const [deleteTarget, setDeleteTarget] = useState<FAQ | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Filters (initialized from URL) — same pattern as documents list
+  const [lecturerOnlyFilter, setLecturerOnlyFilter] = useState(
+    () => searchParams.get("lecturerOnly") === "true",
+  );
+  const [enrollmentYear, setEnrollmentYear] = useState<YearRange>(() => ({
+    fromYear: searchParams.get("enrollFrom") ?? "",
+    toYear: searchParams.get("enrollTo") ?? "",
+  }));
+  const [academicYear, setAcademicYear] = useState<YearRange>(() => ({
+    fromYear: searchParams.get("acadFrom") ?? "",
+    toYear: searchParams.get("acadTo") ?? "",
+  }));
+
+  /** Bật lọc → lecturerOnly=true; tắt → không gửi query param */
+  const lecturerOnlyArg = lecturerOnlyFilter ? true : undefined;
+
+  const metadataFilterArg = useMemo(() => {
+    const result: Record<string, unknown> = {};
+    if (enrollmentYear.fromYear || enrollmentYear.toYear) {
+      const obj: Record<string, number> = {};
+      if (enrollmentYear.fromYear)
+        obj.fromYear = Number(enrollmentYear.fromYear);
+      if (enrollmentYear.toYear) obj.toYear = Number(enrollmentYear.toYear);
+      result.enrollmentYear = obj;
+    }
+    if (academicYear.fromYear || academicYear.toYear) {
+      const obj: Record<string, number> = {};
+      if (academicYear.fromYear) obj.fromYear = Number(academicYear.fromYear);
+      if (academicYear.toYear) obj.toYear = Number(academicYear.toYear);
+      result.academicYear = obj;
+    }
+    return Object.keys(result).length > 0 ? result : undefined;
+  }, [enrollmentYear, academicYear]);
+
+  const hasFilters =
+    lecturerOnlyFilter ||
+    Boolean(enrollmentYear.fromYear || enrollmentYear.toYear) ||
+    Boolean(academicYear.fromYear || academicYear.toYear);
+
+  const handleClearAllFilters = useCallback(() => {
+    setLecturerOnlyFilter(false);
+    setEnrollmentYear(EMPTY_YEAR_RANGE);
+    setAcademicYear(EMPTY_YEAR_RANGE);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete("lecturerOnly");
+      next.delete("enrollFrom");
+      next.delete("enrollTo");
+      next.delete("acadFrom");
+      next.delete("acadTo");
+      next.set("page", "1");
+      return next;
+    });
+  }, [setSearchParams]);
+
+  // Sync filter state → URL
+  useEffect(() => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (lecturerOnlyArg !== undefined)
+          next.set("lecturerOnly", String(lecturerOnlyArg));
+        else next.delete("lecturerOnly");
+
+        if (enrollmentYear.fromYear)
+          next.set("enrollFrom", enrollmentYear.fromYear);
+        else next.delete("enrollFrom");
+        if (enrollmentYear.toYear) next.set("enrollTo", enrollmentYear.toYear);
+        else next.delete("enrollTo");
+
+        if (academicYear.fromYear) next.set("acadFrom", academicYear.fromYear);
+        else next.delete("acadFrom");
+        if (academicYear.toYear) next.set("acadTo", academicYear.toYear);
+        else next.delete("acadTo");
+
+        return next;
+      },
+      { replace: true },
+    );
+  }, [lecturerOnlyArg, enrollmentYear, academicYear, setSearchParams]);
+
   // Data fetching
   const { data: result, isLoading } = useQuery({
-    queryKey: ["faqs", { page, search }],
+    queryKey: [
+      "faqs",
+      {
+        page,
+        search,
+        lecturerOnly: lecturerOnlyArg,
+        metadataFilter: metadataFilterArg,
+      },
+    ],
     queryFn: () =>
       faqsService.getFAQs({
         page,
         limit: PAGE_SIZE,
         search: search || undefined,
+        lecturerOnly: lecturerOnlyArg,
+        metadataFilter: metadataFilterArg,
       }),
     staleTime: 30 * 1000,
   });
@@ -52,9 +150,16 @@ export default function FAQsPage() {
       header: "Câu hỏi",
       width: "40%",
       render: (item) => (
-        <TableClampCell className="text-navy-700 text-sm font-medium dark:text-white">
-          {item.question}
-        </TableClampCell>
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <TableClampCell className="text-sm font-medium text-navy-700 dark:text-white">
+            {item.question}
+          </TableClampCell>
+          {item.lecturerOnly ? (
+            <Tag color="#ef4444" className="w-fit text-[10px]" interactive={false}>
+              Chỉ giảng viên
+            </Tag>
+          ) : null}
+        </div>
       ),
     },
     {
@@ -83,6 +188,14 @@ export default function FAQsPage() {
       else prev.delete("search");
       prev.set("page", "1");
       return prev;
+    });
+  };
+
+  const resetPage = () => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("page", "1");
+      return next;
     });
   };
 
@@ -126,7 +239,7 @@ export default function FAQsPage() {
         <PageTitle
           title="Danh sách câu hỏi thường gặp (FAQ)"
           tabTitle="Danh sách câu hỏi thường gặp (FAQ)"
-          icon={LuCircleHelp}
+          icon={HiMiniDocumentCheck}
         />
         <TableLayout
           result={result || null}
@@ -156,21 +269,59 @@ export default function FAQsPage() {
           onSearch={handleSearch}
           searchPlaceholder="Tìm câu hỏi, câu trả lời..."
           middleSlot={
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setCreationOpen(true)}
-                className="rounded-2xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
-              >
-                Thêm
-              </button>
-              <button
-                type="button"
-                onClick={() => setImportOpen(true)}
-                className="bg-brand-500 hover:bg-brand-600 rounded-2xl px-5 py-2.5 text-sm font-semibold text-white"
-              >
-                Thêm hàng loạt
-              </button>
+            <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+              <div className="flex flex-wrap items-center gap-2">
+                <LecturerOnlyFilter
+                  checked={lecturerOnlyFilter}
+                  onChange={(next) => {
+                    setLecturerOnlyFilter(next);
+                    resetPage();
+                  }}
+                />
+                <YearRangeFilter
+                  label="Khóa tuyển sinh"
+                  value={enrollmentYear}
+                  onChange={(next) => {
+                    setEnrollmentYear(next);
+                    resetPage();
+                  }}
+                />
+                <YearRangeFilter
+                  label="Năm học"
+                  value={academicYear}
+                  onChange={(next) => {
+                    setAcademicYear(next);
+                    resetPage();
+                  }}
+                />
+
+                {hasFilters && (
+                  <button
+                    type="button"
+                    onClick={handleClearAllFilters}
+                    className="text-action-link ml-2 text-xs"
+                  >
+                    Xóa tất cả
+                  </button>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setCreationOpen(true)}
+                  className="rounded-2xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
+                >
+                  Thêm
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImportOpen(true)}
+                  className="bg-brand-500 hover:bg-brand-600 rounded-2xl px-5 py-2.5 text-sm font-semibold text-white"
+                >
+                  Thêm hàng loạt
+                </button>
+              </div>
             </div>
           }
         />

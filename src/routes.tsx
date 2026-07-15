@@ -53,21 +53,14 @@ const routes: RoutesType[] = [
         path: "documents/forms",
       },
       {
-        name: "Câu hỏi",
+        name: "DS FAQs",
         layout: "/admin",
-        path: "documents/questions",
-        children: [
-          {
-            name: "DS câu hỏi thường gặp",
-            layout: "/admin",
-            path: "documents/faqs",
-          },
-          {
-            name: "Câu hỏi tổng hợp",
-            layout: "/admin",
-            path: "documents/candidates",
-          },
-        ],
+        path: "documents/faqs",
+      },
+      {
+        name: "Corpus Tree",
+        layout: "/admin",
+        path: "documents/corpus",
       },
     ],
   },

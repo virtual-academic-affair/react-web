@@ -13,6 +13,7 @@ import {
   type YearRangeNumbers,
 } from "@/utils/yearRange";
 import ConfirmModal from "@/components/modal/ConfirmModal";
+import Switch from "@/components/switch";
 import Tag from "@/components/tag/Tag";
 import Tooltip from "@/components/tooltip/Tooltip";
 import { DocumentsService } from "@/services/documents";
@@ -88,6 +89,7 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
   const [enrollToYear, setEnrollToYear] = useState("");
   const [academicFromYear, setAcademicFromYear] = useState("");
   const [academicToYear, setAcademicToYear] = useState("");
+  const [lecturerOnly, setLecturerOnly] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
 
@@ -123,6 +125,7 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
       const toA = normalizeYear(academic?.toYear);
       setAcademicFromYear(fromA != null ? String(fromA) : "");
       setAcademicToYear(toA != null ? String(toA) : "");
+      setLecturerOnly(Boolean(fileDetail.lecturerOnly));
     }
   }, [fileDetail]);
 
@@ -135,6 +138,7 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
       setEnrollToYear("");
       setAcademicFromYear("");
       setAcademicToYear("");
+      setLecturerOnly(false);
     }
   }, [fileId]);
 
@@ -168,7 +172,8 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
       academicToYear !==
         String(
           normalizeYear(fileDetail?.customMetadata?.academicYear?.toYear) ?? "",
-        ));
+        ) ||
+      lecturerOnly !== Boolean(fileDetail?.lecturerOnly));
 
   // ── Save handler ────────────────────────────────────────────────────────────
   const handleSave = async () => {
@@ -183,6 +188,7 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
 
       await DocumentsService.updateFileMetadata(fileId, {
         displayName: displayName.trim() || undefined,
+        lecturerOnly,
         customMetadata,
       });
       await refetchDetail();
@@ -381,51 +387,76 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
 
           {/* Khóa tuyển sinh */}
           <Row label="Khóa tuyển sinh">
-            <YearRangeControl
-              value={
-                isReadOnly
-                  ? yearRangeToStrings(
-                      enrollmentYearValue() ?? {
-                        fromYear: 0,
-                        toYear: 9999,
-                      },
-                    )
-                  : { fromYear: enrollFromYear, toYear: enrollToYear }
-              }
-              onChange={
-                isReadOnly
-                  ? undefined
-                  : ({ fromYear, toYear }) => {
-                      setEnrollFromYear(fromYear);
-                      setEnrollToYear(toYear);
-                    }
-              }
-              showInput={!isReadOnly}
-            />
+            <div className={isReadOnly ? undefined : "pb-5"}>
+              <YearRangeControl
+                value={
+                  isReadOnly
+                    ? yearRangeToStrings(
+                        enrollmentYearValue() ?? {
+                          fromYear: 0,
+                          toYear: 9999,
+                        },
+                      )
+                    : { fromYear: enrollFromYear, toYear: enrollToYear }
+                }
+                onChange={
+                  isReadOnly
+                    ? undefined
+                    : ({ fromYear, toYear }) => {
+                        setEnrollFromYear(fromYear);
+                        setEnrollToYear(toYear);
+                      }
+                }
+                showInput={!isReadOnly}
+              />
+            </div>
           </Row>
 
           <Row label="Năm học">
-            <YearRangeControl
-              value={
-                isReadOnly
-                  ? yearRangeToStrings(
-                      academicYearValue() ?? {
-                        fromYear: 0,
-                        toYear: 9999,
-                      },
-                    )
-                  : { fromYear: academicFromYear, toYear: academicToYear }
-              }
-              onChange={
-                isReadOnly
-                  ? undefined
-                  : ({ fromYear, toYear }) => {
-                      setAcademicFromYear(fromYear);
-                      setAcademicToYear(toYear);
-                    }
-              }
-              showInput={!isReadOnly}
-            />
+            <div className={isReadOnly ? undefined : "pb-5"}>
+              <YearRangeControl
+                value={
+                  isReadOnly
+                    ? yearRangeToStrings(
+                        academicYearValue() ?? {
+                          fromYear: 0,
+                          toYear: 9999,
+                        },
+                      )
+                    : { fromYear: academicFromYear, toYear: academicToYear }
+                }
+                onChange={
+                  isReadOnly
+                    ? undefined
+                    : ({ fromYear, toYear }) => {
+                        setAcademicFromYear(fromYear);
+                        setAcademicToYear(toYear);
+                      }
+                }
+                showInput={!isReadOnly}
+              />
+            </div>
+          </Row>
+
+          <Row label="Chỉ giảng viên">
+            {isReadOnly ? (
+              lecturerOnly || fileDetail?.lecturerOnly ? (
+                <Tag color="#ef4444" interactive={false}>
+                  Chỉ giảng viên
+                </Tag>
+              ) : (
+                <p className="text-sm text-gray-400">—</p>
+              )
+            ) : (
+              <Switch
+                checked={lecturerOnly}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setLecturerOnly(e.target.checked)
+                }
+                disabled={saving}
+                color="red"
+              />
+            )}
           </Row>
 
           {/* ── Read-only info ───────────────────────────────────── */}

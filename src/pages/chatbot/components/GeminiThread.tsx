@@ -16,14 +16,10 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
+import { HiOutlineDocumentAdd } from "react-icons/hi";
 import { LuBookOpen, LuCheck, LuCopy } from "react-icons/lu";
-import {
-  MdArrowDownward,
-  MdOutlineQuestionAnswer,
-  MdSend,
-  MdSquare,
-  MdUnarchive,
-} from "react-icons/md";
+
+import { MdArrowDownward, MdSend, MdSquare, MdUnarchive } from "react-icons/md";
 
 import { MarkdownTextSm } from "@/components/assistant-ui/markdown-text";
 import {
@@ -290,7 +286,10 @@ function GeminiAssistantMessage() {
                 strokeWidth={2}
               />
             ) : (
-              <MdOutlineQuestionAnswer className={assistantActionIconClass} />
+              <HiOutlineDocumentAdd
+                className={assistantActionIconClass}
+                strokeWidth={assistantActionIconStroke}
+              />
             )}
           </button>
         </Tooltip>
@@ -441,7 +440,7 @@ function GeminiStickyComposer({
   animateFromCenter: boolean;
 }) {
   return (
-    <div className="bg-lightPrimary dark:bg-navy-900 relative z-20 w-full shrink-0 pt-2 lg:-translate-y-1">
+    <div className="bg-lightPrimary dark:bg-navy-900 relative z-20 w-full shrink-0 pt-2">
       {showScrollBottom ? (
         <button
           type="button"
@@ -472,9 +471,7 @@ function ChatbotEmptyState() {
 
   return (
     <div className="flex min-h-full w-full flex-1 flex-col items-center justify-center py-10 sm:py-12">
-      <div
-        className={`w-full ${CHAT_THREAD_MAX_WIDTH_CLASS} -translate-y-[3vh]`}
-      >
+      <div className={`w-full ${CHAT_THREAD_MAX_WIDTH_CLASS}`}>
         <h1 className="mb-10 text-center text-2xl leading-snug font-light tracking-[-0.02em] text-[#3c4043] sm:text-[1.75rem] md:text-3xl dark:text-[#e8eaed]">
           {greeting}
         </h1>
@@ -524,17 +521,23 @@ function ChatMessagesSkeletonLoader() {
 export function GeminiThread({ className = "" }: { className?: string }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const messagesCount = useAuiState((s) => s.thread.messages.length);
-  const { activeThreadId, isLoadingMessages, sessions, unarchiveThread } =
-    useChatbotShell();
+  const {
+    activeThreadId,
+    isLoadingMessages,
+    isLoadingSessions,
+    sessions,
+    unarchiveThread,
+  } = useChatbotShell();
   const { sidebarOpen, sidebarCollapsed } = useChatbotLayoutOptional() ?? {};
   const activeSession = sessions.find((s) => s.id === activeThreadId);
   const isNewThread = !activeSession?.serverId;
   const isArchivedThread = activeSession?.status === "archived";
+  const showMessageSkeleton = isLoadingMessages && !isLoadingSessions;
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const viewportFadeStyle = useScrollFadeMask(viewportRef, [
     messagesCount,
     activeThreadId,
-    isLoadingMessages,
+    showMessageSkeleton,
   ]);
 
   const updateScrollButton = useCallback(() => {
@@ -589,7 +592,10 @@ export function GeminiThread({ className = "" }: { className?: string }) {
   }, [sidebarOpen, sidebarCollapsed, updateScrollButton]);
 
   const showEmptyState =
-    isNewThread && messagesCount === 0 && !isLoadingMessages;
+    isNewThread &&
+    messagesCount === 0 &&
+    !isLoadingMessages &&
+    !isLoadingSessions;
 
   return (
     <ThreadPrimitive.Root
@@ -626,12 +632,12 @@ export function GeminiThread({ className = "" }: { className?: string }) {
           <div
             className={`${CHAT_THREAD_GUTTER_CLASS} flex min-h-full flex-col`}
           >
-            {isLoadingMessages ? (
+            {showMessageSkeleton ? (
               <ChatMessagesSkeletonLoader />
-            ) : isNewThread && messagesCount === 0 ? (
+            ) : isNewThread && messagesCount === 0 && !isLoadingSessions ? (
               <ChatbotEmptyState />
             ) : null}
-            {!isLoadingMessages && (
+            {!isLoadingMessages && !isLoadingSessions && (
               <ThreadPrimitive.Messages
                 components={{
                   UserMessage: GeminiUserMessage,

@@ -14,7 +14,9 @@ import {
   newChatbotId,
   sourceItemsFromStream,
 } from "./chatbotMappers";
-// import { CHAT_SYSTEM_BUSY_MESSAGE } from "./constants";
+import {
+  resolveChatErrorMessage,
+} from "./constants";
 import type {
   ChatReasoningStep,
   ChatStoreMessage,
@@ -31,7 +33,7 @@ type UseChatbotStreamingArgs = {
   abortRef: MutableRef<AbortController | null>;
   setSessions: Dispatch<SetStateAction<ChatThreadSession[]>>;
   setActiveThreadId: Dispatch<SetStateAction<string>>;
-  setSystemError: Dispatch<SetStateAction<string | null>>;
+  reportSystemError: (msg: string) => void;
   selectedByUserRef: MutableRef<string | null>;
   threadIdAliasRef: MutableRef<Record<string, string>>;
   navigateToThread: (threadId: string, options?: { replace?: boolean }) => void;
@@ -133,7 +135,7 @@ export function useChatbotStreaming({
   abortRef,
   setSessions,
   setActiveThreadId,
-  setSystemError,
+  reportSystemError,
   selectedByUserRef,
   threadIdAliasRef,
   navigateToThread,
@@ -143,6 +145,20 @@ export function useChatbotStreaming({
 
   const runStreamForAssistant = useCallback(
     async (userText: string, assistantId: string, threadId: string) => {
+      const clearFailedAssistant = () => {
+        setSessions((prev) =>
+          prev.map((session) => {
+            if (session.id !== threadId) return session;
+            return {
+              ...session,
+              messages: session.messages.map((item) =>
+                item.id === assistantId ? { ...item, content: "" } : item,
+              ),
+            };
+          }),
+        );
+      };
+
       try {
         const sessionAtSendTime =
           sessionsRef.current.find((s) => s.id === threadId) ?? null;
@@ -193,6 +209,8 @@ export function useChatbotStreaming({
                 sources?: unknown[];
                 steps?: unknown[];
                 error?: unknown;
+                message?: unknown;
+                statusCode?: unknown;
                 sessionId?: string;
                 processingTimeMs?: unknown;
               };
@@ -211,9 +229,8 @@ export function useChatbotStreaming({
                   ? doneEvent.processingTimeMs
                   : undefined;
 
-              if (errorText) {
-                // setSystemError(CHAT_SYSTEM_BUSY_MESSAGE);
-                setSystemError(errorText);
+              if (errorText || doneEvent.message) {
+                reportSystemError(resolveChatErrorMessage(doneEvent));
               }
 
               const nowIso = new Date().toISOString();
@@ -221,6 +238,7 @@ export function useChatbotStreaming({
                 threadIdAliasRef.current[threadId] = returnedSessionId;
               }
 
+              const hasError = Boolean(errorText || doneEvent.message);
               setSessions((prev) =>
                 prev.map((session) => {
                   if (
@@ -247,13 +265,22 @@ export function useChatbotStreaming({
                       item.id === assistantId
                         ? {
                             ...item,
-                            reasoningSteps: item.reasoningSteps?.length
-                              ? item.reasoningSteps
-                              : reasoningStepsFromDoneEvent(
-                                  doneEvent.steps ?? [],
-                                ),
-                            sources: sources.length ? sources : [],
-                            processingTimeMs,
+                            content: hasError ? "" : item.content,
+                            reasoningSteps: hasError
+                              ? []
+                              : item.reasoningSteps?.length
+                                ? item.reasoningSteps
+                                : reasoningStepsFromDoneEvent(
+                                    doneEvent.steps ?? [],
+                                  ),
+                            sources: hasError
+                              ? []
+                              : sources.length
+                                ? sources
+                                : [],
+                            processingTimeMs: hasError
+                              ? undefined
+                              : processingTimeMs,
                           }
                         : item,
                     ),
@@ -337,8 +364,14 @@ export function useChatbotStreaming({
         }
       } catch (error) {
         if ((error as Error)?.name === "AbortError") return;
-        // setSystemError(CHAT_SYSTEM_BUSY_MESSAGE + (error as Error)?.message);
-        setSystemError((error as Error)?.message);
+        const err = error as Error & { statusCode?: number };
+        reportSystemError(
+          resolveChatErrorMessage({
+            statusCode: err.statusCode,
+            error: err.message,
+            message: err.message,
+          }),
+        );
         setSessions((prev) =>
           prev.map((session) => {
             if (
@@ -358,6 +391,7 @@ export function useChatbotStreaming({
             };
           }),
         );
+        clearFailedAssistant();
       } finally {
         setIsRunning(false);
         abortRef.current = null;
@@ -368,18 +402,17 @@ export function useChatbotStreaming({
       activeThreadIdRef,
       refreshActiveSessions,
       navigateToThread,
+      reportSystemError,
       selectedByUserRef,
       threadIdAliasRef,
       sessionsRef,
       setActiveThreadId,
       setSessions,
-      setSystemError,
     ],
   );
 
   const onNew = useCallback(
     async (message: AppendMessage) => {
-      setSystemError(null);
       const text = getAppendText(message).trim();
       if (!text) return;
 
@@ -387,7 +420,7 @@ export function useChatbotStreaming({
       const sessionAtSendTime =
         sessionsRef.current.find((s) => s.id === threadId) ?? null;
       if (sessionAtSendTime?.status === "archived") {
-        setSystemError("Cuộc trò chuyện đã lưu trữ chỉ có thể xem lại.");
+        reportSystemError("Cuộc trò chuyện đã lưu trữ chỉ có thể xem lại.");
         return;
       }
 
@@ -444,11 +477,12 @@ export function useChatbotStreaming({
     [
       abortRef,
       activeThreadIdRef,
+      navigateToThread,
+      reportSystemError,
       runStreamForAssistant,
       selectedByUserRef,
       sessionsRef,
       setSessions,
-      setSystemError,
     ],
   );
 

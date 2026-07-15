@@ -242,7 +242,13 @@ export function TopNavLinks({
               >
                 <button
                   type="button"
-                  onClick={() => navigateToFirstChild(route)}
+                  aria-expanded={isOpen}
+                  aria-haspopup="menu"
+                  onClick={() =>
+                    setHoveredKey((current) =>
+                      current === groupKey ? null : groupKey,
+                    )
+                  }
                   className={`${linkBaseClass} ${
                     parentActive ? activeClass : inactiveClass
                   }`}
@@ -266,7 +272,10 @@ export function TopNavLinks({
                     route={route}
                     groupKey={groupKey}
                     isRouteActive={isRouteActive}
-                    onItemClick={handleNavigate}
+                    onItemClick={(active) => {
+                      setHoveredKey(null);
+                      handleNavigate(active);
+                    }}
                   />
                 </div>
               </div>

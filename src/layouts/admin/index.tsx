@@ -58,6 +58,9 @@ const FAQsPage = lazy(() => import("@/pages/documents/faqs"));
 const ProposedFAQsPage = lazy(
   () => import("@/pages/documents/faqs/candidates"),
 );
+const CorpusTreePage = lazy(
+  () => import("@/pages/documents/corpus/index"),
+);
 const FormsPage = lazy(() => import("@/pages/documents/forms"));
 const DocumentListPage = lazy(() => import("@/pages/documents/list"));
 const GmailConfigPage = lazy(() => import("@/pages/emails/config"));
@@ -240,7 +243,17 @@ const AdminLayout: React.FC = () => {
         <Route path="documents/list" element={<DocumentListPage />} />
         <Route path="documents/forms" element={<FormsPage />} />
         <Route path="documents/faqs" element={<FAQsPage />} />
+        <Route path="documents/corpus" element={<CorpusTreePage />} />
         <Route path="documents/candidates" element={<ProposedFAQsPage />} />
+        <Route
+          path="documents"
+          element={
+            <Navigate
+              to={`/admin/documents/list${viewDocSearch}`}
+              replace
+            />
+          }
+        />
         <Route path="chatbot/*" element={<ChatbotPage />} />
         <Route
           path="class-registration"
@@ -299,7 +312,7 @@ const AdminLayout: React.FC = () => {
             effectiveCollapsed ? "lg:pl-0" : "lg:pl-5"
           }`}
         >
-          <Suspense fallback={<PageLoader />}>
+          <Suspense fallback={null}>
             <ChatbotSidebar
               open={open}
               onClose={() => setOpen(false)}

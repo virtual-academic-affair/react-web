@@ -1,11 +1,12 @@
 import React from "react";
 import {
+  MdArticle,
   MdDescription,
   MdImage,
   MdPictureAsPdf,
   MdTableRows,
 } from "react-icons/md";
-import { PiMicrosoftWordLogoFill  } from "react-icons/pi";
+import { PiMicrosoftWordLogoFill } from "react-icons/pi";
 
 export type FileType =
   | "pdf"
@@ -24,11 +25,22 @@ export function getFileType(filename: string): FileType {
   if (ext === "pdf") return "pdf";
   if (["doc", "docx"].includes(ext)) return "word";
   if (
-    ["png", "jpg", "jpeg", "gif", "bmp", "webp", "svg", "ico", "tiff", "tif"].includes(ext)
+    [
+      "png",
+      "jpg",
+      "jpeg",
+      "gif",
+      "bmp",
+      "webp",
+      "svg",
+      "ico",
+      "tiff",
+      "tif",
+    ].includes(ext)
   )
     return "image";
   if (["xls", "xlsx", "csv"].includes(ext)) return "spreadsheet";
-  if (["txt", "md", "json", "xml", "yml", "yaml", "log", "ini"].includes(ext))
+  if (["txt", "md", "markdown", "json", "xml", "yml", "yaml", "log", "ini"].includes(ext))
     return "text";
   return "other";
 }
@@ -36,6 +48,8 @@ export function getFileType(filename: string): FileType {
 interface FileIconProps {
   filename: string;
   size?: "xs" | "sm" | "md" | "lg";
+  /** Icon only — no colored background / padding box. */
+  plain?: boolean;
 }
 
 const sizeIconMap = {
@@ -51,34 +65,63 @@ const sizeWrapMap = {
   lg: "h-20 w-20 rounded-3xl",
 };
 
-const FileIcon: React.FC<FileIconProps> = ({ filename, size = "md" }) => {
+const FileIcon: React.FC<FileIconProps> = ({
+  filename,
+  size = "md",
+  plain = false,
+}) => {
   const type = getFileType(filename);
-  const iconCls = sizeIconMap[size];
+  const iconCls = `${sizeIconMap[size]} shrink-0`;
   const wrapCls = `${sizeWrapMap[size]} flex shrink-0 items-center justify-center`;
+
+  const icon = (() => {
+    switch (type) {
+      case "pdf":
+        return <MdPictureAsPdf className={`${iconCls} text-red-500`} />;
+      case "word":
+        return (
+          <PiMicrosoftWordLogoFill className={`${iconCls} text-blue-600`} />
+        );
+      case "image":
+        return <MdImage className={`${iconCls} text-teal-500`} />;
+      case "spreadsheet":
+        return <MdTableRows className={`${iconCls} text-green-600`} />;
+      case "text":
+        return <MdArticle className={`${iconCls} text-indigo-500`} />;
+      default:
+        return <MdDescription className={`${iconCls} text-cyan-500`} />;
+    }
+  })();
+
+  if (plain) return icon;
 
   switch (type) {
     case "pdf":
       return (
-        <div className={`${wrapCls} bg-red-50 dark:bg-red-900/20`}>
-          <MdPictureAsPdf className={`${iconCls} text-red-500`} />
-        </div>
+        <div className={`${wrapCls} bg-red-50 dark:bg-red-900/20`}>{icon}</div>
       );
     case "word":
       return (
         <div className={`${wrapCls} bg-blue-50 dark:bg-blue-900/20`}>
-          <PiMicrosoftWordLogoFill className={`${iconCls} text-blue-600`} />
+          {icon}
         </div>
       );
     case "image":
       return (
         <div className={`${wrapCls} bg-teal-50 dark:bg-teal-900/20`}>
-          <MdImage className={`${iconCls} text-teal-500`} />
+          {icon}
         </div>
       );
     case "spreadsheet":
       return (
         <div className={`${wrapCls} bg-green-50 dark:bg-green-900/20`}>
-          <MdTableRows className={`${iconCls} text-green-600`} />
+          {icon}
+        </div>
+      );
+    case "text":
+      return (
+        <div className={`${wrapCls} bg-indigo-50 dark:bg-indigo-900/20`}>
+          {icon}
         </div>
       );
     default:
