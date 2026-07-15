@@ -1,4 +1,3 @@
-import { message as toast } from "antd";
 import "katex/dist/katex.min.css";
 import React, { useEffect, useRef } from "react";
 import { Route, Routes } from "react-router-dom";
@@ -29,7 +28,7 @@ function ChatbotKeyboardShortcuts() {
 }
 
 function ChatbotChatView() {
-  const { errorMessage, clearError, activeThreadId } = useChatbotShell();
+  const { activeThreadId } = useChatbotShell();
   const { closePreview } = useSourcePreview();
   const { infoPanelAudience, faqDrawerOpen, faqInitialDraft, closeFaqDrawer } =
     useChatbotLayout();
@@ -41,18 +40,6 @@ function ChatbotChatView() {
       previousThreadIdRef.current = activeThreadId;
     }
   }, [activeThreadId, closePreview]);
-
-  useEffect(() => {
-    if (!errorMessage) return;
-
-    toast.error(
-      <span className="whitespace-pre-line">
-        {`Đã có lỗi xảy ra.\nChi tiết: ${errorMessage}`}
-      </span>,
-    );
-
-    clearError();
-  }, [clearError, errorMessage]);
 
   return (
     <>
