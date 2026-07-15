@@ -20,7 +20,7 @@ type UseChatbotSessionMutationsArgs = {
   draftRef: MutableRef<ChatThreadSession | null>;
   setSessions: Dispatch<SetStateAction<ChatThreadSession[]>>;
   setActiveThreadId: Dispatch<SetStateAction<string>>;
-  setSystemError: Dispatch<SetStateAction<string | null>>;
+  reportSystemError: (msg: string) => void;
   loadMessagesForSession: (target: ChatThreadSession) => Promise<void>;
   navigateToThread: (threadId: string, options?: { replace?: boolean }) => void;
   navigateToChatbotRoot: (options?: { replace?: boolean }) => void;
@@ -34,7 +34,7 @@ export function useChatbotSessionMutations({
   draftRef,
   setSessions,
   setActiveThreadId,
-  setSystemError,
+  reportSystemError,
   loadMessagesForSession,
   navigateToThread,
   navigateToChatbotRoot,
@@ -118,10 +118,10 @@ export function useChatbotSessionMutations({
             s.id === threadId ? { ...s, title: previousTitle } : s,
           ),
         );
-        setSystemError("Không đổi được tên cuộc trò chuyện.");
+        reportSystemError("Không đổi được tên cuộc trò chuyện.");
       }
     },
-    [invalidateSessionQueries, sessionsRef, setSessions, setSystemError],
+    [invalidateSessionQueries, sessionsRef, setSessions, reportSystemError],
   );
 
   const archiveThread = useCallback(
@@ -147,7 +147,7 @@ export function useChatbotSessionMutations({
         }
         await invalidateSessionQueries();
       } catch {
-        setSystemError("Không lưu được cuộc trò chuyện.");
+        reportSystemError("Không lưu được cuộc trò chuyện.");
       }
     },
     [
@@ -157,7 +157,7 @@ export function useChatbotSessionMutations({
       removeSessionFromQueryCache,
       removeThreadFromState,
       sessionsRef,
-      setSystemError,
+      reportSystemError,
     ],
   );
 
@@ -187,14 +187,14 @@ export function useChatbotSessionMutations({
         });
         await invalidateSessionQueries();
       } catch {
-        setSystemError("Không khôi phục được cuộc trò chuyện.");
+        reportSystemError("Không khôi phục được cuộc trò chuyện.");
       }
     },
     [
       invalidateSessionQueries,
       removeSessionFromQueryCache,
       setSessions,
-      setSystemError,
+      reportSystemError,
     ],
   );
 
@@ -222,7 +222,7 @@ export function useChatbotSessionMutations({
         openNewChat();
         await invalidateSessionQueries();
       } catch {
-        setSystemError("Không xoá được cuộc trò chuyện.");
+        reportSystemError("Không xoá được cuộc trò chuyện.");
       }
     },
     [
@@ -233,7 +233,7 @@ export function useChatbotSessionMutations({
       sessionsRef,
       setActiveThreadId,
       setSessions,
-      setSystemError,
+      reportSystemError,
     ],
   );
 

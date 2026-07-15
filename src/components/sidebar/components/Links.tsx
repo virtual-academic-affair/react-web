@@ -177,7 +177,7 @@ export const SidebarLinks = (props: {
               <ul
                 className={`mt-1.5 ml-12 flex flex-col overflow-hidden transition-all duration-200 ease-in-out ${
                   !collapsed && isOpen
-                    ? "mt-1 max-h-80 gap-0.5 opacity-100"
+                    ? "mt-1 max-h-[28rem] gap-0.5 opacity-100"
                     : "mt-0 max-h-0 gap-0 opacity-0"
                 }`}
               >

@@ -215,7 +215,7 @@ const UserLayout = () => {
                       effectiveCollapsed ? "lg:pl-0" : "lg:pl-5"
                     }`}
                   >
-                    <Suspense fallback={<PageLoader />}>
+                    <Suspense fallback={null}>
                       <ChatbotSidebar
                         open={open}
                         onClose={() => setOpen(false)}
@@ -229,7 +229,7 @@ const UserLayout = () => {
                 }
                 preview={<SourcePreviewCanvas />}
               >
-                <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden py-5">
+                <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden pt-5 lg:pb-1">
                   {userRoutesContent}
                 </div>
               </ChatbotMobileLayoutShell>

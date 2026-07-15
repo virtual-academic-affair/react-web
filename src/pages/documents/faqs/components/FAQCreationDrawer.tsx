@@ -18,6 +18,7 @@ interface FAQCreationDrawerProps {
 const emptyFormData = () => ({
   question: "",
   answer: "",
+  lecturerOnly: false,
   academicYear: { fromYear: 0, toYear: 9999 },
   enrollmentYear: { fromYear: 0, toYear: 9999 },
 });
@@ -39,6 +40,7 @@ export default function FAQCreationDrawer({
       faqsService.createFAQ({
         question: formData.question,
         answer: formData.answer,
+        lecturerOnly: formData.lecturerOnly,
         academicYear: formData.academicYear,
         enrollmentYear: formData.enrollmentYear,
       }),
@@ -94,10 +96,14 @@ export default function FAQCreationDrawer({
           <FAQFormFields
             question={formData.question}
             answer={formData.answer}
+            lecturerOnly={formData.lecturerOnly}
             academicYear={formData.academicYear}
             enrollmentYear={formData.enrollmentYear}
             onQuestionChange={(val) => setFormData((p) => ({ ...p, question: val }))}
             onAnswerChange={(val) => setFormData((p) => ({ ...p, answer: val }))}
+            onLecturerOnlyChange={(val) =>
+              setFormData((p) => ({ ...p, lecturerOnly: val }))
+            }
             onAcademicYearChange={(val) => setFormData((p) => ({ ...p, academicYear: val }))}
             onEnrollmentYearChange={(val) => setFormData((p) => ({ ...p, enrollmentYear: val }))}
             errors={errors}

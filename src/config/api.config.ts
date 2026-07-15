@@ -148,5 +148,16 @@ export const API_ENDPOINTS = {
           `/api/chat/sessions/${sessionId}/unarchive`,
       },
     },
+    corpus: {
+      stats: "/api/corpus/stats",
+      tree: "/api/corpus/tree",
+      topics: "/api/corpus/topics",
+      topicByKey: (topicKey: string) => `/api/corpus/topics/${topicKey}`,
+      mergeTopic: (sourceKey: string) =>
+        `/api/corpus/topics/${sourceKey}/merge`,
+      fileTopics: (fileId: string) => `/api/corpus/files/${fileId}/topics`,
+      faqTopics: (faqId: string) => `/api/corpus/faqs/${faqId}/topics`,
+      backfill: "/api/corpus/backfill",
+    },
   },
 } as const;

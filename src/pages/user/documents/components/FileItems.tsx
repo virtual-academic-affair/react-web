@@ -67,6 +67,11 @@ export const FileCard: React.FC<FileItemProps> = ({
             >
               {name}
             </p>
+            {file.lecturerOnly ? (
+              <Tag color="#ef4444" className="pointer-events-none shrink-0 text-[10px]" interactive={false}>
+                Chỉ giảng viên
+              </Tag>
+            ) : null}
             <button
               ref={triggerRef}
               type="button"
@@ -143,15 +148,22 @@ export const FileRow: React.FC<FileItemProps> = ({
         </p>
       </div>
 
-      {typeLabel && (
-        <div className="pointer-events-none relative z-10 hidden items-center gap-1.5 sm:flex">
-          <Tag
-            color={typeColor || "#94a3b8"}
-            className="text-[10px]"
-            interactive={false}
-          >
-            {typeLabel}
-          </Tag>
+      {(file.lecturerOnly || typeLabel) && (
+        <div className="pointer-events-none relative z-10 flex shrink-0 items-center gap-1.5">
+          {file.lecturerOnly ? (
+            <Tag color="#ef4444" className="text-[10px]" interactive={false}>
+              Chỉ giảng viên
+            </Tag>
+          ) : null}
+          {typeLabel ? (
+            <Tag
+              color={typeColor || "#94a3b8"}
+              className="text-[10px]"
+              interactive={false}
+            >
+              {typeLabel}
+            </Tag>
+          ) : null}
         </div>
       )}
 

@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { CHAT_SYSTEM_BUSY_MESSAGE, showChatTopError } from "./constants";
 import {
   convertMessage,
   createDraftSession,
@@ -33,7 +34,6 @@ export function useChatbotRuntime() {
 
   const [sessions, setSessions] = useState<ChatThreadSession[]>([]);
   const [activeThreadId, setActiveThreadId] = useState(draftRef.current.id);
-  const [systemError, setSystemError] = useState<string | null>(null);
   const [isResolvingInitial, setIsResolvingInitial] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
 
@@ -56,7 +56,9 @@ export function useChatbotRuntime() {
 
   const abortRef = useRef<AbortController | null>(null);
 
-  const clearError = useCallback(() => setSystemError(null), []);
+  const reportSystemError = useCallback((msg: string) => {
+    showChatTopError(msg || CHAT_SYSTEM_BUSY_MESSAGE);
+  }, []);
 
   const invalidateSessionQueries = useCallback(async () => {
     await queryClient.invalidateQueries({
@@ -114,14 +116,14 @@ export function useChatbotRuntime() {
         );
       } catch {
         if (messageLoadTokenRef.current !== token) return;
-        setSystemError("Không tải được lịch sử cuộc trò chuyện.");
+        reportSystemError("Không tải được lịch sử cuộc trò chuyện.");
       } finally {
         if (messageLoadTokenRef.current === token) {
           setIsLoadingMessages(false);
         }
       }
     },
-    [queryClient],
+    [queryClient, reportSystemError],
   );
 
   const loadMessagesById = useCallback(
@@ -137,8 +139,8 @@ export function useChatbotRuntime() {
     if (!activeSessionsQuery.isError || initialResolvedRef.current) return;
     initialResolvedRef.current = true;
     setIsResolvingInitial(false);
-    setSystemError("Không tải được danh sách cuộc trò chuyện.");
-  }, [activeSessionsQuery.isError]);
+    reportSystemError("Không tải được danh sách cuộc trò chuyện.");
+  }, [activeSessionsQuery.isError, reportSystemError]);
 
   useEffect(() => {
     const activeSessions = activeSessionsQuery.data;
@@ -258,7 +260,7 @@ export function useChatbotRuntime() {
         if (cancelled) return;
         initialResolvedRef.current = true;
         setIsResolvingInitial(false);
-        setSystemError("Không tải được danh sách cuộc trò chuyện.");
+        reportSystemError("Không tải được danh sách cuộc trò chuyện.");
       }
     })();
 
@@ -270,6 +272,7 @@ export function useChatbotRuntime() {
     loadMessagesForSession,
     navigateToThread,
     queryClient,
+    reportSystemError,
   ]);
 
   const setThreadMessages = useCallback((msgs: readonly ChatStoreMessage[]) => {
@@ -285,7 +288,7 @@ export function useChatbotRuntime() {
     abortRef,
     setSessions,
     setActiveThreadId,
-    setSystemError,
+    reportSystemError,
     selectedByUserRef,
     threadIdAliasRef,
     navigateToThread,
@@ -296,7 +299,6 @@ export function useChatbotRuntime() {
     async (threadId: string) => {
       abortRef.current?.abort();
       selectedByUserRef.current = threadId;
-      setSystemError(null);
       setActiveThreadId(threadId);
       navigateToThread(threadId);
       await loadMessagesById(threadId);
@@ -307,7 +309,6 @@ export function useChatbotRuntime() {
   const viewArchivedThread = useCallback(
     async (session: ChatThreadSession) => {
       abortRef.current?.abort();
-      setSystemError(null);
       const archivedSession: ChatThreadSession = {
         ...session,
         status: "archived",
@@ -325,7 +326,6 @@ export function useChatbotRuntime() {
   const switchToNewThread = useCallback(async () => {
     abortRef.current?.abort();
     selectedByUserRef.current = null;
-    setSystemError(null);
     const draft = createDraftSession();
     draftRef.current = draft;
     setSessions((prev) =>
@@ -342,7 +342,7 @@ export function useChatbotRuntime() {
       draftRef,
       setSessions,
       setActiveThreadId,
-      setSystemError,
+      reportSystemError,
       loadMessagesForSession,
       navigateToThread,
       navigateToChatbotRoot,
@@ -364,8 +364,6 @@ export function useChatbotRuntime() {
 
   const shellValue: ChatbotShellContextValue = useMemo(
     () => ({
-      errorMessage: systemError,
-      clearError,
       isLoadingSessions: activeSessionsQuery.isLoading || isResolvingInitial,
       isLoadingMessages,
       sessions,
@@ -380,8 +378,6 @@ export function useChatbotRuntime() {
       deleteThread,
     }),
     [
-      systemError,
-      clearError,
       activeSessionsQuery.isLoading,
       isResolvingInitial,
       isLoadingMessages,

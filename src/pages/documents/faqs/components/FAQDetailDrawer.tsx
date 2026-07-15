@@ -31,9 +31,9 @@ export default function FAQDetailDrawer({
   const [edits, setEdits] = useState<{
     question?: string;
     answer?: string;
+    lecturerOnly?: boolean;
     academicYear?: YearRange;
     enrollmentYear?: YearRange;
-    isActive?: boolean;
   }>({});
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -57,28 +57,28 @@ export default function FAQDetailDrawer({
   const meta = faq?.metadataFilter;
   const question = edits.question ?? faq?.question ?? "";
   const answer = edits.answer ?? faq?.answerRichText ?? "";
+  const lecturerOnly = edits.lecturerOnly ?? faq?.lecturerOnly ?? false;
   const academicYear = edits.academicYear ?? meta?.academicYear ?? { fromYear: 0, toYear: 9999 };
   const enrollmentYear = edits.enrollmentYear ?? meta?.enrollmentYear ?? { fromYear: 0, toYear: 9999 };
-  const isActive = edits.isActive ?? faq?.isActive ?? true;
 
   const isDirty =
     faq &&
     (question !== faq.question ||
       answer !== faq.answerRichText ||
+      lecturerOnly !== Boolean(faq.lecturerOnly) ||
       academicYear.fromYear !== meta?.academicYear.fromYear ||
       academicYear.toYear !== meta?.academicYear.toYear ||
       enrollmentYear.fromYear !== meta?.enrollmentYear.fromYear ||
-      enrollmentYear.toYear !== meta?.enrollmentYear.toYear ||
-      isActive !== faq.isActive);
+      enrollmentYear.toYear !== meta?.enrollmentYear.toYear);
 
   const { mutate: update, isPending: isUpdating } = useMutation({
     mutationFn: () =>
       faqsService.updateFAQ(id!, {
         question,
         answer,
+        lecturerOnly,
         academicYear,
         enrollmentYear,
-        isActive,
       }),
     onSuccess: (updated) => {
       toast.success("Cập nhật câu hỏi thành công");
@@ -155,10 +155,14 @@ export default function FAQDetailDrawer({
                 key={id}
                 question={question}
                 answer={answer}
+                lecturerOnly={lecturerOnly}
                 academicYear={academicYear}
                 enrollmentYear={enrollmentYear}
                 onQuestionChange={(val) => setEdits((p) => ({ ...p, question: val }))}
                 onAnswerChange={(val) => setEdits((p) => ({ ...p, answer: val }))}
+                onLecturerOnlyChange={(val) =>
+                  setEdits((p) => ({ ...p, lecturerOnly: val }))
+                }
                 onAcademicYearChange={(val) => setEdits((p) => ({ ...p, academicYear: val }))}
                 onEnrollmentYearChange={(val) => setEdits((p) => ({ ...p, enrollmentYear: val }))}
                 errors={errors}
