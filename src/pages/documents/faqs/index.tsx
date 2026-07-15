@@ -10,7 +10,7 @@ import type { FAQ } from "@/types/faqs";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { HiMiniDocumentCheck } from "react-icons/hi2";
+import { HiOutlineDocumentAdd } from "react-icons/hi";
 import { MdDeleteOutline, MdInfoOutline } from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
 import LecturerOnlyFilter from "@/pages/user/documents/components/LecturerOnlyFilter";
@@ -239,7 +239,7 @@ export default function FAQsPage() {
         <PageTitle
           title="Danh sách câu hỏi thường gặp (FAQ)"
           tabTitle="Danh sách câu hỏi thường gặp (FAQ)"
-          icon={HiMiniDocumentCheck}
+          icon={HiOutlineDocumentAdd}
         />
         <TableLayout
           result={result || null}
