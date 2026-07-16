@@ -56,8 +56,8 @@ export function useChatbotRuntime() {
 
   const abortRef = useRef<AbortController | null>(null);
 
-  const reportSystemError = useCallback((msg: string) => {
-    showChatTopError(msg || CHAT_SYSTEM_BUSY_MESSAGE);
+  const reportSystemError = useCallback((_msg?: string) => {
+    showChatTopError(CHAT_SYSTEM_BUSY_MESSAGE);
   }, []);
 
   const invalidateSessionQueries = useCallback(async () => {
