@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Tree } from "antd";
-import type { DataNode } from "antd/es/tree";
 import {
   MdChevronRight,
   MdClose,
@@ -46,10 +44,10 @@ type CorpusTraversalModalProps = {
 
 const REPLAY_STEP_MS = 300;
 
-type TraversalTreeDataNode = DataNode & {
-  key: string;
-  title: string;
-  children?: TraversalTreeDataNode[];
+type TraversalColumn = {
+  parentKey: string | null;
+  folders: ChatCorpusTreeNode[];
+  depth: number;
 };
 
 function nodeStateClass(state: CorpusNodeVisualState) {
@@ -68,18 +66,20 @@ function nodeStateClass(state: CorpusNodeVisualState) {
 function CorpusTreeNodeLabel({
   node,
   state,
-  expanded,
+  active,
+  opened,
   highlighted,
 }: {
   node: ChatCorpusTreeNode;
   state: CorpusNodeVisualState;
-  expanded: boolean;
+  active: boolean;
+  opened: boolean;
   highlighted: boolean;
 }) {
   const FolderIcon =
     state === "skipped"
       ? MdLock
-      : expanded || state === "opened" || state === "active"
+      : opened || state === "opened" || state === "active"
         ? MdFolderOpen
         : MdFolder;
   const iconClass =
@@ -94,7 +94,9 @@ function CorpusTreeNodeLabel({
   return (
     <span
       data-corpus-node-key={node.nodeKey}
-      className={`corpus-col-item inline-flex min-w-0 items-center gap-2 rounded-lg px-3 py-2 text-sm transition-all duration-300 ${nodeStateClass(state)} ${
+      className={`corpus-col-item inline-flex min-w-0 items-center gap-2 rounded-lg px-3 py-2 text-sm transition-all duration-300 ${
+        active || opened ? "bg-brand-500/10" : ""
+      } ${nodeStateClass(state)} ${
         highlighted ? "ring-2 ring-[#1a73e8]/40 dark:ring-[#6dabf7]/40" : ""
       }`}
     >
@@ -106,26 +108,41 @@ function CorpusTreeNodeLabel({
   );
 }
 
-function buildTraversalTreeData(
+function findNodePath(
   nodes: ChatCorpusTreeNode[],
-  states: Map<string, CorpusNodeVisualState>,
-  highlightedNodeKey: string | null,
-): TraversalTreeDataNode[] {
-  return nodes.map((node) => {
-    const children = buildTraversalTreeData(
-      node.children,
-      states,
-      highlightedNodeKey,
-    );
-    return {
-      key: node.nodeKey,
-      title: node.title || node.nodeKey,
-      children,
-      disableCheckbox: true,
-      selectable: false,
-      isLeaf: children.length === 0,
-    };
-  });
+  targetKey: string,
+  trail: string[] = [],
+): string[] | null {
+  for (const node of nodes) {
+    const nextTrail = [...trail, node.nodeKey];
+    if (node.nodeKey === targetKey) return nextTrail;
+    const childPath = findNodePath(node.children, targetKey, nextTrail);
+    if (childPath) return childPath;
+  }
+  return null;
+}
+
+function buildTraversalColumns(
+  tree: ChatCorpusTreeNode[],
+  pathKeys: string[],
+): TraversalColumn[] {
+  const columns: TraversalColumn[] = [
+    { parentKey: null, folders: tree, depth: 0 },
+  ];
+
+  let currentFolders = tree;
+  for (let i = 0; i < pathKeys.length; i += 1) {
+    const selected = currentFolders.find((folder) => folder.nodeKey === pathKeys[i]);
+    if (!selected) break;
+    columns.push({
+      parentKey: selected.nodeKey,
+      folders: selected.children ?? [],
+      depth: i + 1,
+    });
+    currentFolders = selected.children ?? [];
+  }
+
+  return columns;
 }
 
 function CorpusTreePanel({
@@ -139,10 +156,13 @@ function CorpusTreePanel({
   expandedKeys: Set<string>;
   highlightedNodeKey: string | null;
 }) {
-  const nodeMap = useMemo(() => collectCorpusNodeMap(tree), [tree]);
-  const treeData = useMemo(
-    () => buildTraversalTreeData(tree, states, highlightedNodeKey),
-    [tree, states, highlightedNodeKey],
+  const activePath = useMemo(() => {
+    if (!highlightedNodeKey) return [];
+    return findNodePath(tree, highlightedNodeKey) ?? [];
+  }, [highlightedNodeKey, tree]);
+  const columns = useMemo(
+    () => buildTraversalColumns(tree, activePath),
+    [activePath, tree],
   );
 
   useEffect(() => {
@@ -162,35 +182,54 @@ function CorpusTreePanel({
   }
 
   return (
-    <div className="corpus-folder-picker app-scrollbar-hidden h-full overflow-y-auto px-3 py-3">
-      <Tree
-        blockNode
-        showLine
-        selectable={false}
-        expandedKeys={Array.from(expandedKeys)}
-        switcherIcon={({ expanded }) => (
-          <MdChevronRight
-            className={`h-4 w-4 shrink-0 text-gray-300 transition-transform duration-300 dark:text-gray-600 ${
-              expanded ? "rotate-90" : "rotate-0"
-            }`}
-          />
-        )}
-        treeData={treeData}
-        titleRender={(node) => {
-          const key = String(node.key);
-          const rawNode = nodeMap.get(key);
-          if (!rawNode) return <span>{node.title}</span>;
-          const state = states.get(key) ?? "default";
-          return (
-            <CorpusTreeNodeLabel
-              node={rawNode}
-              state={state}
-              expanded={expandedKeys.has(key)}
-              highlighted={highlightedNodeKey === key}
-            />
-          );
-        }}
-      />
+    <div className="app-scrollbar-hidden h-full overflow-x-auto overflow-y-hidden">
+      <div className="flex h-full min-w-max items-stretch">
+        {columns.map((column, columnIndex) => (
+          <div
+            key={`${column.parentKey ?? "root"}-${column.depth}`}
+            className="corpus-col-slot flex h-full w-[280px] shrink-0 flex-col"
+          >
+            <div className="app-scrollbar-hidden flex-1 overflow-y-auto py-2">
+              {column.folders.length ? (
+                column.folders.map((folder) => {
+                  const key = folder.nodeKey;
+                  const state = states.get(key) ?? "default";
+                  const active = activePath[column.depth] === key;
+                  const opened = expandedKeys.has(key);
+                  const hasNext = folder.children.length > 0;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      className="corpus-col-item flex h-9 w-full items-center gap-2 px-3 text-left transition-colors"
+                    >
+                      <CorpusTreeNodeLabel
+                        node={folder}
+                        state={state}
+                        active={active}
+                        opened={opened}
+                        highlighted={highlightedNodeKey === key}
+                      />
+                      {hasNext ? (
+                        <MdChevronRight className="ml-auto h-3.5 w-3.5 shrink-0 text-gray-300 dark:text-gray-600" />
+                      ) : (
+                        <span className="ml-auto h-3.5 w-3.5 shrink-0" />
+                      )}
+                    </button>
+                  );
+                })
+              ) : (
+                <p className="px-3 py-6 text-center text-xs text-gray-400">
+                  Không có chủ đề con
+                </p>
+              )}
+            </div>
+            {columnIndex < columns.length - 1 ? (
+              <div className="corpus-col-resizer self-stretch" aria-hidden />
+            ) : null}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -400,18 +439,30 @@ export function CorpusTraversalModal({
         </div>
 
         <style>{`
-          .corpus-folder-picker .ant-tree-node-content-wrapper:hover,
-          .corpus-folder-picker .ant-tree-node-content-wrapper:focus,
-          .corpus-folder-picker .ant-tree-node-content-wrapper:active {
-            background: transparent !important;
+          .corpus-col-slot {
+            flex-shrink: 0;
+            border-right: 1px solid rgb(243 244 246 / 0.9);
           }
-          .corpus-folder-picker .ant-tree-switcher {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
+          .dark .corpus-col-slot {
+            border-right-color: rgb(255 255 255 / 0.08);
           }
-          .corpus-folder-picker .ant-tree-indent-unit {
-            width: 16px;
+          .corpus-col-resizer {
+            width: 5px;
+            margin: 0 -2px;
+            position: relative;
+            z-index: 2;
+            pointer-events: none;
+          }
+          .corpus-col-item {
+            -webkit-tap-highlight-color: transparent;
+            outline: none !important;
+            box-shadow: none !important;
+          }
+          .corpus-col-item:focus,
+          .corpus-col-item:focus-visible,
+          .corpus-col-item:active {
+            outline: none !important;
+            box-shadow: none !important;
           }
         `}</style>
       </div>
