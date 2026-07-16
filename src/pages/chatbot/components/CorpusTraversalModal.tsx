@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Tree } from "antd";
+import type { DataNode } from "antd/es/tree";
 import {
+  MdChevronRight,
   MdClose,
   MdFolder,
   MdFolderOpen,
@@ -43,6 +46,12 @@ type CorpusTraversalModalProps = {
 
 const REPLAY_STEP_MS = 300;
 
+type TraversalTreeDataNode = DataNode & {
+  key: string;
+  title: string;
+  children?: TraversalTreeDataNode[];
+};
+
 function nodeStateClass(state: CorpusNodeVisualState) {
   switch (state) {
     case "active":
@@ -56,35 +65,16 @@ function nodeStateClass(state: CorpusNodeVisualState) {
   }
 }
 
-function nodeLineClass(state: CorpusNodeVisualState) {
-  switch (state) {
-    case "active":
-      return "bg-[#1a73e8] dark:bg-[#6dabf7]";
-    case "opened":
-      return "bg-emerald-300 dark:bg-emerald-500/40";
-    case "skipped":
-      return "bg-rose-300 dark:bg-rose-500/30";
-    default:
-      return "bg-gray-200/90 dark:bg-[#3d4f76] dark:opacity-80";
-  }
-}
-
-function CorpusTreeNodeRow({
+function CorpusTreeNodeLabel({
   node,
-  depth,
   state,
   expanded,
   highlighted,
-  onToggle,
-  nodeRef,
 }: {
   node: ChatCorpusTreeNode;
-  depth: number;
   state: CorpusNodeVisualState;
   expanded: boolean;
   highlighted: boolean;
-  onToggle?: () => void;
-  nodeRef?: (element: HTMLButtonElement | null) => void;
 }) {
   const FolderIcon =
     state === "skipped"
@@ -94,112 +84,38 @@ function CorpusTreeNodeRow({
         : MdFolder;
 
   return (
-    <button
-      ref={nodeRef}
-      type="button"
-      onClick={onToggle}
-      className={`flex w-full items-center gap-2 rounded-lg border px-2 py-1.5 text-left text-sm transition-all duration-300 ${nodeStateClass(state)} ${
+    <span
+      data-corpus-node-key={node.nodeKey}
+      className={`inline-flex min-w-0 items-center gap-2 rounded-lg border px-2 py-1.5 text-sm transition-all duration-300 ${nodeStateClass(state)} ${
         highlighted ? "ring-2 ring-[#1a73e8]/40 dark:ring-[#6dabf7]/40" : ""
       }`}
-      style={{ marginLeft: depth * 16 }}
     >
       <FolderIcon className="h-4 w-4 shrink-0" aria-hidden />
       <span className="truncate font-medium">{node.title || node.nodeKey}</span>
-    </button>
+    </span>
   );
 }
 
-function CorpusTreeBranch({
-  node,
-  depth,
-  states,
-  expandedKeys,
-  highlightedNodeKey,
-  onToggle,
-  registerNodeRef,
-}: {
-  node: ChatCorpusTreeNode;
-  depth: number;
-  states: Map<string, CorpusNodeVisualState>;
-  expandedKeys: Set<string>;
-  highlightedNodeKey: string | null;
-  onToggle: (nodeKey: string) => void;
-  registerNodeRef: (nodeKey: string, element: HTMLButtonElement | null) => void;
-}) {
-  const state = states.get(node.nodeKey) ?? "default";
-  const expanded = expandedKeys.has(node.nodeKey);
-  const hasChildren = node.children.length > 0;
-  const showChildren = hasChildren && expanded;
-
-  return (
-    <div className="min-w-0">
-      <div className="relative">
-        {depth > 0 ? (
-          <div
-            aria-hidden
-            className={`pointer-events-none absolute h-px w-2 ${nodeLineClass(
-              state,
-            )} transition-colors duration-300`}
-            style={{
-              left: depth * 16 - 8,
-              top: "50%",
-              transform: "translateY(-0.5px)",
-            }}
-          />
-        ) : null}
-
-        <CorpusTreeNodeRow
-          node={node}
-          depth={depth}
-          state={state}
-          expanded={expanded}
-          highlighted={highlightedNodeKey === node.nodeKey}
-          onToggle={hasChildren ? () => onToggle(node.nodeKey) : undefined}
-          nodeRef={(element) => registerNodeRef(node.nodeKey, element)}
-        />
-      </div>
-
-      {hasChildren ? (
-        <div
-          className={`grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-            showChildren ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-          }`}
-          style={{}}
-        >
-          <div className="overflow-hidden">
-            <div
-              className="relative mt-1 space-y-1"
-              aria-hidden={!showChildren}
-            >
-              {/* Vertical connector from this node to its children */}
-              <div
-                aria-hidden
-                className={`pointer-events-none absolute top-0 bottom-0 w-px ${nodeLineClass(
-                  state,
-                )} transition-colors duration-300`}
-                style={{
-                  left: (depth + 1) * 16 - 8,
-                }}
-              />
-
-              {node.children.map((child) => (
-                <CorpusTreeBranch
-                  key={child.nodeKey}
-                  node={child}
-                  depth={depth + 1}
-                  states={states}
-                  expandedKeys={expandedKeys}
-                  highlightedNodeKey={highlightedNodeKey}
-                  onToggle={onToggle}
-                  registerNodeRef={registerNodeRef}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      ) : null}
-    </div>
-  );
+function buildTraversalTreeData(
+  nodes: ChatCorpusTreeNode[],
+  states: Map<string, CorpusNodeVisualState>,
+  highlightedNodeKey: string | null,
+): TraversalTreeDataNode[] {
+  return nodes.map((node) => {
+    const children = buildTraversalTreeData(
+      node.children,
+      states,
+      highlightedNodeKey,
+    );
+    return {
+      key: node.nodeKey,
+      title: node.title || node.nodeKey,
+      children,
+      disableCheckbox: true,
+      selectable: false,
+      isLeaf: children.length === 0,
+    };
+  });
 }
 
 function CorpusTreePanel({
@@ -213,41 +129,17 @@ function CorpusTreePanel({
   expandedKeys: Set<string>;
   highlightedNodeKey: string | null;
 }) {
-  const [manualExpandedKeys, setManualExpandedKeys] = useState<Set<string>>(
-    () => new Set(),
-  );
-  const nodeRefs = useRef(new Map<string, HTMLButtonElement | null>());
-
-  const mergedExpandedKeys = useMemo(() => {
-    const merged = new Set(expandedKeys);
-    for (const key of manualExpandedKeys) {
-      merged.add(key);
-    }
-    return merged;
-  }, [expandedKeys, manualExpandedKeys]);
-
-  const toggleExpanded = useCallback((nodeKey: string) => {
-    setManualExpandedKeys((current) => {
-      const next = new Set(current);
-      if (next.has(nodeKey)) {
-        next.delete(nodeKey);
-      } else {
-        next.add(nodeKey);
-      }
-      return next;
-    });
-  }, []);
-
-  const registerNodeRef = useCallback(
-    (nodeKey: string, element: HTMLButtonElement | null) => {
-      nodeRefs.current.set(nodeKey, element);
-    },
-    [],
+  const nodeMap = useMemo(() => collectCorpusNodeMap(tree), [tree]);
+  const treeData = useMemo(
+    () => buildTraversalTreeData(tree, states, highlightedNodeKey),
+    [tree, states, highlightedNodeKey],
   );
 
   useEffect(() => {
     if (!highlightedNodeKey) return;
-    const element = nodeRefs.current.get(highlightedNodeKey);
+    const element = document.querySelector<HTMLElement>(
+      `[data-corpus-node-key="${highlightedNodeKey}"]`,
+    );
     element?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [highlightedNodeKey, states]);
 
@@ -260,19 +152,35 @@ function CorpusTreePanel({
   }
 
   return (
-    <div className="app-scrollbar-hidden h-full space-y-1 overflow-y-auto p-3">
-      {tree.map((node) => (
-        <CorpusTreeBranch
-          key={node.nodeKey}
-          node={node}
-          depth={0}
-          states={states}
-          expandedKeys={mergedExpandedKeys}
-          highlightedNodeKey={highlightedNodeKey}
-          onToggle={toggleExpanded}
-          registerNodeRef={registerNodeRef}
-        />
-      ))}
+    <div className="corpus-folder-picker app-scrollbar-hidden h-full overflow-y-auto px-3 py-3">
+      <Tree
+        blockNode
+        showLine
+        selectable={false}
+        expandedKeys={Array.from(expandedKeys)}
+        switcherIcon={({ expanded }) => (
+          <MdChevronRight
+            className={`h-4 w-4 shrink-0 text-gray-300 transition-transform duration-300 dark:text-gray-600 ${
+              expanded ? "rotate-90" : "rotate-0"
+            }`}
+          />
+        )}
+        treeData={treeData}
+        titleRender={(node) => {
+          const key = String(node.key);
+          const rawNode = nodeMap.get(key);
+          if (!rawNode) return <span>{node.title}</span>;
+          const state = states.get(key) ?? "default";
+          return (
+            <CorpusTreeNodeLabel
+              node={rawNode}
+              state={state}
+              expanded={expandedKeys.has(key)}
+              highlighted={highlightedNodeKey === key}
+            />
+          );
+        }}
+      />
     </div>
   );
 }
@@ -357,7 +265,7 @@ export function CorpusTraversalModal({
   const showReplay = state.mode === "review" && state.traversal.steps.length > 0;
 
   return createPortal(
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6">
+    <div className="fixed inset-0 z-120 flex items-center justify-center p-4 sm:p-6">
       <button
         type="button"
         className="absolute inset-0 bg-black/45 backdrop-blur-[1px]"
@@ -480,6 +388,22 @@ export function CorpusTraversalModal({
             </div>
           </div>
         </div>
+
+        <style>{`
+          .corpus-folder-picker .ant-tree-node-content-wrapper:hover,
+          .corpus-folder-picker .ant-tree-node-content-wrapper:focus,
+          .corpus-folder-picker .ant-tree-node-content-wrapper:active {
+            background: transparent !important;
+          }
+          .corpus-folder-picker .ant-tree-switcher {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .corpus-folder-picker .ant-tree-indent-unit {
+            width: 16px;
+          }
+        `}</style>
       </div>
     </div>,
     document.body,
