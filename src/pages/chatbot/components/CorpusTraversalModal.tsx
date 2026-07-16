@@ -56,6 +56,19 @@ function nodeStateClass(state: CorpusNodeVisualState) {
   }
 }
 
+function nodeLineClass(state: CorpusNodeVisualState) {
+  switch (state) {
+    case "active":
+      return "bg-[#1a73e8] dark:bg-[#6dabf7]";
+    case "opened":
+      return "bg-emerald-300 dark:bg-emerald-500/40";
+    case "skipped":
+      return "bg-rose-300 dark:bg-rose-500/30";
+    default:
+      return "bg-gray-200/90 dark:bg-[#3d4f76] dark:opacity-80";
+  }
+}
+
 function CorpusTreeNodeRow({
   node,
   depth,
@@ -116,32 +129,73 @@ function CorpusTreeBranch({
   const state = states.get(node.nodeKey) ?? "default";
   const expanded = expandedKeys.has(node.nodeKey);
   const hasChildren = node.children.length > 0;
+  const showChildren = hasChildren && expanded;
 
   return (
     <div className="min-w-0">
-      <CorpusTreeNodeRow
-        node={node}
-        depth={depth}
-        state={state}
-        expanded={expanded}
-        highlighted={highlightedNodeKey === node.nodeKey}
-        onToggle={hasChildren ? () => onToggle(node.nodeKey) : undefined}
-        nodeRef={(element) => registerNodeRef(node.nodeKey, element)}
-      />
-      {hasChildren && expanded ? (
-        <div className="mt-1 space-y-1">
-          {node.children.map((child) => (
-            <CorpusTreeBranch
-              key={child.nodeKey}
-              node={child}
-              depth={depth + 1}
-              states={states}
-              expandedKeys={expandedKeys}
-              highlightedNodeKey={highlightedNodeKey}
-              onToggle={onToggle}
-              registerNodeRef={registerNodeRef}
-            />
-          ))}
+      <div className="relative">
+        {depth > 0 ? (
+          <div
+            aria-hidden
+            className={`pointer-events-none absolute h-px w-2 ${nodeLineClass(
+              state,
+            )} transition-colors duration-300`}
+            style={{
+              left: depth * 16 - 8,
+              top: "50%",
+              transform: "translateY(-0.5px)",
+            }}
+          />
+        ) : null}
+
+        <CorpusTreeNodeRow
+          node={node}
+          depth={depth}
+          state={state}
+          expanded={expanded}
+          highlighted={highlightedNodeKey === node.nodeKey}
+          onToggle={hasChildren ? () => onToggle(node.nodeKey) : undefined}
+          nodeRef={(element) => registerNodeRef(node.nodeKey, element)}
+        />
+      </div>
+
+      {hasChildren ? (
+        <div
+          className={`grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+            showChildren ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+          }`}
+          style={{}}
+        >
+          <div className="overflow-hidden">
+            <div
+              className="relative mt-1 space-y-1"
+              aria-hidden={!showChildren}
+            >
+              {/* Vertical connector from this node to its children */}
+              <div
+                aria-hidden
+                className={`pointer-events-none absolute top-0 bottom-0 w-px ${nodeLineClass(
+                  state,
+                )} transition-colors duration-300`}
+                style={{
+                  left: (depth + 1) * 16 - 8,
+                }}
+              />
+
+              {node.children.map((child) => (
+                <CorpusTreeBranch
+                  key={child.nodeKey}
+                  node={child}
+                  depth={depth + 1}
+                  states={states}
+                  expandedKeys={expandedKeys}
+                  highlightedNodeKey={highlightedNodeKey}
+                  onToggle={onToggle}
+                  registerNodeRef={registerNodeRef}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       ) : null}
     </div>
