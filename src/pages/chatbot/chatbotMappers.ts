@@ -130,7 +130,9 @@ function parseSourceTitles(raw: {
 }): string[] | undefined {
   if (Array.isArray(raw.titles)) {
     const items = raw.titles
-      .filter((value): value is string => typeof value === "string" && !!value.trim())
+      .filter(
+        (value): value is string => typeof value === "string" && !!value.trim(),
+      )
       .map((value) => value.trim());
     if (items.length) return [...new Set(items)];
   }
@@ -187,7 +189,11 @@ export function historyMessageToStore(
     .map(historySourceToStore)
     .filter((source): source is ChatSourceItem => source !== null);
   const createdAt = msg.createdAt ?? new Date().toISOString();
-  const reasoningSteps = historyStepsToStore(msg.steps, sessionId, msg.sequence);
+  const reasoningSteps = historyStepsToStore(
+    msg.steps,
+    sessionId,
+    msg.sequence,
+  );
   const tokenUsage = normalizeTokenUsage(msg);
   const processingTimeMs = msg.processingTimeMs;
 
@@ -195,8 +201,7 @@ export function historyMessageToStore(
     id: `${sessionId}-history-${msg.sequence}-${index}`,
     role: msg.role,
     content:
-      msg.role === "assistant" &&
-      msg.messageType === "thinking"
+      msg.role === "assistant" && msg.messageType === "thinking"
         ? ""
         : msg.content,
     createdAt,
@@ -205,10 +210,7 @@ export function historyMessageToStore(
   if (msg.role === "assistant") {
     storeMessage.reasoningDefaultOpen = false;
   }
-  if (
-    msg.role === "assistant" &&
-    msg.messageType === "thinking"
-  ) {
+  if (msg.role === "assistant" && msg.messageType === "thinking") {
     storeMessage.reasoning = msg.content;
   }
   if (reasoningSteps.length) {
@@ -247,8 +249,7 @@ function encodeReasoningSteps(steps: ChatReasoningStep[]) {
 }
 
 function reasoningParentId(base: string, message: ChatStoreMessage) {
-  const openState =
-    message.reasoningDefaultOpen === false ? "closed" : "open";
+  const openState = message.reasoningDefaultOpen === false ? "closed" : "open";
   const processingTime =
     typeof message.processingTimeMs === "number" &&
     Number.isFinite(message.processingTimeMs)
@@ -371,10 +372,7 @@ export function sourceItemsFromStream(rawSources: unknown[]) {
       if (fileName) {
         item.fileName = fileName;
       }
-      const fileId = firstNonEmptyString(
-        candidate.fileId,
-        candidate.file_id,
-      );
+      const fileId = firstNonEmptyString(candidate.fileId, candidate.file_id);
       if (fileId) {
         item.fileId = fileId;
       }

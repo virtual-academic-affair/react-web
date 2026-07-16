@@ -20,8 +20,8 @@ import {
   mergeStreamdownComponents,
   STREAMDOWN_LIST_PROSE_CLASS,
 } from "@/components/markdown/streamdown-prose";
-import { ScrollFadeArea } from "@/components/scroll-fade/ScrollFadeArea";
 import { useStreamdownMathPlugins } from "@/components/markdown/useStreamdownMathPlugins";
+import { ScrollFadeArea } from "@/components/scroll-fade/ScrollFadeArea";
 
 type ReasoningVariant = "ghost" | "default";
 type StructuredReasoningStep = {
@@ -377,7 +377,9 @@ export function ReasoningContent(props: ComponentProps<"div">) {
           <div className="min-h-0 overflow-hidden">
             <ScrollFadeArea
               wrapperClassName={ghostWrapperClass}
-              className={[ghostScrollClass, className].filter(Boolean).join(" ")}
+              className={[ghostScrollClass, className]
+                .filter(Boolean)
+                .join(" ")}
               style={style}
               topFadeRem={1.25}
               bottomFadeRem={1.75}

@@ -14,9 +14,7 @@ import {
   newChatbotId,
   sourceItemsFromStream,
 } from "./chatbotMappers";
-import {
-  resolveChatErrorMessage,
-} from "./constants";
+import { resolveChatErrorMessage } from "./constants";
 import type {
   ChatReasoningStep,
   ChatStoreMessage,
@@ -292,7 +290,8 @@ export function useChatbotStreaming({
                 returnedSessionId &&
                 !sessionAtSendTime?.serverId &&
                 (activeThreadIdRef.current === threadId ||
-                  activeThreadIdRef.current === threadIdAliasRef.current[threadId])
+                  activeThreadIdRef.current ===
+                    threadIdAliasRef.current[threadId])
               ) {
                 selectedByUserRef.current = returnedSessionId;
                 setActiveThreadId(returnedSessionId);
