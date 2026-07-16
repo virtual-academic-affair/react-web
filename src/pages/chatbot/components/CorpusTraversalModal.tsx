@@ -55,13 +55,13 @@ type TraversalTreeDataNode = DataNode & {
 function nodeStateClass(state: CorpusNodeVisualState) {
   switch (state) {
     case "active":
-      return "border-[#1a73e8] bg-[#e8f0fe] text-[#1a73e8] shadow-[0_0_0_1px_rgba(26,115,232,0.25)] animate-pulse dark:border-[#6dabf7] dark:bg-[#1a2b4a] dark:text-[#a8c7fa]";
+      return "bg-brand-500/15 text-brand-500 shadow-[inset_0_0_0_1px_rgba(59,130,246,0.18)] dark:bg-brand-500/20 dark:text-[#a8c7fa]";
     case "opened":
-      return "border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-950/30 dark:text-emerald-200";
+      return "bg-brand-500/10 text-brand-500 dark:bg-brand-500/15 dark:text-[#a8c7fa]";
     case "skipped":
-      return "border-rose-200 bg-rose-50/80 text-rose-700 opacity-80 dark:border-rose-500/30 dark:bg-rose-950/20 dark:text-rose-200";
+      return "bg-rose-500/10 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300";
     default:
-      return "border-transparent bg-transparent text-[#5f6368] opacity-50 dark:text-[#9aa0a6]";
+      return "text-[#5f6368] dark:text-gray-300";
   }
 }
 
@@ -82,16 +82,26 @@ function CorpusTreeNodeLabel({
       : expanded || state === "opened" || state === "active"
         ? MdFolderOpen
         : MdFolder;
+  const iconClass =
+    state === "skipped"
+      ? "text-rose-500 dark:text-rose-300"
+      : state === "active"
+        ? "text-brand-500 dark:text-[#a8c7fa]"
+        : state === "opened"
+          ? "text-brand-500 dark:text-[#a8c7fa]"
+          : "text-amber-500";
 
   return (
     <span
       data-corpus-node-key={node.nodeKey}
-      className={`inline-flex min-w-0 items-center gap-2 rounded-lg border px-2 py-1.5 text-sm transition-all duration-300 ${nodeStateClass(state)} ${
+      className={`corpus-col-item inline-flex min-w-0 items-center gap-2 rounded-lg px-3 py-2 text-sm transition-all duration-300 ${nodeStateClass(state)} ${
         highlighted ? "ring-2 ring-[#1a73e8]/40 dark:ring-[#6dabf7]/40" : ""
       }`}
     >
-      <FolderIcon className="h-4 w-4 shrink-0" aria-hidden />
-      <span className="truncate font-medium">{node.title || node.nodeKey}</span>
+      <FolderIcon className={`h-4 w-4 shrink-0 ${iconClass}`} aria-hidden />
+      <span className="text-navy-700 min-w-0 truncate text-sm font-medium dark:text-white">
+        {node.title || node.nodeKey}
+      </span>
     </span>
   );
 }
