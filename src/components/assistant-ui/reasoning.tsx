@@ -22,12 +22,20 @@ import {
 } from "@/components/markdown/streamdown-prose";
 import { useStreamdownMathPlugins } from "@/components/markdown/useStreamdownMathPlugins";
 import { ScrollFadeArea } from "@/components/scroll-fade/ScrollFadeArea";
+import { CORPUS_TRAVERSAL_SUMMARY_TYPE } from "@/pages/chatbot/corpusTraversalUtils";
+import { useChatbotLayoutOptional } from "@/pages/chatbot/chatbotLayoutContext";
+import type { ChatCorpusTraversal } from "@/pages/chatbot/types";
 
 type ReasoningVariant = "ghost" | "default";
 type StructuredReasoningStep = {
   id: string;
   type: string;
   content: string;
+};
+
+type StructuredReasoningPayload = {
+  steps: StructuredReasoningStep[];
+  corpusTraversal?: ChatCorpusTraversal;
 };
 
 const ReasoningVariantContext = createContext<ReasoningVariant>("default");
@@ -48,19 +56,40 @@ function useReasoningDisclosure() {
   return context;
 }
 
-function parseStructuredReasoning(text: string) {
+function parseStructuredReasoning(text: string): StructuredReasoningPayload | null {
   if (!text.startsWith(STRUCTURED_REASONING_PREFIX)) return null;
   try {
     const parsed = JSON.parse(text.slice(STRUCTURED_REASONING_PREFIX.length));
-    if (!Array.isArray(parsed)) return null;
-    return parsed.filter(
-      (item): item is StructuredReasoningStep =>
-        item &&
+    if (Array.isArray(parsed)) {
+      const steps = parsed.filter(
+        (item): item is StructuredReasoningStep =>
+          item &&
+          typeof item === "object" &&
+          typeof item.id === "string" &&
+          typeof item.type === "string" &&
+          typeof item.content === "string",
+      );
+      return { steps };
+    }
+    if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.steps)) {
+      return null;
+    }
+    const steps = parsed.steps.filter(
+      (item: unknown): item is StructuredReasoningStep =>
+        !!item &&
         typeof item === "object" &&
-        typeof item.id === "string" &&
-        typeof item.type === "string" &&
-        typeof item.content === "string",
+        typeof (item as StructuredReasoningStep).id === "string" &&
+        typeof (item as StructuredReasoningStep).type === "string" &&
+        typeof (item as StructuredReasoningStep).content === "string",
     );
+    return {
+      steps,
+      corpusTraversal:
+        parsed.corpusTraversal &&
+        typeof parsed.corpusTraversal === "object"
+          ? (parsed.corpusTraversal as ChatCorpusTraversal)
+          : undefined,
+    };
   } catch {
     return null;
   }
@@ -133,17 +162,75 @@ function StepConnector({ dashed }: { dashed?: boolean }) {
   );
 }
 
-function StructuredReasoningStep({
+function CorpusTraversalSummaryStep({
   step,
+  corpusTraversal,
   isLast,
   isActive,
   isNextActive,
 }: {
   step: StructuredReasoningStep;
+  corpusTraversal?: ChatCorpusTraversal;
   isLast: boolean;
   isActive: boolean;
   isNextActive: boolean;
 }) {
+  const chatbotLayout = useChatbotLayoutOptional();
+
+  return (
+    <div className="chat-message-enter flex gap-2.5">
+      <div className="flex flex-col items-center">
+        <StepIcon isActive={isActive} />
+        {!isLast && <StepConnector dashed={isNextActive} />}
+      </div>
+      <div className="min-w-0 flex-1 pb-5 text-xs leading-relaxed text-[#3c4043] italic dark:text-[#d9e2ff]">
+        <span>{step.content} </span>
+        {corpusTraversal ? (
+          <button
+            type="button"
+            onClick={() =>
+              chatbotLayout?.openCorpusTraversalReview(corpusTraversal)
+            }
+            className="not-italic text-[#1a73e8] underline decoration-[#1a73e8]/40 underline-offset-2 transition hover:text-[#1558b0] dark:text-[#a8c7fa] dark:hover:text-white"
+          >
+            (Xem ngay)
+          </button>
+        ) : null}
+        {isActive ? (
+          <span className="ml-1 inline-flex align-middle text-[#1a73e8] dark:text-[#6dabf7]">
+            <ThinkingDots />
+          </span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function StructuredReasoningStep({
+  step,
+  corpusTraversal,
+  isLast,
+  isActive,
+  isNextActive,
+}: {
+  step: StructuredReasoningStep;
+  corpusTraversal?: ChatCorpusTraversal;
+  isLast: boolean;
+  isActive: boolean;
+  isNextActive: boolean;
+}) {
+  if (step.type === CORPUS_TRAVERSAL_SUMMARY_TYPE) {
+    return (
+      <CorpusTraversalSummaryStep
+        step={step}
+        corpusTraversal={corpusTraversal}
+        isLast={isLast}
+        isActive={isActive}
+        isNextActive={isNextActive}
+      />
+    );
+  }
+
   return (
     <div className="chat-message-enter flex gap-2.5">
       <div className="flex flex-col items-center">
@@ -162,7 +249,13 @@ function StructuredReasoningStep({
   );
 }
 
-function StructuredReasoning({ steps }: { steps: StructuredReasoningStep[] }) {
+function StructuredReasoning({
+  steps,
+  corpusTraversal,
+}: {
+  steps: StructuredReasoningStep[];
+  corpusTraversal?: ChatCorpusTraversal;
+}) {
   const busy = useContext(ReasoningBusyContext);
 
   return (
@@ -176,6 +269,7 @@ function StructuredReasoning({ steps }: { steps: StructuredReasoningStep[] }) {
           <StructuredReasoningStep
             key={step.id}
             step={step}
+            corpusTraversal={corpusTraversal}
             isLast={isLast}
             isActive={isActive}
             isNextActive={isNextActive}
@@ -437,12 +531,19 @@ export function ReasoningText({ children }: { children: ReactNode }) {
 }
 
 export function Reasoning(part: ReasoningMessagePartProps) {
-  const structuredSteps = useMemo(
+  const structuredPayload = useMemo(
     () => parseStructuredReasoning(part.text),
     [part.text],
   );
 
-  if (structuredSteps) return <StructuredReasoning steps={structuredSteps} />;
+  if (structuredPayload) {
+    return (
+      <StructuredReasoning
+        steps={structuredPayload.steps}
+        corpusTraversal={structuredPayload.corpusTraversal}
+      />
+    );
+  }
   if (!part.text.trim()) return null;
   return <ReasoningMarkdown text={part.text} />;
 }

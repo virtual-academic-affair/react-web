@@ -1,5 +1,28 @@
 export type ChatRole = "user" | "assistant";
 
+export type CorpusTraversalAction = "expand" | "inspect" | "select" | "no_match";
+
+export type CorpusNodeVisualState = "default" | "active" | "opened" | "skipped";
+
+export type ChatCorpusTreeNode = {
+  nodeKey: string;
+  title: string;
+  children: ChatCorpusTreeNode[];
+};
+
+export type ChatCorpusTraversalStep = {
+  id: string;
+  action: CorpusTraversalAction;
+  content: string;
+  nodeKey?: string;
+  nodeKeys?: string[];
+};
+
+export type ChatCorpusTraversal = {
+  tree: ChatCorpusTreeNode[];
+  steps: ChatCorpusTraversalStep[];
+};
+
 export type ChatReasoningStep = {
   id: string;
   type: string;
@@ -13,6 +36,7 @@ export type ChatStoreMessage = {
   createdAt: string;
   reasoning?: string;
   reasoningSteps?: ChatReasoningStep[];
+  corpusTraversal?: ChatCorpusTraversal;
   reasoningDefaultOpen?: boolean;
   tokenUsage?: {
     promptTokens?: number;

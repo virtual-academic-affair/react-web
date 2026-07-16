@@ -8,6 +8,9 @@ import {
 } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
+import type { CorpusTraversalModalViewState } from "./components/CorpusTraversalModal";
+import { emptyCorpusTraversal } from "./corpusTraversalUtils";
+import type { ChatCorpusTraversal } from "./types";
 import {
   getChatbotBasePath,
   getChatbotInfoPanelFromPath,
@@ -35,6 +38,16 @@ type ChatbotLayoutContextValue = {
   faqInitialDraft: FaqDrawerDraft;
   openFaqDrawer: (draft: FaqDrawerDraft) => void;
   closeFaqDrawer: () => void;
+  corpusTraversalModal: CorpusTraversalModalViewState;
+  syncCorpusTraversalModal: (
+    patch: Partial<CorpusTraversalModalViewState> & {
+      traversal?: ChatCorpusTraversal;
+    },
+  ) => void;
+  openCorpusTraversalReview: (traversal: ChatCorpusTraversal) => void;
+  closeCorpusTraversalModal: () => void;
+  setCorpusTraversalPreviewStepIndex: (index: number | null) => void;
+  setCorpusTraversalReplay: (isReplaying: boolean) => void;
 };
 
 const ChatbotLayoutContext = createContext<ChatbotLayoutContextValue | null>(
@@ -62,6 +75,14 @@ export function ChatbotLayoutProvider({
     question: "",
     answer: "",
   });
+  const [corpusTraversalModal, setCorpusTraversalModal] =
+    useState<CorpusTraversalModalViewState>({
+      open: false,
+      mode: "review",
+      traversal: emptyCorpusTraversal(),
+      previewStepIndex: null,
+      isReplaying: false,
+    });
   const location = useLocation();
   const navigate = useNavigate();
   const infoPanel = getChatbotInfoPanelFromPath(location.pathname);
@@ -90,6 +111,60 @@ export function ChatbotLayoutProvider({
     setFaqDrawerOpen(false);
   }, []);
 
+  const syncCorpusTraversalModal = useCallback(
+    (
+      patch: Partial<CorpusTraversalModalViewState> & {
+        traversal?: ChatCorpusTraversal;
+      },
+    ) => {
+      setCorpusTraversalModal((current) => ({
+        ...current,
+        ...patch,
+        traversal: patch.traversal ?? current.traversal,
+      }));
+    },
+    [],
+  );
+
+  const openCorpusTraversalReview = useCallback(
+    (traversal: ChatCorpusTraversal) => {
+      setCorpusTraversalModal({
+        open: true,
+        mode: "review",
+        traversal,
+        previewStepIndex: null,
+        isReplaying: false,
+      });
+    },
+    [],
+  );
+
+  const closeCorpusTraversalModal = useCallback(() => {
+    setCorpusTraversalModal((current) => ({
+      ...current,
+      open: false,
+      previewStepIndex: null,
+      isReplaying: false,
+    }));
+  }, []);
+
+  const setCorpusTraversalPreviewStepIndex = useCallback(
+    (index: number | null) => {
+      setCorpusTraversalModal((current) => ({
+        ...current,
+        previewStepIndex: index,
+      }));
+    },
+    [],
+  );
+
+  const setCorpusTraversalReplay = useCallback((isReplaying: boolean) => {
+    setCorpusTraversalModal((current) => ({
+      ...current,
+      isReplaying,
+    }));
+  }, []);
+
   return (
     <ChatbotLayoutContext.Provider
       value={{
@@ -106,6 +181,12 @@ export function ChatbotLayoutProvider({
         faqInitialDraft,
         openFaqDrawer,
         closeFaqDrawer,
+        corpusTraversalModal,
+        syncCorpusTraversalModal,
+        openCorpusTraversalReview,
+        closeCorpusTraversalModal,
+        setCorpusTraversalPreviewStepIndex,
+        setCorpusTraversalReplay,
       }}
     >
       {children}

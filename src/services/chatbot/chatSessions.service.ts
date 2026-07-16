@@ -41,6 +41,14 @@ export interface ChatHistorySource {
 export interface ChatHistoryStep {
   type: string;
   content: string;
+  action?: string;
+  nodeKey?: string;
+  nodeKeys?: string[];
+  tree?: Array<{
+    nodeKey: string;
+    title: string;
+    children?: ChatHistoryStep["tree"];
+  }>;
 }
 
 export interface ChatHistoryMessage {

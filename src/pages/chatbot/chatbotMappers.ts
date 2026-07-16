@@ -5,6 +5,10 @@ import type {
   ChatSessionItem,
 } from "@/services/chatbot/chatSessions.service";
 
+import {
+  buildCorpusTraversalFromRawSteps,
+  buildDisplayReasoningSteps,
+} from "./corpusTraversalUtils";
 import type {
   ChatReasoningStep,
   ChatSourceItem,
@@ -78,7 +82,8 @@ function historyStepsToStore(
   sessionId: string,
   sequence: number,
 ) {
-  return (rawSteps ?? [])
+  const corpusTraversal = buildCorpusTraversalFromRawSteps(rawSteps ?? []);
+  const reasoningSteps = (rawSteps ?? [])
     .map((step, index): ChatReasoningStep | null => {
       if (
         !step ||
@@ -89,15 +94,21 @@ function historyStepsToStore(
       ) {
         return null;
       }
+      const type = step.type.trim();
+      if (type === "corpus_tree" || type === "corpus_traversal") {
+        return null;
+      }
 
       const reasoningStep: ChatReasoningStep = {
         id: `${sessionId}-history-${sequence}-step-${index}`,
-        type: step.type.trim(),
+        type,
         content: step.content.trim(),
       };
       return reasoningStep;
     })
     .filter((step): step is ChatReasoningStep => step !== null);
+
+  return { reasoningSteps, corpusTraversal };
 }
 
 function normalizeTokenUsage(msg: ChatHistoryMessage) {
@@ -189,7 +200,7 @@ export function historyMessageToStore(
     .map(historySourceToStore)
     .filter((source): source is ChatSourceItem => source !== null);
   const createdAt = msg.createdAt ?? new Date().toISOString();
-  const reasoningSteps = historyStepsToStore(
+  const { reasoningSteps, corpusTraversal } = historyStepsToStore(
     msg.steps,
     sessionId,
     msg.sequence,
@@ -215,6 +226,9 @@ export function historyMessageToStore(
   }
   if (reasoningSteps.length) {
     storeMessage.reasoningSteps = reasoningSteps;
+  }
+  if (corpusTraversal) {
+    storeMessage.corpusTraversal = corpusTraversal;
   }
   if (tokenUsage) {
     storeMessage.tokenUsage = tokenUsage;
@@ -244,8 +258,15 @@ function splitReasoningIntoSteps(raw: string | undefined): string[] {
   return paras.length ? paras : [t];
 }
 
-function encodeReasoningSteps(steps: ChatReasoningStep[]) {
-  return `${STRUCTURED_REASONING_PREFIX}${JSON.stringify(steps)}`;
+function encodeReasoningPayload(message: ChatStoreMessage) {
+  const steps = buildDisplayReasoningSteps(
+    message.reasoningSteps,
+    message.corpusTraversal,
+  );
+  return `${STRUCTURED_REASONING_PREFIX}${JSON.stringify({
+    steps,
+    corpusTraversal: message.corpusTraversal,
+  })}`;
 }
 
 function reasoningParentId(base: string, message: ChatStoreMessage) {
@@ -278,10 +299,10 @@ export function convertMessage(m: ChatStoreMessage): ThreadMessageLike {
   > = [];
 
   if (m.role === "assistant") {
-    if (m.reasoningSteps?.length) {
+    if (m.reasoningSteps?.length || m.corpusTraversal) {
       parts.push({
         type: "reasoning",
-        text: encodeReasoningSteps(m.reasoningSteps),
+        text: encodeReasoningPayload(m),
         parentId: reasoningParentId("structured-reasoning", m),
       });
     } else {

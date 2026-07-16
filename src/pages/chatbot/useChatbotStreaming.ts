@@ -9,6 +9,14 @@ import {
 import { streamChat } from "@/services/chatbot/chatbot.service";
 
 import {
+  applyCorpusTreeToMessage,
+  appendCorpusTraversalStep,
+  buildCorpusTraversalFromRawSteps,
+  CORPUS_TRAVERSAL_END_EVENT_TYPES,
+  normalizeCorpusTreeNodes,
+  parseCorpusTraversalStep,
+} from "./corpusTraversalUtils";
+import {
   DEFAULT_NEW_TITLE,
   getAppendText,
   newChatbotId,
@@ -20,6 +28,7 @@ import type {
   ChatStoreMessage,
   ChatThreadSession,
 } from "./types";
+import { useChatbotLayoutOptional } from "./chatbotLayoutContext";
 
 type MutableRef<T> = {
   current: T;
@@ -109,22 +118,50 @@ function reasoningStepsFromDoneEvent(rawSteps: unknown[]): ChatReasoningStep[] {
     .map((step): ChatReasoningStep | null => {
       if (!step || typeof step !== "object") return null;
       const candidate = step as Record<string, unknown>;
+      const type =
+        typeof candidate.type === "string" ? candidate.type.trim() : "";
       if (
-        typeof candidate.type !== "string" ||
-        !candidate.type.trim() ||
+        !type ||
+        type === "corpus_tree" ||
+        type === "corpus_traversal" ||
         typeof candidate.content !== "string" ||
         !candidate.content.trim()
       ) {
         return null;
       }
-      const reasoningStep: ChatReasoningStep = {
+      return {
         id: newChatbotId("reasoning-step"),
-        type: candidate.type.trim(),
+        type,
         content: candidate.content.trim(),
       };
-      return reasoningStep;
     })
     .filter((step): step is ChatReasoningStep => step !== null);
+}
+
+function mergeAssistantMessageFromDone(
+  item: ChatStoreMessage,
+  doneSteps: unknown[],
+  hasError: boolean,
+) {
+  if (hasError) {
+    return {
+      ...item,
+      content: "",
+      reasoningSteps: [],
+      corpusTraversal: undefined,
+    };
+  }
+
+  const corpusTraversal =
+    buildCorpusTraversalFromRawSteps(doneSteps) ?? item.corpusTraversal;
+
+  return {
+    ...item,
+    corpusTraversal,
+    reasoningSteps: item.reasoningSteps?.length
+      ? item.reasoningSteps
+      : reasoningStepsFromDoneEvent(doneSteps),
+  };
 }
 
 export function useChatbotStreaming({
@@ -140,6 +177,7 @@ export function useChatbotStreaming({
   refreshActiveSessions,
 }: UseChatbotStreamingArgs) {
   const [isRunning, setIsRunning] = useState(false);
+  const chatbotLayout = useChatbotLayoutOptional();
 
   const runStreamForAssistant = useCallback(
     async (userText: string, assistantId: string, threadId: string) => {
@@ -175,6 +213,62 @@ export function useChatbotStreaming({
             const ev = event as Record<string, unknown>;
             const eventType = typeof ev.type === "string" ? ev.type : undefined;
             const textChunk = typeof ev.content === "string" ? ev.content : "";
+
+            if (eventType === "corpus_tree") {
+              const tree = normalizeCorpusTreeNodes(ev.tree);
+              updateAssistantMessage(
+                setSessions,
+                threadId,
+                threadIdAliasRef.current,
+                assistantId,
+                (item) => {
+                  const corpusTraversal = applyCorpusTreeToMessage(
+                    item.corpusTraversal,
+                    tree,
+                  );
+                  chatbotLayout?.syncCorpusTraversalModal({
+                    open: true,
+                    mode: "stream",
+                    traversal: corpusTraversal,
+                    previewStepIndex: null,
+                    isReplaying: false,
+                  });
+                  return { ...item, corpusTraversal };
+                },
+              );
+              return;
+            }
+
+            if (eventType === "corpus_traversal") {
+              const traversalStep = parseCorpusTraversalStep(ev);
+              if (!traversalStep) return;
+
+              updateAssistantMessage(
+                setSessions,
+                threadId,
+                threadIdAliasRef.current,
+                assistantId,
+                (item) => {
+                  const corpusTraversal = appendCorpusTraversalStep(
+                    item.corpusTraversal,
+                    traversalStep,
+                  );
+                  chatbotLayout?.syncCorpusTraversalModal({
+                    open: true,
+                    mode: "stream",
+                    traversal: corpusTraversal,
+                    previewStepIndex: null,
+                    isReplaying: false,
+                  });
+                  return { ...item, corpusTraversal };
+                },
+              );
+              return;
+            }
+
+            if (eventType && CORPUS_TRAVERSAL_END_EVENT_TYPES.has(eventType)) {
+              chatbotLayout?.closeCorpusTraversalModal();
+            }
 
             if (eventType && eventType !== "text" && textChunk) {
               updateAssistantMessage(
@@ -262,15 +356,12 @@ export function useChatbotStreaming({
                     messages: session.messages.map((item) =>
                       item.id === assistantId
                         ? {
-                            ...item,
+                            ...mergeAssistantMessageFromDone(
+                              item,
+                              doneEvent.steps ?? [],
+                              hasError,
+                            ),
                             content: hasError ? "" : item.content,
-                            reasoningSteps: hasError
-                              ? []
-                              : item.reasoningSteps?.length
-                                ? item.reasoningSteps
-                                : reasoningStepsFromDoneEvent(
-                                    doneEvent.steps ?? [],
-                                  ),
                             sources: hasError
                               ? []
                               : sources.length
@@ -404,6 +495,7 @@ export function useChatbotStreaming({
       reportSystemError,
       selectedByUserRef,
       threadIdAliasRef,
+      chatbotLayout,
       sessionsRef,
       setActiveThreadId,
       setSessions,
