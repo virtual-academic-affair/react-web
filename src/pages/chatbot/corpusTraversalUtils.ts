@@ -163,7 +163,16 @@ export function buildDisplayReasoningSteps(
   if (!hasCorpusTraversalData(corpusTraversal)) {
     return visible;
   }
-  return [...visible, buildCorpusTraversalSummaryStep()];
+  const summaryStep = buildCorpusTraversalSummaryStep();
+  const queryIndex = visible.findIndex((s) => s.type === "query_analysis");
+  if (queryIndex >= 0) {
+    return [
+      ...visible.slice(0, queryIndex + 1),
+      summaryStep,
+      ...visible.slice(queryIndex + 1),
+    ];
+  }
+  return [...visible, summaryStep];
 }
 
 export function walkCorpusTree(
