@@ -407,6 +407,7 @@ function GeminiComposer({ centered = false }: { centered?: boolean }) {
           }
           rows={1}
           disabled={isArchived}
+          autoFocus={!isArchived}
           className="app-scrollbar-hidden [field-sizing:content] w-full resize-none overflow-hidden bg-transparent px-3 py-1.5 pt-2 pr-14 text-sm leading-snug text-[#1f1f1f] outline-none placeholder:text-[#444746] dark:text-white dark:placeholder:text-gray-400"
         />
       </ScrollFadeArea>
