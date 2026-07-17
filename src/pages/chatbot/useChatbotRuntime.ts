@@ -14,6 +14,7 @@ import {
   useChatbotSessionsQuery,
 } from "./chatbotQueries";
 import { useChatbotRoutes } from "./chatbotRoutes";
+import { useChatbotLayoutOptional } from "./chatbotLayoutContext";
 import type { ChatbotShellContextValue } from "./chatbotShellContext";
 import type { ChatStoreMessage, ChatThreadSession } from "./types";
 import { useChatbotSessionMutations } from "./useChatbotSessionMutations";
@@ -294,6 +295,16 @@ export function useChatbotRuntime() {
     navigateToThread,
     refreshActiveSessions,
   });
+  const chatbotLayout = useChatbotLayoutOptional();
+
+  const convertMessageForRuntime = useCallback(
+    (message: ChatStoreMessage) =>
+      convertMessage(message, {
+        corpusStreamPhaseActive:
+          chatbotLayout?.corpusStreamPhaseActive ?? false,
+      }),
+    [chatbotLayout?.corpusStreamPhaseActive],
+  );
 
   const switchToThread = useCallback(
     async (threadId: string) => {
@@ -355,11 +366,11 @@ export function useChatbotRuntime() {
       messages,
       isRunning,
       setMessages: setThreadMessages,
-      convertMessage,
+      convertMessage: convertMessageForRuntime,
       onNew,
       onCancel,
     }),
-    [messages, isRunning, setThreadMessages, onNew, onCancel],
+    [messages, isRunning, setThreadMessages, convertMessageForRuntime, onNew, onCancel],
   );
 
   const shellValue: ChatbotShellContextValue = useMemo(

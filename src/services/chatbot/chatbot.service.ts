@@ -26,6 +26,14 @@ export interface ChatQueryResponse {
   sessionId: string;
   source: "llm" | "faq" | "bypass" | string;
   sources: unknown[];
+  faqRecommendation?: {
+    effectiveQuestion?: string;
+    metadata?: {
+      academicYear?: { fromYear?: number; toYear?: number };
+      enrollmentYear?: { fromYear?: number; toYear?: number };
+    };
+    lecturerOnly?: boolean;
+  };
   steps?: ChatPipelineStep[];
   processingTimeMs: number;
 }
@@ -62,6 +70,14 @@ export interface ChatStreamEvent {
     totalTokens?: number;
   };
   processingTimeMs?: number;
+  faqRecommendation?: {
+    effectiveQuestion?: string;
+    metadata?: {
+      academicYear?: { fromYear?: number; toYear?: number };
+      enrollmentYear?: { fromYear?: number; toYear?: number };
+    };
+    lecturerOnly?: boolean;
+  };
   error?: string;
   sessionId?: string;
   steps?: ChatPipelineStep[];

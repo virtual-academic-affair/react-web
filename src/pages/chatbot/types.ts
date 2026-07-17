@@ -1,3 +1,5 @@
+import type { YearRange } from "@/types/faqs";
+
 export type ChatRole = "user" | "assistant";
 
 export type CorpusTraversalAction = "expand" | "inspect" | "select" | "no_match";
@@ -43,8 +45,18 @@ export type ChatStoreMessage = {
     completionTokens?: number;
     totalTokens?: number;
   };
+  faqRecommendation?: ChatFaqRecommendation;
   processingTimeMs?: number;
   sources?: ChatSourceItem[];
+};
+
+export type ChatFaqRecommendation = {
+  effectiveQuestion: string;
+  lecturerOnly: boolean;
+  metadata: {
+    academicYear: YearRange;
+    enrollmentYear: YearRange;
+  };
 };
 
 export type ChatSessionStatus = "active" | "archived";

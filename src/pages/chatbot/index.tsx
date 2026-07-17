@@ -38,6 +38,7 @@ function ChatbotChatView() {
     closeFaqDrawer,
     corpusTraversalModal,
     closeCorpusTraversalModal,
+    setCorpusStreamPhaseActive,
     setCorpusTraversalPreviewStepIndex,
     setCorpusTraversalReplay,
   } = useChatbotLayout();
@@ -46,9 +47,16 @@ function ChatbotChatView() {
   useEffect(() => {
     if (previousThreadIdRef.current !== activeThreadId) {
       closePreview();
+      closeCorpusTraversalModal();
+      setCorpusStreamPhaseActive(false);
       previousThreadIdRef.current = activeThreadId;
     }
-  }, [activeThreadId, closePreview]);
+  }, [
+    activeThreadId,
+    closeCorpusTraversalModal,
+    closePreview,
+    setCorpusStreamPhaseActive,
+  ]);
 
   return (
     <>
@@ -68,6 +76,9 @@ function ChatbotChatView() {
           onCreated={faqInitialDraft.onCreated}
           initialQuestion={faqInitialDraft.question}
           initialAnswer={faqInitialDraft.answer}
+          initialLecturerOnly={faqInitialDraft.lecturerOnly}
+          initialAcademicYear={faqInitialDraft.academicYear}
+          initialEnrollmentYear={faqInitialDraft.enrollmentYear}
         />
       ) : null}
 

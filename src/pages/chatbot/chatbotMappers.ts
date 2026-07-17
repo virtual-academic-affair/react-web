@@ -11,6 +11,7 @@ import {
 } from "./corpusTraversalUtils";
 import type {
   ChatReasoningStep,
+  ChatFaqRecommendation,
   ChatSourceItem,
   ChatStoreMessage,
   ChatThreadSession,
@@ -95,7 +96,11 @@ function historyStepsToStore(
         return null;
       }
       const type = step.type.trim();
-      if (type === "corpus_tree" || type === "corpus_traversal") {
+      if (
+        type === "corpus_tree" ||
+        type === "corpus_traversal" ||
+        type === "corpus_traversal_end"
+      ) {
         return null;
       }
 
@@ -133,6 +138,38 @@ function firstNonEmptyString(...values: unknown[]) {
   return values.find(
     (value): value is string => typeof value === "string" && !!value.trim(),
   );
+}
+
+function normalizeYearRange(raw: unknown) {
+  if (!raw || typeof raw !== "object") {
+    return { fromYear: 0, toYear: 9999 };
+  }
+  const candidate = raw as Record<string, unknown>;
+  const fromYear =
+    typeof candidate.fromYear === "number" ? candidate.fromYear : 0;
+  const toYear = typeof candidate.toYear === "number" ? candidate.toYear : 9999;
+  return { fromYear, toYear };
+}
+
+function faqRecommendationToStore(raw: unknown): ChatFaqRecommendation | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const candidate = raw as Record<string, unknown>;
+  const effectiveQuestion = firstNonEmptyString(candidate.effectiveQuestion);
+  if (!effectiveQuestion) return undefined;
+
+  const metadata =
+    candidate.metadata && typeof candidate.metadata === "object"
+      ? (candidate.metadata as Record<string, unknown>)
+      : {};
+
+  return {
+    effectiveQuestion,
+    lecturerOnly: candidate.lecturerOnly === true,
+    metadata: {
+      academicYear: normalizeYearRange(metadata.academicYear),
+      enrollmentYear: normalizeYearRange(metadata.enrollmentYear),
+    },
+  };
 }
 
 function parseSourceTitles(raw: {
@@ -207,6 +244,7 @@ export function historyMessageToStore(
   );
   const tokenUsage = normalizeTokenUsage(msg);
   const processingTimeMs = msg.processingTimeMs;
+  const faqRecommendation = faqRecommendationToStore(msg.faqRecommendation);
 
   const storeMessage: ChatStoreMessage = {
     id: `${sessionId}-history-${msg.sequence}-${index}`,
@@ -236,6 +274,9 @@ export function historyMessageToStore(
   if (typeof processingTimeMs === "number") {
     storeMessage.processingTimeMs = processingTimeMs;
   }
+  if (faqRecommendation) {
+    storeMessage.faqRecommendation = faqRecommendation;
+  }
   if (sources.length) {
     storeMessage.sources = sources;
   }
@@ -258,10 +299,18 @@ function splitReasoningIntoSteps(raw: string | undefined): string[] {
   return paras.length ? paras : [t];
 }
 
-function encodeReasoningPayload(message: ChatStoreMessage) {
+type ConvertMessageOptions = {
+  corpusStreamPhaseActive?: boolean;
+};
+
+function encodeReasoningPayload(
+  message: ChatStoreMessage,
+  options?: ConvertMessageOptions,
+) {
   const steps = buildDisplayReasoningSteps(
     message.reasoningSteps,
     message.corpusTraversal,
+    { corpusStreamPhaseActive: options?.corpusStreamPhaseActive },
   );
   return `${STRUCTURED_REASONING_PREFIX}${JSON.stringify({
     steps,
@@ -279,7 +328,10 @@ function reasoningParentId(base: string, message: ChatStoreMessage) {
   return `${base}:${openState}${processingTime}`;
 }
 
-export function convertMessage(m: ChatStoreMessage): ThreadMessageLike {
+export function convertMessage(
+  m: ChatStoreMessage,
+  options?: ConvertMessageOptions,
+): ThreadMessageLike {
   const parts: Array<
     | { type: "text"; text: string }
     | { type: "reasoning"; text: string; parentId?: string }
@@ -302,7 +354,7 @@ export function convertMessage(m: ChatStoreMessage): ThreadMessageLike {
     if (m.reasoningSteps?.length || m.corpusTraversal) {
       parts.push({
         type: "reasoning",
-        text: encodeReasoningPayload(m),
+        text: encodeReasoningPayload(m, options),
         parentId: reasoningParentId("structured-reasoning", m),
       });
     } else {

@@ -1,3 +1,5 @@
+import type { YearRange } from "@/types/faqs";
+
 import {
   createContext,
   useCallback,
@@ -21,6 +23,9 @@ export type ChatbotInfoPanelType = "documents" | "forms";
 export type FaqDrawerDraft = {
   question: string;
   answer: string;
+  lecturerOnly?: boolean;
+  academicYear?: YearRange;
+  enrollmentYear?: YearRange;
   onCreated?: () => void;
 };
 
@@ -39,6 +44,8 @@ type ChatbotLayoutContextValue = {
   openFaqDrawer: (draft: FaqDrawerDraft) => void;
   closeFaqDrawer: () => void;
   corpusTraversalModal: CorpusTraversalModalViewState;
+  corpusStreamPhaseActive: boolean;
+  setCorpusStreamPhaseActive: (active: boolean) => void;
   syncCorpusTraversalModal: (
     patch: Partial<CorpusTraversalModalViewState> & {
       traversal?: ChatCorpusTraversal;
@@ -74,6 +81,9 @@ export function ChatbotLayoutProvider({
   const [faqInitialDraft, setFaqInitialDraft] = useState<FaqDrawerDraft>({
     question: "",
     answer: "",
+    lecturerOnly: false,
+    academicYear: { fromYear: 0, toYear: 9999 },
+    enrollmentYear: { fromYear: 0, toYear: 9999 },
   });
   const [corpusTraversalModal, setCorpusTraversalModal] =
     useState<CorpusTraversalModalViewState>({
@@ -83,6 +93,7 @@ export function ChatbotLayoutProvider({
       previewStepIndex: null,
       isReplaying: false,
     });
+  const [corpusStreamPhaseActive, setCorpusStreamPhaseActive] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const infoPanel = getChatbotInfoPanelFromPath(location.pathname);
@@ -182,6 +193,8 @@ export function ChatbotLayoutProvider({
         openFaqDrawer,
         closeFaqDrawer,
         corpusTraversalModal,
+        corpusStreamPhaseActive,
+        setCorpusStreamPhaseActive,
         syncCorpusTraversalModal,
         openCorpusTraversalReview,
         closeCorpusTraversalModal,

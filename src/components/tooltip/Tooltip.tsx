@@ -60,10 +60,12 @@ const Tooltip: React.FC<TooltipProps> = ({
       zIndex={99999}
       arrow={false}
       overlayStyle={{ maxWidth: wrap ? "280px" : "none" }}
-      overlayInnerStyle={{
-        padding: 0,
-        boxShadow: "none",
-        backgroundColor: "transparent",
+      styles={{
+        container: {
+          padding: 0,
+          boxShadow: "none",
+          backgroundColor: "transparent",
+        },
       }}
     >
       <span className={wrapperClass}>{children}</span>

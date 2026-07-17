@@ -1,6 +1,7 @@
 import Drawer from "@/components/drawer/Drawer";
 import DetailFormLayout from "@/components/layouts/DetailFormLayout";
 import { faqsService } from "@/services/documents/faqs.service";
+import type { YearRange } from "@/types/faqs";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import { useState, useEffect } from "react";
@@ -13,6 +14,9 @@ interface FAQCreationDrawerProps {
   onCreated?: () => void;
   initialQuestion?: string;
   initialAnswer?: string;
+  initialLecturerOnly?: boolean;
+  initialAcademicYear?: YearRange;
+  initialEnrollmentYear?: YearRange;
 }
 
 const emptyFormData = () => ({
@@ -29,6 +33,9 @@ export default function FAQCreationDrawer({
   onCreated,
   initialQuestion = "",
   initialAnswer = "",
+  initialLecturerOnly = false,
+  initialAcademicYear = { fromYear: 0, toYear: 9999 },
+  initialEnrollmentYear = { fromYear: 0, toYear: 9999 },
 }: FAQCreationDrawerProps) {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState(emptyFormData);
@@ -66,9 +73,19 @@ export default function FAQCreationDrawer({
       ...emptyFormData(),
       question: initialQuestion,
       answer: normalizeFaqRichTextHtml(initialAnswer),
+      lecturerOnly: initialLecturerOnly,
+      academicYear: initialAcademicYear,
+      enrollmentYear: initialEnrollmentYear,
     });
     setErrors({});
-  }, [open, initialQuestion, initialAnswer]);
+  }, [
+    open,
+    initialQuestion,
+    initialAnswer,
+    initialLecturerOnly,
+    initialAcademicYear,
+    initialEnrollmentYear,
+  ]);
 
   const handleClose = () => {
     onClose();
