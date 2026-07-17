@@ -67,6 +67,7 @@ const NEW_CHAT_GREETINGS = [
 
 function parseReasoningParentId(parentId: string | undefined) {
   return {
+    defaultOpen: !parentId?.includes(":closed"),
     processingTimeMs: (() => {
       const raw = parentId?.match(/:ms=(\d+)/)?.[1];
       if (!raw) return undefined;
@@ -330,7 +331,8 @@ function GeminiAssistantMessage() {
                   return (
                     <ReasoningRoot
                       key={part.indices.join("-")}
-                      defaultOpen={false}
+                      defaultOpen={running || reasoningMeta.defaultOpen}
+                      lockedOpen={running}
                       resetKey={`${messageId}:${part.indices.join("-")}`}
                       variant="ghost"
                     >

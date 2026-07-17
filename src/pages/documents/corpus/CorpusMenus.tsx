@@ -24,7 +24,7 @@ type FolderContextMenuProps = {
   x: number;
   y: number;
   onClose: () => void;
-  onRename: () => void;
+  onEdit: () => void;
   onRemove: () => void;
   onMove: () => void;
 };
@@ -34,7 +34,7 @@ export function FolderContextMenu({
   x,
   y,
   onClose,
-  onRename,
+  onEdit,
   onRemove,
   onMove,
 }: FolderContextMenuProps) {
@@ -95,11 +95,11 @@ export function FolderContextMenu({
         className={dropdownMenuItemClass}
         onClick={(e) => {
           e.stopPropagation();
-          run(onRename);
+          run(onEdit);
         }}
       >
         <MdDriveFileRenameOutline className="h-4 w-4 shrink-0" />
-        <span>Đổi tên</span>
+        <span>Chỉnh sửa</span>
       </button>
       <button
         type="button"
@@ -454,53 +454,6 @@ export function FolderPickerPopup({
       </div>
     </div>,
     document.body,
-  );
-}
-
-type RenameFolderModalProps = {
-  open: boolean;
-  initialTitle: string;
-  saving: boolean;
-  onClose: () => void;
-  onSave: (title: string) => void;
-};
-
-export function RenameFolderModal({
-  open,
-  initialTitle,
-  saving,
-  onClose,
-  onSave,
-}: RenameFolderModalProps) {
-  const [title, setTitle] = useState(initialTitle);
-
-  useEffect(() => {
-    if (open) setTitle(initialTitle);
-  }, [open, initialTitle]);
-
-  return (
-    <StandardModal
-      open={open}
-      onCancel={onClose}
-      onConfirm={() => onSave(title.trim())}
-      title="Đổi tên chủ đề"
-      confirmText={saving ? "Đang lưu…" : "Lưu"}
-      cancelText="Hủy"
-      loading={saving}
-    >
-      <label className="mb-1.5 block text-sm font-medium text-gray-500">
-        Tên chủ đề
-      </label>
-      <input
-        className={formInputClass}
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        autoFocus
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && title.trim()) onSave(title.trim());
-        }}
-      />
-    </StandardModal>
   );
 }
 

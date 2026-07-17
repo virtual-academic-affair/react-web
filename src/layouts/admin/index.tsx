@@ -369,14 +369,14 @@ const AdminLayout: React.FC = () => {
       ) : null}
       {isAdminChatbotRoute ? (
         <Suspense fallback={<PageLoader />}>
-          <ChatbotRuntimeProvider>
-            <ChatbotLayoutProvider
-              infoPanelAudience="admin"
-              sidebarOpen={open}
-              sidebarCollapsed={effectiveCollapsed}
-              onToggleSidebar={() => setOpen((current) => !current)}
-              onCloseSidebar={() => setOpen(false)}
-            >
+          <ChatbotLayoutProvider
+            infoPanelAudience="admin"
+            sidebarOpen={open}
+            sidebarCollapsed={effectiveCollapsed}
+            onToggleSidebar={() => setOpen((current) => !current)}
+            onCloseSidebar={() => setOpen(false)}
+          >
+            <ChatbotRuntimeProvider>
               <SourcePreviewProvider
                 onBeforeOpen={handleSourcePreviewBeforeOpen}
                 onFilePreviewOpen={handleSourceFilePreviewOpen}
@@ -384,8 +384,8 @@ const AdminLayout: React.FC = () => {
               >
                 {layoutContent}
               </SourcePreviewProvider>
-            </ChatbotLayoutProvider>
-          </ChatbotRuntimeProvider>
+            </ChatbotRuntimeProvider>
+          </ChatbotLayoutProvider>
         </Suspense>
       ) : (
         <div className="flex min-h-0 flex-1 flex-col">{layoutContent}</div>

@@ -20,6 +20,13 @@ import type {
 export const DEFAULT_NEW_TITLE = "Cuộc trò chuyện mới";
 export const STRUCTURED_REASONING_PREFIX = "__CHATBOT_REASONING_STEPS__";
 
+/** Capitalize the first character (Vietnamese-aware) for thread list labels. */
+export function capitalizeChatTitle(title: string | null | undefined) {
+  const trimmed = title?.trim() ?? "";
+  if (!trimmed) return "";
+  return trimmed.charAt(0).toLocaleUpperCase("vi-VN") + trimmed.slice(1);
+}
+
 export function newChatbotId(prefix: string) {
   return `${prefix}-${crypto.randomUUID()}`;
 }
@@ -99,7 +106,9 @@ function historyStepsToStore(
       if (
         type === "corpus_tree" ||
         type === "corpus_traversal" ||
-        type === "corpus_traversal_end"
+        type === "corpus_traversal_end" ||
+        type === "reasoning" ||
+        type === "thought"
       ) {
         return null;
       }
@@ -310,7 +319,10 @@ function encodeReasoningPayload(
   const steps = buildDisplayReasoningSteps(
     message.reasoningSteps,
     message.corpusTraversal,
-    { corpusStreamPhaseActive: options?.corpusStreamPhaseActive },
+    {
+      corpusStreamPhaseActive:
+        options?.corpusStreamPhaseActive ?? message.corpusStreamPhaseActive,
+    },
   );
   return `${STRUCTURED_REASONING_PREFIX}${JSON.stringify({
     steps,

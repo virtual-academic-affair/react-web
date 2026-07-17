@@ -229,3 +229,137 @@ export function collectCandidateInstanceKeys(
     candidateInstanceKey(kind, payloadId, parentNodeKey),
   );
 }
+
+export function getNodeTitlePath(
+  nodes: CorpusTreeNodeWithParent[],
+  nodeKey: string,
+): string[] {
+  const titles: string[] = [];
+
+  const walk = (
+    list: CorpusTreeNodeWithParent[],
+    trail: string[],
+  ): boolean => {
+    for (const node of list) {
+      const nextTrail = [...trail, node.title || node.nodeKey];
+      if (node.nodeKey === nodeKey) {
+        titles.push(...nextTrail);
+        return true;
+      }
+      if (walk(node.children, nextTrail)) return true;
+    }
+    return false;
+  };
+
+  walk(nodes, []);
+  return titles;
+}
+
+export type CorpusSearchFolderHit = {
+  kind: "folder";
+  nodeKey: string;
+  title: string;
+  /** Ancestor titles only (path tới folder). */
+  pathLabels: string[];
+};
+
+export type CorpusSearchPayloadHit = {
+  kind: "file" | "faq";
+  payload: CorpusPayloadRef;
+  parentKey: string;
+  parentTitle: string;
+  /** Full folder path including parent. */
+  pathLabels: string[];
+};
+
+export type CorpusSearchHit = CorpusSearchFolderHit | CorpusSearchPayloadHit;
+
+export type CorpusSearchResults = {
+  folders: CorpusSearchFolderHit[];
+  files: CorpusSearchPayloadHit[];
+  faqs: CorpusSearchPayloadHit[];
+};
+
+const DEFAULT_SEARCH_LIMIT_PER_KIND = 8;
+
+function matchesQuery(haystack: string, query: string) {
+  return haystack.toLowerCase().includes(query);
+}
+
+/** Client-side corpus tree search by folder title, file name, or FAQ question. */
+export function searchCorpusTree(
+  nodes: CorpusTreeNodeWithParent[],
+  rawQuery: string,
+  limitPerKind = DEFAULT_SEARCH_LIMIT_PER_KIND,
+): CorpusSearchResults {
+  const query = rawQuery.trim().toLowerCase();
+  const folders: CorpusSearchFolderHit[] = [];
+  const files: CorpusSearchPayloadHit[] = [];
+  const faqs: CorpusSearchPayloadHit[] = [];
+
+  if (!query) {
+    return { folders, files, faqs };
+  }
+
+  const walk = (list: CorpusTreeNodeWithParent[], trailTitles: string[]) => {
+    for (const node of list) {
+      const title = node.title || node.nodeKey;
+      const nextTrail = [...trailTitles, title];
+
+      if (
+        folders.length < limitPerKind &&
+        matchesQuery(title, query)
+      ) {
+        folders.push({
+          kind: "folder",
+          nodeKey: node.nodeKey,
+          title,
+          pathLabels: trailTitles,
+        });
+      }
+
+      if (files.length < limitPerKind) {
+        for (const file of node.directFiles ?? []) {
+          const name = file.name || file.originalFilename || file.id;
+          if (!matchesQuery(name, query)) continue;
+          files.push({
+            kind: "file",
+            payload: file,
+            parentKey: node.nodeKey,
+            parentTitle: title,
+            pathLabels: nextTrail,
+          });
+          if (files.length >= limitPerKind) break;
+        }
+      }
+
+      if (faqs.length < limitPerKind) {
+        for (const faq of node.directFaqs ?? []) {
+          const name = faq.name || faq.id;
+          if (!matchesQuery(name, query)) continue;
+          faqs.push({
+            kind: "faq",
+            payload: faq,
+            parentKey: node.nodeKey,
+            parentTitle: title,
+            pathLabels: nextTrail,
+          });
+          if (faqs.length >= limitPerKind) break;
+        }
+      }
+
+      walk(node.children, nextTrail);
+    }
+  };
+
+  walk(nodes, []);
+  return { folders, files, faqs };
+}
+
+export function hasCorpusSearchHits(results: CorpusSearchResults) {
+  return (
+    results.folders.length > 0 ||
+    results.files.length > 0 ||
+    results.faqs.length > 0
+  );
+}

@@ -34,7 +34,11 @@ const corpusConnectorHeadShape = {
 
 const CONNECTOR_END_GAP_PX = 10;
 
+import {
+  ReasoningStepRow,
+} from "@/components/assistant-ui/reasoning";
 import { ModalShell } from "@/components/modal/ModalShell";
+import { ScrollFadeArea } from "@/components/scroll-fade/ScrollFadeArea";
 import Tooltip from "@/components/tooltip/Tooltip";
 
 import {
@@ -60,13 +64,114 @@ import { CorpusActionIcon, CorpusStaticFolderIcon } from "./CorpusActionIcon";
 
 export type CorpusTraversalModalMode = "stream" | "review";
 
+export type CorpusStreamTimelineItem =
+  | { id: string; kind: "reasoning"; text: string }
+  | { id: string; kind: "traversal"; stepId: string };
+
 export type CorpusTraversalModalViewState = {
   open: boolean;
   mode: CorpusTraversalModalMode;
   traversal: ChatCorpusTraversal;
   previewStepIndex: number | null;
   isReplaying: boolean;
+  streamTimeline?: CorpusStreamTimelineItem[];
+  streamComplete?: boolean;
 };
+
+const REPLAY_STEP_MS = 2000;
+const STREAM_STEP_MIN_GAP_MS = 1500;
+const CORPUS_SETUP_STEP_LABEL = "Thiết lập corpus tree";
+/** Fixed scroll viewport so reasoning steps don't grow the modal layout. */
+const REASONING_PANEL_FIXED_HEIGHT_CLASS = "h-24";
+// Keep aliases so a stale HMR bundle that still references the old names won't crash.
+const REASONING_WAIT_HEIGHT_CLASS = REASONING_PANEL_FIXED_HEIGHT_CLASS;
+const REASONING_PANEL_MAX_HEIGHT_CLASS = REASONING_PANEL_FIXED_HEIGHT_CLASS;
+
+function findRevealedReasoningSteps(
+  revealed: CorpusStreamTimelineItem[],
+): Array<{ id: string; text: string }> {
+  return revealed
+    .filter(
+      (
+        item,
+      ): item is Extract<CorpusStreamTimelineItem, { kind: "reasoning" }> =>
+        item.kind === "reasoning",
+    )
+    .map((item) => ({ id: item.id, text: item.text.trim() }))
+    .filter((item) => item.text);
+}
+
+function deriveStreamDisplayState(
+  timeline: CorpusStreamTimelineItem[],
+  revealedIndex: number,
+) {
+  if (revealedIndex < 0 || !timeline.length) {
+    return {
+      displayStepIndex: -1,
+      reasoningSteps: [] as Array<{ id: string; text: string }>,
+    };
+  }
+
+  const revealed = timeline.slice(0, revealedIndex + 1);
+  const revealedTraversalCount = revealed.filter(
+    (item) => item.kind === "traversal",
+  ).length;
+
+  return {
+    displayStepIndex:
+      revealedTraversalCount > 0 ? revealedTraversalCount - 1 : -1,
+    reasoningSteps: findRevealedReasoningSteps(revealed),
+  };
+}
+
+function useStreamTimelineReveal(timelineLength: number, enabled: boolean) {
+  const [revealedIndex, setRevealedIndex] = useState(-1);
+  const pendingTimerRef = useRef<number | null>(null);
+  const revealedIndexRef = useRef(-1);
+  const timelineLengthRef = useRef(0);
+
+  revealedIndexRef.current = revealedIndex;
+  timelineLengthRef.current = timelineLength;
+
+  const clearPendingTimer = useCallback(() => {
+    if (pendingTimerRef.current !== null) {
+      window.clearTimeout(pendingTimerRef.current);
+      pendingTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleNextReveal = useCallback(() => {
+    if (!enabled) return;
+    if (pendingTimerRef.current !== null) return;
+    if (revealedIndexRef.current >= timelineLengthRef.current - 1) return;
+    if (timelineLengthRef.current <= 0) return;
+
+    pendingTimerRef.current = window.setTimeout(() => {
+      pendingTimerRef.current = null;
+      setRevealedIndex((current) =>
+        Math.min(current + 1, timelineLengthRef.current - 1),
+      );
+    }, STREAM_STEP_MIN_GAP_MS);
+  }, [enabled]);
+
+  useEffect(() => {
+    if (!enabled) {
+      clearPendingTimer();
+      setRevealedIndex(-1);
+      return;
+    }
+    scheduleNextReveal();
+  }, [clearPendingTimer, enabled, revealedIndex, scheduleNextReveal]);
+
+  useEffect(() => {
+    if (!enabled) return;
+    scheduleNextReveal();
+  }, [enabled, scheduleNextReveal, timelineLength]);
+
+  useEffect(() => () => clearPendingTimer(), [clearPendingTimer]);
+
+  return revealedIndex;
+}
 
 type CorpusTraversalModalProps = {
   state: CorpusTraversalModalViewState;
@@ -75,8 +180,107 @@ type CorpusTraversalModalProps = {
   onReplayChange: (isReplaying: boolean) => void;
 };
 
-const REPLAY_STEP_MS = 2000;
 const COLUMN_WIDTH_PX = 280;
+
+function CorpusStreamReasoningPanel({
+  steps,
+  busy,
+}: {
+  steps: Array<{ id: string; text: string }>;
+  /** Same semantics as chatbot ReasoningBusyContext: last step stays active until done. */
+  busy: boolean;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const heightClass =
+    REASONING_PANEL_FIXED_HEIGHT_CLASS ||
+    REASONING_WAIT_HEIGHT_CLASS ||
+    REASONING_PANEL_MAX_HEIGHT_CLASS;
+
+  useEffect(() => {
+    const element = scrollRef.current;
+    if (!element) return;
+    element.scrollTop = element.scrollHeight;
+  }, [steps, busy]);
+
+  return (
+    <div className="corpus-stream-reasoning-enter shrink-0 border-y border-gray-200 px-4 pt-1.5 pb-1 dark:border-white/10">
+      <span
+        data-active={busy ? true : undefined}
+        className="inline-flex h-[22px] shrink-0 items-center gap-1.5 text-[#80868b] data-[active=true]:text-[#1a73e8] dark:text-[#9aa0a6] dark:data-[active=true]:text-[#a8c7fa]"
+      >
+        <span
+          className={`inline-flex items-baseline gap-1.5 ${
+            busy ? "reasoning-status-shimmer" : ""
+          }`}
+        >
+          <span className="text-xs font-medium">Suy nghĩ</span>
+        </span>
+      </span>
+      <ScrollFadeArea
+        ref={scrollRef}
+        wrapperClassName={`${heightClass} min-h-0`}
+        className={`${heightClass} scrollbar-thin overflow-x-hidden overflow-y-auto overscroll-contain pb-0 italic [&_.chat-message-enter>div:last-child]:!pb-1`}
+        topFadeRem={0.4}
+        bottomFadeRem={0.5}
+        thresholdPx={4}
+        watchDeps={[steps, busy]}
+      >
+        {steps.map((step, index) => {
+          const isLast = index === steps.length - 1;
+          // Match chatbot StructuredReasoning: only the latest step spins;
+          // previous steps get the tick once the next step appears.
+          const isActive = busy && isLast;
+          const isNextActive = busy && index === steps.length - 2;
+
+          return (
+            <ReasoningStepRow
+              key={step.id}
+              text={step.text}
+              isActive={isActive}
+              isLast={isLast}
+              isNextActive={isNextActive}
+            />
+          );
+        })}
+      </ScrollFadeArea>
+    </div>
+  );
+}
+
+function CorpusSetupStepPill({ active }: { active: boolean }) {
+  return (
+    <div
+      data-corpus-step-index={-1}
+      className="flex shrink-0 items-center gap-1.5"
+    >
+      <span
+        className={`corpus-step-pill inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-left text-xs font-medium whitespace-nowrap transition-[background-color,border-color,color,box-shadow] duration-300 ease-out ${
+          active
+            ? "corpus-step-pill-active border-transparent text-white"
+            : "border-gray-200 bg-white text-[#3c4043] dark:border-white/10 dark:bg-[#171c26] dark:text-[#d9e2ff]"
+        }`}
+      >
+        <span
+          className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+            active
+              ? "bg-white/20 text-white"
+              : "bg-gray-100 text-[#5f6368] dark:bg-white/10 dark:text-gray-300"
+          }`}
+        >
+          0
+        </span>
+        <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center">
+          <MdAccountTree
+            className="h-[15px] w-[15px]"
+            color={active ? "#ffffff" : undefined}
+            aria-hidden
+          />
+        </span>
+        <span>{CORPUS_SETUP_STEP_LABEL}</span>
+      </span>
+    </div>
+  );
+}
 
 type TraversalColumn = {
   parentKey: string | null;
@@ -180,29 +384,35 @@ function TraversalTimeline({
   steps,
   activeIndex,
   isReplaying,
+  progressiveRevealIndex,
   onPreviewStepIndexChange,
 }: {
   steps: ChatCorpusTraversal["steps"];
   activeIndex: number;
   isReplaying: boolean;
+  progressiveRevealIndex?: number;
   onPreviewStepIndexChange: (index: number | null) => void;
 }) {
-  const canHover = !isReplaying;
+  const canHover = !isReplaying && progressiveRevealIndex == null;
   const scrollRef = useRef<HTMLDivElement>(null);
   const prevVisibleCountRef = useRef(0);
   const prevStepsLengthRef = useRef(steps.length);
 
-  const visibleSteps = isReplaying
-    ? steps.slice(0, Math.max(activeIndex + 1, 0))
+  const useProgressiveReveal = isReplaying || progressiveRevealIndex != null;
+  const revealThroughIndex = isReplaying
+    ? activeIndex
+    : (progressiveRevealIndex ?? Math.max(steps.length - 1, -1));
+
+  const visibleSteps = useProgressiveReveal
+    ? steps.slice(0, Math.max(revealThroughIndex + 1, 0))
     : steps;
 
-  const newlyRevealedIndex = isReplaying
-    ? visibleSteps.length > prevVisibleCountRef.current
+  const newlyRevealedIndex =
+    useProgressiveReveal && visibleSteps.length > prevVisibleCountRef.current
       ? visibleSteps.length - 1
-      : -1
-    : steps.length > prevStepsLengthRef.current
-      ? steps.length - 1
-      : -1;
+      : !useProgressiveReveal && steps.length > prevStepsLengthRef.current
+        ? steps.length - 1
+        : -1;
 
   useEffect(() => {
     prevVisibleCountRef.current = visibleSteps.length;
@@ -229,86 +439,84 @@ function TraversalTimeline({
     return () => window.clearTimeout(timer);
   }, [activeIndex, visibleSteps.length]);
 
-  if (!steps.length) {
-    return (
-      <p className="px-2 py-3 text-sm text-[#80868b] dark:text-[#9aa0a6]">
-        Đang chờ các bước duyệt cây...
-      </p>
-    );
-  }
+  const showSetupPlaceholder = visibleSteps.length === 0;
+  const setupActive = showSetupPlaceholder || activeIndex < 0;
 
   return (
     <div
       ref={scrollRef}
-      className="app-scrollbar-hidden overflow-x-auto px-3 py-2.5"
+      className="app-scrollbar-hidden min-h-[44px] overflow-x-auto px-3 py-3"
       onMouseLeave={() => {
         if (!canHover) return;
         onPreviewStepIndexChange(null);
       }}
     >
       <div className="flex min-w-max flex-nowrap items-center gap-1.5">
-        {visibleSteps.map((step, index) => {
-          const active = activeIndex === index;
-          const isNewlyRevealed = index === newlyRevealedIndex;
-          const isConnectingNewStep =
-            newlyRevealedIndex >= 0 && index === newlyRevealedIndex - 1;
-          return (
-            <div
-              key={step.id}
-              data-corpus-step-index={index}
-              className={`flex shrink-0 items-center gap-1.5 ${isNewlyRevealed ? "corpus-step-slide-in" : ""}`}
-            >
-              <button
-                type="button"
-                onMouseEnter={() => {
-                  if (!canHover) return;
-                  onPreviewStepIndexChange(index);
-                }}
-                onFocus={() => onPreviewStepIndexChange(index)}
-                className={`corpus-step-pill inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-left text-xs font-medium whitespace-nowrap transition-[background-color,border-color,color,box-shadow] duration-300 ease-out ${
-                  active
-                    ? "corpus-step-pill-active border-transparent text-white"
-                    : "border-gray-200 bg-white text-[#3c4043] hover:border-transparent dark:border-white/10 dark:bg-[#171c26] dark:text-[#d9e2ff] dark:hover:border-transparent"
-                } ${!active ? "corpus-step-pill-idle" : ""}`}
+        {showSetupPlaceholder ? (
+          <CorpusSetupStepPill active={setupActive} />
+        ) : (
+          visibleSteps.map((step, index) => {
+            const active = activeIndex === index;
+            const isNewlyRevealed = index === newlyRevealedIndex;
+            const isConnectingNewStep =
+              newlyRevealedIndex >= 0 && index === newlyRevealedIndex - 1;
+            return (
+              <div
+                key={step.id}
+                data-corpus-step-index={index}
+                className={`flex shrink-0 items-center gap-1.5 ${isNewlyRevealed ? "corpus-step-slide-in" : ""}`}
               >
-                <span
-                  className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                <button
+                  type="button"
+                  onMouseEnter={() => {
+                    if (!canHover) return;
+                    onPreviewStepIndexChange(index);
+                  }}
+                  onFocus={() => onPreviewStepIndexChange(index)}
+                  className={`corpus-step-pill inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-left text-xs font-medium whitespace-nowrap transition-[background-color,border-color,color,box-shadow] duration-300 ease-out ${
                     active
-                      ? "bg-white/20 text-white"
-                      : "bg-gray-100 text-[#5f6368] dark:bg-white/10 dark:text-gray-300"
-                  }`}
+                      ? "corpus-step-pill-active border-transparent text-white"
+                      : "border-gray-200 bg-white text-[#3c4043] hover:border-transparent dark:border-white/10 dark:bg-[#171c26] dark:text-[#d9e2ff] dark:hover:border-transparent"
+                  } ${!active ? "corpus-step-pill-idle" : ""}`}
                 >
-                  {index + 1}
-                </span>
-                <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center">
-                  <CorpusActionIcon
-                    action={step.action}
-                    active={active}
-                    size={15}
-                    color={active ? "#ffffff" : undefined}
-                  />
-                </span>
-                <span>
-                  {formatCorpusTimelineLabel(step)}
-                </span>
-              </button>
-              {index < visibleSteps.length - 1 ? (
-                <span
-                  className={`shrink-0 text-base leading-none font-semibold text-gray-400 dark:text-gray-500 ${
-                    isConnectingNewStep
-                      ? "corpus-step-arrow-slide-in"
-                      : index === activeIndex - 1 && isReplaying
-                        ? "corpus-step-arrow-pulse"
-                        : ""
-                  }`}
-                  aria-hidden
-                >
-                  →
-                </span>
-              ) : null}
-            </div>
-          );
-        })}
+                  <span
+                    className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                      active
+                        ? "bg-white/20 text-white"
+                        : "bg-gray-100 text-[#5f6368] dark:bg-white/10 dark:text-gray-300"
+                    }`}
+                  >
+                    {index + 1}
+                  </span>
+                  <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center">
+                    <CorpusActionIcon
+                      action={step.action}
+                      active={active}
+                      size={15}
+                      color={active ? "#ffffff" : undefined}
+                    />
+                  </span>
+                  <span>{formatCorpusTimelineLabel(step)}</span>
+                </button>
+                {index < visibleSteps.length - 1 ? (
+                  <span
+                    className={`shrink-0 text-base leading-none font-semibold text-gray-400 dark:text-gray-500 ${
+                      isConnectingNewStep
+                        ? "corpus-step-arrow-slide-in"
+                        : index === activeIndex - 1 &&
+                            (isReplaying || progressiveRevealIndex != null)
+                          ? "corpus-step-arrow-pulse"
+                          : ""
+                    }`}
+                    aria-hidden
+                  >
+                    →
+                  </span>
+                ) : null}
+              </div>
+            );
+          })
+        )}
       </div>
     </div>
   );
@@ -519,7 +727,10 @@ function CorpusTreePanel({
               start={corpusTextAnchorId(pair.parentKey)}
               end={corpusIconAnchorId(pair.childKey)}
               startAnchor="right"
-              endAnchor={{ position: "left", offset: { x: -CONNECTOR_END_GAP_PX } }}
+              endAnchor={{
+                position: "left",
+                offset: { x: -CONNECTOR_END_GAP_PX },
+              }}
               color={connectorColor}
               strokeWidth={2}
               path="smooth"
@@ -560,11 +771,25 @@ export function CorpusTraversalModal({
   const [showTimeline, setShowTimeline] = useState(true);
   const replayTimerRef = useRef<number | null>(null);
 
+  const isStreamMode = state.mode === "stream" && !state.isReplaying;
+  // const isStreamMode = true;
+  const streamTimeline = state.streamTimeline ?? [];
+  const lastTimelineIndex = Math.max(streamTimeline.length - 1, -1);
   const lastStepIndex = Math.max(state.traversal.steps.length - 1, -1);
-  const effectiveStepIndex =
-    state.previewStepIndex ?? lastStepIndex;
+  const streamRevealedIndex = useStreamTimelineReveal(
+    streamTimeline.length,
+    state.open && isStreamMode,
+  );
+  const streamDisplay = useMemo(
+    () => deriveStreamDisplayState(streamTimeline, streamRevealedIndex),
+    [streamRevealedIndex, streamTimeline],
+  );
+
+  const effectiveStepIndex = isStreamMode
+    ? streamDisplay.displayStepIndex
+    : (state.previewStepIndex ?? lastStepIndex);
   const displayStepIndex =
-    showTimeline || state.isReplaying
+    showTimeline || state.isReplaying || isStreamMode
       ? effectiveStepIndex
       : lastStepIndex;
 
@@ -637,14 +862,34 @@ export function CorpusTraversalModal({
 
   useEffect(() => () => stopReplay(), [stopReplay]);
 
+  useEffect(() => {
+    if (!isStreamMode || !state.streamComplete) return;
+    if (streamRevealedIndex < lastTimelineIndex) return;
+    const timer = window.setTimeout(() => onClose(), STREAM_STEP_MIN_GAP_MS);
+    return () => window.clearTimeout(timer);
+  }, [
+    isStreamMode,
+    lastTimelineIndex,
+    onClose,
+    state.streamComplete,
+    streamRevealedIndex,
+  ]);
+
   const showReplay =
     state.mode === "review" && state.traversal.steps.length > 0;
+  const waitingForNextStreamStep =
+    isStreamMode && streamRevealedIndex < lastTimelineIndex;
+  // Keep last reasoning step active until stream finishes AND timeline caught up
+  // (same busy semantics as chatbot ReasoningContent aria-busy).
+  const reasoningBusy =
+    isStreamMode && (!state.streamComplete || waitingForNextStreamStep);
 
   return (
     <ModalShell
       open={state.open}
       onClose={onClose}
       ariaLabel="Corpus tree traversal"
+      animateEnter
     >
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="grid shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 pt-4 pb-3">
@@ -709,16 +954,23 @@ export function CorpusTraversalModal({
 
         <div className="flex min-h-0 flex-1 flex-col">
           {showTimeline ? (
-            <div className="shrink-0 border-b border-gray-200 px-1 pt-1 pb-1 dark:border-white/10">
+            <div
+              className={`shrink-0 px-1 py-2 ${isStreamMode ? "" : "border-b border-gray-200 dark:border-white/10"}`}
+            >
               <TraversalTimeline
                 steps={state.traversal.steps}
                 activeIndex={effectiveStepIndex}
                 isReplaying={state.isReplaying}
+                progressiveRevealIndex={
+                  isStreamMode ? streamDisplay.displayStepIndex : undefined
+                }
                 onPreviewStepIndexChange={onPreviewStepIndexChange}
               />
             </div>
           ) : currentDisplayStep ? (
-            <div className="app-scrollbar-hidden flex shrink-0 justify-center overflow-x-auto border-b border-gray-200 px-3 py-2 dark:border-white/10">
+            <div
+              className={`app-scrollbar-hidden flex shrink-0 justify-center overflow-x-auto px-3 py-3 ${isStreamMode ? "" : "border-b border-gray-200 dark:border-white/10"}`}
+            >
               <div
                 key={`summary-${displayStepIndex}`}
                 className="corpus-step-pill corpus-step-pill-active corpus-step-summary-slide-in inline-flex shrink-0 items-center gap-1.5 rounded-full border border-transparent px-2.5 py-1 text-xs font-medium whitespace-nowrap text-white"
@@ -734,19 +986,30 @@ export function CorpusTraversalModal({
                     color="#ffffff"
                   />
                 </span>
-                <span>
-                  {formatCorpusTimelineLabel(currentDisplayStep)}
-                </span>
+                <span>{formatCorpusTimelineLabel(currentDisplayStep)}</span>
               </div>
             </div>
+          ) : (
+            <div
+              className={`app-scrollbar-hidden flex min-h-[44px] shrink-0 justify-center overflow-x-auto px-3 py-3 ${isStreamMode ? "" : "border-b border-gray-200 dark:border-white/10"}`}
+            >
+              <CorpusSetupStepPill active />
+            </div>
+          )}
+
+          {isStreamMode ? (
+            <CorpusStreamReasoningPanel
+              steps={streamDisplay.reasoningSteps}
+              busy={reasoningBusy}
+            />
           ) : null}
 
-          <div className="min-h-0 flex-1 px-1 pb-2 pt-1">
+          <div className="min-h-0 flex-1 px-1 pt-0.5 pb-2">
             <CorpusTreePanel
               tree={state.traversal.tree}
               steps={state.traversal.steps}
               stepIndex={displayStepIndex}
-              isReplaying={state.isReplaying}
+              isReplaying={state.isReplaying || isStreamMode}
               states={nodeStates}
               highlightedNodeKey={highlightedNodeKey}
             />
@@ -755,6 +1018,43 @@ export function CorpusTraversalModal({
       </div>
 
       <style>{`
+          @keyframes corpus-modal-backdrop-enter {
+            from {
+              opacity: 0;
+            }
+            to {
+              opacity: 1;
+            }
+          }
+          @keyframes corpus-modal-panel-enter {
+            from {
+              opacity: 0;
+              transform: scale(0.96) translateY(10px);
+            }
+            to {
+              opacity: 1;
+              transform: scale(1) translateY(0);
+            }
+          }
+          .corpus-modal-backdrop-enter {
+            animation: corpus-modal-backdrop-enter 0.22s ease-out;
+          }
+          .corpus-modal-panel-enter {
+            animation: corpus-modal-panel-enter 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+          }
+          @keyframes corpus-stream-reasoning-enter {
+            from {
+              opacity: 0;
+              transform: translateY(-4px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          .corpus-stream-reasoning-enter {
+            animation: corpus-stream-reasoning-enter 0.24s ease-out;
+          }
           .corpus-col-slot {
             flex-shrink: 0;
             border-right: 1px solid rgb(243 244 246 / 0.9);
@@ -859,6 +1159,9 @@ export function CorpusTraversalModal({
             color: #fff;
           }
           @media (prefers-reduced-motion: reduce) {
+            .corpus-modal-backdrop-enter,
+            .corpus-modal-panel-enter,
+            .corpus-stream-reasoning-enter,
             .corpus-step-pill-active,
             .corpus-step-pill-idle:hover,
             .corpus-step-pill-idle:focus-visible,

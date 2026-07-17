@@ -18,10 +18,25 @@ const HIDDEN_REASONING_TYPES = new Set([
   "corpus_traversal",
   CORPUS_TRAVERSAL_STREAM_END_TYPE,
   CORPUS_TRAVERSAL_SUMMARY_TYPE,
+  "reasoning",
+  "thought",
 ]);
 
 export function emptyCorpusTraversal(): ChatCorpusTraversal {
   return { tree: [], steps: [] };
+}
+
+const QUERY_ANALYSIS_PLACEHOLDER_RE = /^Phân tích câu hỏi của người dùng/i;
+
+function visibleQueryAnalysisSteps(
+  steps: ChatReasoningStep[],
+): ChatReasoningStep[] {
+  const querySteps = steps.filter((step) => step.type === "query_analysis");
+  if (querySteps.length <= 1) return querySteps;
+  const substantive = querySteps.filter(
+    (step) => !QUERY_ANALYSIS_PLACEHOLDER_RE.test(step.content.trim()),
+  );
+  return substantive.length ? substantive : querySteps.slice(-1);
 }
 
 export function normalizeCorpusTreeNodes(raw: unknown): ChatCorpusTreeNode[] {
@@ -169,22 +184,20 @@ export function buildDisplayReasoningSteps(
     options?.corpusStreamPhaseActive &&
     hasCorpusTraversalData(corpusTraversal)
   ) {
-    return [buildCorpusTraversalSummaryStep()];
+    return [
+      ...visibleQueryAnalysisSteps(visible),
+      buildCorpusTraversalSummaryStep(),
+    ];
   }
 
   if (!hasCorpusTraversalData(corpusTraversal)) {
     return visible;
   }
+
   const summaryStep = buildCorpusTraversalSummaryStep();
-  const queryIndex = visible.findIndex((s) => s.type === "query_analysis");
-  if (queryIndex >= 0) {
-    return [
-      ...visible.slice(0, queryIndex + 1),
-      summaryStep,
-      ...visible.slice(queryIndex + 1),
-    ];
-  }
-  return [...visible, summaryStep];
+  const querySteps = visibleQueryAnalysisSteps(visible);
+  const postCorpusSteps = visible.filter((step) => step.type !== "query_analysis");
+  return [...querySteps, summaryStep, ...postCorpusSteps];
 }
 
 export function walkCorpusTree(

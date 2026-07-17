@@ -192,14 +192,14 @@ const UserLayout = () => {
     <div className="bg-lightPrimary dark:bg-navy-900! flex h-dvh min-h-0 w-full flex-col">
       <ViewDocumentUrlModal />
       <Suspense fallback={<PageLoader />}>
-        <ChatbotRuntimeProvider>
-          <ChatbotLayoutProvider
-            infoPanelAudience="user"
-            sidebarOpen={open}
-            sidebarCollapsed={effectiveCollapsed}
-            onToggleSidebar={() => setOpen((current) => !current)}
-            onCloseSidebar={() => setOpen(false)}
-          >
+        <ChatbotLayoutProvider
+          infoPanelAudience="user"
+          sidebarOpen={open}
+          sidebarCollapsed={effectiveCollapsed}
+          onToggleSidebar={() => setOpen((current) => !current)}
+          onCloseSidebar={() => setOpen(false)}
+        >
+          <ChatbotRuntimeProvider>
             <SourcePreviewProvider
               onBeforeOpen={handleSourcePreviewBeforeOpen}
               onFilePreviewOpen={handleSourceFilePreviewOpen}
@@ -234,8 +234,8 @@ const UserLayout = () => {
                 </div>
               </ChatbotMobileLayoutShell>
             </SourcePreviewProvider>
-          </ChatbotLayoutProvider>
-        </ChatbotRuntimeProvider>
+          </ChatbotRuntimeProvider>
+        </ChatbotLayoutProvider>
       </Suspense>
     </div>
   );

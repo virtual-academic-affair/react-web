@@ -1,6 +1,7 @@
 import type { ReasoningMessagePartProps } from "@assistant-ui/react";
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -43,8 +44,60 @@ const ReasoningBusyContext = createContext(false);
 const ReasoningDisclosureContext = createContext<{
   open: boolean;
   toggle: () => void;
+  lockedOpen: boolean;
 } | null>(null);
 const STRUCTURED_REASONING_PREFIX = "__CHATBOT_REASONING_STEPS__";
+const REASONING_STEP_MIN_GAP_MS = 1500;
+/** Reserved height while waiting so "Suy nghĩ" doesn't jump. */
+const REASONING_WAIT_HEIGHT_CLASS = "min-h-[25px]";
+const REASONING_PANEL_MAX_HEIGHT_CLASS = "max-h-60";
+
+function useReasoningStepReveal(stepCount: number, busy: boolean) {
+  const [revealedCount, setRevealedCount] = useState(() =>
+    busy ? 0 : stepCount,
+  );
+  const pendingTimerRef = useRef<number | null>(null);
+  const revealedCountRef = useRef(revealedCount);
+  const stepCountRef = useRef(stepCount);
+
+  revealedCountRef.current = revealedCount;
+  stepCountRef.current = stepCount;
+
+  const clearPendingTimer = useCallback(() => {
+    if (pendingTimerRef.current !== null) {
+      window.clearTimeout(pendingTimerRef.current);
+      pendingTimerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!busy) {
+      clearPendingTimer();
+      setRevealedCount(stepCount);
+      return;
+    }
+
+    if (stepCount <= 0) {
+      clearPendingTimer();
+      setRevealedCount(0);
+      return;
+    }
+
+    if (revealedCountRef.current >= stepCount) return;
+    if (pendingTimerRef.current !== null) return;
+
+    pendingTimerRef.current = window.setTimeout(() => {
+      pendingTimerRef.current = null;
+      setRevealedCount((current) =>
+        Math.min(current + 1, stepCountRef.current),
+      );
+    }, REASONING_STEP_MIN_GAP_MS);
+  }, [busy, clearPendingTimer, revealedCount, stepCount]);
+
+  useEffect(() => () => clearPendingTimer(), [clearPendingTimer]);
+
+  return busy ? revealedCount : stepCount;
+}
 
 function useReasoningDisclosure() {
   const context = useContext(ReasoningDisclosureContext);
@@ -232,18 +285,45 @@ function StructuredReasoningStep({
   }
 
   return (
+    <ReasoningStepRow
+      text={step.content}
+      isActive={isActive}
+      isLast={isLast}
+      isNextActive={isNextActive}
+    />
+  );
+}
+
+export function ReasoningStepIcon({ isActive }: { isActive: boolean }) {
+  return <StepIcon isActive={isActive} />;
+}
+
+export function ReasoningStepRow({
+  text,
+  isActive,
+  isLast,
+  isNextActive = false,
+}: {
+  text: string;
+  isActive: boolean;
+  isLast: boolean;
+  isNextActive?: boolean;
+}) {
+  return (
     <div className="chat-message-enter flex gap-2.5">
       <div className="flex flex-col items-center">
         <StepIcon isActive={isActive} />
         {!isLast && <StepConnector dashed={isNextActive} />}
       </div>
       <div className="min-w-0 flex-1 pb-5">
-        <ReasoningMarkdown text={step.content} />
-        {isActive && (
+        <ReasoningBusyContext.Provider value={isActive}>
+          <ReasoningMarkdown text={text} />
+        </ReasoningBusyContext.Provider>
+        {isActive ? (
           <span className="ml-1 inline-flex align-middle text-[#1a73e8] dark:text-[#6dabf7]">
             <ThinkingDots />
           </span>
-        )}
+        ) : null}
       </div>
     </div>
   );
@@ -257,13 +337,19 @@ function StructuredReasoning({
   corpusTraversal?: ChatCorpusTraversal;
 }) {
   const busy = useContext(ReasoningBusyContext);
+  const revealedCount = useReasoningStepReveal(steps.length, busy);
+  const visibleSteps = steps.slice(0, Math.max(revealedCount, 0));
+
+  if (!visibleSteps.length) {
+    return null;
+  }
 
   return (
     <div className="italic">
-      {steps.map((step, index) => {
-        const isLast = index === steps.length - 1;
+      {visibleSteps.map((step, index) => {
+        const isLast = index === visibleSteps.length - 1;
         const isActive = busy && isLast;
-        const isNextActive = busy && index === steps.length - 2;
+        const isNextActive = busy && index === visibleSteps.length - 2;
 
         return (
           <StructuredReasoningStep
@@ -285,6 +371,7 @@ export type ReasoningRootProps = {
   defaultOpen?: boolean;
   resetKey?: string;
   variant?: ReasoningVariant;
+  lockedOpen?: boolean;
 };
 
 export function ReasoningRoot({
@@ -292,12 +379,14 @@ export function ReasoningRoot({
   defaultOpen = false,
   resetKey,
   variant = "default",
+  lockedOpen = false,
 }: ReasoningRootProps) {
   return (
     <ReasoningRootInner
-      key={`${resetKey ?? "static"}:${defaultOpen ? "open" : "closed"}`}
+      key={`${resetKey ?? "static"}:${defaultOpen ? "open" : "closed"}:${lockedOpen ? "locked" : "free"}`}
       defaultOpen={defaultOpen}
       variant={variant}
+      lockedOpen={lockedOpen}
     >
       {children}
     </ReasoningRootInner>
@@ -308,19 +397,32 @@ function ReasoningRootInner({
   children,
   defaultOpen,
   variant,
+  lockedOpen,
 }: {
   children?: ReactNode;
   defaultOpen: boolean;
   variant: ReasoningVariant;
+  lockedOpen: boolean;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [open, setOpen] = useState(defaultOpen || lockedOpen);
+
+  useEffect(() => {
+    if (lockedOpen) {
+      setOpen(true);
+    }
+  }, [lockedOpen]);
+
+  const toggle = useCallback(() => {
+    if (lockedOpen) return;
+    setOpen((current) => !current);
+  }, [lockedOpen]);
 
   const ghostRoot = variant === "ghost" ? "bg-transparent" : "";
 
   return (
     <ReasoningVariantContext.Provider value={variant}>
       <ReasoningDisclosureContext.Provider
-        value={{ open, toggle: () => setOpen((current) => !current) }}
+        value={{ open, toggle, lockedOpen }}
       >
         <div className={ghostRoot}>{children}</div>
       </ReasoningDisclosureContext.Provider>
@@ -343,7 +445,7 @@ export function ReasoningTrigger({
   processingTimeMs,
 }: ReasoningTriggerProps) {
   const variant = useContext(ReasoningVariantContext);
-  const { open, toggle } = useReasoningDisclosure();
+  const { open, toggle, lockedOpen } = useReasoningDisclosure();
   const startTimeRef = useRef<number | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
 
@@ -371,13 +473,30 @@ export function ReasoningTrigger({
       ? `${formatDuration(displayTimeMs)}`
       : "";
   if (variant === "ghost") {
+    if (lockedOpen) {
+      return (
+        <span
+          data-active={active ? true : undefined}
+          className="inline-flex h-[25px] items-center gap-1.5 text-[#80868b] data-[active=true]:text-[#1a73e8] dark:text-[#9aa0a6] dark:data-[active=true]:text-[#a8c7fa]"
+        >
+          <span
+            className={`inline-flex items-baseline gap-1.5 ${
+              active ? "reasoning-status-shimmer" : ""
+            }`}
+          >
+            <span className="text-xs font-medium">Suy nghĩ</span>
+          </span>
+        </span>
+      );
+    }
+
     return (
       <button
         type="button"
         onClick={toggle}
         aria-expanded={open}
         data-active={active ? true : undefined}
-        className="group/reasoning-trigger inline-flex cursor-pointer items-center gap-1.5 py-1 text-[#80868b] transition-colors hover:text-[#1a73e8] data-[active=true]:text-[#1a73e8] dark:text-[#9aa0a6] dark:hover:text-[#a8c7fa] dark:data-[active=true]:text-[#a8c7fa]"
+        className="group/reasoning-trigger inline-flex h-[25px] cursor-pointer items-center gap-1.5 text-[#80868b] transition-colors hover:text-[#1a73e8] data-[active=true]:text-[#1a73e8] dark:text-[#9aa0a6] dark:hover:text-[#a8c7fa] dark:data-[active=true]:text-[#a8c7fa]"
         aria-label="Bật tắt suy nghĩ"
       >
         <span
@@ -407,6 +526,23 @@ export function ReasoningTrigger({
       </button>
     );
   }
+  if (lockedOpen) {
+    return (
+      <span
+        data-active={active || undefined}
+        className="inline-flex items-center gap-1.5 py-1 text-[#5f6368] data-[active=true]:text-[#1a73e8] dark:text-[#c4c7c5] dark:data-[active=true]:text-[#a8c7fa]"
+      >
+        <span
+          className={`inline-flex items-baseline gap-1.5 ${
+            active ? "reasoning-status-shimmer" : ""
+          }`}
+        >
+          <span className="text-sm font-medium">Suy nghĩ</span>
+        </span>
+      </span>
+    );
+  }
+
   return (
     <button
       type="button"
@@ -422,17 +558,6 @@ export function ReasoningTrigger({
         }`}
       >
         <span className="text-sm font-medium">Suy nghĩ</span>
-        {/* {durationText ? (
-          <span
-            className={`text-xs ${
-              active
-                ? ""
-                : "text-[#80868b] transition-colors group-hover/reasoning-trigger:text-[#1a73e8] dark:text-[#9aa0a6] dark:group-hover/reasoning-trigger:text-[#a8c7fa]"
-            }`}
-          >
-            {durationText}
-          </span>
-        ) : null} */}
       </span>
       <MdKeyboardArrowRight
         className={`h-4 w-4 shrink-0 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
@@ -446,30 +571,47 @@ export function ReasoningTrigger({
 
 export function ReasoningContent(props: ComponentProps<"div">) {
   const variant = useContext(ReasoningVariantContext);
-  const { open } = useReasoningDisclosure();
+  const { open, lockedOpen } = useReasoningDisclosure();
+  const isOpen = lockedOpen || open;
   const { className, children, style, ...rest } = props;
   const busy = props["aria-busy"] === true || props["aria-busy"] === "true";
+  // While waiting: keep a tiny reserved height so the "Suy nghĩ" row doesn't jump.
+  // With content: cap height and scroll instead of growing the page.
+  const heightClass = busy
+    ? `${REASONING_WAIT_HEIGHT_CLASS} ${REASONING_PANEL_MAX_HEIGHT_CLASS}`
+    : REASONING_PANEL_MAX_HEIGHT_CLASS;
   const ghostScrollClass =
     variant === "ghost"
-      ? "ml-1 mt-2 min-h-0 max-h-60 overflow-x-hidden overflow-y-auto overscroll-contain pr-2 italic [scrollbar-width:thin] sm:pr-3"
+      ? `ml-1 mt-2 min-h-0 ${heightClass} overflow-x-hidden overflow-y-auto overscroll-contain pr-2 italic [scrollbar-width:thin] sm:pr-3`
       : "";
   const ghostWrapperClass =
-    variant === "ghost" ? "max-h-60 min-h-0" : undefined;
+    variant === "ghost" ? `${heightClass} min-h-0` : undefined;
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!busy || variant !== "ghost") return;
+    const element = scrollRef.current;
+    if (!element) return;
+    element.scrollTop = element.scrollHeight;
+  }, [busy, children, variant]);
 
   if (variant === "ghost") {
     return (
       <ReasoningBusyContext.Provider value={busy}>
         <div
           className={`grid min-h-0 transition-[grid-template-rows,opacity,margin] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-            open
-              ? "mb-5 grid-rows-[1fr] opacity-100"
+            isOpen
+              ? busy
+                ? "mb-2 grid-rows-[1fr] opacity-100"
+                : "mb-5 grid-rows-[1fr] opacity-100"
               : "pointer-events-none mb-0 grid-rows-[0fr] opacity-0"
           }`}
-          aria-hidden={!open}
+          aria-hidden={!isOpen}
           {...rest}
         >
           <div className="min-h-0 overflow-hidden">
             <ScrollFadeArea
+              ref={scrollRef}
               wrapperClassName={ghostWrapperClass}
               className={[ghostScrollClass, className]
                 .filter(Boolean)
@@ -478,7 +620,7 @@ export function ReasoningContent(props: ComponentProps<"div">) {
               topFadeRem={1.25}
               bottomFadeRem={1.75}
               thresholdPx={4}
-              watchDeps={[open, busy, children]}
+              watchDeps={[isOpen, busy, children]}
             >
               {children}
             </ScrollFadeArea>
@@ -492,12 +634,12 @@ export function ReasoningContent(props: ComponentProps<"div">) {
     <ReasoningBusyContext.Provider value={busy}>
       <div
         className={`grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-          open
+          isOpen
             ? "grid-rows-[1fr] opacity-100"
             : "pointer-events-none grid-rows-[0fr] opacity-0"
         }`}
         style={style}
-        aria-hidden={!open}
+        aria-hidden={!isOpen}
         {...rest}
       >
         <div className="min-h-0 overflow-hidden">
@@ -505,7 +647,7 @@ export function ReasoningContent(props: ComponentProps<"div">) {
             className={[
               className,
               "transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
-              open ? "translate-y-0" : "-translate-y-2",
+              isOpen ? "translate-y-0" : "-translate-y-2",
             ]
               .filter(Boolean)
               .join(" ")}

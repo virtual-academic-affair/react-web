@@ -1,5 +1,6 @@
 import ConfirmModal from "@/components/modal/ConfirmModal";
 
+import { capitalizeChatTitle } from "../chatbotMappers";
 import type { ChatThreadSession } from "../types";
 
 type ChatbotThreadDeleteConfirmProps = {
@@ -16,7 +17,7 @@ export function ChatbotThreadDeleteConfirm({
   onConfirm,
 }: ChatbotThreadDeleteConfirmProps) {
   const processedTitle =
-    target?.title?.trim() || "Cuộc trò chuyện không xác định";
+    capitalizeChatTitle(target?.title) || "Cuộc trò chuyện không xác định";
   const displayTitle =
     processedTitle.length > 50
       ? `${processedTitle.slice(0, 50)}...`

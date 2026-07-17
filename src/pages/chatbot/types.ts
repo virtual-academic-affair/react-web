@@ -39,6 +39,7 @@ export type ChatStoreMessage = {
   reasoning?: string;
   reasoningSteps?: ChatReasoningStep[];
   corpusTraversal?: ChatCorpusTraversal;
+  corpusStreamPhaseActive?: boolean;
   reasoningDefaultOpen?: boolean;
   tokenUsage?: {
     promptTokens?: number;

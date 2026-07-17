@@ -21,6 +21,7 @@ import {
 } from "@/utils/floatingPosition";
 
 import type { ChatThreadSession } from "../types";
+import { capitalizeChatTitle } from "../chatbotMappers";
 
 type ThreadRowProps = {
   session: ChatThreadSession;
@@ -192,9 +193,9 @@ export function ChatbotThreadRow({
             className={`min-w-0 flex-1 truncate text-left font-medium transition-[padding] duration-150 disabled:cursor-default ${
               isMenuOpen ? "pr-1" : "group-hover:pr-1"
             }`}
-            title={session.title}
+            title={capitalizeChatTitle(session.title) || "Không có tiêu đề"}
           >
-            {session.title?.trim() || "Không có tiêu đề"}
+            {capitalizeChatTitle(session.title) || "Không có tiêu đề"}
           </button>
           <button
             ref={triggerRef}

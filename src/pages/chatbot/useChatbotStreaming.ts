@@ -30,7 +30,7 @@ import type {
   ChatStoreMessage,
   ChatThreadSession,
 } from "./types";
-import { useChatbotLayoutOptional } from "./chatbotLayoutContext";
+import { useChatbotLayout } from "./chatbotLayoutContext";
 
 type MutableRef<T> = {
   current: T;
@@ -127,6 +127,8 @@ function reasoningStepsFromDoneEvent(rawSteps: unknown[]): ChatReasoningStep[] {
         type === "corpus_tree" ||
         type === "corpus_traversal" ||
         type === "corpus_traversal_end" ||
+        type === "reasoning" ||
+        type === "thought" ||
         typeof candidate.content !== "string" ||
         !candidate.content.trim()
       ) {
@@ -177,6 +179,18 @@ function faqRecommendationFromDoneEvent(raw: unknown): ChatFaqRecommendation | u
   };
 }
 
+function findAssistantMessage(
+  sessions: ChatThreadSession[],
+  threadId: string,
+  threadIdAlias: Record<string, string>,
+  assistantId: string,
+) {
+  const session = sessions.find((item) =>
+    matchesStreamingThread(item, threadId, threadIdAlias),
+  );
+  return session?.messages.find((item) => item.id === assistantId);
+}
+
 function mergeAssistantMessageFromDone(
   item: ChatStoreMessage,
   doneSteps: unknown[],
@@ -197,6 +211,7 @@ function mergeAssistantMessageFromDone(
   return {
     ...item,
     corpusTraversal,
+    corpusStreamPhaseActive: false,
     reasoningSteps: item.reasoningSteps?.length
       ? item.reasoningSteps
       : reasoningStepsFromDoneEvent(doneSteps),
@@ -216,19 +231,19 @@ export function useChatbotStreaming({
   refreshActiveSessions,
 }: UseChatbotStreamingArgs) {
   const [isRunning, setIsRunning] = useState(false);
-  const chatbotLayout = useChatbotLayoutOptional();
+  const chatbotLayout = useChatbotLayout();
   const corpusStreamPhaseActiveRef = useRef(false);
 
   const endCorpusStreamPhase = useCallback(() => {
     corpusStreamPhaseActiveRef.current = false;
-    chatbotLayout?.setCorpusStreamPhaseActive(false);
-    chatbotLayout?.closeCorpusTraversalModal();
+    chatbotLayout.setCorpusStreamPhaseActive(false);
+    chatbotLayout.closeCorpusTraversalModal();
   }, [chatbotLayout]);
 
   const runStreamForAssistant = useCallback(
     async (userText: string, assistantId: string, threadId: string) => {
       corpusStreamPhaseActiveRef.current = false;
-      chatbotLayout?.setCorpusStreamPhaseActive(false);
+      chatbotLayout.setCorpusStreamPhaseActive(false);
 
       const clearFailedAssistant = () => {
         setSessions((prev) =>
@@ -266,27 +281,40 @@ export function useChatbotStreaming({
             if (eventType === "corpus_tree") {
               const tree = normalizeCorpusTreeNodes(ev.tree);
               corpusStreamPhaseActiveRef.current = true;
-              chatbotLayout?.setCorpusStreamPhaseActive(true);
+              chatbotLayout.setCorpusStreamPhaseActive(true);
+
+              const currentMessage = findAssistantMessage(
+                sessionsRef.current,
+                threadId,
+                threadIdAliasRef.current,
+                assistantId,
+              );
+              const corpusTraversal = applyCorpusTreeToMessage(
+                currentMessage?.corpusTraversal,
+                tree,
+              );
+
               updateAssistantMessage(
                 setSessions,
                 threadId,
                 threadIdAliasRef.current,
                 assistantId,
-                (item) => {
-                  const corpusTraversal = applyCorpusTreeToMessage(
-                    item.corpusTraversal,
-                    tree,
-                  );
-                  chatbotLayout?.syncCorpusTraversalModal({
-                    open: true,
-                    mode: "stream",
-                    traversal: corpusTraversal,
-                    previewStepIndex: null,
-                    isReplaying: false,
-                  });
-                  return { ...item, corpusTraversal };
-                },
+                (item) => ({
+                  ...item,
+                  corpusTraversal,
+                  corpusStreamPhaseActive: true,
+                }),
               );
+
+              chatbotLayout.syncCorpusTraversalModal({
+                open: true,
+                mode: "stream",
+                traversal: corpusTraversal,
+                previewStepIndex: null,
+                isReplaying: false,
+                streamTimeline: [],
+                streamComplete: false,
+              });
               return;
             }
 
@@ -294,37 +322,71 @@ export function useChatbotStreaming({
               const traversalStep = parseCorpusTraversalStep(ev);
               if (!traversalStep) return;
 
+              const currentMessage = findAssistantMessage(
+                sessionsRef.current,
+                threadId,
+                threadIdAliasRef.current,
+                assistantId,
+              );
+              const corpusTraversal = appendCorpusTraversalStep(
+                currentMessage?.corpusTraversal,
+                traversalStep,
+              );
+
               updateAssistantMessage(
                 setSessions,
                 threadId,
                 threadIdAliasRef.current,
                 assistantId,
-                (item) => {
-                  const corpusTraversal = appendCorpusTraversalStep(
-                    item.corpusTraversal,
-                    traversalStep,
-                  );
-                  chatbotLayout?.syncCorpusTraversalModal({
-                    open: true,
-                    mode: "stream",
-                    traversal: corpusTraversal,
-                    previewStepIndex: null,
-                    isReplaying: false,
-                  });
-                  return { ...item, corpusTraversal };
-                },
+                (item) => ({
+                  ...item,
+                  corpusTraversal,
+                  corpusStreamPhaseActive: true,
+                }),
               );
+
+              chatbotLayout.appendCorpusStreamTimelineItem({
+                kind: "traversal",
+                stepId: traversalStep.id,
+              });
+              chatbotLayout.syncCorpusTraversalModal({
+                open: true,
+                mode: "stream",
+                traversal: corpusTraversal,
+                previewStepIndex: null,
+                isReplaying: false,
+              });
               return;
             }
 
             if (isCorpusTraversalStreamEndEvent(ev)) {
               corpusStreamPhaseActiveRef.current = false;
-              chatbotLayout?.setCorpusStreamPhaseActive(false);
-              chatbotLayout?.closeCorpusTraversalModal();
+              chatbotLayout.setCorpusStreamPhaseActive(false);
+              chatbotLayout.markCorpusStreamComplete();
+              updateAssistantMessage(
+                setSessions,
+                threadId,
+                threadIdAliasRef.current,
+                assistantId,
+                (item) => ({
+                  ...item,
+                  corpusStreamPhaseActive: false,
+                }),
+              );
               return;
             }
 
             if (eventType && eventType !== "text" && textChunk) {
+              if (
+                corpusStreamPhaseActiveRef.current &&
+                (eventType === "reasoning" || eventType === "thought")
+              ) {
+                chatbotLayout.appendCorpusStreamTimelineItem({
+                  kind: "reasoning",
+                  text: textChunk,
+                });
+                return;
+              }
               if (corpusStreamPhaseActiveRef.current) {
                 return;
               }
@@ -435,6 +497,7 @@ export function useChatbotStreaming({
                             faqRecommendation: hasError
                               ? undefined
                               : faqRecommendation,
+                            reasoningDefaultOpen: false,
                           }
                         : item,
                     ),
@@ -614,7 +677,7 @@ export function useChatbotStreaming({
               role: "assistant",
               content: "",
               createdAt: now,
-              reasoningDefaultOpen: false,
+              reasoningDefaultOpen: true,
             },
           ],
         };

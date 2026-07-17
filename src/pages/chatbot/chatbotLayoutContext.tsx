@@ -51,6 +51,12 @@ type ChatbotLayoutContextValue = {
       traversal?: ChatCorpusTraversal;
     },
   ) => void;
+  appendCorpusStreamTimelineItem: (
+    item:
+      | { kind: "reasoning"; text: string }
+      | { kind: "traversal"; stepId: string },
+  ) => void;
+  markCorpusStreamComplete: () => void;
   openCorpusTraversalReview: (traversal: ChatCorpusTraversal) => void;
   closeCorpusTraversalModal: () => void;
   setCorpusTraversalPreviewStepIndex: (index: number | null) => void;
@@ -137,6 +143,34 @@ export function ChatbotLayoutProvider({
     [],
   );
 
+  const appendCorpusStreamTimelineItem = useCallback(
+    (
+      item:
+        | { kind: "reasoning"; text: string }
+        | { kind: "traversal"; stepId: string },
+    ) => {
+      if (item.kind === "reasoning" && !item.text.trim()) return;
+      setCorpusTraversalModal((current) => ({
+        ...current,
+        streamTimeline: [
+          ...(current.streamTimeline ?? []),
+          {
+            id: `stream-${crypto.randomUUID()}`,
+            ...item,
+          },
+        ],
+      }));
+    },
+    [],
+  );
+
+  const markCorpusStreamComplete = useCallback(() => {
+    setCorpusTraversalModal((current) => ({
+      ...current,
+      streamComplete: true,
+    }));
+  }, []);
+
   const openCorpusTraversalReview = useCallback(
     (traversal: ChatCorpusTraversal) => {
       setCorpusTraversalModal({
@@ -156,6 +190,8 @@ export function ChatbotLayoutProvider({
       open: false,
       previewStepIndex: null,
       isReplaying: false,
+      streamTimeline: [],
+      streamComplete: false,
     }));
   }, []);
 
@@ -196,6 +232,8 @@ export function ChatbotLayoutProvider({
         corpusStreamPhaseActive,
         setCorpusStreamPhaseActive,
         syncCorpusTraversalModal,
+        appendCorpusStreamTimelineItem,
+        markCorpusStreamComplete,
         openCorpusTraversalReview,
         closeCorpusTraversalModal,
         setCorpusTraversalPreviewStepIndex,

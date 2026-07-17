@@ -46,6 +46,13 @@ class CorpusService {
     return data;
   }
 
+  async getTopic(topicKey: string): Promise<CorpusTopicDetail> {
+    const { data } = await ragHttp.get<CorpusTopicDetail>(
+      API_ENDPOINTS.rag.corpus.topicByKey(topicKey),
+    );
+    return data;
+  }
+
   async updateTopic(
     topicKey: string,
     body: { title?: string; summary?: string; parentKey?: string | null },
