@@ -85,27 +85,28 @@ export default function TopicDetailDrawer({
     (title.trim() !== (topic.title ?? "").trim() ||
       summary.trim() !== (topic.summary ?? "").trim());
 
-  const footerRight = (
-    <button
-      type="button"
-      disabled={!canSave || !dirty}
-      onClick={() => {
-        if (!canSave) return;
-        saveMutation.mutate({ title: title.trim(), summary: summary.trim() });
-      }}
-      className="bg-brand-500 hover:bg-brand-600 flex items-center gap-1 rounded-xl px-4 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-50"
-    >
-      <MdSave className="h-4 w-4" />
-      {saveMutation.isPending ? "Đang lưu..." : "Lưu"}
-    </button>
-  );
+  const footerRight =
+    !isError && (dirty || saveMutation.isPending) ? (
+      <button
+        type="button"
+        disabled={!canSave}
+        onClick={() => {
+          if (!canSave) return;
+          saveMutation.mutate({ title: title.trim(), summary: summary.trim() });
+        }}
+        className="bg-brand-500 hover:bg-brand-600 flex items-center gap-1 rounded-xl px-4 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-50"
+      >
+        <MdSave className="h-4 w-4" />
+        {saveMutation.isPending ? "Đang lưu..." : "Lưu"}
+      </button>
+    ) : undefined;
 
   return (
     <Drawer
       isOpen={isOpen}
       onClose={onClose}
       title="Chỉnh sửa chủ đề"
-      footerRight={isError ? undefined : footerRight}
+      footerRight={footerRight}
       width="max-w-2xl"
     >
       {isLoading ? (

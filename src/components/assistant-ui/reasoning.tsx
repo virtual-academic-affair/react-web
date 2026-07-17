@@ -575,25 +575,24 @@ export function ReasoningContent(props: ComponentProps<"div">) {
   const isOpen = lockedOpen || open;
   const { className, children, style, ...rest } = props;
   const busy = props["aria-busy"] === true || props["aria-busy"] === "true";
-  // While waiting: keep a tiny reserved height so the "Suy nghĩ" row doesn't jump.
-  // With content: cap height and scroll instead of growing the page.
+  // Reserve a tiny min height while waiting; cap with max-h so long reasoning scrolls.
   const heightClass = busy
     ? `${REASONING_WAIT_HEIGHT_CLASS} ${REASONING_PANEL_MAX_HEIGHT_CLASS}`
     : REASONING_PANEL_MAX_HEIGHT_CLASS;
   const ghostScrollClass =
     variant === "ghost"
-      ? `ml-1 mt-2 min-h-0 ${heightClass} overflow-x-hidden overflow-y-auto overscroll-contain pr-2 italic [scrollbar-width:thin] sm:pr-3`
+      ? `ml-1 mt-2 min-h-0 ${heightClass} overflow-x-hidden overflow-y-auto overscroll-contain pr-2 pb-4 italic [scrollbar-width:thin] sm:pr-3`
       : "";
   const ghostWrapperClass =
     variant === "ghost" ? `${heightClass} min-h-0` : undefined;
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!busy || variant !== "ghost") return;
+    if (variant !== "ghost" || !isOpen) return;
     const element = scrollRef.current;
     if (!element) return;
     element.scrollTop = element.scrollHeight;
-  }, [busy, children, variant]);
+  }, [busy, children, isOpen, variant]);
 
   if (variant === "ghost") {
     return (
@@ -617,9 +616,9 @@ export function ReasoningContent(props: ComponentProps<"div">) {
                 .filter(Boolean)
                 .join(" ")}
               style={style}
-              topFadeRem={1.25}
-              bottomFadeRem={1.75}
-              thresholdPx={4}
+              topFadeRem={0.75}
+              bottomFadeRem={0.75}
+              thresholdPx={8}
               watchDeps={[isOpen, busy, children]}
             >
               {children}
