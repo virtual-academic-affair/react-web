@@ -1,6 +1,7 @@
 import type { AppendMessage } from "@assistant-ui/react";
 import {
   useCallback,
+  useRef,
   useState,
   type Dispatch,
   type SetStateAction,
@@ -9,6 +10,14 @@ import {
 import { streamChat } from "@/services/chatbot/chatbot.service";
 
 import {
+  applyCorpusTreeToMessage,
+  appendCorpusTraversalStep,
+  buildCorpusTraversalFromRawSteps,
+  isCorpusTraversalStreamEndEvent,
+  normalizeCorpusTreeNodes,
+  parseCorpusTraversalStep,
+} from "./corpusTraversalUtils";
+import {
   DEFAULT_NEW_TITLE,
   getAppendText,
   newChatbotId,
@@ -16,10 +25,12 @@ import {
 } from "./chatbotMappers";
 import { resolveChatErrorMessage } from "./constants";
 import type {
+  ChatFaqRecommendation,
   ChatReasoningStep,
   ChatStoreMessage,
   ChatThreadSession,
 } from "./types";
+import { useChatbotLayout } from "./chatbotLayoutContext";
 
 type MutableRef<T> = {
   current: T;
@@ -109,22 +120,102 @@ function reasoningStepsFromDoneEvent(rawSteps: unknown[]): ChatReasoningStep[] {
     .map((step): ChatReasoningStep | null => {
       if (!step || typeof step !== "object") return null;
       const candidate = step as Record<string, unknown>;
+      const type =
+        typeof candidate.type === "string" ? candidate.type.trim() : "";
       if (
-        typeof candidate.type !== "string" ||
-        !candidate.type.trim() ||
+        !type ||
+        type === "corpus_tree" ||
+        type === "corpus_traversal" ||
+        type === "corpus_traversal_end" ||
+        type === "reasoning" ||
+        type === "thought" ||
         typeof candidate.content !== "string" ||
         !candidate.content.trim()
       ) {
         return null;
       }
-      const reasoningStep: ChatReasoningStep = {
+      return {
         id: newChatbotId("reasoning-step"),
-        type: candidate.type.trim(),
+        type,
         content: candidate.content.trim(),
       };
-      return reasoningStep;
     })
     .filter((step): step is ChatReasoningStep => step !== null);
+}
+
+function normalizeYearRange(raw: unknown) {
+  if (!raw || typeof raw !== "object") {
+    return { fromYear: 0, toYear: 9999 };
+  }
+  const candidate = raw as Record<string, unknown>;
+  return {
+    fromYear: typeof candidate.fromYear === "number" ? candidate.fromYear : 0,
+    toYear: typeof candidate.toYear === "number" ? candidate.toYear : 9999,
+  };
+}
+
+function faqRecommendationFromDoneEvent(raw: unknown): ChatFaqRecommendation | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const candidate = raw as Record<string, unknown>;
+  if (
+    typeof candidate.effectiveQuestion !== "string" ||
+    !candidate.effectiveQuestion.trim()
+  ) {
+    return undefined;
+  }
+
+  const metadata =
+    candidate.metadata && typeof candidate.metadata === "object"
+      ? (candidate.metadata as Record<string, unknown>)
+      : {};
+
+  return {
+    effectiveQuestion: candidate.effectiveQuestion.trim(),
+    lecturerOnly: candidate.lecturerOnly === true,
+    metadata: {
+      academicYear: normalizeYearRange(metadata.academicYear),
+      enrollmentYear: normalizeYearRange(metadata.enrollmentYear),
+    },
+  };
+}
+
+function findAssistantMessage(
+  sessions: ChatThreadSession[],
+  threadId: string,
+  threadIdAlias: Record<string, string>,
+  assistantId: string,
+) {
+  const session = sessions.find((item) =>
+    matchesStreamingThread(item, threadId, threadIdAlias),
+  );
+  return session?.messages.find((item) => item.id === assistantId);
+}
+
+function mergeAssistantMessageFromDone(
+  item: ChatStoreMessage,
+  doneSteps: unknown[],
+  hasError: boolean,
+) {
+  if (hasError) {
+    return {
+      ...item,
+      content: "",
+      reasoningSteps: [],
+      corpusTraversal: undefined,
+    };
+  }
+
+  const corpusTraversal =
+    buildCorpusTraversalFromRawSteps(doneSteps) ?? item.corpusTraversal;
+
+  return {
+    ...item,
+    corpusTraversal,
+    corpusStreamPhaseActive: false,
+    reasoningSteps: item.reasoningSteps?.length
+      ? item.reasoningSteps
+      : reasoningStepsFromDoneEvent(doneSteps),
+  };
 }
 
 export function useChatbotStreaming({
@@ -140,9 +231,20 @@ export function useChatbotStreaming({
   refreshActiveSessions,
 }: UseChatbotStreamingArgs) {
   const [isRunning, setIsRunning] = useState(false);
+  const chatbotLayout = useChatbotLayout();
+  const corpusStreamPhaseActiveRef = useRef(false);
+
+  const endCorpusStreamPhase = useCallback(() => {
+    corpusStreamPhaseActiveRef.current = false;
+    chatbotLayout.setCorpusStreamPhaseActive(false);
+    chatbotLayout.closeCorpusTraversalModal();
+  }, [chatbotLayout]);
 
   const runStreamForAssistant = useCallback(
     async (userText: string, assistantId: string, threadId: string) => {
+      corpusStreamPhaseActiveRef.current = false;
+      chatbotLayout.setCorpusStreamPhaseActive(false);
+
       const clearFailedAssistant = () => {
         setSessions((prev) =>
           prev.map((session) => {
@@ -176,7 +278,118 @@ export function useChatbotStreaming({
             const eventType = typeof ev.type === "string" ? ev.type : undefined;
             const textChunk = typeof ev.content === "string" ? ev.content : "";
 
+            if (eventType === "corpus_tree") {
+              const tree = normalizeCorpusTreeNodes(ev.tree);
+              corpusStreamPhaseActiveRef.current = true;
+              chatbotLayout.setCorpusStreamPhaseActive(true);
+
+              const currentMessage = findAssistantMessage(
+                sessionsRef.current,
+                threadId,
+                threadIdAliasRef.current,
+                assistantId,
+              );
+              const corpusTraversal = applyCorpusTreeToMessage(
+                currentMessage?.corpusTraversal,
+                tree,
+              );
+
+              updateAssistantMessage(
+                setSessions,
+                threadId,
+                threadIdAliasRef.current,
+                assistantId,
+                (item) => ({
+                  ...item,
+                  corpusTraversal,
+                  corpusStreamPhaseActive: true,
+                }),
+              );
+
+              chatbotLayout.syncCorpusTraversalModal({
+                open: true,
+                mode: "stream",
+                traversal: corpusTraversal,
+                previewStepIndex: null,
+                isReplaying: false,
+                streamTimeline: [],
+                streamComplete: false,
+              });
+              return;
+            }
+
+            if (eventType === "corpus_traversal") {
+              const traversalStep = parseCorpusTraversalStep(ev);
+              if (!traversalStep) return;
+
+              const currentMessage = findAssistantMessage(
+                sessionsRef.current,
+                threadId,
+                threadIdAliasRef.current,
+                assistantId,
+              );
+              const corpusTraversal = appendCorpusTraversalStep(
+                currentMessage?.corpusTraversal,
+                traversalStep,
+              );
+
+              updateAssistantMessage(
+                setSessions,
+                threadId,
+                threadIdAliasRef.current,
+                assistantId,
+                (item) => ({
+                  ...item,
+                  corpusTraversal,
+                  corpusStreamPhaseActive: true,
+                }),
+              );
+
+              chatbotLayout.appendCorpusStreamTimelineItem({
+                kind: "traversal",
+                stepId: traversalStep.id,
+              });
+              chatbotLayout.syncCorpusTraversalModal({
+                open: true,
+                mode: "stream",
+                traversal: corpusTraversal,
+                previewStepIndex: null,
+                isReplaying: false,
+              });
+              return;
+            }
+
+            if (isCorpusTraversalStreamEndEvent(ev)) {
+              corpusStreamPhaseActiveRef.current = false;
+              chatbotLayout.setCorpusStreamPhaseActive(false);
+              chatbotLayout.markCorpusStreamComplete();
+              updateAssistantMessage(
+                setSessions,
+                threadId,
+                threadIdAliasRef.current,
+                assistantId,
+                (item) => ({
+                  ...item,
+                  corpusStreamPhaseActive: false,
+                }),
+              );
+              return;
+            }
+
             if (eventType && eventType !== "text" && textChunk) {
+              if (
+                corpusStreamPhaseActiveRef.current &&
+                (eventType === "reasoning" || eventType === "thought")
+              ) {
+                chatbotLayout.appendCorpusStreamTimelineItem({
+                  kind: "reasoning",
+                  text: textChunk,
+                });
+                return;
+              }
+              if (corpusStreamPhaseActiveRef.current) {
+                return;
+              }
               updateAssistantMessage(
                 setSessions,
                 threadId,
@@ -203,6 +416,7 @@ export function useChatbotStreaming({
             }
 
             if (ev.done) {
+              endCorpusStreamPhase();
               const doneEvent = event as {
                 sources?: unknown[];
                 steps?: unknown[];
@@ -211,6 +425,7 @@ export function useChatbotStreaming({
                 statusCode?: unknown;
                 sessionId?: string;
                 processingTimeMs?: unknown;
+                faqRecommendation?: unknown;
               };
               const errorText =
                 typeof doneEvent.error === "string"
@@ -226,6 +441,9 @@ export function useChatbotStreaming({
                 typeof doneEvent.processingTimeMs === "number"
                   ? doneEvent.processingTimeMs
                   : undefined;
+              const faqRecommendation = faqRecommendationFromDoneEvent(
+                doneEvent.faqRecommendation,
+              );
 
               if (errorText || doneEvent.message) {
                 reportSystemError(resolveChatErrorMessage(doneEvent));
@@ -262,15 +480,12 @@ export function useChatbotStreaming({
                     messages: session.messages.map((item) =>
                       item.id === assistantId
                         ? {
-                            ...item,
+                            ...mergeAssistantMessageFromDone(
+                              item,
+                              doneEvent.steps ?? [],
+                              hasError,
+                            ),
                             content: hasError ? "" : item.content,
-                            reasoningSteps: hasError
-                              ? []
-                              : item.reasoningSteps?.length
-                                ? item.reasoningSteps
-                                : reasoningStepsFromDoneEvent(
-                                    doneEvent.steps ?? [],
-                                  ),
                             sources: hasError
                               ? []
                               : sources.length
@@ -279,6 +494,10 @@ export function useChatbotStreaming({
                             processingTimeMs: hasError
                               ? undefined
                               : processingTimeMs,
+                            faqRecommendation: hasError
+                              ? undefined
+                              : faqRecommendation,
+                            reasoningDefaultOpen: false,
                           }
                         : item,
                     ),
@@ -362,7 +581,10 @@ export function useChatbotStreaming({
           }
         }
       } catch (error) {
-        if ((error as Error)?.name === "AbortError") return;
+        if ((error as Error)?.name === "AbortError") {
+          endCorpusStreamPhase();
+          return;
+        }
         const err = error as Error & { statusCode?: number };
         reportSystemError(
           resolveChatErrorMessage({
@@ -391,6 +613,7 @@ export function useChatbotStreaming({
           }),
         );
         clearFailedAssistant();
+        endCorpusStreamPhase();
       } finally {
         setIsRunning(false);
         abortRef.current = null;
@@ -404,6 +627,8 @@ export function useChatbotStreaming({
       reportSystemError,
       selectedByUserRef,
       threadIdAliasRef,
+      chatbotLayout,
+      endCorpusStreamPhase,
       sessionsRef,
       setActiveThreadId,
       setSessions,
@@ -452,7 +677,7 @@ export function useChatbotStreaming({
               role: "assistant",
               content: "",
               createdAt: now,
-              reasoningDefaultOpen: false,
+              reasoningDefaultOpen: true,
             },
           ],
         };

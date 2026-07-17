@@ -41,6 +41,14 @@ export interface ChatHistorySource {
 export interface ChatHistoryStep {
   type: string;
   content: string;
+  action?: string;
+  nodeKey?: string;
+  nodeKeys?: string[];
+  tree?: Array<{
+    nodeKey: string;
+    title: string;
+    children?: ChatHistoryStep["tree"];
+  }>;
 }
 
 export interface ChatHistoryMessage {
@@ -51,6 +59,20 @@ export interface ChatHistoryMessage {
   tokenUsage: ChatHistoryTokenUsage | null;
   sources: ChatHistorySource[];
   steps: ChatHistoryStep[] | null;
+  faqRecommendation?: {
+    effectiveQuestion?: string | null;
+    metadata?: {
+      academicYear?: {
+        fromYear?: number | null;
+        toYear?: number | null;
+      } | null;
+      enrollmentYear?: {
+        fromYear?: number | null;
+        toYear?: number | null;
+      } | null;
+    } | null;
+    lecturerOnly?: boolean | null;
+  } | null;
   processingTimeMs: number | null;
   createdAt: string;
 }

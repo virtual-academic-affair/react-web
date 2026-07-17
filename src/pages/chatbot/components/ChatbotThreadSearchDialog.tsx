@@ -24,6 +24,7 @@ import {
   type FloatingPosition,
 } from "@/utils/floatingPosition";
 
+import { capitalizeChatTitle } from "../chatbotMappers";
 import type { ChatThreadSession } from "../types";
 
 type ChatbotThreadSearchDialogProps = {
@@ -272,9 +273,11 @@ function ChatbotThreadSearchResultRow({
             className={`min-w-0 flex-1 truncate text-left font-medium transition-[padding] duration-150 ${
               isMenuOpen ? "pr-1" : "group-focus-within:pr-1 group-hover:pr-1"
             }`}
-            title={session.title}
+            title={
+              capitalizeChatTitle(session.title) || "Cuộc trò chuyện mới"
+            }
           >
-            {session.title?.trim() || "Cuộc trò chuyện mới"}
+            {capitalizeChatTitle(session.title) || "Cuộc trò chuyện mới"}
           </button>
           {activityLabel ? (
             <span className="shrink-0 pl-2 text-[#5f6368] dark:text-gray-400">

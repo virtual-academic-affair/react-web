@@ -48,14 +48,16 @@ import {
   EmptyColumnMenu,
   FolderContextMenu,
   FolderPickerPopup,
-  RenameFolderModal,
 } from "./CorpusMenus";
+import TopicDetailDrawer from "./components/TopicDetailDrawer";
+import CorpusTreeSearch from "./components/CorpusTreeSearch";
 import {
   annotateTreeWithParents,
   candidateIdentityKey,
   collectSelfAndDescendantKeys,
   findNode,
   findPayloadLocations,
+  getAncestorKeys,
   toAntdFolderPickerData,
 } from "./treeUtils";
 
@@ -90,11 +92,6 @@ type OrganizeState = {
   x: number;
   y: number;
   checkedKeys: string[];
-};
-
-type RenameState = {
-  nodeKey: string;
-  title: string;
 };
 
 type MoveState = {
@@ -324,7 +321,7 @@ export default function CorpusTreePage() {
 
   const [folderMenu, setFolderMenu] = useState<FolderMenuState | null>(null);
   const [organize, setOrganize] = useState<OrganizeState | null>(null);
-  const [renameFolder, setRenameFolder] = useState<RenameState | null>(null);
+  const [editTopicKey, setEditTopicKey] = useState<string | null>(null);
   const [moveFolder, setMoveFolder] = useState<MoveState | null>(null);
   const [deleteFolder, setDeleteFolder] = useState<DeleteState | null>(null);
   const [createFolder, setCreateFolder] = useState<CreateFolderState | null>(
@@ -594,17 +591,6 @@ export default function CorpusTreePage() {
     onError: (err) => toast.error(parseError(err)),
   });
 
-  const renameMutation = useMutation({
-    mutationFn: ({ nodeKey, title }: { nodeKey: string; title: string }) =>
-      corpusService.updateTopic(nodeKey, { title }),
-    onSuccess: () => {
-      toast.success("Đã đổi tên thư mục.");
-      setRenameFolder(null);
-      queryClient.invalidateQueries({ queryKey: ["corpus-tree"] });
-    },
-    onError: (err) => toast.error(parseError(err)),
-  });
-
   const deleteMutation = useMutation({
     mutationFn: (nodeKey: string) => corpusService.deleteTopic(nodeKey),
     onSuccess: (_data, nodeKey) => {
@@ -781,37 +767,54 @@ export default function CorpusTreePage() {
         icon={LuFolderTree}
       />
 
-      <div className="flex shrink-0 flex-wrap items-center gap-2">
-        <FilterGroup
-          label="Loại tài liệu"
-          typeKey="type"
-          options={DOC_TYPE_FILTER_OPTIONS}
-          selected={typeFilter}
-          onChange={setTypeFilter}
+      <div className="flex shrink-0 flex-col gap-2">
+        <CorpusTreeSearch
+          tree={tree}
+          onSelectFolder={(nodeKey) => {
+            const ancestors = getAncestorKeys(tree, nodeKey);
+            setPathKeys([...ancestors, nodeKey]);
+            setPreview(null);
+            setHighlightIdentity(null);
+          }}
+          onSelectPayload={(kind, payload, parentKey) => {
+            const ancestors = getAncestorKeys(tree, parentKey);
+            setPathKeys([...ancestors, parentKey]);
+            setPreview({ kind, payload, parentKey });
+            setHighlightIdentity(candidateIdentityKey(kind, payload.id));
+          }}
         />
-        <LecturerOnlyFilter
-          checked={lecturerOnlyFilter}
-          onChange={setLecturerOnlyFilter}
-        />
-        <YearRangeFilter
-          label="Khóa tuyển sinh"
-          value={enrollmentYear}
-          onChange={setEnrollmentYear}
-        />
-        <YearRangeFilter
-          label="Năm học"
-          value={academicYear}
-          onChange={setAcademicYear}
-        />
-        {hasFilters ? (
-          <button
-            type="button"
-            onClick={handleClearAllFilters}
-            className="text-action-link ml-2 text-xs"
-          >
-            Xóa tất cả
-          </button>
-        ) : null}
+        <div className="flex flex-wrap items-center gap-2">
+          <FilterGroup
+            label="Loại tài liệu"
+            typeKey="type"
+            options={DOC_TYPE_FILTER_OPTIONS}
+            selected={typeFilter}
+            onChange={setTypeFilter}
+          />
+          <LecturerOnlyFilter
+            checked={lecturerOnlyFilter}
+            onChange={setLecturerOnlyFilter}
+          />
+          <YearRangeFilter
+            label="Khóa tuyển sinh"
+            value={enrollmentYear}
+            onChange={setEnrollmentYear}
+          />
+          <YearRangeFilter
+            label="Năm học"
+            value={academicYear}
+            onChange={setAcademicYear}
+          />
+          {hasFilters ? (
+            <button
+              type="button"
+              onClick={handleClearAllFilters}
+              className="text-action-link ml-2 text-xs"
+            >
+              Xóa tất cả
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <div className="dark:bg-navy-800 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white dark:border-white/10">
@@ -1176,12 +1179,9 @@ export default function CorpusTreePage() {
         x={folderMenu?.x ?? 0}
         y={folderMenu?.y ?? 0}
         onClose={() => setFolderMenu(null)}
-        onRename={() => {
+        onEdit={() => {
           if (!folderMenu) return;
-          setRenameFolder({
-            nodeKey: folderMenu.nodeKey,
-            title: folderMenu.title,
-          });
+          setEditTopicKey(folderMenu.nodeKey);
         }}
         onRemove={() => {
           if (!folderMenu) return;
@@ -1273,17 +1273,12 @@ export default function CorpusTreePage() {
         }}
       />
 
-      <RenameFolderModal
-        open={!!renameFolder}
-        initialTitle={renameFolder?.title ?? ""}
-        saving={renameMutation.isPending}
-        onClose={() => setRenameFolder(null)}
-        onSave={(title) => {
-          if (!renameFolder || !title) return;
-          renameMutation.mutate({
-            nodeKey: renameFolder.nodeKey,
-            title,
-          });
+      <TopicDetailDrawer
+        nodeKey={editTopicKey}
+        isOpen={!!editTopicKey}
+        onClose={() => setEditTopicKey(null)}
+        onUpdated={() => {
+          queryClient.invalidateQueries({ queryKey: ["corpus-tree"] });
         }}
       />
 

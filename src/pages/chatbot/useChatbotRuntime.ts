@@ -295,6 +295,11 @@ export function useChatbotRuntime() {
     refreshActiveSessions,
   });
 
+  const convertMessageForRuntime = useCallback(
+    (message: ChatStoreMessage) => convertMessage(message),
+    [],
+  );
+
   const switchToThread = useCallback(
     async (threadId: string) => {
       abortRef.current?.abort();
@@ -355,11 +360,11 @@ export function useChatbotRuntime() {
       messages,
       isRunning,
       setMessages: setThreadMessages,
-      convertMessage,
+      convertMessage: convertMessageForRuntime,
       onNew,
       onCancel,
     }),
-    [messages, isRunning, setThreadMessages, onNew, onCancel],
+    [messages, isRunning, setThreadMessages, convertMessageForRuntime, onNew, onCancel],
   );
 
   const shellValue: ChatbotShellContextValue = useMemo(

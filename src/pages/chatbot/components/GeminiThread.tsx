@@ -67,6 +67,7 @@ const NEW_CHAT_GREETINGS = [
 
 function parseReasoningParentId(parentId: string | undefined) {
   return {
+    defaultOpen: !parentId?.includes(":closed"),
     processingTimeMs: (() => {
       const raw = parentId?.match(/:ms=(\d+)/)?.[1];
       if (!raw) return undefined;
@@ -175,6 +176,7 @@ function GeminiAssistantMessage() {
   const userRole = useAuthStore((s) => s.userRole);
   const isAdmin = userRole === Role.Admin;
   const chatbotLayout = useChatbotLayoutOptional();
+  const { sessions, activeThreadId } = useChatbotShell();
 
   const assistantAnswerText = useMemo(
     () =>
@@ -199,6 +201,12 @@ function GeminiAssistantMessage() {
     return "";
   });
 
+  const faqRecommendation = useMemo(() => {
+    const activeSession = sessions.find((session) => session.id === activeThreadId);
+    const storeMessage = activeSession?.messages.find((item) => item.id === messageId);
+    return storeMessage?.faqRecommendation;
+  }, [activeThreadId, messageId, sessions]);
+
   useEffect(() => {
     setSourcesOpen(false);
     setFaqSaved(false);
@@ -215,14 +223,17 @@ function GeminiAssistantMessage() {
 
   const handleAddFaq = useCallback(() => {
     chatbotLayout?.openFaqDrawer({
-      question: precedingUserQuestion,
+      question: faqRecommendation?.effectiveQuestion ?? precedingUserQuestion,
       answer: chatMarkdownToFaqHtml(assistantAnswerText),
+      lecturerOnly: faqRecommendation?.lecturerOnly ?? false,
+      academicYear: faqRecommendation?.metadata.academicYear,
+      enrollmentYear: faqRecommendation?.metadata.enrollmentYear,
       onCreated: () => {
         setFaqSaved(true);
         window.setTimeout(() => setFaqSaved(false), 2000);
       },
     });
-  }, [assistantAnswerText, chatbotLayout, precedingUserQuestion]);
+  }, [assistantAnswerText, chatbotLayout, faqRecommendation, precedingUserQuestion]);
 
   const actionBar = showActions ? (
     <div className="flex items-center gap-1 pt-2">
@@ -320,7 +331,8 @@ function GeminiAssistantMessage() {
                   return (
                     <ReasoningRoot
                       key={part.indices.join("-")}
-                      defaultOpen={false}
+                      defaultOpen={running || reasoningMeta.defaultOpen}
+                      lockedOpen={running}
                       resetKey={`${messageId}:${part.indices.join("-")}`}
                       variant="ghost"
                     >

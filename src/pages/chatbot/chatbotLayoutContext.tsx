@@ -1,3 +1,5 @@
+import type { YearRange } from "@/types/faqs";
+
 import {
   createContext,
   useCallback,
@@ -8,6 +10,9 @@ import {
 } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
+import type { CorpusTraversalModalViewState } from "./components/CorpusTraversalModal";
+import { emptyCorpusTraversal } from "./corpusTraversalUtils";
+import type { ChatCorpusTraversal } from "./types";
 import {
   getChatbotBasePath,
   getChatbotInfoPanelFromPath,
@@ -18,6 +23,9 @@ export type ChatbotInfoPanelType = "documents" | "forms";
 export type FaqDrawerDraft = {
   question: string;
   answer: string;
+  lecturerOnly?: boolean;
+  academicYear?: YearRange;
+  enrollmentYear?: YearRange;
   onCreated?: () => void;
 };
 
@@ -35,6 +43,24 @@ type ChatbotLayoutContextValue = {
   faqInitialDraft: FaqDrawerDraft;
   openFaqDrawer: (draft: FaqDrawerDraft) => void;
   closeFaqDrawer: () => void;
+  corpusTraversalModal: CorpusTraversalModalViewState;
+  corpusStreamPhaseActive: boolean;
+  setCorpusStreamPhaseActive: (active: boolean) => void;
+  syncCorpusTraversalModal: (
+    patch: Partial<CorpusTraversalModalViewState> & {
+      traversal?: ChatCorpusTraversal;
+    },
+  ) => void;
+  appendCorpusStreamTimelineItem: (
+    item:
+      | { kind: "reasoning"; text: string }
+      | { kind: "traversal"; stepId: string },
+  ) => void;
+  markCorpusStreamComplete: () => void;
+  openCorpusTraversalReview: (traversal: ChatCorpusTraversal) => void;
+  closeCorpusTraversalModal: () => void;
+  setCorpusTraversalPreviewStepIndex: (index: number | null) => void;
+  setCorpusTraversalReplay: (isReplaying: boolean) => void;
 };
 
 const ChatbotLayoutContext = createContext<ChatbotLayoutContextValue | null>(
@@ -61,7 +87,19 @@ export function ChatbotLayoutProvider({
   const [faqInitialDraft, setFaqInitialDraft] = useState<FaqDrawerDraft>({
     question: "",
     answer: "",
+    lecturerOnly: false,
+    academicYear: { fromYear: 0, toYear: 9999 },
+    enrollmentYear: { fromYear: 0, toYear: 9999 },
   });
+  const [corpusTraversalModal, setCorpusTraversalModal] =
+    useState<CorpusTraversalModalViewState>({
+      open: false,
+      mode: "review",
+      traversal: emptyCorpusTraversal(),
+      previewStepIndex: null,
+      isReplaying: false,
+    });
+  const [corpusStreamPhaseActive, setCorpusStreamPhaseActive] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const infoPanel = getChatbotInfoPanelFromPath(location.pathname);
@@ -90,6 +128,90 @@ export function ChatbotLayoutProvider({
     setFaqDrawerOpen(false);
   }, []);
 
+  const syncCorpusTraversalModal = useCallback(
+    (
+      patch: Partial<CorpusTraversalModalViewState> & {
+        traversal?: ChatCorpusTraversal;
+      },
+    ) => {
+      setCorpusTraversalModal((current) => ({
+        ...current,
+        ...patch,
+        traversal: patch.traversal ?? current.traversal,
+      }));
+    },
+    [],
+  );
+
+  const appendCorpusStreamTimelineItem = useCallback(
+    (
+      item:
+        | { kind: "reasoning"; text: string }
+        | { kind: "traversal"; stepId: string },
+    ) => {
+      if (item.kind === "reasoning" && !item.text.trim()) return;
+      setCorpusTraversalModal((current) => ({
+        ...current,
+        streamTimeline: [
+          ...(current.streamTimeline ?? []),
+          {
+            id: `stream-${crypto.randomUUID()}`,
+            ...item,
+          },
+        ],
+      }));
+    },
+    [],
+  );
+
+  const markCorpusStreamComplete = useCallback(() => {
+    setCorpusTraversalModal((current) => ({
+      ...current,
+      streamComplete: true,
+    }));
+  }, []);
+
+  const openCorpusTraversalReview = useCallback(
+    (traversal: ChatCorpusTraversal) => {
+      setCorpusTraversalModal({
+        open: true,
+        mode: "review",
+        traversal,
+        previewStepIndex: null,
+        isReplaying: false,
+      });
+    },
+    [],
+  );
+
+  const closeCorpusTraversalModal = useCallback(() => {
+    setCorpusTraversalModal((current) => ({
+      ...current,
+      open: false,
+      previewStepIndex: null,
+      isReplaying: false,
+      streamTimeline: [],
+      streamComplete: false,
+    }));
+  }, []);
+
+  const setCorpusTraversalPreviewStepIndex = useCallback(
+    (index: number | null) => {
+      setCorpusTraversalModal((current) => ({
+        ...current,
+        previewStepIndex: index,
+      }));
+    },
+    [],
+  );
+
+  const setCorpusTraversalReplay = useCallback((isReplaying: boolean) => {
+    setCorpusTraversalModal((current) => ({
+      ...current,
+      isReplaying,
+    }));
+  }, []);
+
   return (
     <ChatbotLayoutContext.Provider
       value={{
@@ -106,6 +228,16 @@ export function ChatbotLayoutProvider({
         faqInitialDraft,
         openFaqDrawer,
         closeFaqDrawer,
+        corpusTraversalModal,
+        corpusStreamPhaseActive,
+        setCorpusStreamPhaseActive,
+        syncCorpusTraversalModal,
+        appendCorpusStreamTimelineItem,
+        markCorpusStreamComplete,
+        openCorpusTraversalReview,
+        closeCorpusTraversalModal,
+        setCorpusTraversalPreviewStepIndex,
+        setCorpusTraversalReplay,
       }}
     >
       {children}

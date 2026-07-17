@@ -10,6 +10,7 @@ import FAQCreationDrawer from "@/pages/documents/faqs/components/FAQCreationDraw
 import { ChatbotErrorBoundary } from "./ChatbotErrorBoundary";
 import { useChatbotLayout } from "./chatbotLayoutContext";
 import { useChatbotShell } from "./chatbotShellContext";
+import { CorpusTraversalModal } from "./components/CorpusTraversalModal";
 import { ChatbotInfoView } from "./components/ChatbotInfoPanel";
 import { ChatbotMobileMenuButton } from "./components/ChatbotMobileMenuButton";
 import { GeminiThread } from "./components/GeminiThread";
@@ -30,16 +31,32 @@ function ChatbotKeyboardShortcuts() {
 function ChatbotChatView() {
   const { activeThreadId } = useChatbotShell();
   const { closePreview } = useSourcePreview();
-  const { infoPanelAudience, faqDrawerOpen, faqInitialDraft, closeFaqDrawer } =
-    useChatbotLayout();
+  const {
+    infoPanelAudience,
+    faqDrawerOpen,
+    faqInitialDraft,
+    closeFaqDrawer,
+    corpusTraversalModal,
+    closeCorpusTraversalModal,
+    setCorpusStreamPhaseActive,
+    setCorpusTraversalPreviewStepIndex,
+    setCorpusTraversalReplay,
+  } = useChatbotLayout();
   const previousThreadIdRef = useRef(activeThreadId);
 
   useEffect(() => {
     if (previousThreadIdRef.current !== activeThreadId) {
       closePreview();
+      closeCorpusTraversalModal();
+      setCorpusStreamPhaseActive(false);
       previousThreadIdRef.current = activeThreadId;
     }
-  }, [activeThreadId, closePreview]);
+  }, [
+    activeThreadId,
+    closeCorpusTraversalModal,
+    closePreview,
+    setCorpusStreamPhaseActive,
+  ]);
 
   return (
     <>
@@ -59,8 +76,18 @@ function ChatbotChatView() {
           onCreated={faqInitialDraft.onCreated}
           initialQuestion={faqInitialDraft.question}
           initialAnswer={faqInitialDraft.answer}
+          initialLecturerOnly={faqInitialDraft.lecturerOnly}
+          initialAcademicYear={faqInitialDraft.academicYear}
+          initialEnrollmentYear={faqInitialDraft.enrollmentYear}
         />
       ) : null}
+
+      <CorpusTraversalModal
+        state={corpusTraversalModal}
+        onClose={closeCorpusTraversalModal}
+        onPreviewStepIndexChange={setCorpusTraversalPreviewStepIndex}
+        onReplayChange={setCorpusTraversalReplay}
+      />
     </>
   );
 }

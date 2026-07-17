@@ -5,8 +5,13 @@ import type {
   ChatSessionItem,
 } from "@/services/chatbot/chatSessions.service";
 
+import {
+  buildCorpusTraversalFromRawSteps,
+  buildDisplayReasoningSteps,
+} from "./corpusTraversalUtils";
 import type {
   ChatReasoningStep,
+  ChatFaqRecommendation,
   ChatSourceItem,
   ChatStoreMessage,
   ChatThreadSession,
@@ -14,6 +19,13 @@ import type {
 
 export const DEFAULT_NEW_TITLE = "Cuộc trò chuyện mới";
 export const STRUCTURED_REASONING_PREFIX = "__CHATBOT_REASONING_STEPS__";
+
+/** Capitalize the first character (Vietnamese-aware) for thread list labels. */
+export function capitalizeChatTitle(title: string | null | undefined) {
+  const trimmed = title?.trim() ?? "";
+  if (!trimmed) return "";
+  return trimmed.charAt(0).toLocaleUpperCase("vi-VN") + trimmed.slice(1);
+}
 
 export function newChatbotId(prefix: string) {
   return `${prefix}-${crypto.randomUUID()}`;
@@ -78,7 +90,8 @@ function historyStepsToStore(
   sessionId: string,
   sequence: number,
 ) {
-  return (rawSteps ?? [])
+  const corpusTraversal = buildCorpusTraversalFromRawSteps(rawSteps ?? []);
+  const reasoningSteps = (rawSteps ?? [])
     .map((step, index): ChatReasoningStep | null => {
       if (
         !step ||
@@ -89,15 +102,27 @@ function historyStepsToStore(
       ) {
         return null;
       }
+      const type = step.type.trim();
+      if (
+        type === "corpus_tree" ||
+        type === "corpus_traversal" ||
+        type === "corpus_traversal_end" ||
+        type === "reasoning" ||
+        type === "thought"
+      ) {
+        return null;
+      }
 
       const reasoningStep: ChatReasoningStep = {
         id: `${sessionId}-history-${sequence}-step-${index}`,
-        type: step.type.trim(),
+        type,
         content: step.content.trim(),
       };
       return reasoningStep;
     })
     .filter((step): step is ChatReasoningStep => step !== null);
+
+  return { reasoningSteps, corpusTraversal };
 }
 
 function normalizeTokenUsage(msg: ChatHistoryMessage) {
@@ -122,6 +147,38 @@ function firstNonEmptyString(...values: unknown[]) {
   return values.find(
     (value): value is string => typeof value === "string" && !!value.trim(),
   );
+}
+
+function normalizeYearRange(raw: unknown) {
+  if (!raw || typeof raw !== "object") {
+    return { fromYear: 0, toYear: 9999 };
+  }
+  const candidate = raw as Record<string, unknown>;
+  const fromYear =
+    typeof candidate.fromYear === "number" ? candidate.fromYear : 0;
+  const toYear = typeof candidate.toYear === "number" ? candidate.toYear : 9999;
+  return { fromYear, toYear };
+}
+
+function faqRecommendationToStore(raw: unknown): ChatFaqRecommendation | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const candidate = raw as Record<string, unknown>;
+  const effectiveQuestion = firstNonEmptyString(candidate.effectiveQuestion);
+  if (!effectiveQuestion) return undefined;
+
+  const metadata =
+    candidate.metadata && typeof candidate.metadata === "object"
+      ? (candidate.metadata as Record<string, unknown>)
+      : {};
+
+  return {
+    effectiveQuestion,
+    lecturerOnly: candidate.lecturerOnly === true,
+    metadata: {
+      academicYear: normalizeYearRange(metadata.academicYear),
+      enrollmentYear: normalizeYearRange(metadata.enrollmentYear),
+    },
+  };
 }
 
 function parseSourceTitles(raw: {
@@ -189,13 +246,14 @@ export function historyMessageToStore(
     .map(historySourceToStore)
     .filter((source): source is ChatSourceItem => source !== null);
   const createdAt = msg.createdAt ?? new Date().toISOString();
-  const reasoningSteps = historyStepsToStore(
+  const { reasoningSteps, corpusTraversal } = historyStepsToStore(
     msg.steps,
     sessionId,
     msg.sequence,
   );
   const tokenUsage = normalizeTokenUsage(msg);
   const processingTimeMs = msg.processingTimeMs;
+  const faqRecommendation = faqRecommendationToStore(msg.faqRecommendation);
 
   const storeMessage: ChatStoreMessage = {
     id: `${sessionId}-history-${msg.sequence}-${index}`,
@@ -216,11 +274,17 @@ export function historyMessageToStore(
   if (reasoningSteps.length) {
     storeMessage.reasoningSteps = reasoningSteps;
   }
+  if (corpusTraversal) {
+    storeMessage.corpusTraversal = corpusTraversal;
+  }
   if (tokenUsage) {
     storeMessage.tokenUsage = tokenUsage;
   }
   if (typeof processingTimeMs === "number") {
     storeMessage.processingTimeMs = processingTimeMs;
+  }
+  if (faqRecommendation) {
+    storeMessage.faqRecommendation = faqRecommendation;
   }
   if (sources.length) {
     storeMessage.sources = sources;
@@ -244,8 +308,26 @@ function splitReasoningIntoSteps(raw: string | undefined): string[] {
   return paras.length ? paras : [t];
 }
 
-function encodeReasoningSteps(steps: ChatReasoningStep[]) {
-  return `${STRUCTURED_REASONING_PREFIX}${JSON.stringify(steps)}`;
+type ConvertMessageOptions = {
+  corpusStreamPhaseActive?: boolean;
+};
+
+function encodeReasoningPayload(
+  message: ChatStoreMessage,
+  options?: ConvertMessageOptions,
+) {
+  const steps = buildDisplayReasoningSteps(
+    message.reasoningSteps,
+    message.corpusTraversal,
+    {
+      corpusStreamPhaseActive:
+        options?.corpusStreamPhaseActive ?? message.corpusStreamPhaseActive,
+    },
+  );
+  return `${STRUCTURED_REASONING_PREFIX}${JSON.stringify({
+    steps,
+    corpusTraversal: message.corpusTraversal,
+  })}`;
 }
 
 function reasoningParentId(base: string, message: ChatStoreMessage) {
@@ -258,7 +340,10 @@ function reasoningParentId(base: string, message: ChatStoreMessage) {
   return `${base}:${openState}${processingTime}`;
 }
 
-export function convertMessage(m: ChatStoreMessage): ThreadMessageLike {
+export function convertMessage(
+  m: ChatStoreMessage,
+  options?: ConvertMessageOptions,
+): ThreadMessageLike {
   const parts: Array<
     | { type: "text"; text: string }
     | { type: "reasoning"; text: string; parentId?: string }
@@ -278,10 +363,10 @@ export function convertMessage(m: ChatStoreMessage): ThreadMessageLike {
   > = [];
 
   if (m.role === "assistant") {
-    if (m.reasoningSteps?.length) {
+    if (m.reasoningSteps?.length || m.corpusTraversal) {
       parts.push({
         type: "reasoning",
-        text: encodeReasoningSteps(m.reasoningSteps),
+        text: encodeReasoningPayload(m, options),
         parentId: reasoningParentId("structured-reasoning", m),
       });
     } else {
