@@ -44,11 +44,11 @@ import { MdChevronRight, MdFolder, MdFolderOpen } from "react-icons/md";
 import { useSearchParams } from "react-router-dom";
 
 import {
-  CreateFolderModal,
   EmptyColumnMenu,
   FolderContextMenu,
   FolderPickerPopup,
 } from "./CorpusMenus";
+import TopicCreateDrawer from "./components/TopicCreateDrawer";
 import TopicDetailDrawer from "./components/TopicDetailDrawer";
 import CorpusTreeSearch from "./components/CorpusTreeSearch";
 import {
@@ -609,9 +609,11 @@ export default function CorpusTreePage() {
   const createMutation = useMutation({
     mutationFn: ({
       title,
+      summary,
       parentKey,
     }: {
       title: string;
+      summary: string;
       parentKey: string | null;
     }) => {
       const slug = title
@@ -624,6 +626,7 @@ export default function CorpusTreePage() {
       return corpusService.createTopic({
         slug: slug || `folder-${Date.now()}`,
         title,
+        summary: summary || undefined,
         parentKey,
       });
     },
@@ -1282,15 +1285,16 @@ export default function CorpusTreePage() {
         }}
       />
 
-      <CreateFolderModal
-        open={!!createFolder}
+      <TopicCreateDrawer
+        isOpen={!!createFolder}
         parentLabel={createFolder?.parentLabel ?? "Corpus Tree"}
         saving={createMutation.isPending}
         onClose={() => setCreateFolder(null)}
-        onSave={(title) => {
+        onCreate={({ title, summary }) => {
           if (!createFolder || !title) return;
           createMutation.mutate({
             title,
+            summary,
             parentKey: createFolder.parentKey,
           });
         }}
