@@ -1,5 +1,3 @@
-import { formInputClass } from "@/components/fields/formInputClass";
-import StandardModal from "@/components/modal/StandardModal";
 import {
   dropdownMenuItemClass,
   dropdownMenuPanelClass,
@@ -454,58 +452,5 @@ export function FolderPickerPopup({
       </div>
     </div>,
     document.body,
-  );
-}
-
-type CreateFolderModalProps = {
-  open: boolean;
-  parentLabel: string;
-  saving: boolean;
-  onClose: () => void;
-  onSave: (title: string) => void;
-};
-
-export function CreateFolderModal({
-  open,
-  parentLabel,
-  saving,
-  onClose,
-  onSave,
-}: CreateFolderModalProps) {
-  const [title, setTitle] = useState("");
-
-  useEffect(() => {
-    if (open) setTitle("");
-  }, [open]);
-
-  return (
-    <StandardModal
-      open={open}
-      onCancel={onClose}
-      onConfirm={() => onSave(title.trim())}
-      title="Thêm chủ đề"
-      confirmText={saving ? "Đang tạo…" : "Tạo"}
-      cancelText="Hủy"
-      loading={saving}
-    >
-      <p className="mb-3 text-sm text-gray-500">
-        Tạo trong:{" "}
-        <span className="text-navy-700 font-medium dark:text-white">
-          {parentLabel}
-        </span>
-      </p>
-      <label className="mb-1.5 block text-sm font-medium text-gray-500">
-        Tên chủ đề
-      </label>
-      <input
-        className={formInputClass}
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        autoFocus
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && title.trim()) onSave(title.trim());
-        }}
-      />
-    </StandardModal>
   );
 }
