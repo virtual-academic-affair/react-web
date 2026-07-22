@@ -647,9 +647,6 @@ const DeeplinkClassRegistrationSection: React.FC<Props> = ({
             <RegistrationActionTag
               value={formAction}
               onChange={onFormActionChange}
-              allowedActions={
-                editingId == null ? ["register", "cancel"] : undefined
-              }
               className="w-fit shrink-0"
             />
           </FormRow>
