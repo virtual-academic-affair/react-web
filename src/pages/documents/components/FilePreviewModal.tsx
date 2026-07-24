@@ -284,16 +284,18 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
 
   const category = useMemo(
     () =>
-      resolveFileCategory(
-        effectiveFileName,
-        publicUrl,
-        typeof fileDetail?.mimeType === "string"
-          ? fileDetail.mimeType
-          : typeof fileDetail?.contentType === "string"
-            ? fileDetail.contentType
-            : undefined,
-      ),
-    [effectiveFileName, fileDetail, publicUrl],
+      downloadFormat === "markdown"
+        ? "text"
+        : resolveFileCategory(
+            effectiveFileName,
+            publicUrl,
+            typeof fileDetail?.mimeType === "string"
+              ? fileDetail.mimeType
+              : typeof fileDetail?.contentType === "string"
+                ? fileDetail.contentType
+                : undefined,
+          ),
+    [downloadFormat, effectiveFileName, fileDetail, publicUrl],
   );
 
   // Lifted PDF states for toolbar rendering on modal header
