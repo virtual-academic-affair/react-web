@@ -14,22 +14,21 @@ import {
   MdChevronLeft,
   MdChevronRight,
   MdClose,
-  MdContentCopy,
   MdDescription,
   MdErrorOutline,
   MdFileDownload,
+  MdLink,
 } from "react-icons/md";
 
 import { copyTextToClipboard } from "@/components/copyable/copyTextToClipboard";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import {
-  buildDocumentViewUrl,
-} from "@/utils/documentViewUrl";
-import {
   type DownloadFileFormat,
   DocumentsService,
 } from "@/services/documents";
+import { buildDocumentViewUrl } from "@/utils/documentViewUrl";
 
+import Tooltip from "@/components/tooltip/Tooltip";
 import "./FilePreviewModal.css";
 
 const DocxPreview = React.lazy(() => import("./file-preview/DocxPreview"));
@@ -137,9 +136,7 @@ function resolvePreviewFileName(
   const detailDisplay = String(fileDetail?.displayName ?? "").trim();
 
   if (downloadFormat === "markdown") {
-    const markdownUrl = String(
-      fileDetail?.markdownFileUrl ?? publicUrl ?? "",
-    );
+    const markdownUrl = String(fileDetail?.markdownFileUrl ?? publicUrl ?? "");
     const fromUrl = markdownUrl.split("?")[0].split("/").pop() || "";
     if (fromUrl) return fromUrl;
     const baseName = detailDisplay || detailOriginal || fileName;
@@ -273,12 +270,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
 
   const effectiveFileName = useMemo(
     () =>
-      resolvePreviewFileName(
-        fileName,
-        fileDetail,
-        downloadFormat,
-        publicUrl,
-      ),
+      resolvePreviewFileName(fileName, fileDetail, downloadFormat, publicUrl),
     [downloadFormat, fileDetail, fileName, publicUrl],
   );
 
@@ -384,19 +376,21 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
   }, [viewUrl]);
 
   const copyViewLinkButton = showCopyViewLink ? (
-    <button
-      type="button"
-      onClick={() => void handleCopyViewLink()}
-      disabled={!viewUrl}
-      className="flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition-all hover:bg-white/12 hover:text-white active:scale-92 disabled:opacity-40"
-      title={copied ? "Đã sao chép link" : "Sao chép link xem"}
-    >
-      {copied ? (
-        <MdCheck className="h-5 w-5 text-green-400" />
-      ) : (
-        <MdContentCopy className="h-5 w-5" />
-      )}
-    </button>
+    <Tooltip label={copied ? "Đã sao chép link" : "Sao chép link xem"}>
+      <button
+        type="button"
+        onClick={() => void handleCopyViewLink()}
+        disabled={!viewUrl}
+        className="flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition-all hover:bg-white/12 hover:text-white active:scale-92 disabled:opacity-40"
+        title={copied ? "Đã sao chép link" : "Sao chép link xem"}
+      >
+        {copied ? (
+          <MdCheck className="h-5 w-5 text-green-400" />
+        ) : (
+          <MdLink className="h-5 w-5" />
+        )}
+      </button>
+    </Tooltip>
   ) : null;
 
   if (!isOpen) return null;
@@ -572,22 +566,24 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
             {/* Actions */}
             <div className="hidden flex-1 items-center justify-end gap-1 md:flex">
               {copyViewLinkButton}
-              <button
-                type="button"
-                onClick={handleDownload}
-                className="flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition-all hover:bg-white/12 hover:text-white active:scale-92"
-                title="Tải xuống"
-              >
-                <MdFileDownload className="h-5 w-5" />
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition-all hover:bg-white/12 hover:text-white active:scale-92"
-                title="Đóng"
-              >
-                <MdClose className="h-5 w-5" />
-              </button>
+              <Tooltip label="Tải xuống">
+                <button
+                  type="button"
+                  onClick={handleDownload}
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition-all hover:bg-white/12 hover:text-white active:scale-92"
+                >
+                  <MdFileDownload className="h-5 w-5" />
+                </button>
+              </Tooltip>
+              <Tooltip label="Đóng">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition-all hover:bg-white/12 hover:text-white active:scale-92"
+                >
+                  <MdClose className="h-5 w-5" />
+                </button>
+              </Tooltip>
             </div>
           </div>
 
