@@ -6,7 +6,7 @@ import type {
   GmailLabel,
   LabelMappingDto,
 } from "@/types/email.ts";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React, { useMemo, useState } from "react";
 import { MdAutoAwesome, MdEdit, MdLabel, MdSave } from "react-icons/md";
@@ -22,6 +22,8 @@ const LABEL_KEYS = [
   "graduation",
 ] as const satisfies ReadonlyArray<keyof LabelMappingDto>;
 
+const GMAIL_LABELS_QUERY_KEY = ["email-gmail-labels"] as const;
+
 const LABEL_META: Record<
   (typeof LABEL_KEYS)[number],
   { vi: string; color: string }
@@ -35,6 +37,7 @@ const LabelsCard: React.FC<LabelsCardProps> = ({
   mapping,
   onRefresh,
 }) => {
+  const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<LabelMappingDto | null>(null);
   const [saving, setSaving] = useState(false);
@@ -43,7 +46,7 @@ const LabelsCard: React.FC<LabelsCardProps> = ({
   const { data: gmailLabels = [], isLoading: loadingGmail } = useQuery<
     GmailLabel[]
   >({
-    queryKey: ["email-gmail-labels"],
+    queryKey: GMAIL_LABELS_QUERY_KEY,
     queryFn: () => labelsService.getGmailLabels(),
     staleTime: 60 * 1000,
   });
@@ -94,7 +97,13 @@ const LabelsCard: React.FC<LabelsCardProps> = ({
     setAutoCreating(true);
     try {
       await labelsService.autoCreateLabels();
-      await onRefresh();
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: GMAIL_LABELS_QUERY_KEY,
+          exact: true,
+        }),
+        onRefresh(),
+      ]);
       toast.success("Tự động tạo nhãn thành công.");
     } catch (err: unknown) {
       const msg =
