@@ -1,6 +1,3 @@
-import { StreamdownTextPrimitive } from "@assistant-ui/react-streamdown";
-import { useMessagePartText } from "@assistant-ui/react";
-import type { ComponentPropsWithoutRef } from "react";
 import {
   STREAMDOWN_CONTROLS,
   STREAMDOWN_LINK_SAFETY,
@@ -10,6 +7,9 @@ import {
   STREAMDOWN_LIST_PROSE_CLASS,
 } from "@/components/markdown/streamdown-prose";
 import { useStreamdownMathPlugins } from "@/components/markdown/useStreamdownMathPlugins";
+import { useMessagePartText } from "@assistant-ui/react";
+import { StreamdownTextPrimitive } from "@assistant-ui/react-streamdown";
+import type { ComponentPropsWithoutRef } from "react";
 
 import { InAppMarkdownAnchor } from "./in-app-markdown-anchor";
 
@@ -85,7 +85,7 @@ export function MarkdownTextSm() {
       plugins={plugins}
       components={MARKDOWN_COMPONENTS}
       className={`text-[#1f1f1f] dark:text-[#e3e3e3] ${STREAMDOWN_LIST_PROSE_CLASS}`}
-      containerClassName={`min-w-0 text-sm leading-relaxed ${STREAMDOWN_LIST_PROSE_CLASS}`}
+      containerClassName={`min-w-0 text-sm leading-relaxed break-words ${STREAMDOWN_LIST_PROSE_CLASS}`}
     />
   );
 }
