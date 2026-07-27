@@ -1,10 +1,10 @@
 import banner from "@/assets/img/auth/banner.png";
+import Tag from "@/components/tag/Tag";
 import { API_CONFIG, API_ENDPOINTS } from "@/config/api.config";
 import { settingsService } from "@/services/shared";
 import type { DynamicDataResponse } from "@/types/shared";
 import { message as toast } from "antd";
 import { useEffect, useRef, useState } from "react";
-import { MdCheckCircle } from "react-icons/md";
 
 interface ProfileCardProps {
   data: DynamicDataResponse | null;
@@ -134,10 +134,6 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3.5 py-1.5 text-sm font-semibold text-gray-700 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-300">
             <span className="h-2 w-2 rounded-full bg-gray-400" aria-hidden />
             <span>Super email</span>
-            <span className="text-gray-300 dark:text-gray-600" aria-hidden>
-              •
-            </span>
-            <span>Chưa kết nối</span>
           </div>
           <h4 className="text-navy-700 text-3xl font-bold dark:text-white">
             Chưa kết nối Super email
@@ -204,19 +200,16 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
 
       {/* Name & Role */}
       <div className="mt-24 flex flex-col items-center px-4 text-center">
-        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3.5 py-1.5 text-sm font-semibold text-green-700 shadow-sm dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-400">
-          <MdCheckCircle className="h-4 w-4 shrink-0" aria-hidden />
-          <span>Super email</span>
-          <span className="text-green-300 dark:text-green-600" aria-hidden>
-            •
-          </span>
-          <span>Đã kết nối</span>
-        </div>
         <h4 className="text-navy-700 text-3xl font-bold sm:text-5xl dark:text-white">
           {profile.name}
         </h4>
         <p className="mt-1 text-base font-normal text-gray-700 dark:text-gray-400">
-          {profile.email}
+          <Tag color="#16a34a" interactive={false} className="mt-2 mr-2">
+            Super email
+          </Tag>
+          <Tag color="#64748b" interactive={false} className="mt-2">
+            {profile.email}
+          </Tag>
         </p>
       </div>
     </div>
