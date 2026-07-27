@@ -1,24 +1,29 @@
 import { useQuery } from "@tanstack/react-query";
 import { message as toast } from "antd";
 import React, { useEffect, useState } from "react";
-import { MdDeleteOutline, MdDescription, MdSave, MdFileDownload } from "react-icons/md";
+import {
+  MdDeleteOutline,
+  MdDescription,
+  MdFileDownload,
+  MdSave,
+} from "react-icons/md";
 
 import Drawer from "@/components/drawer/Drawer";
 import { formInputClass } from "@/components/fields/formInputClass";
 import YearRangeControl from "@/components/fields/YearRangeControl";
-import { ScrollFadeArea } from "@/components/scroll-fade/ScrollFadeArea";
-import {
-  normalizeYear,
-  yearRangeToStrings,
-  type YearRangeNumbers,
-} from "@/utils/yearRange";
 import ConfirmModal from "@/components/modal/ConfirmModal";
+import { ScrollFadeArea } from "@/components/scroll-fade/ScrollFadeArea";
 import Switch from "@/components/switch";
 import Tag from "@/components/tag/Tag";
 import Tooltip from "@/components/tooltip/Tooltip";
 import { DocumentsService } from "@/services/documents";
 import { formatDate } from "@/utils/date";
 import { parseError } from "@/utils/parseError";
+import {
+  normalizeYear,
+  yearRangeToStrings,
+  type YearRangeNumbers,
+} from "@/utils/yearRange";
 import {
   DOCUMENT_TYPE_COLOR_MAP,
   DOCUMENT_TYPE_MAP,
@@ -480,16 +485,18 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
                 {Array.isArray(fileDetail?.tableOfContents) &&
                 fileDetail.tableOfContents.length > 0 ? (
                   <ScrollFadeArea
-                    className="custom-scrollbar max-h-48 overflow-y-auto [scrollbar-width:thin]"
+                    className="custom-scrollbar max-h-48 [scrollbar-width:thin] overflow-y-auto"
                     topFadeRem={1.25}
                     bottomFadeRem={1.75}
                     thresholdPx={4}
                     watchDeps={[fileDetail.tableOfContents]}
                   >
                     <ul className="list-disc space-y-1 pl-5 text-sm text-gray-700 dark:text-gray-300">
-                      {fileDetail.tableOfContents.map((item: string, idx: number) => (
-                        <li key={`${idx}-${item}`}>{item}</li>
-                      ))}
+                      {fileDetail.tableOfContents.map(
+                        (item: string, idx: number) => (
+                          <li key={`${idx}-${item}`}>{item}</li>
+                        ),
+                      )}
                     </ul>
                   </ScrollFadeArea>
                 ) : (
@@ -501,14 +508,13 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
               <Row label="Liên kết file">
                 <div className="space-y-1 text-sm">
                   <div>
-                    <span className="mr-2 text-gray-500">Markdown:</span>
                     {fileDetail?.markdownFileUrl ? (
                       <button
                         type="button"
                         onClick={() => onPreviewMarkdown?.()}
                         className="text-brand-500 hover:text-brand-600 underline"
                       >
-                        Mở file markdown
+                        Mở markdown
                       </button>
                     ) : (
                       <span className="text-gray-500">—</span>

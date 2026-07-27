@@ -1,6 +1,8 @@
 import Drawer from "@/components/drawer/Drawer.tsx";
 import { formInputClass } from "@/components/fields/formInputClass";
 import Switch from "@/components/switch";
+import Tooltip from "@/components/tooltip/Tooltip";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { usersService } from "@/services/users";
 import { Role as RoleConst, type Role, type UpdateUserDto, type User, type UserProfile } from "@/types/users.ts";
 import { formatDate } from "@/utils/date";
@@ -63,6 +65,8 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
   onUserChanged,
 }) => {
   const queryClient = useQueryClient();
+  const { userInfo } = useUserProfile();
+  const currentEmail = userInfo.email?.toLowerCase();
   const [saving, setSaving] = useState(false);
   const [studentForm, setStudentForm] = useState<StudentProfileForm>(() => ({
     enrollmentYear: "",
@@ -119,6 +123,10 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
     if (!detail || detail.isActive === newStatus) {
       return;
     }
+    if (currentEmail && detail.email.toLowerCase() === currentEmail) {
+      toast.error("Không thể vô hiệu hóa tài khoản đang đăng nhập.");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -165,6 +173,9 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
 
   const isOpen = userId != null;
   const isStudent = detail?.role === RoleConst.Student;
+  const isCurrentUser =
+    Boolean(currentEmail) &&
+    detail?.email.toLowerCase() === currentEmail;
 
   const footerRight =
     isStudent && studentDirty ? (
@@ -306,13 +317,25 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
               </p>
             </div>
             <div className={detailContentClass}>
-              <Switch
-                checked={detail.isActive}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  handleStatusChange(e.target.checked)
-                }
-                disabled={saving}
-              />
+              {isCurrentUser ? (
+                <Tooltip label="Không thể vô hiệu hóa tài khoản đang đăng nhập">
+                  <Switch
+                    checked={detail.isActive}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      handleStatusChange(e.target.checked)
+                    }
+                    disabled
+                  />
+                </Tooltip>
+              ) : (
+                <Switch
+                  checked={detail.isActive}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    handleStatusChange(e.target.checked)
+                  }
+                  disabled={saving}
+                />
+              )}
             </div>
           </div>
 

@@ -10,6 +10,8 @@ import TableLayout, {
   type TableAction,
   type TableColumn,
 } from "@/components/table/TableLayout.tsx";
+import Tooltip from "@/components/tooltip/Tooltip";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import FilterGroup from "@/pages/user/documents/components/FilterGroup";
 import { usersService } from "@/services/users";
 import type { PaginatedResponse } from "@/types/common.ts";
@@ -49,6 +51,8 @@ interface UsersPageProps {
 
 const UsersPage: React.FC<UsersPageProps> = () => {
   const queryClient = useQueryClient();
+  const { userInfo } = useUserProfile();
+  const currentEmail = userInfo.email?.toLowerCase();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const initialKeyword = searchParams.get("keyword") ?? "";
@@ -212,6 +216,10 @@ const UsersPage: React.FC<UsersPageProps> = () => {
       if (user.isActive === newStatus) {
         return;
       }
+      if (currentEmail && user.email.toLowerCase() === currentEmail) {
+        toast.error("Không thể vô hiệu hóa tài khoản đang đăng nhập.");
+        return;
+      }
 
       setUpdatingUsers((prev) => new Set(prev).add(user.id));
       try {
@@ -248,7 +256,7 @@ const UsersPage: React.FC<UsersPageProps> = () => {
         });
       }
     },
-    [queryClient, page, keyword, roleFilter, apiIsActive],
+    [queryClient, page, keyword, roleFilter, apiIsActive, currentEmail],
   );
 
   const handleCreateUser = async (e: React.FormEvent) => {
@@ -325,18 +333,30 @@ const UsersPage: React.FC<UsersPageProps> = () => {
       {
         key: "isActive",
         header: "Trạng thái hoạt động",
-        render: (user) => (
-          <Switch
-            checked={user.isActive}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              handleStatusChange(user, e.target.checked)
-            }
-            disabled={updatingUsers.has(user.id)}
-          />
-        ),
+        render: (user) => {
+          const isCurrentUser =
+            Boolean(currentEmail) &&
+            user.email.toLowerCase() === currentEmail;
+          const switchEl = (
+            <Switch
+              checked={user.isActive}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                handleStatusChange(user, e.target.checked)
+              }
+              disabled={updatingUsers.has(user.id) || isCurrentUser}
+            />
+          );
+          return isCurrentUser ? (
+            <Tooltip label="Không thể vô hiệu hóa tài khoản đang đăng nhập">
+              {switchEl}
+            </Tooltip>
+          ) : (
+            switchEl
+          );
+        },
       },
     ],
-    [updatingUsers, handleRoleChange, handleStatusChange],
+    [updatingUsers, handleRoleChange, handleStatusChange, currentEmail],
   );
 
   // Define table actions
