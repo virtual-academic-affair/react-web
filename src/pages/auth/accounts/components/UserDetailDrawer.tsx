@@ -103,6 +103,10 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
     if (!detail || detail.role === newRole) {
       return;
     }
+    if (currentEmail && detail.email.toLowerCase() === currentEmail) {
+      toast.error("Không thể thay đổi vai trò của tài khoản đang đăng nhập.");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -296,11 +300,21 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({
               </p>
             </div>
             <div className={detailContentClass}>
-              <RoleSelector
-                value={detail.role}
-                onChange={handleRoleChange}
-                disabled={saving}
-              />
+              {isCurrentUser ? (
+                <Tooltip label="Không thể thay đổi vai trò của tài khoản đang đăng nhập">
+                  <RoleSelector
+                    value={detail.role}
+                    onChange={handleRoleChange}
+                    disabled
+                  />
+                </Tooltip>
+              ) : (
+                <RoleSelector
+                  value={detail.role}
+                  onChange={handleRoleChange}
+                  disabled={saving}
+                />
+              )}
               {saving && (
                 <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
                   Đang lưu...

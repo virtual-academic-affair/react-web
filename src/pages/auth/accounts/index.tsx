@@ -174,6 +174,10 @@ const UsersPage: React.FC<UsersPageProps> = () => {
       if (user.role === newRole) {
         return;
       }
+      if (currentEmail && user.email.toLowerCase() === currentEmail) {
+        toast.error("Không thể thay đổi vai trò của tài khoản đang đăng nhập.");
+        return;
+      }
 
       setUpdatingUsers((prev) => new Set(prev).add(user.id));
       try {
@@ -208,7 +212,7 @@ const UsersPage: React.FC<UsersPageProps> = () => {
         });
       }
     },
-    [queryClient, page, keyword, roleFilter, apiIsActive],
+    [queryClient, page, keyword, roleFilter, apiIsActive, currentEmail],
   );
 
   const handleStatusChange = React.useCallback(
@@ -322,13 +326,24 @@ const UsersPage: React.FC<UsersPageProps> = () => {
       {
         key: "role",
         header: "Vai trò",
-        render: (user) => (
-          <RoleSelector
-            value={user.role}
-            onChange={(newRole) => handleRoleChange(user, newRole)}
-            disabled={updatingUsers.has(user.id)}
-          />
-        ),
+        render: (user) => {
+          const isCurrentUser =
+            Boolean(currentEmail) && user.email.toLowerCase() === currentEmail;
+          const roleSelector = (
+            <RoleSelector
+              value={user.role}
+              onChange={(newRole) => handleRoleChange(user, newRole)}
+              disabled={updatingUsers.has(user.id) || isCurrentUser}
+            />
+          );
+          return isCurrentUser ? (
+            <Tooltip label="Không thể thay đổi vai trò của tài khoản đang đăng nhập">
+              {roleSelector}
+            </Tooltip>
+          ) : (
+            roleSelector
+          );
+        },
       },
       {
         key: "isActive",

@@ -21,7 +21,7 @@ const Switch = (props: {
   return (
     <input
       type="checkbox"
-      className={`rounded-primary before:top-50p before:-translate-y-50p before:rounded-primary relative h-5 w-10 appearance-none bg-[#e0e5f2] transition duration-500 outline-none before:absolute before:h-4 before:w-4 before:translate-x-[2px] before:bg-white before:shadow-[0_2px_5px_rgba(0,0,0,.2)] before:transition before:content-[""] checked:before:translate-x-[22px] enabled:hover:cursor-pointer disabled:cursor-default dark:bg-white/5 ${
+      className={`rounded-primary before:top-50p before:-translate-y-50p before:rounded-primary relative h-5 w-10 appearance-none bg-[#e0e5f2] transition duration-500 outline-none before:absolute before:h-4 before:w-4 before:translate-x-[2px] before:bg-white before:shadow-[0_2px_5px_rgba(0,0,0,.2)] before:transition before:content-[""] checked:before:translate-x-[22px] enabled:hover:cursor-pointer disabled:cursor-not-allowed disabled:bg-gray-300 disabled:before:bg-gray-100 disabled:before:shadow-none disabled:checked:bg-gray-400 dark:bg-white/5 dark:disabled:bg-gray-700 dark:disabled:before:bg-gray-300 dark:disabled:checked:bg-gray-600 ${
         color === "red"
           ? "checked:bg-red-500 dark:checked:bg-red-400"
           : color === "blue"
