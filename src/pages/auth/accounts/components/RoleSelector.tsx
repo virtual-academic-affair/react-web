@@ -42,7 +42,7 @@ const RoleSelector: React.FC<RoleSelectorProps> = ({
       optionColors={optionColors}
       onChange={(v) => onChange(v as Role)}
       disabled={disabled}
-      className={className}
+      className={`${disabled ? "opacity-50 grayscale" : ""} ${className ?? ""}`}
     >
       {RoleLabels[value]}
     </Tag>

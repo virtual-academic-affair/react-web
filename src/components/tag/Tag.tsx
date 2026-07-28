@@ -1,3 +1,4 @@
+import { getFloatingDropdownPosition } from "@/utils/floatingPosition";
 import {
   useCallback,
   useEffect,
@@ -9,7 +10,6 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { MdCheck, MdExpandMore } from "react-icons/md";
-import { getFloatingDropdownPosition } from "@/utils/floatingPosition";
 
 export interface TagOption {
   value: string;
@@ -126,7 +126,9 @@ const Tag: FC<TagProps> = ({
                 : ""
             } ${disabled ? "cursor-default" : ""} ${className ?? ""}`}
           >
-            <span className="max-w-full min-w-0 truncate whitespace-nowrap">
+            <span
+              className={`max-w-full min-w-0 truncate whitespace-nowrap ${disabled ? "-translate-x-0.5" : ""}`}
+            >
               {children}
             </span>
             {!disabled && (
