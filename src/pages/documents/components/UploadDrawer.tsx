@@ -90,7 +90,7 @@ export const UploadForm: React.FC<UploadFormProps> = ({
 
   useEffect(() => () => closeSocket(), [closeSocket]);
 
-  const reset = useCallback(() => {
+  const resetForm = useCallback(() => {
     setSelectedFile(null);
     setDisplayName("");
     setDocType("");
@@ -100,8 +100,7 @@ export const UploadForm: React.FC<UploadFormProps> = ({
     setAcademicToYear("");
     setLecturerOnly(false);
     setUploading(false);
-    closeSocket();
-  }, [closeSocket]);
+  }, []);
 
   const handleFileSelect = useCallback(
     (file: File) => {
@@ -165,7 +164,27 @@ export const UploadForm: React.FC<UploadFormProps> = ({
       closeSocket();
       wsRef.current = DocumentsService.createUploadProgressSocket(clientId, {
         onOpen: () => {},
-        onMessage: () => {},
+        onMessage: (event) => {
+          const eventName = String(
+            event.type || event.step || "",
+          ).toLowerCase();
+          if (eventName === "review_required") {
+            toast.info(
+              event.message ||
+                "OCR đã hoàn tất. Tài liệu đang chờ bạn duyệt Markdown.",
+              6,
+            );
+            onSuccess();
+            closeSocket();
+          } else if (eventName === "failed") {
+            toast.error(event.message || "OCR tài liệu thất bại.", 6);
+            onSuccess();
+            closeSocket();
+          } else if (eventName === "completed") {
+            onSuccess();
+            closeSocket();
+          }
+        },
         onError: () => {},
         onClose: () => {},
       });
@@ -182,8 +201,11 @@ export const UploadForm: React.FC<UploadFormProps> = ({
       }
 
       await DocumentsService.uploadFile(formData);
-      toast.success("Tải lên thành công. Hệ thống đang xử lý tài liệu.");
-      reset();
+      toast.success(
+        "Đã tải lên. Hệ thống đang OCR; bạn cần duyệt Markdown trước khi tài liệu được lập chỉ mục.",
+        6,
+      );
+      resetForm();
       onSuccess();
     } catch (err) {
       toast.error(parseError(err));

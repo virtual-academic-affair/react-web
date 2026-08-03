@@ -18,6 +18,7 @@ import TableLayout, {
 import Tag from "@/components/tag/Tag";
 import { useIsolatedSearchParams } from "@/hooks/useIsolatedSearchParams";
 import { DocumentsService } from "@/services/documents";
+import type { FileStatus } from "@/services/documents";
 import { parseError } from "@/utils/parseError";
 
 import { PageTitle } from "@/components/layouts/PageTitle";
@@ -37,6 +38,11 @@ import {
 import { EMPTY_YEAR_RANGE_STRINGS, formatYearRange } from "@/utils/yearRange";
 import { LuFileText } from "react-icons/lu";
 import DocumentDetailDrawer from "../components/DocumentDetailDrawer";
+import {
+  DOCUMENT_STATUS_FILTER_OPTIONS,
+  getDocumentStatusConfig,
+} from "../components/documentStatus";
+import OcrReviewDrawer from "../components/OcrReviewDrawer";
 import UploadDrawer, {
   DOCUMENT_TYPE_COLOR_MAP,
   DOCUMENT_TYPE_MAP,
@@ -77,6 +83,14 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
   const [keyword, setKeyword] = useState(initialKeyword);
   const [searchValue, setSearchValue] = useState(initialKeyword);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [fileStatus, setFileStatus] = useState<FileStatus | undefined>(() => {
+    const value = searchParams.get("fileStatus");
+    return DOCUMENT_STATUS_FILTER_OPTIONS.some(
+      (option) => option.value === value,
+    )
+      ? (value as FileStatus)
+      : undefined;
+  });
 
   // ── Filters (initialized from URL) ──────────────────────────────────────────
   const [typeFilter, setTypeFilter] = useState<string[]>(() => {
@@ -118,12 +132,14 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
   }, [typeFilter, enrollmentYear, academicYear]);
 
   const hasFilters =
+    Boolean(fileStatus) ||
     typeFilter.length > 0 ||
     lecturerOnlyFilter ||
     Boolean(enrollmentYear.fromYear || enrollmentYear.toYear) ||
     Boolean(academicYear.fromYear || academicYear.toYear);
 
   const handleClearAllFilters = useCallback(() => {
+    setFileStatus(undefined);
     setTypeFilter([]);
     setLecturerOnlyFilter(false);
     setEnrollmentYear(EMPTY_YEAR_RANGE);
@@ -136,6 +152,8 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
     if (embedded) return;
 
     const next = new URLSearchParams(searchParams);
+    if (fileStatus) next.set("fileStatus", fileStatus);
+    else next.delete("fileStatus");
     // type
     if (typeFilter.length > 0) next.set("type", typeFilter.join(","));
     else next.delete("type");
@@ -156,7 +174,14 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
     else next.delete("acadTo");
     setSearchParams(next, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [embedded, typeFilter, lecturerOnlyArg, enrollmentYear, academicYear]);
+  }, [
+    embedded,
+    fileStatus,
+    typeFilter,
+    lecturerOnlyArg,
+    enrollmentYear,
+    academicYear,
+  ]);
 
   // File preview (URL-driven: ?viewDocumentId=fileId)
   const { viewDocumentId, isMarkdownView } =
@@ -169,6 +194,7 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
   // Detail drawer
   const idParam = searchParams.get("id");
   const selectedFileId = idParam || null;
+  const reviewFileId = searchParams.get("ocrReviewId");
 
   // ── Query ─────────────────────────────────────────────────────────────────────
   const { data: result = null, isLoading: loading } = useQuery({
@@ -177,6 +203,7 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
       {
         page,
         keyword,
+        fileStatus,
         lecturerOnly: lecturerOnlyArg,
         metadataFilter: metadataFilterArg,
       },
@@ -186,6 +213,7 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
         page,
         limit: PAGE_SIZE,
         keywords: keyword || undefined,
+        fileStatus,
         lecturerOnly: lecturerOnlyArg,
         metadataFilter: metadataFilterArg,
       });
@@ -217,6 +245,11 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
     if (!viewDocumentId || !result?.items) return null;
     return result.items.find((f: any) => f.fileId === viewDocumentId) || null;
   }, [viewDocumentId, result]);
+
+  const reviewFile = useMemo(() => {
+    if (!reviewFileId || !result?.items) return null;
+    return result.items.find((f: any) => f.fileId === reviewFileId) || null;
+  }, [reviewFileId, result]);
 
   const previewFileName = useMemo(() => {
     if (!previewFile) return "";
@@ -255,6 +288,23 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
     },
     [searchParams, setSearchParams],
   );
+
+  const handleOpenReview = useCallback(
+    (item: any) => {
+      const next = new URLSearchParams(searchParams);
+      next.delete("id");
+      clearViewDocumentParams(next);
+      next.set("ocrReviewId", item.fileId);
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+
+  const handleCloseReview = useCallback(() => {
+    const next = new URLSearchParams(searchParams);
+    next.delete("ocrReviewId");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const handleCloseDetail = useCallback(() => {
     const next = new URLSearchParams(searchParams);
@@ -312,6 +362,15 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
             className="group flex w-full min-w-0 flex-col text-left"
             onClick={(e) => {
               e.stopPropagation();
+              const status = String(x.status || "").toLowerCase();
+              if (status === "awaiting_review") {
+                handleOpenReview(x);
+                return;
+              }
+              if (status !== "ready") {
+                handleOpenDetail(x);
+                return;
+              }
               wasDrawerOpenBeforePreview.current = false;
               const next = new URLSearchParams(searchParams);
               setViewDocumentParams(next, x.fileId);
@@ -340,6 +399,35 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
             ) : null}
           </button>
         ),
+      },
+      {
+        key: "status",
+        header: "Trạng thái",
+        width: "155px",
+        render: (x) => {
+          const config = getDocumentStatusConfig(x.status);
+          const awaitingReview =
+            String(x.status || "").toLowerCase() === "awaiting_review";
+          return (
+            <div className="flex flex-col items-start gap-1.5">
+              <Tag color={config.color} interactive={false}>
+                {config.label}
+              </Tag>
+              {awaitingReview ? (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    handleOpenReview(x);
+                  }}
+                  className="text-brand-500 hover:text-brand-600 text-xs font-semibold underline underline-offset-2"
+                >
+                  Duyệt ngay
+                </button>
+              ) : null}
+            </div>
+          );
+        },
       },
       {
         key: "type",
@@ -390,7 +478,13 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
         ),
       },
     ],
-    [handleUpdateType, searchParams, setSearchParams],
+    [
+      handleOpenDetail,
+      handleOpenReview,
+      handleUpdateType,
+      searchParams,
+      setSearchParams,
+    ],
   );
 
   const actions: TableAction<any>[] = useMemo(
@@ -471,6 +565,17 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
           <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
             {/* Filter pills */}
             <div className="flex flex-wrap items-center gap-2">
+              <FilterGroup
+                label="Trạng thái"
+                typeKey="fileStatus"
+                options={DOCUMENT_STATUS_FILTER_OPTIONS}
+                selected={fileStatus ? [fileStatus] : []}
+                multiple={false}
+                onChange={(next) => {
+                  setFileStatus(next[0] as FileStatus | undefined);
+                  setPage(1);
+                }}
+              />
               <FilterGroup
                 label="Loại tài liệu"
                 typeKey="type"
@@ -564,6 +669,18 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
             format: VIEW_DOCUMENT_FORMAT_MARKDOWN,
           });
           setSearchParams(next, { replace: true });
+        }}
+      />
+
+      <OcrReviewDrawer
+        fileId={reviewFileId}
+        fileName={String(
+          reviewFile?.displayName || reviewFile?.originalFilename || "",
+        )}
+        isOpen={reviewFileId !== null}
+        onClose={handleCloseReview}
+        onChanged={() => {
+          queryClient.invalidateQueries({ queryKey: ["documents"] });
         }}
       />
 

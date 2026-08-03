@@ -29,6 +29,7 @@ import {
   DOCUMENT_TYPE_MAP,
   DOCUMENT_TYPES,
 } from "./UploadDrawer";
+import { getDocumentStatusConfig } from "./documentStatus";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -43,15 +44,6 @@ interface DocumentDetailDrawerProps {
   onPreview?: () => void;
   onPreviewMarkdown?: () => void;
 }
-
-// ── Status config ─────────────────────────────────────────────────────────────
-
-const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  ready: { label: "Sẵn sàng", color: "#22c55e" },
-  processing: { label: "Đang xử lý", color: "#f59e0b" },
-  uploading: { label: "Đang tải lên", color: "#f59e0b" },
-  failed: { label: "Thất bại", color: "#b2161e" },
-};
 
 // ── Row layout helper ─────────────────────────────────────────────────────────
 
@@ -470,13 +462,8 @@ const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
               {/* Trạng thái */}
               <Row label="Trạng thái xử lý">
                 {(() => {
-                  const key = String(fileDetail?.status || "").toLowerCase();
-                  const cfg = STATUS_CONFIG[key];
-                  return cfg ? (
-                    <Tag color={cfg.color}>{cfg.label}</Tag>
-                  ) : (
-                    <Tag color="#94a3b8">Đang xử lý</Tag>
-                  );
+                  const config = getDocumentStatusConfig(fileDetail?.status);
+                  return <Tag color={config.color}>{config.label}</Tag>;
                 })()}
               </Row>
 
