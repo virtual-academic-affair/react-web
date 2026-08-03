@@ -1,10 +1,14 @@
 import type { AnyExtension, Editor } from "@tiptap/core";
+import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
+import { Markdown } from "@tiptap/markdown";
 import Placeholder from "@tiptap/extension-placeholder";
+import { TableKit } from "@tiptap/extension-table";
 import Underline from "@tiptap/extension-underline";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import React from "react";
+import { createPortal } from "react-dom";
 import {
   MdCode,
   MdFormatBold,
@@ -13,11 +17,18 @@ import {
   MdFormatListNumbered,
   MdFormatQuote,
   MdFormatUnderlined,
+  MdImage,
   MdLink,
   MdRedo,
   MdStrikethroughS,
+  MdTableChart,
   MdUndo,
 } from "react-icons/md";
+
+import {
+  getFloatingDropdownPosition,
+  type FloatingPosition,
+} from "@/utils/floatingPosition";
 
 /**
  * Helper to ensure all links in rich text HTML open in a new tab.
@@ -49,6 +60,10 @@ interface RichTextEditorProps {
   compact?: boolean;
   /** Mở rộng Tiptap (nâng cao). Drawer đăng ký lớp dùng cho gợi ý ghi chú nhanh. */
   extraExtensions?: AnyExtension[];
+  /** Định dạng dữ liệu vào/ra. Mặc định giữ nguyên contract HTML cũ. */
+  contentFormat?: "html" | "markdown";
+  /** Chiều cao tối thiểu của vùng soạn thảo, ví dụ "55vh". */
+  minHeight?: string;
 }
 
 function ToolbarButton({
@@ -57,15 +72,18 @@ function ToolbarButton({
   disabled,
   children,
   title,
+  buttonRef,
 }: {
   onClick: () => void;
   active?: boolean;
   disabled?: boolean;
   children: React.ReactNode;
   title: string;
+  buttonRef?: React.Ref<HTMLButtonElement>;
 }) {
   return (
     <button
+      ref={buttonRef}
       type="button"
       title={title}
       disabled={disabled}
@@ -81,12 +99,188 @@ function ToolbarButton({
   );
 }
 
-function EditorToolbar({
+function TableToolbarMenu({
   editor,
   disabled,
+  active,
 }: {
   editor: Editor;
   disabled: boolean;
+  active: boolean;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [position, setPosition] = React.useState<FloatingPosition>({ left: 0 });
+  const triggerRef = React.useRef<HTMLButtonElement>(null);
+  const menuRef = React.useRef<HTMLDivElement>(null);
+
+  const toggleMenu = () => {
+    if (disabled) return;
+    if (!open && triggerRef.current) {
+      setPosition(
+        getFloatingDropdownPosition(
+          triggerRef.current.getBoundingClientRect(),
+          {
+            gap: 6,
+            width: 230,
+            maxHeight: 320,
+          },
+        ),
+      );
+    }
+    setOpen((current) => !current);
+  };
+
+  React.useEffect(() => {
+    if (!open) return;
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        triggerRef.current?.contains(target) ||
+        menuRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setOpen(false);
+    };
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
+  }, [open]);
+
+  React.useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [open]);
+
+  const runAction = (action: string) => {
+    const chain = editor.chain().focus();
+    switch (action) {
+      case "insert":
+        chain.insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+        break;
+      case "add-row":
+        chain.addRowAfter().run();
+        break;
+      case "add-column":
+        chain.addColumnAfter().run();
+        break;
+      case "toggle-header":
+        chain.toggleHeaderRow().run();
+        break;
+      case "delete-row":
+        chain.deleteRow().run();
+        break;
+      case "delete-column":
+        chain.deleteColumn().run();
+        break;
+      case "delete-table":
+        chain.deleteTable().run();
+        break;
+    }
+    setOpen(false);
+  };
+
+  const menuButtonClass =
+    "flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-navy-700 transition-colors hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-white/5";
+
+  return (
+    <>
+      <ToolbarButton
+        title="Bảng"
+        disabled={disabled}
+        active={active}
+        onClick={toggleMenu}
+        buttonRef={triggerRef}
+      >
+        <MdTableChart className="h-4 w-4" />
+      </ToolbarButton>
+
+      {open &&
+        createPortal(
+          <div
+            ref={menuRef}
+            style={{
+              top: position.top,
+              bottom: position.bottom,
+              left: position.left,
+            }}
+            className="dark:bg-navy-900 fixed z-9999 w-[230px] rounded-xl border border-gray-100 bg-white p-1.5 shadow-xl dark:border-white/10"
+          >
+            {!active ? (
+              <button
+                type="button"
+                onClick={() => runAction("insert")}
+                className={menuButtonClass}
+              >
+                Chèn bảng 3 × 3
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => runAction("add-row")}
+                  className={menuButtonClass}
+                >
+                  Thêm hàng phía dưới
+                </button>
+                <button
+                  type="button"
+                  onClick={() => runAction("add-column")}
+                  className={menuButtonClass}
+                >
+                  Thêm cột bên phải
+                </button>
+                <button
+                  type="button"
+                  onClick={() => runAction("toggle-header")}
+                  className={menuButtonClass}
+                >
+                  Bật/tắt hàng tiêu đề
+                </button>
+                <div className="my-1 border-t border-gray-100 dark:border-white/10" />
+                <button
+                  type="button"
+                  onClick={() => runAction("delete-row")}
+                  className={`${menuButtonClass} text-red-500 dark:text-red-400`}
+                >
+                  Xóa hàng hiện tại
+                </button>
+                <button
+                  type="button"
+                  onClick={() => runAction("delete-column")}
+                  className={`${menuButtonClass} text-red-500 dark:text-red-400`}
+                >
+                  Xóa cột hiện tại
+                </button>
+                <button
+                  type="button"
+                  onClick={() => runAction("delete-table")}
+                  className={`${menuButtonClass} text-red-500 dark:text-red-400`}
+                >
+                  Xóa bảng
+                </button>
+              </>
+            )}
+          </div>,
+          document.body,
+        )}
+    </>
+  );
+}
+
+function EditorToolbar({
+  editor,
+  disabled,
+  contentFormat,
+}: {
+  editor: Editor;
+  disabled: boolean;
+  contentFormat: "html" | "markdown";
 }) {
   const state = useEditorState({
     editor,
@@ -99,9 +293,11 @@ function EditorToolbar({
       bulletList: snap.editor.isActive("bulletList"),
       orderedList: snap.editor.isActive("orderedList"),
       blockquote: snap.editor.isActive("blockquote"),
+      h1: snap.editor.isActive("heading", { level: 1 }),
       h2: snap.editor.isActive("heading", { level: 2 }),
       h3: snap.editor.isActive("heading", { level: 3 }),
       link: snap.editor.isActive("link"),
+      table: snap.editor.isActive("table"),
       canUndo: snap.editor.can().undo(),
       canRedo: snap.editor.can().redo(),
     }),
@@ -117,6 +313,13 @@ function EditorToolbar({
       return;
     }
     editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+  };
+
+  const insertImage = () => {
+    if (disabled) return;
+    const src = window.prompt("URL hình ảnh", "https://");
+    if (!src?.trim()) return;
+    editor.chain().focus().setImage({ src: src.trim() }).run();
   };
 
   return (
@@ -165,6 +368,18 @@ function EditorToolbar({
         <MdCode className="h-4 w-4" />
       </ToolbarButton>
       <span className="mx-1 h-5 w-px shrink-0 bg-gray-200 transition-colors duration-200 dark:bg-white/15" />
+      {contentFormat === "markdown" && (
+        <ToolbarButton
+          title="Tiêu đề 1"
+          disabled={disabled}
+          active={state.h1}
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 1 }).run()
+          }
+        >
+          <span className="text-xs font-bold">H1</span>
+        </ToolbarButton>
+      )}
       <ToolbarButton
         title="Danh sách bullet"
         disabled={disabled}
@@ -214,6 +429,22 @@ function EditorToolbar({
       >
         <MdLink className="h-4 w-4" />
       </ToolbarButton>
+      {contentFormat === "markdown" && (
+        <>
+          <TableToolbarMenu
+            editor={editor}
+            disabled={disabled}
+            active={state.table}
+          />
+          <ToolbarButton
+            title="Chèn ảnh từ URL"
+            disabled={disabled}
+            onClick={insertImage}
+          >
+            <MdImage className="h-4 w-4" />
+          </ToolbarButton>
+        </>
+      )}
       <span className="mx-1 h-5 w-px shrink-0 bg-gray-200 transition-colors duration-200 dark:bg-white/15" />
       <ToolbarButton
         title="Hoàn tác"
@@ -249,13 +480,17 @@ const RichTextEditor = React.forwardRef<
       disabled = false,
       compact = false,
       extraExtensions,
+      contentFormat = "html",
+      minHeight,
     },
     ref,
   ) => {
     const extensions = React.useMemo(() => {
       const list: AnyExtension[] = [
         StarterKit.configure({
-          heading: { levels: [2, 3] },
+          heading: {
+            levels: contentFormat === "markdown" ? [1, 2, 3, 4, 5, 6] : [2, 3],
+          },
           // Disable extensions that might be bundled in v3 to avoid duplicates
           link: false,
           underline: false,
@@ -276,6 +511,15 @@ const RichTextEditor = React.forwardRef<
           emptyEditorClass: "is-editor-empty",
         }),
       ];
+      if (contentFormat === "markdown") {
+        list.push(
+          Markdown,
+          TableKit.configure({
+            table: { resizable: true },
+          }),
+          Image.configure({ inline: true, allowBase64: true }),
+        );
+      }
       if (extraExtensions?.length) {
         list.push(...extraExtensions);
       }
@@ -292,25 +536,31 @@ const RichTextEditor = React.forwardRef<
       }
 
       return uniqueExtensions;
-    }, [placeholder, extraExtensions]);
+    }, [placeholder, extraExtensions, contentFormat]);
 
     const editor = useEditor(
       {
         extensions,
         content: value || "",
+        contentType: contentFormat,
         editable: !disabled,
         onUpdate: ({ editor: ed }) => {
-          onChange(ed.getHTML());
+          onChange(
+            contentFormat === "markdown" ? ed.getMarkdown() : ed.getHTML(),
+          );
         },
         editorProps: {
           attributes: {
             class: compact
               ? "tiptap-prose min-h-[5.25rem] max-h-[10rem] overflow-y-auto px-3 py-2 text-[15px] text-navy-700 outline-none dark:text-white focus:outline-none transition-colors duration-200"
-              : "tiptap-prose min-h-[150px] px-3 py-2 text-[15px] text-navy-700 outline-none dark:text-white focus:outline-none transition-colors duration-200",
+              : "tiptap-prose min-h-[150px] overflow-x-auto px-3 py-2 text-[15px] text-navy-700 outline-none dark:text-white focus:outline-none transition-colors duration-200",
+            ...(minHeight && !compact
+              ? { style: `min-height: ${minHeight}` }
+              : {}),
           },
         },
       },
-      [extensions, compact],
+      [extensions, compact, contentFormat, minHeight],
     );
 
     React.useEffect(() => {
@@ -321,19 +571,23 @@ const RichTextEditor = React.forwardRef<
     React.useEffect(() => {
       if (!editor || editor.isDestroyed) return;
 
-      const currentHTML = editor.getHTML();
+      const currentValue =
+        contentFormat === "markdown" ? editor.getMarkdown() : editor.getHTML();
       const newValue = value || "";
 
       // Tiptap empty = "<p></p>", but value="" means empty — treat as equal to skip
       const isTiptapEmpty = (html: string) =>
         !html || html === "<p></p>" || html === "<p> </p>";
 
-      if (isTiptapEmpty(newValue) && isTiptapEmpty(currentHTML)) return;
-      if (newValue === currentHTML) return;
+      if (isTiptapEmpty(newValue) && isTiptapEmpty(currentValue)) return;
+      if (newValue === currentValue) return;
 
       // Use emitUpdate:false to avoid triggering onChange and causing circular state updates
-      editor.commands.setContent(newValue, { emitUpdate: false });
-    }, [editor, value]);
+      editor.commands.setContent(newValue, {
+        emitUpdate: false,
+        contentType: contentFormat,
+      });
+    }, [contentFormat, editor, value]);
 
     React.useImperativeHandle(
       ref,
@@ -388,8 +642,12 @@ const RichTextEditor = React.forwardRef<
             .tiptap-editor .tiptap-prose ul { list-style: disc; padding-left: 1.25rem; margin: 0.5em 0; }
             .tiptap-editor .tiptap-prose ol { list-style: decimal; padding-left: 1.25rem; margin: 0.5em 0; }
             .tiptap-editor .tiptap-prose li { margin: 0.15em 0; }
+            .tiptap-editor .tiptap-prose h1 { font-size: 1.35rem; font-weight: 750; margin: 0.7em 0 0.4em; }
             .tiptap-editor .tiptap-prose h2 { font-size: 1.15rem; font-weight: 700; margin: 0.6em 0 0.35em; }
             .tiptap-editor .tiptap-prose h3 { font-size: 1.05rem; font-weight: 600; margin: 0.5em 0 0.3em; }
+            .tiptap-editor .tiptap-prose h4,
+            .tiptap-editor .tiptap-prose h5,
+            .tiptap-editor .tiptap-prose h6 { font-weight: 600; margin: 0.45em 0 0.25em; }
             .tiptap-editor .tiptap-prose blockquote {
               border-left: 3px solid #e5e7eb;
               padding-left: 0.75rem;
@@ -421,12 +679,39 @@ const RichTextEditor = React.forwardRef<
               background: rgba(255,255,255,0.06);
             }
             .tiptap-editor .tiptap-prose pre code { background: none; padding: 0; }
+            .tiptap-editor .tiptap-prose table {
+              width: 100%;
+              min-width: 36rem;
+              border-collapse: collapse;
+              margin: 0.75rem 0;
+            }
+            .tiptap-editor .tiptap-prose th,
+            .tiptap-editor .tiptap-prose td {
+              border: 1px solid #e5e7eb;
+              padding: 0.5rem 0.65rem;
+              text-align: left;
+              vertical-align: top;
+            }
+            .tiptap-editor .tiptap-prose th { background: #f3f4f6; font-weight: 650; }
+            .dark .tiptap-editor .tiptap-prose th,
+            .dark .tiptap-editor .tiptap-prose td { border-color: rgba(255,255,255,0.14); }
+            .dark .tiptap-editor .tiptap-prose th { background: rgba(255,255,255,0.06); }
+            .tiptap-editor .tiptap-prose img {
+              max-width: 100%;
+              height: auto;
+              border-radius: 0.75rem;
+              margin: 0.75rem auto;
+            }
           `}</style>
           {editor ? (
             <div
               className={`tiptap-editor min-w-0 bg-transparent ${compact ? "tiptap-editor--compact" : ""}`}
             >
-              <EditorToolbar editor={editor} disabled={disabled} />
+              <EditorToolbar
+                editor={editor}
+                disabled={disabled}
+                contentFormat={contentFormat}
+              />
               <EditorContent editor={editor} />
             </div>
           ) : (

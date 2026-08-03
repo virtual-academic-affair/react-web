@@ -111,6 +111,11 @@ export const API_ENDPOINTS = {
       byId: (fileId: string) => `/api/files/${fileId}`,
       download: (fileId: string) => `/api/files/${fileId}/download`,
       progress: (clientId: string) => `/api/files/progress/${clientId}`,
+      ocrReview: (fileId: string) => `/api/files/${fileId}/ocr-review`,
+      approveOcrReview: (fileId: string) =>
+        `/api/files/${fileId}/ocr-review/approve`,
+      rejectOcrReview: (fileId: string) =>
+        `/api/files/${fileId}/ocr-review/reject`,
     },
     metadata: {
       base: "/api/metadata",

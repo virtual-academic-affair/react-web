@@ -7,11 +7,73 @@ import ragHttp from "../rag-http";
  * Service for document management.
  * Combines calls to Nest API (accesses, bookmarks) and Python RAG (file details, list, upload).
  */
+export type FileStatus =
+  | "uploading"
+  | "processing"
+  | "awaiting_review"
+  | "ready"
+  | "failed";
+
 export type UploadProgressEvent = {
-  step: string;
-  message: string;
+  type?: string;
+  step?: string;
+  message?: string;
   file_id?: string;
 };
+
+export interface DocumentYearRange {
+  fromYear?: number | null;
+  toYear?: number | null;
+}
+
+export interface DocumentCustomMetadata {
+  type?: string | null;
+  enrollmentYear?: DocumentYearRange | null;
+  academicYear?: DocumentYearRange | null;
+  [key: string]: unknown;
+}
+
+export interface FileListItemResponse {
+  fileId: string;
+  status: FileStatus;
+  displayName?: string | null;
+  originalFilename?: string | null;
+  lecturerOnly: boolean;
+  customMetadata?: DocumentCustomMetadata | null;
+  fileUrl?: string | null;
+  markdownFileUrl?: string | null;
+  createdAt: string;
+}
+
+export interface FileDetailResponse
+  extends Omit<FileListItemResponse, "fileUrl" | "markdownFileUrl">,
+    Record<string, unknown> {
+  fileUrl: string;
+  markdownFileUrl: string;
+  updatedAt?: string | null;
+  fileSize?: number | null;
+  tableOfContents?: string[] | null;
+  lastProcessingError?: string | null;
+  mimeType?: string | null;
+  contentType?: string | null;
+}
+
+export interface UploadFileResponse {
+  fileId: string;
+  status: FileStatus;
+  lecturerOnly: boolean;
+  customMetadata?: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export interface OcrReviewResponse {
+  fileId: string;
+  status: "awaiting_review";
+  markdown: string;
+  ocrPageCount: number | null;
+  ocrCompletedAt: string | null;
+  lastProcessingError: string | null;
+}
 
 const getRagWsBaseUrl = () => {
   const raw = API_CONFIG.ragBaseURL;
@@ -67,9 +129,15 @@ export const DocumentsService = {
     page?: number;
     limit?: number;
     keywords?: string;
+    fileStatus?: FileStatus;
     lecturerOnly?: boolean;
     metadataFilter?: Record<string, unknown>;
-  }): Promise<{ files: unknown[]; total: number }> {
+  }): Promise<{
+    files: FileListItemResponse[];
+    total: number;
+    page?: number;
+    limit?: number;
+  }> {
     const queryParams: Record<string, unknown> = { ...params };
     if (params?.metadataFilter) {
       queryParams.metadataFilter = JSON.stringify(params.metadataFilter);
@@ -87,15 +155,21 @@ export const DocumentsService = {
    * Get file detail from RAG.
    * Also optionally records access in Nest API.
    */
-  async getFileDetail(fileId: string, recordAccess = false): Promise<any> {
+  async getFileDetail(
+    fileId: string,
+    recordAccess = false,
+  ): Promise<FileDetailResponse> {
     if (recordAccess) {
       // Background call to nest api
       this.recordAccess(fileId).catch(console.error);
     }
     const { data } = await ragHttp.get(API_ENDPOINTS.rag.files.byId(fileId));
-    return data;
+    return {
+      ...data,
+      fileUrl: data.fileUrl ?? "",
+      markdownFileUrl: data.markdownFileUrl ?? "",
+    };
   },
-
 
   createUploadProgressSocket(
     clientId: string,
@@ -117,7 +191,7 @@ export const DocumentsService = {
     socket.onmessage = (evt) => {
       try {
         const payload = JSON.parse(evt.data) as UploadProgressEvent;
-        if ((payload as { type?: string }).type === "auth_ok") return;
+        if (payload.type === "auth_ok") return;
         handlers.onMessage?.(payload);
       } catch {
         // ignore malformed messages
@@ -132,7 +206,7 @@ export const DocumentsService = {
   /**
    * Upload file to RAG.
    */
-  async uploadFile(formData: FormData): Promise<any> {
+  async uploadFile(formData: FormData): Promise<UploadFileResponse> {
     const { data } = await ragHttp.post(
       API_ENDPOINTS.rag.files.base,
       formData,
@@ -141,6 +215,52 @@ export const DocumentsService = {
       },
     );
     return data;
+  },
+
+  /**
+   * Get the OCR Markdown draft while a file is awaiting admin review.
+   */
+  async getOcrReview(fileId: string): Promise<OcrReviewResponse> {
+    const { data } = await ragHttp.get(
+      API_ENDPOINTS.rag.files.ocrReview(fileId),
+    );
+    return data;
+  },
+
+  /**
+   * Persist an edited OCR Markdown draft to R2.
+   */
+  async saveOcrReview(
+    fileId: string,
+    markdown: string,
+    clientId?: string,
+  ): Promise<void> {
+    await ragHttp.put(
+      API_ENDPOINTS.rag.files.ocrReview(fileId),
+      { markdown },
+      clientId ? { headers: { "X-Client-ID": clientId } } : undefined,
+    );
+  },
+
+  /**
+   * Approve an OCR draft and atomically start background indexing.
+   */
+  async approveOcrReview(fileId: string): Promise<FileDetailResponse> {
+    const { data } = await ragHttp.post(
+      API_ENDPOINTS.rag.files.approveOcrReview(fileId),
+    );
+    return {
+      ...data,
+      fileUrl: data.fileUrl ?? "",
+      markdownFileUrl: data.markdownFileUrl ?? "",
+    };
+  },
+
+  /**
+   * Reject an OCR draft, marking the file failed and deleting the draft.
+   */
+  async rejectOcrReview(fileId: string): Promise<void> {
+    await ragHttp.post(API_ENDPOINTS.rag.files.rejectOcrReview(fileId));
   },
 
   /**
