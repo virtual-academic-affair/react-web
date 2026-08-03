@@ -150,6 +150,7 @@ const OcrReviewDrawer = ({
       }
       disabled={isPending}
       contentFormat="markdown"
+      stickyToolbar
       minHeight="55vh"
       placeholder="Nhập nội dung tài liệu..."
       error={validationError}
