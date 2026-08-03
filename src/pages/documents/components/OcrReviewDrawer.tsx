@@ -1,7 +1,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { message as toast } from "antd";
-import { useMemo, useState } from "react";
-import { MdCheck, MdClose, MdSave } from "react-icons/md";
+import { lazy, Suspense, useMemo, useRef, useState } from "react";
+import {
+  MdCheck,
+  MdChevronLeft,
+  MdChevronRight,
+  MdClose,
+  MdPictureAsPdf,
+  MdSave,
+} from "react-icons/md";
 
 import Drawer from "@/components/drawer/Drawer";
 import RichTextEditor from "@/components/fields/RichTextEditor";
@@ -9,7 +16,10 @@ import ConfirmModal from "@/components/modal/ConfirmModal";
 import { DocumentsService } from "@/services/documents";
 import { parseError } from "@/utils/parseError";
 
+import "./FilePreviewModal.css";
 import { MAX_FILE_SIZE } from "./UploadDrawer";
+
+const PdfPreview = lazy(() => import("./file-preview/PdfPreview"));
 
 interface OcrReviewDrawerProps {
   fileId: string | null;
@@ -24,6 +34,127 @@ type DraftState = {
   fileId: string;
   markdown: string;
   savedMarkdown: string;
+};
+
+interface PdfReferencePanelProps {
+  url?: string | null;
+  fileName: string;
+  isLoading: boolean;
+  error?: unknown;
+}
+
+const PdfReferencePanel = ({
+  url,
+  fileName,
+  isLoading,
+  error,
+}: PdfReferencePanelProps) => {
+  const [numPages, setNumPages] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [scale, setScale] = useState(0.85);
+  const pdfScrollRef = useRef<((page: number) => void) | undefined>(undefined);
+
+  const changePage = (nextPage: number) => {
+    if (nextPage < 1 || nextPage > numPages) return;
+    pdfScrollRef.current?.(nextPage);
+    setCurrentPage(nextPage);
+  };
+
+  return (
+    <section className="dark:bg-navy-900 flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 dark:border-white/10">
+      <header className="flex min-h-12 shrink-0 flex-col items-stretch gap-2 border-b border-gray-200 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3 dark:border-white/10">
+        <div className="flex min-w-0 items-center gap-2 sm:flex-1">
+          <MdPictureAsPdf className="h-5 w-5 shrink-0 text-red-500" />
+          <div className="min-w-0">
+            <p className="text-navy-700 text-sm font-semibold dark:text-white">
+              [Tham chiếu] {fileName || "Tài liệu tham chiếu"}
+            </p>
+          </div>
+        </div>
+
+        {numPages > 0 ? (
+          <div className="flex w-full shrink-0 items-center justify-between gap-1 rounded-xl border border-gray-200 bg-white px-1.5 py-1 sm:w-auto sm:justify-start dark:border-white/10 dark:bg-white/5">
+            <button
+              type="button"
+              title="Trang trước"
+              disabled={currentPage <= 1}
+              onClick={() => changePage(currentPage - 1)}
+              className="rounded-lg p-1 text-gray-600 transition-colors hover:bg-gray-100 disabled:opacity-30 dark:text-gray-300 dark:hover:bg-white/10"
+            >
+              <MdChevronLeft className="h-4 w-4" />
+            </button>
+            <span className="min-w-12 text-center text-xs font-semibold text-gray-600 dark:text-gray-300">
+              {currentPage}/{numPages}
+            </span>
+            <button
+              type="button"
+              title="Trang sau"
+              disabled={currentPage >= numPages}
+              onClick={() => changePage(currentPage + 1)}
+              className="rounded-lg p-1 text-gray-600 transition-colors hover:bg-gray-100 disabled:opacity-30 dark:text-gray-300 dark:hover:bg-white/10"
+            >
+              <MdChevronRight className="h-4 w-4" />
+            </button>
+            <span className="mx-1 h-4 w-px bg-gray-200 dark:bg-white/10" />
+            <button
+              type="button"
+              title="Thu nhỏ"
+              onClick={() => setScale((value) => Math.max(0.5, value - 0.15))}
+              className="rounded-lg px-1.5 py-0.5 text-sm text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10"
+            >
+              −
+            </button>
+            <span className="min-w-9 text-center text-xs font-semibold text-gray-600 dark:text-gray-300">
+              {Math.round(scale * 100)}%
+            </span>
+            <button
+              type="button"
+              title="Phóng to"
+              onClick={() => setScale((value) => Math.min(2.5, value + 0.15))}
+              className="rounded-lg px-1.5 py-0.5 text-sm text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10"
+            >
+              +
+            </button>
+          </div>
+        ) : null}
+      </header>
+
+      <div className="min-h-0 flex-1">
+        {isLoading ? (
+          <div className="flex h-full flex-col items-center justify-center gap-3 text-gray-500 dark:text-gray-400">
+            <div className="fpv-spinner" />
+            <p className="text-sm">Đang tải PDF gốc...</p>
+          </div>
+        ) : error || !url ? (
+          <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-gray-500 dark:text-gray-400">
+            <MdPictureAsPdf className="h-10 w-10 opacity-50" />
+            <p className="text-sm font-semibold">Không thể hiển thị PDF gốc.</p>
+            <p className="text-xs">
+              Bạn vẫn có thể tiếp tục chỉnh sửa bản OCR.
+            </p>
+          </div>
+        ) : (
+          <Suspense
+            fallback={
+              <div className="flex h-full items-center justify-center">
+                <div className="fpv-spinner" />
+              </div>
+            }
+          >
+            <PdfPreview
+              url={url}
+              scale={scale}
+              currentPage={currentPage}
+              numPages={numPages}
+              setNumPages={setNumPages}
+              setCurrentPage={setCurrentPage}
+              pdfScrollRef={pdfScrollRef}
+            />
+          </Suspense>
+        )}
+      </div>
+    </section>
+  );
 };
 
 const OcrReviewDrawer = ({
@@ -45,6 +176,18 @@ const OcrReviewDrawer = ({
     enabled: isOpen && Boolean(fileId),
     retry: false,
     refetchOnMount: "always",
+  });
+
+  const {
+    data: fileDetail,
+    isLoading: isFileDetailLoading,
+    error: fileDetailError,
+  } = useQuery({
+    queryKey: ["file-detail-preview", fileId],
+    queryFn: () => DocumentsService.getFileDetail(fileId!),
+    enabled: isOpen && Boolean(fileId),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const activeDraft = draft?.fileId === fileId ? draft : null;
@@ -150,7 +293,7 @@ const OcrReviewDrawer = ({
       }
       disabled={isPending}
       contentFormat="markdown"
-      minHeight="55vh"
+      fillHeight
       placeholder="Nhập nội dung tài liệu..."
       error={validationError}
       className="dark:bg-navy-900 rounded-2xl bg-gray-50"
@@ -163,7 +306,8 @@ const OcrReviewDrawer = ({
         isOpen={isOpen}
         onClose={requestClose}
         title={`Duyệt OCR${fileName ? ` · ${fileName}` : ""}`}
-        width="max-w-5xl"
+        width="max-w-[calc(100vw-48px)] xl:max-w-[1440px]"
+        bodyClassName="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-4 text-sm leading-relaxed md:px-6 md:py-5 lg:overflow-hidden"
         footerLeft={
           <button
             type="button"
@@ -226,17 +370,31 @@ const OcrReviewDrawer = ({
             </button>
           </div>
         ) : (
-          <div className="flex flex-col gap-4">
-            {data?.lastProcessingError ? (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
-                <p className="mb-1 font-semibold">Lỗi xử lý lần trước</p>
-                <p className="whitespace-pre-line">
-                  {data.lastProcessingError}
-                </p>
-              </div>
-            ) : null}
+          <div className="grid min-h-0 items-stretch gap-4 lg:h-full lg:grid-cols-[minmax(0,1fr)_minmax(26rem,1fr)]">
+            <div className="flex h-[58dvh] min-h-0 min-w-0 flex-col gap-4 lg:h-auto">
+              {data?.lastProcessingError ? (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+                  <p className="mb-1 font-semibold">Lỗi xử lý lần trước</p>
+                  <p className="whitespace-pre-line">
+                    {data.lastProcessingError}
+                  </p>
+                </div>
+              ) : null}
 
-            {editor}
+              <div className="min-h-0 flex-1">{editor}</div>
+            </div>
+
+            <div className="h-[58dvh] min-h-0 min-w-0 lg:h-auto">
+              <PdfReferencePanel
+                key={fileId ?? "pdf-reference"}
+                url={fileDetail?.fileUrl}
+                fileName={
+                  fileDetail?.originalFilename || fileName || "Tài liệu gốc"
+                }
+                isLoading={isFileDetailLoading}
+                error={fileDetailError}
+              />
+            </div>
           </div>
         )}
       </Drawer>
@@ -246,7 +404,7 @@ const OcrReviewDrawer = ({
         onCancel={() => setRejectOpen(false)}
         onConfirm={handleReject}
         title="Từ chối bản OCR"
-        subTitle="Tài liệu sẽ chuyển sang trạng thái thất bại và bản Markdown trên R2 sẽ bị xóa. Hành động này không thể hoàn tác."
+        subTitle="Tài liệu sẽ chuyển sang trạng thái thất bại và bản Markdown (text OCR từ file PDF gốc) trên kho lưu trữ sẽ bị xóa. Hành động này không thể hoàn tác."
         confirmText="Từ chối OCR"
         loading={pendingAction === "reject"}
       />

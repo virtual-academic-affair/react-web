@@ -12,6 +12,8 @@ interface DrawerProps {
   footerLeft?: ReactNode;
   footerRight?: ReactNode;
   width?: string;
+  /** Ghi đè layout vùng nội dung; mặc định vùng này tự cuộn theo chiều dọc. */
+  bodyClassName?: string;
   /** Nội dung bổ sung bên cạnh nút đóng (vd. switch) */
   headerExtra?: ReactNode;
   /** Drawer trượt từ phải (mặc định) hoặc từ trái */
@@ -30,6 +32,7 @@ const Drawer: React.FC<DrawerProps> = ({
   footerLeft,
   footerRight,
   width = "max-w-3xl",
+  bodyClassName,
   headerExtra,
   side = "right",
   hideBackdrop = false,
@@ -56,6 +59,9 @@ const Drawer: React.FC<DrawerProps> = ({
       : "-translate-x-[calc(100%+48px)]";
   const marginClass = side === "right" ? "mr-6" : "ml-6";
   const flexJustify = side === "right" ? "justify-end" : "justify-start";
+  const resolvedBodyClassName =
+    bodyClassName ??
+    "min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-4 text-sm leading-relaxed md:px-6 md:py-5";
 
   return createPortal(
     <>
@@ -91,9 +97,7 @@ const Drawer: React.FC<DrawerProps> = ({
             </div>
           </div>
 
-          <div className="flex-1 overflow-x-hidden overflow-y-auto px-4 py-4 text-sm leading-relaxed md:px-6 md:py-5">
-            {children}
-          </div>
+          <div className={resolvedBodyClassName}>{children}</div>
 
           {(footerLeft || footerRight) && (
             <div className="flex items-center justify-between gap-2 border-t border-gray-100 px-4 py-3 md:px-6 md:py-4 dark:border-white/10">
@@ -128,9 +132,7 @@ const Drawer: React.FC<DrawerProps> = ({
             </h2>
           </div>
 
-          <div className="flex-1 overflow-x-hidden overflow-y-auto px-4 py-4 text-sm leading-relaxed md:px-6 md:py-5">
-            {children}
-          </div>
+          <div className={resolvedBodyClassName}>{children}</div>
 
           {(footerLeft || footerRight) && (
             <div className="flex items-center justify-between gap-2 border-t border-gray-100 px-4 py-3 md:px-6 md:py-4 dark:border-white/10">
