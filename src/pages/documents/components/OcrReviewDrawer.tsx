@@ -62,8 +62,8 @@ const PdfReferencePanel = ({
 
   return (
     <section className="dark:bg-navy-900 flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 dark:border-white/10">
-      <header className="flex min-h-12 shrink-0 items-center justify-between gap-3 border-b border-gray-200 px-3 py-2 dark:border-white/10">
-        <div className="flex min-w-0 items-center gap-2">
+      <header className="flex min-h-12 shrink-0 flex-col items-stretch gap-2 border-b border-gray-200 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3 dark:border-white/10">
+        <div className="flex min-w-0 items-center gap-2 sm:flex-1">
           <MdPictureAsPdf className="h-5 w-5 shrink-0 text-red-500" />
           <div className="min-w-0">
             <p className="text-navy-700 text-sm font-semibold dark:text-white">
@@ -73,7 +73,7 @@ const PdfReferencePanel = ({
         </div>
 
         {numPages > 0 ? (
-          <div className="flex shrink-0 items-center gap-1 rounded-xl border border-gray-200 bg-white px-1.5 py-1 dark:border-white/10 dark:bg-white/5">
+          <div className="flex w-full shrink-0 items-center justify-between gap-1 rounded-xl border border-gray-200 bg-white px-1.5 py-1 sm:w-auto sm:justify-start dark:border-white/10 dark:bg-white/5">
             <button
               type="button"
               title="Trang trước"
@@ -307,7 +307,7 @@ const OcrReviewDrawer = ({
         onClose={requestClose}
         title={`Duyệt OCR${fileName ? ` · ${fileName}` : ""}`}
         width="max-w-[calc(100vw-48px)] xl:max-w-[1440px]"
-        bodyClassName="min-h-0 flex-1 overflow-hidden px-4 py-4 text-sm leading-relaxed md:px-6 md:py-5"
+        bodyClassName="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-4 text-sm leading-relaxed md:px-6 md:py-5 lg:overflow-hidden"
         footerLeft={
           <button
             type="button"
@@ -370,8 +370,8 @@ const OcrReviewDrawer = ({
             </button>
           </div>
         ) : (
-          <div className="grid h-full min-h-0 items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(26rem,1fr)]">
-            <div className="flex min-h-0 min-w-0 flex-col gap-4">
+          <div className="grid min-h-0 items-stretch gap-4 lg:h-full lg:grid-cols-[minmax(0,1fr)_minmax(26rem,1fr)]">
+            <div className="flex h-[58dvh] min-h-0 min-w-0 flex-col gap-4 lg:h-auto">
               {data?.lastProcessingError ? (
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
                   <p className="mb-1 font-semibold">Lỗi xử lý lần trước</p>
@@ -384,7 +384,7 @@ const OcrReviewDrawer = ({
               <div className="min-h-0 flex-1">{editor}</div>
             </div>
 
-            <div className="hidden min-h-0 min-w-0 lg:block">
+            <div className="h-[58dvh] min-h-0 min-w-0 lg:h-auto">
               <PdfReferencePanel
                 key={fileId ?? "pdf-reference"}
                 url={fileDetail?.fileUrl}
