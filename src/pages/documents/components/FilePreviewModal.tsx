@@ -478,39 +478,17 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
           {/* Header */}
           <div className="z-1 flex shrink-0 flex-col gap-2 border-b border-white/8 bg-[#202124]/95 px-3 py-2 sm:px-5 sm:py-3 md:flex-row md:items-center md:justify-between">
             {/* File info */}
-            <div className="flex w-full min-w-0 items-center justify-between gap-2 md:flex-1 md:justify-start">
-              <div className="flex min-w-0 items-center gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10">
-                  <MdDescription className="h-5 w-5 text-gray-300" />
-                </div>
-                <div className="min-w-0">
-                  <p className="max-w-[180px] truncate text-sm font-semibold text-white sm:max-w-[360px] md:max-w-[480px]">
-                    {effectiveFileName}
-                  </p>
-                  <p className="text-xs text-gray-400 uppercase">
-                    {getExtension(effectiveFileName) || "file"} file
-                  </p>
-                </div>
+            <div className="flex w-full min-w-0 items-center gap-3 md:flex-1">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10">
+                <MdDescription className="h-5 w-5 text-gray-300" />
               </div>
-
-              <div className="flex shrink-0 items-center justify-end gap-1 md:hidden">
-                {copyViewLinkButton}
-                <button
-                  type="button"
-                  onClick={handleDownload}
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition-all hover:bg-white/12 hover:text-white active:scale-92"
-                  title="Tải xuống"
-                >
-                  <MdFileDownload className="h-5 w-5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition-all hover:bg-white/12 hover:text-white active:scale-92"
-                  title="Đóng"
-                >
-                  <MdClose className="h-5 w-5" />
-                </button>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-white md:max-w-[480px]">
+                  {effectiveFileName}
+                </p>
+                <p className="text-xs text-gray-400 uppercase">
+                  {getExtension(effectiveFileName) || "file"} file
+                </p>
               </div>
             </div>
 
@@ -562,6 +540,27 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
                 </div>
               </div>
             )}
+
+            {/* Mobile actions on their own row */}
+            <div className="flex w-full items-center justify-evenly gap-1 md:hidden">
+              {copyViewLinkButton}
+              <button
+                type="button"
+                onClick={handleDownload}
+                className="flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition-all hover:bg-white/12 hover:text-white active:scale-92"
+                title="Tải xuống"
+              >
+                <MdFileDownload className="h-5 w-5" />
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition-all hover:bg-white/12 hover:text-white active:scale-92"
+                title="Đóng"
+              >
+                <MdClose className="h-5 w-5" />
+              </button>
+            </div>
 
             {/* Actions */}
             <div className="hidden flex-1 items-center justify-end gap-1 md:flex">
