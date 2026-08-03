@@ -246,7 +246,7 @@ const OcrReviewDrawer = ({
         onCancel={() => setRejectOpen(false)}
         onConfirm={handleReject}
         title="Từ chối bản OCR"
-        subTitle="Tài liệu sẽ chuyển sang trạng thái thất bại và bản Markdown trên R2 sẽ bị xóa. Hành động này không thể hoàn tác."
+        subTitle="Tài liệu sẽ chuyển sang trạng thái thất bại và bản Markdown trên kho lưu trữ sẽ bị xóa. Hành động này không thể hoàn tác."
         confirmText="Từ chối OCR"
         loading={pendingAction === "reject"}
       />

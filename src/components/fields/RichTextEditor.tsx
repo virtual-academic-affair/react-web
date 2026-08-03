@@ -1,6 +1,7 @@
 import type { AnyExtension, Editor } from "@tiptap/core";
 import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
+import { TaskItem, TaskList } from "@tiptap/extension-list";
 import { Markdown } from "@tiptap/markdown";
 import Placeholder from "@tiptap/extension-placeholder";
 import { TableKit } from "@tiptap/extension-table";
@@ -11,12 +12,15 @@ import React from "react";
 import { createPortal } from "react-dom";
 import {
   MdCode,
+  MdChecklist,
+  MdDataObject,
   MdFormatBold,
   MdFormatItalic,
   MdFormatListBulleted,
   MdFormatListNumbered,
   MdFormatQuote,
   MdFormatUnderlined,
+  MdHorizontalRule,
   MdImage,
   MdLink,
   MdRedo,
@@ -96,6 +100,122 @@ function ToolbarButton({
     >
       {children}
     </button>
+  );
+}
+
+function HeadingToolbarMenu({
+  editor,
+  disabled,
+  activeLevel,
+}: {
+  editor: Editor;
+  disabled: boolean;
+  activeLevel: number;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [position, setPosition] = React.useState<FloatingPosition>({ left: 0 });
+  const triggerRef = React.useRef<HTMLButtonElement>(null);
+  const menuRef = React.useRef<HTMLDivElement>(null);
+
+  const toggleMenu = () => {
+    if (disabled) return;
+    if (!open && triggerRef.current) {
+      setPosition(
+        getFloatingDropdownPosition(
+          triggerRef.current.getBoundingClientRect(),
+          { gap: 6, width: 170, maxHeight: 340 },
+        ),
+      );
+    }
+    setOpen((current) => !current);
+  };
+
+  React.useEffect(() => {
+    if (!open) return;
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        triggerRef.current?.contains(target) ||
+        menuRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setOpen(false);
+    };
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
+  }, [open]);
+
+  React.useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [open]);
+
+  const selectLevel = (level: number) => {
+    if (level === 0) {
+      editor.chain().focus().setParagraph().run();
+    } else {
+      editor
+        .chain()
+        .focus()
+        .setHeading({ level: level as 1 | 2 | 3 | 4 | 5 | 6 })
+        .run();
+    }
+    setOpen(false);
+  };
+
+  return (
+    <>
+      <ToolbarButton
+        title="Kiểu đoạn văn"
+        disabled={disabled}
+        active={activeLevel > 0}
+        onClick={toggleMenu}
+        buttonRef={triggerRef}
+      >
+        <span className="text-xs font-bold">
+          {activeLevel > 0 ? `H${activeLevel}` : "P"}
+        </span>
+      </ToolbarButton>
+
+      {open &&
+        createPortal(
+          <div
+            ref={menuRef}
+            style={{
+              top: position.top,
+              bottom: position.bottom,
+              left: position.left,
+            }}
+            className="dark:bg-navy-900 fixed z-9999 w-[170px] rounded-xl border border-gray-100 bg-white p-1.5 shadow-xl dark:border-white/10"
+          >
+            {[0, 1, 2, 3, 4, 5, 6].map((level) => {
+              const isActive = activeLevel === level;
+              return (
+                <button
+                  key={level}
+                  type="button"
+                  onClick={() => selectLevel(level)}
+                  className={`flex w-full items-center rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+                    isActive
+                      ? "bg-brand-500/10 text-brand-600 dark:text-brand-300"
+                      : "text-navy-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-white/5"
+                  }`}
+                >
+                  {level === 0 ? "Đoạn văn" : `Tiêu đề ${level}`}
+                </button>
+              );
+            })}
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }
 
@@ -284,23 +404,28 @@ function EditorToolbar({
 }) {
   const state = useEditorState({
     editor,
-    selector: (snap) => ({
-      bold: snap.editor.isActive("bold"),
-      italic: snap.editor.isActive("italic"),
-      strike: snap.editor.isActive("strike"),
-      underline: snap.editor.isActive("underline"),
-      code: snap.editor.isActive("code"),
-      bulletList: snap.editor.isActive("bulletList"),
-      orderedList: snap.editor.isActive("orderedList"),
-      blockquote: snap.editor.isActive("blockquote"),
-      h1: snap.editor.isActive("heading", { level: 1 }),
-      h2: snap.editor.isActive("heading", { level: 2 }),
-      h3: snap.editor.isActive("heading", { level: 3 }),
-      link: snap.editor.isActive("link"),
-      table: snap.editor.isActive("table"),
-      canUndo: snap.editor.can().undo(),
-      canRedo: snap.editor.can().redo(),
-    }),
+    selector: (snap) => {
+      const headingLevel = ([1, 2, 3, 4, 5, 6] as const).find((level) =>
+        snap.editor.isActive("heading", { level }),
+      );
+      return {
+        bold: snap.editor.isActive("bold"),
+        italic: snap.editor.isActive("italic"),
+        strike: snap.editor.isActive("strike"),
+        underline: snap.editor.isActive("underline"),
+        code: snap.editor.isActive("code"),
+        codeBlock: snap.editor.isActive("codeBlock"),
+        bulletList: snap.editor.isActive("bulletList"),
+        orderedList: snap.editor.isActive("orderedList"),
+        taskList: snap.editor.isActive("taskList"),
+        blockquote: snap.editor.isActive("blockquote"),
+        headingLevel: headingLevel ?? 0,
+        link: snap.editor.isActive("link"),
+        table: snap.editor.isActive("table"),
+        canUndo: snap.editor.can().undo(),
+        canRedo: snap.editor.can().redo(),
+      };
+    },
   });
 
   const setLink = () => {
@@ -343,14 +468,16 @@ function EditorToolbar({
       >
         <MdFormatItalic className="h-4 w-4" />
       </ToolbarButton>
-      <ToolbarButton
-        title="Gạch chân"
-        disabled={disabled}
-        active={state.underline}
-        onClick={() => editor.chain().focus().toggleUnderline().run()}
-      >
-        <MdFormatUnderlined className="h-4 w-4" />
-      </ToolbarButton>
+      {contentFormat === "html" && (
+        <ToolbarButton
+          title="Gạch chân"
+          disabled={disabled}
+          active={state.underline}
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
+        >
+          <MdFormatUnderlined className="h-4 w-4" />
+        </ToolbarButton>
+      )}
       <ToolbarButton
         title="Gạch ngang"
         disabled={disabled}
@@ -369,17 +496,37 @@ function EditorToolbar({
       </ToolbarButton>
       <span className="mx-1 h-5 w-px shrink-0 bg-gray-200 transition-colors duration-200 dark:bg-white/15" />
       {contentFormat === "markdown" && (
-        <ToolbarButton
-          title="Tiêu đề 1"
+        <HeadingToolbarMenu
+          editor={editor}
           disabled={disabled}
-          active={state.h1}
-          onClick={() =>
-            editor.chain().focus().toggleHeading({ level: 1 }).run()
-          }
-        >
-          <span className="text-xs font-bold">H1</span>
-        </ToolbarButton>
+          activeLevel={state.headingLevel}
+        />
       )}
+      {contentFormat === "html" && (
+        <>
+          <ToolbarButton
+            title="Tiêu đề 2"
+            disabled={disabled}
+            active={state.headingLevel === 2}
+            onClick={() =>
+              editor.chain().focus().toggleHeading({ level: 2 }).run()
+            }
+          >
+            <span className="text-xs font-bold">H2</span>
+          </ToolbarButton>
+          <ToolbarButton
+            title="Tiêu đề 3"
+            disabled={disabled}
+            active={state.headingLevel === 3}
+            onClick={() =>
+              editor.chain().focus().toggleHeading({ level: 3 }).run()
+            }
+          >
+            <span className="text-xs font-bold">H3</span>
+          </ToolbarButton>
+        </>
+      )}
+      <span className="mx-1 h-5 w-px shrink-0 bg-gray-200 transition-colors duration-200 dark:bg-white/15" />
       <ToolbarButton
         title="Danh sách bullet"
         disabled={disabled}
@@ -396,6 +543,16 @@ function EditorToolbar({
       >
         <MdFormatListNumbered className="h-4 w-4" />
       </ToolbarButton>
+      {contentFormat === "markdown" && (
+        <ToolbarButton
+          title="Danh sách công việc"
+          disabled={disabled}
+          active={state.taskList}
+          onClick={() => editor.chain().focus().toggleTaskList().run()}
+        >
+          <MdChecklist className="h-4 w-4" />
+        </ToolbarButton>
+      )}
       <ToolbarButton
         title="Trích dẫn"
         disabled={disabled}
@@ -405,22 +562,25 @@ function EditorToolbar({
         <MdFormatQuote className="h-4 w-4" />
       </ToolbarButton>
       <span className="mx-1 h-5 w-px shrink-0 bg-gray-200 transition-colors duration-200 dark:bg-white/15" />
-      <ToolbarButton
-        title="Tiêu đề 2"
-        disabled={disabled}
-        active={state.h2}
-        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-      >
-        <span className="text-xs font-bold">H2</span>
-      </ToolbarButton>
-      <ToolbarButton
-        title="Tiêu đề 3"
-        disabled={disabled}
-        active={state.h3}
-        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-      >
-        <span className="text-xs font-bold">H3</span>
-      </ToolbarButton>
+      {contentFormat === "markdown" && (
+        <>
+          <ToolbarButton
+            title="Khối mã"
+            disabled={disabled}
+            active={state.codeBlock}
+            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+          >
+            <MdDataObject className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            title="Đường phân cách"
+            disabled={disabled}
+            onClick={() => editor.chain().focus().setHorizontalRule().run()}
+          >
+            <MdHorizontalRule className="h-4 w-4" />
+          </ToolbarButton>
+        </>
+      )}
       <ToolbarButton
         title="Liên kết"
         disabled={disabled}
@@ -495,7 +655,6 @@ const RichTextEditor = React.forwardRef<
           link: false,
           underline: false,
         } as any),
-        Underline,
         Link.configure({
           openOnClick: true,
           autolink: true,
@@ -511,9 +670,14 @@ const RichTextEditor = React.forwardRef<
           emptyEditorClass: "is-editor-empty",
         }),
       ];
+      if (contentFormat === "html") {
+        list.push(Underline);
+      }
       if (contentFormat === "markdown") {
         list.push(
           Markdown,
+          TaskList,
+          TaskItem.configure({ nested: true }),
           TableKit.configure({
             table: { resizable: true },
           }),
@@ -642,6 +806,20 @@ const RichTextEditor = React.forwardRef<
             .tiptap-editor .tiptap-prose ul { list-style: disc; padding-left: 1.25rem; margin: 0.5em 0; }
             .tiptap-editor .tiptap-prose ol { list-style: decimal; padding-left: 1.25rem; margin: 0.5em 0; }
             .tiptap-editor .tiptap-prose li { margin: 0.15em 0; }
+            .tiptap-editor .tiptap-prose ul[data-type="taskList"] {
+              list-style: none;
+              padding-left: 0;
+            }
+            .tiptap-editor .tiptap-prose li[data-type="taskItem"] {
+              display: flex;
+              align-items: flex-start;
+              gap: 0.5rem;
+            }
+            .tiptap-editor .tiptap-prose li[data-type="taskItem"] > label {
+              margin-top: 0.35rem;
+              user-select: none;
+            }
+            .tiptap-editor .tiptap-prose li[data-type="taskItem"] > div { flex: 1; min-width: 0; }
             .tiptap-editor .tiptap-prose h1 { font-size: 1.35rem; font-weight: 750; margin: 0.7em 0 0.4em; }
             .tiptap-editor .tiptap-prose h2 { font-size: 1.15rem; font-weight: 700; margin: 0.6em 0 0.35em; }
             .tiptap-editor .tiptap-prose h3 { font-size: 1.05rem; font-weight: 600; margin: 0.5em 0 0.3em; }
@@ -679,6 +857,12 @@ const RichTextEditor = React.forwardRef<
               background: rgba(255,255,255,0.06);
             }
             .tiptap-editor .tiptap-prose pre code { background: none; padding: 0; }
+            .tiptap-editor .tiptap-prose hr {
+              border: 0;
+              border-top: 1px solid #d1d5db;
+              margin: 1rem 0;
+            }
+            .dark .tiptap-editor .tiptap-prose hr { border-top-color: rgba(255,255,255,0.18); }
             .tiptap-editor .tiptap-prose table {
               width: 100%;
               min-width: 36rem;
