@@ -66,8 +66,8 @@ interface RichTextEditorProps {
   extraExtensions?: AnyExtension[];
   /** Định dạng dữ liệu vào/ra. Mặc định giữ nguyên contract HTML cũ. */
   contentFormat?: "html" | "markdown";
-  /** Giữ toolbar ở đầu vùng cuộn gần nhất khi soạn tài liệu dài. */
-  stickyToolbar?: boolean;
+  /** Chiếm chiều cao của parent và chỉ cuộn phần nội dung bên dưới toolbar. */
+  fillHeight?: boolean;
   /** Chiều cao tối thiểu của vùng soạn thảo, ví dụ "55vh". */
   minHeight?: string;
 }
@@ -399,12 +399,10 @@ function EditorToolbar({
   editor,
   disabled,
   contentFormat,
-  sticky,
 }: {
   editor: Editor;
   disabled: boolean;
   contentFormat: "html" | "markdown";
-  sticky: boolean;
 }) {
   const state = useEditorState({
     editor,
@@ -453,185 +451,177 @@ function EditorToolbar({
 
   return (
     <div
-      className={`min-w-0 ${
-        sticky
-          ? "dark:bg-navy-900 dark:before:bg-navy-800 sticky top-0 z-20 rounded-t-[15px] bg-gray-50 before:pointer-events-none before:absolute before:inset-x-0 before:bottom-full before:h-4 before:bg-white before:content-[''] md:before:h-5"
-          : ""
-      }`}
+      className="flex min-h-9 min-w-0 shrink-0 flex-nowrap items-center gap-0.5 overflow-x-auto overflow-y-hidden border-b border-gray-200 bg-transparent px-2 py-1.5 transition-colors duration-200 dark:border-white/10"
+      style={{ WebkitOverflowScrolling: "touch" }}
     >
-      <div
-        className="flex min-h-9 min-w-0 flex-nowrap items-center gap-0.5 overflow-x-auto overflow-y-hidden border-b border-gray-200 bg-transparent px-2 py-1.5 transition-colors duration-200 dark:border-white/10"
-        style={{ WebkitOverflowScrolling: "touch" }}
+      <ToolbarButton
+        title="Đậm"
+        disabled={disabled}
+        active={state.bold}
+        onClick={() => editor.chain().focus().toggleBold().run()}
       >
+        <MdFormatBold className="h-4 w-4" />
+      </ToolbarButton>
+      <ToolbarButton
+        title="Nghiêng"
+        disabled={disabled}
+        active={state.italic}
+        onClick={() => editor.chain().focus().toggleItalic().run()}
+      >
+        <MdFormatItalic className="h-4 w-4" />
+      </ToolbarButton>
+      {contentFormat === "html" && (
         <ToolbarButton
-          title="Đậm"
+          title="Gạch chân"
           disabled={disabled}
-          active={state.bold}
-          onClick={() => editor.chain().focus().toggleBold().run()}
+          active={state.underline}
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
         >
-          <MdFormatBold className="h-4 w-4" />
+          <MdFormatUnderlined className="h-4 w-4" />
         </ToolbarButton>
-        <ToolbarButton
-          title="Nghiêng"
+      )}
+      <ToolbarButton
+        title="Gạch ngang"
+        disabled={disabled}
+        active={state.strike}
+        onClick={() => editor.chain().focus().toggleStrike().run()}
+      >
+        <MdStrikethroughS className="h-4 w-4" />
+      </ToolbarButton>
+      <ToolbarButton
+        title="Mã inline"
+        disabled={disabled}
+        active={state.code}
+        onClick={() => editor.chain().focus().toggleCode().run()}
+      >
+        <MdCode className="h-4 w-4" />
+      </ToolbarButton>
+      <span className="mx-1 h-5 w-px shrink-0 bg-gray-200 transition-colors duration-200 dark:bg-white/15" />
+      {contentFormat === "markdown" && (
+        <HeadingToolbarMenu
+          editor={editor}
           disabled={disabled}
-          active={state.italic}
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-        >
-          <MdFormatItalic className="h-4 w-4" />
-        </ToolbarButton>
-        {contentFormat === "html" && (
+          activeLevel={state.headingLevel}
+        />
+      )}
+      {contentFormat === "html" && (
+        <>
           <ToolbarButton
-            title="Gạch chân"
+            title="Tiêu đề 2"
             disabled={disabled}
-            active={state.underline}
-            onClick={() => editor.chain().focus().toggleUnderline().run()}
+            active={state.headingLevel === 2}
+            onClick={() =>
+              editor.chain().focus().toggleHeading({ level: 2 }).run()
+            }
           >
-            <MdFormatUnderlined className="h-4 w-4" />
+            <span className="text-xs font-bold">H2</span>
           </ToolbarButton>
-        )}
+          <ToolbarButton
+            title="Tiêu đề 3"
+            disabled={disabled}
+            active={state.headingLevel === 3}
+            onClick={() =>
+              editor.chain().focus().toggleHeading({ level: 3 }).run()
+            }
+          >
+            <span className="text-xs font-bold">H3</span>
+          </ToolbarButton>
+        </>
+      )}
+      <span className="mx-1 h-5 w-px shrink-0 bg-gray-200 transition-colors duration-200 dark:bg-white/15" />
+      <ToolbarButton
+        title="Danh sách bullet"
+        disabled={disabled}
+        active={state.bulletList}
+        onClick={() => editor.chain().focus().toggleBulletList().run()}
+      >
+        <MdFormatListBulleted className="h-4 w-4" />
+      </ToolbarButton>
+      <ToolbarButton
+        title="Danh sách số"
+        disabled={disabled}
+        active={state.orderedList}
+        onClick={() => editor.chain().focus().toggleOrderedList().run()}
+      >
+        <MdFormatListNumbered className="h-4 w-4" />
+      </ToolbarButton>
+      {contentFormat === "markdown" && (
         <ToolbarButton
-          title="Gạch ngang"
+          title="Danh sách công việc"
           disabled={disabled}
-          active={state.strike}
-          onClick={() => editor.chain().focus().toggleStrike().run()}
+          active={state.taskList}
+          onClick={() => editor.chain().focus().toggleTaskList().run()}
         >
-          <MdStrikethroughS className="h-4 w-4" />
+          <MdChecklist className="h-4 w-4" />
         </ToolbarButton>
-        <ToolbarButton
-          title="Mã inline"
-          disabled={disabled}
-          active={state.code}
-          onClick={() => editor.chain().focus().toggleCode().run()}
-        >
-          <MdCode className="h-4 w-4" />
-        </ToolbarButton>
-        <span className="mx-1 h-5 w-px shrink-0 bg-gray-200 transition-colors duration-200 dark:bg-white/15" />
-        {contentFormat === "markdown" && (
-          <HeadingToolbarMenu
+      )}
+      <ToolbarButton
+        title="Trích dẫn"
+        disabled={disabled}
+        active={state.blockquote}
+        onClick={() => editor.chain().focus().toggleBlockquote().run()}
+      >
+        <MdFormatQuote className="h-4 w-4" />
+      </ToolbarButton>
+      <span className="mx-1 h-5 w-px shrink-0 bg-gray-200 transition-colors duration-200 dark:bg-white/15" />
+      {contentFormat === "markdown" && (
+        <>
+          <ToolbarButton
+            title="Khối mã"
+            disabled={disabled}
+            active={state.codeBlock}
+            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+          >
+            <MdDataObject className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            title="Đường phân cách"
+            disabled={disabled}
+            onClick={() => editor.chain().focus().setHorizontalRule().run()}
+          >
+            <MdHorizontalRule className="h-4 w-4" />
+          </ToolbarButton>
+        </>
+      )}
+      <ToolbarButton
+        title="Liên kết"
+        disabled={disabled}
+        active={state.link}
+        onClick={setLink}
+      >
+        <MdLink className="h-4 w-4" />
+      </ToolbarButton>
+      {contentFormat === "markdown" && (
+        <>
+          <TableToolbarMenu
             editor={editor}
             disabled={disabled}
-            activeLevel={state.headingLevel}
+            active={state.table}
           />
-        )}
-        {contentFormat === "html" && (
-          <>
-            <ToolbarButton
-              title="Tiêu đề 2"
-              disabled={disabled}
-              active={state.headingLevel === 2}
-              onClick={() =>
-                editor.chain().focus().toggleHeading({ level: 2 }).run()
-              }
-            >
-              <span className="text-xs font-bold">H2</span>
-            </ToolbarButton>
-            <ToolbarButton
-              title="Tiêu đề 3"
-              disabled={disabled}
-              active={state.headingLevel === 3}
-              onClick={() =>
-                editor.chain().focus().toggleHeading({ level: 3 }).run()
-              }
-            >
-              <span className="text-xs font-bold">H3</span>
-            </ToolbarButton>
-          </>
-        )}
-        <span className="mx-1 h-5 w-px shrink-0 bg-gray-200 transition-colors duration-200 dark:bg-white/15" />
-        <ToolbarButton
-          title="Danh sách bullet"
-          disabled={disabled}
-          active={state.bulletList}
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-        >
-          <MdFormatListBulleted className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          title="Danh sách số"
-          disabled={disabled}
-          active={state.orderedList}
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        >
-          <MdFormatListNumbered className="h-4 w-4" />
-        </ToolbarButton>
-        {contentFormat === "markdown" && (
           <ToolbarButton
-            title="Danh sách công việc"
+            title="Chèn ảnh từ URL"
             disabled={disabled}
-            active={state.taskList}
-            onClick={() => editor.chain().focus().toggleTaskList().run()}
+            onClick={insertImage}
           >
-            <MdChecklist className="h-4 w-4" />
+            <MdImage className="h-4 w-4" />
           </ToolbarButton>
-        )}
-        <ToolbarButton
-          title="Trích dẫn"
-          disabled={disabled}
-          active={state.blockquote}
-          onClick={() => editor.chain().focus().toggleBlockquote().run()}
-        >
-          <MdFormatQuote className="h-4 w-4" />
-        </ToolbarButton>
-        <span className="mx-1 h-5 w-px shrink-0 bg-gray-200 transition-colors duration-200 dark:bg-white/15" />
-        {contentFormat === "markdown" && (
-          <>
-            <ToolbarButton
-              title="Khối mã"
-              disabled={disabled}
-              active={state.codeBlock}
-              onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-            >
-              <MdDataObject className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton
-              title="Đường phân cách"
-              disabled={disabled}
-              onClick={() => editor.chain().focus().setHorizontalRule().run()}
-            >
-              <MdHorizontalRule className="h-4 w-4" />
-            </ToolbarButton>
-          </>
-        )}
-        <ToolbarButton
-          title="Liên kết"
-          disabled={disabled}
-          active={state.link}
-          onClick={setLink}
-        >
-          <MdLink className="h-4 w-4" />
-        </ToolbarButton>
-        {contentFormat === "markdown" && (
-          <>
-            <TableToolbarMenu
-              editor={editor}
-              disabled={disabled}
-              active={state.table}
-            />
-            <ToolbarButton
-              title="Chèn ảnh từ URL"
-              disabled={disabled}
-              onClick={insertImage}
-            >
-              <MdImage className="h-4 w-4" />
-            </ToolbarButton>
-          </>
-        )}
-        <span className="mx-1 h-5 w-px shrink-0 bg-gray-200 transition-colors duration-200 dark:bg-white/15" />
-        <ToolbarButton
-          title="Hoàn tác"
-          disabled={disabled || !state.canUndo}
-          onClick={() => editor.chain().focus().undo().run()}
-        >
-          <MdUndo className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          title="Làm lại"
-          disabled={disabled || !state.canRedo}
-          onClick={() => editor.chain().focus().redo().run()}
-        >
-          <MdRedo className="h-4 w-4" />
-        </ToolbarButton>
-      </div>
+        </>
+      )}
+      <span className="mx-1 h-5 w-px shrink-0 bg-gray-200 transition-colors duration-200 dark:bg-white/15" />
+      <ToolbarButton
+        title="Hoàn tác"
+        disabled={disabled || !state.canUndo}
+        onClick={() => editor.chain().focus().undo().run()}
+      >
+        <MdUndo className="h-4 w-4" />
+      </ToolbarButton>
+      <ToolbarButton
+        title="Làm lại"
+        disabled={disabled || !state.canRedo}
+        onClick={() => editor.chain().focus().redo().run()}
+      >
+        <MdRedo className="h-4 w-4" />
+      </ToolbarButton>
     </div>
   );
 }
@@ -653,7 +643,7 @@ const RichTextEditor = React.forwardRef<
       compact = false,
       extraExtensions,
       contentFormat = "html",
-      stickyToolbar = false,
+      fillHeight = false,
       minHeight,
     },
     ref,
@@ -730,14 +720,18 @@ const RichTextEditor = React.forwardRef<
           attributes: {
             class: compact
               ? "tiptap-prose min-h-[5.25rem] max-h-[10rem] overflow-y-auto px-3 py-2 text-[15px] text-navy-700 outline-none dark:text-white focus:outline-none transition-colors duration-200"
-              : "tiptap-prose min-h-[150px] overflow-x-auto px-3 py-2 text-[15px] text-navy-700 outline-none dark:text-white focus:outline-none transition-colors duration-200",
-            ...(minHeight && !compact
-              ? { style: `min-height: ${minHeight}` }
+              : `tiptap-prose ${fillHeight ? "min-h-full" : "min-h-[150px]"} overflow-x-auto px-3 py-2 text-[15px] text-navy-700 outline-none dark:text-white focus:outline-none transition-colors duration-200`,
+            ...(!compact && (fillHeight || minHeight)
+              ? {
+                  style: fillHeight
+                    ? "min-height: 100%"
+                    : `min-height: ${minHeight}`,
+                }
               : {}),
           },
         },
       },
-      [extensions, compact, contentFormat, minHeight],
+      [extensions, compact, contentFormat, fillHeight, minHeight],
     );
 
     React.useEffect(() => {
@@ -778,7 +772,9 @@ const RichTextEditor = React.forwardRef<
     );
 
     return (
-      <div className={`w-full min-w-0 ${className}`}>
+      <div
+        className={`w-full min-w-0 ${fillHeight ? "flex h-full min-h-0 flex-col" : ""} ${className}`}
+      >
         {label && (
           <label
             htmlFor={id}
@@ -789,8 +785,8 @@ const RichTextEditor = React.forwardRef<
         )}
         <div
           className={`min-w-0 rounded-2xl border transition-colors duration-200 ${
-            stickyToolbar ? "overflow-visible" : "overflow-hidden"
-          } ${error ? "border-red-500" : "border-gray-200 dark:border-white/10"}`}
+            fillHeight ? "min-h-0 flex-1" : ""
+          } overflow-hidden ${error ? "border-red-500" : "border-gray-200 dark:border-white/10"}`}
         >
           <style>{`
             .tiptap-editor:not(.tiptap-editor--compact) .ProseMirror {
@@ -904,19 +900,23 @@ const RichTextEditor = React.forwardRef<
           `}</style>
           {editor ? (
             <div
-              className={`tiptap-editor min-w-0 bg-transparent ${compact ? "tiptap-editor--compact" : ""}`}
+              className={`tiptap-editor min-w-0 bg-transparent ${
+                fillHeight ? "flex h-full min-h-0 flex-col" : ""
+              } ${compact ? "tiptap-editor--compact" : ""}`}
             >
               <EditorToolbar
                 editor={editor}
                 disabled={disabled}
                 contentFormat={contentFormat}
-                sticky={stickyToolbar}
               />
-              <EditorContent editor={editor} />
+              <EditorContent
+                editor={editor}
+                className={fillHeight ? "min-h-0 flex-1 overflow-y-auto" : ""}
+              />
             </div>
           ) : (
             <div
-              className={`bg-transparent ${compact ? "min-h-[132px]" : "min-h-[186px]"}`}
+              className={`bg-transparent ${fillHeight ? "h-full min-h-0" : compact ? "min-h-[132px]" : "min-h-[186px]"}`}
             />
           )}
         </div>
