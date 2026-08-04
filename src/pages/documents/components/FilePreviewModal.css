@@ -1,6 +1,6 @@
 ﻿@keyframes fpv-spin {
-  to { 
-    transform: rotate(360deg); 
+  to {
+    transform: rotate(360deg);
   }
 }
 

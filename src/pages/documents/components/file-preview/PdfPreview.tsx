@@ -16,6 +16,7 @@ interface PdfPreviewProps {
   setNumPages: (n: number) => void;
   setCurrentPage: (p: number) => void;
   pdfScrollRef: MutableRefObject<((page: number) => void) | undefined>;
+  flush?: boolean;
 }
 
 export default function PdfPreview({
@@ -27,6 +28,7 @@ export default function PdfPreview({
   setNumPages,
   setCurrentPage,
   pdfScrollRef,
+  flush = false,
 }: PdfPreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -62,7 +64,7 @@ export default function PdfPreview({
       const target = pageRefs.current[page - 1];
       if (containerRef.current && target) {
         containerRef.current.scrollTo({
-          top: target.offsetTop - 32,
+          top: target.offsetTop - (flush ? 12 : 32),
           behavior: "smooth",
         });
       }
@@ -70,14 +72,14 @@ export default function PdfPreview({
     return () => {
       pdfScrollRef.current = undefined;
     };
-  }, [numPages, pdfScrollRef]);
+  }, [numPages, pdfScrollRef, flush]);
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="relative flex flex-1 justify-start overflow-auto bg-gray-800/50 p-3 sm:justify-center sm:p-8"
+        className={`relative flex-1 overflow-auto bg-gray-800/50 ${flush ? "py-3" : "p-3 sm:p-8"}`}
       >
         <Document
           file={url}
@@ -92,7 +94,7 @@ export default function PdfPreview({
               const target = pageRefs.current[safeInitialPage - 1];
               if (!container || !target) return;
               container.scrollTo({
-                top: Math.max(target.offsetTop - 32, 0),
+                top: Math.max(target.offsetTop - (flush ? 12 : 32), 0),
                 behavior: "auto",
               });
             }, 0);
@@ -110,7 +112,9 @@ export default function PdfPreview({
             </div>
           }
         >
-          <div className="flex min-w-max flex-col items-center gap-4 sm:gap-6">
+          <div
+            className={`mx-auto flex w-max flex-col items-center ${flush ? "gap-4" : "gap-4 sm:gap-6"}`}
+          >
             {Array.from(new Array(numPages), (_, index) => (
               <div
                 key={`page_${index + 1}`}
@@ -121,7 +125,7 @@ export default function PdfPreview({
                 <Page
                   pageNumber={index + 1}
                   scale={scale}
-                  className="bg-white shadow-lg"
+                  className={flush ? "bg-white" : "bg-white shadow-lg"}
                   renderTextLayer={false}
                   renderAnnotationLayer={false}
                 />

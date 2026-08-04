@@ -2,7 +2,13 @@ import * as docx from "docx-preview";
 import { useEffect, useRef, useState } from "react";
 import { MdErrorOutline } from "react-icons/md";
 
-export default function DocxPreview({ url }: { url: string }) {
+export default function DocxPreview({
+  url,
+  flush = false,
+}: {
+  url: string;
+  flush?: boolean;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +43,9 @@ export default function DocxPreview({ url }: { url: string }) {
   }, [url]);
 
   return (
-    <div className="flex-1 overflow-auto bg-gray-800/50 p-8">
+    <div
+      className={`relative h-full flex-1 overflow-auto bg-gray-800/50 ${flush ? "py-3" : "p-8"}`}
+    >
       {loading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-800/50">
           <div className="flex flex-col items-center justify-center gap-2 text-white/70">
@@ -53,10 +61,20 @@ export default function DocxPreview({ url }: { url: string }) {
           <p className="text-sm">{error}</p>
         </div>
       ) : (
-        <div className="flex min-h-full flex-col items-center justify-center">
+        <div
+          className={
+            flush
+              ? "mx-auto min-h-full w-full max-w-[816px]"
+              : "flex min-h-full flex-col items-center justify-center"
+          }
+        >
           <div
             ref={containerRef}
-            className="w-full max-w-[816px] overflow-hidden rounded bg-white shadow-lg [&>section]:m-0! [&>section]:bg-transparent! [&>section]:p-12! [&>section]:shadow-none!"
+            className={
+              flush
+                ? "w-full overflow-x-auto overflow-y-visible bg-white [&>section]:m-0! [&>section]:bg-transparent! [&>section]:px-3! [&>section]:py-2! [&>section]:shadow-none!"
+                : "w-full max-w-[816px] overflow-hidden rounded bg-white shadow-lg [&>section]:m-0! [&>section]:bg-transparent! [&>section]:p-12! [&>section]:shadow-none!"
+            }
           />
         </div>
       )}

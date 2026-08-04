@@ -27,6 +27,8 @@ export interface TableAction<T> {
   onClick: (item: T) => void;
   className?: string;
   render?: (item: T) => React.ReactNode;
+  /** When false, the action is not rendered for that row. */
+  visible?: (item: T) => boolean;
 }
 
 interface TableLayoutProps<T> {
@@ -288,6 +290,13 @@ function TableLayout<T extends { id: number | string }>({
                               className={`flex ${actionFlexAlignClass} justify-center gap-2`}
                             >
                               {actions.map((action) => {
+                                if (
+                                  action.visible &&
+                                  !action.visible(item)
+                                ) {
+                                  return null;
+                                }
+
                                 const customRendered = action.render
                                   ? action.render(item)
                                   : undefined;

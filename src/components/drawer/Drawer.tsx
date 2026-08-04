@@ -18,6 +18,8 @@ interface DrawerProps {
   headerExtra?: ReactNode;
   /** Drawer trượt từ phải (mặc định) hoặc từ trái */
   side?: "left" | "right";
+  /** Căn giữa màn hình (modal rộng), không lệch về một bên */
+  centered?: boolean;
   /** Không render lớp phủ mờ (dùng khi mở song song drawer khác có backdrop) */
   hideBackdrop?: boolean;
   /** z-index lớp bọc (mặc định z-60, trên top nav z-50). Drawer trái thường dùng z-55 để nằm dưới drawer phải. */
@@ -35,6 +37,7 @@ const Drawer: React.FC<DrawerProps> = ({
   bodyClassName,
   headerExtra,
   side = "right",
+  centered = false,
   hideBackdrop = false,
   wrapperClassName = "z-60",
 }) => {
@@ -53,12 +56,18 @@ const Drawer: React.FC<DrawerProps> = ({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
-  const offTransform =
-    side === "right"
+  const offTransform = centered
+    ? "translate-y-3 opacity-0"
+    : side === "right"
       ? "translate-x-[calc(100%+48px)]"
       : "-translate-x-[calc(100%+48px)]";
-  const marginClass = side === "right" ? "mr-6" : "ml-6";
-  const flexJustify = side === "right" ? "justify-end" : "justify-start";
+  const onTransform = centered ? "translate-y-0 opacity-100" : "translate-x-0";
+  const marginClass = centered ? "mx-6" : side === "right" ? "mr-6" : "ml-6";
+  const flexJustify = centered
+    ? "justify-center"
+    : side === "right"
+      ? "justify-end"
+      : "justify-start";
   const resolvedBodyClassName =
     bodyClassName ??
     "min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-4 text-sm leading-relaxed md:px-6 md:py-5";
@@ -77,9 +86,9 @@ const Drawer: React.FC<DrawerProps> = ({
       >
         {/* Desktop drawer (side panel) */}
         <div
-          className={`dark:bg-navy-800 pointer-events-auto my-6 hidden h-[calc(100%-48px)] w-full ${width} flex-col rounded-[30px] bg-white shadow-2xl transition-transform duration-200 ${marginClass} md:flex ${
-            isOpen ? "translate-x-0" : offTransform
-          }`}
+          className={`dark:bg-navy-800 my-6 hidden h-[calc(100%-48px)] w-full ${width} flex-col rounded-[30px] bg-white shadow-2xl transition-[transform,opacity] duration-200 ${marginClass} md:flex ${
+            isOpen ? "pointer-events-auto" : "pointer-events-none"
+          } ${isOpen ? onTransform : offTransform}`}
         >
           <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-4 py-3 md:gap-3 md:px-6 md:py-4 dark:border-white/10">
             <h2 className="text-navy-700 min-w-0 flex-1 truncate text-base font-bold dark:text-white">
@@ -113,8 +122,10 @@ const Drawer: React.FC<DrawerProps> = ({
 
         {/* Mobile bottom sheet */}
         <div
-          className={`dark:bg-navy-800 pointer-events-auto fixed right-0 bottom-0 left-0 flex h-[90dvh] flex-col rounded-t-[30px] bg-white shadow-2xl transition-transform duration-200 md:hidden ${
-            isOpen ? "translate-y-0" : "translate-y-[120%]"
+          className={`dark:bg-navy-800 fixed right-0 bottom-0 left-0 flex h-[90dvh] flex-col rounded-t-[30px] bg-white shadow-2xl transition-transform duration-200 md:hidden ${
+            isOpen
+              ? "pointer-events-auto translate-y-0"
+              : "pointer-events-none translate-y-[120%]"
           }`}
         >
           <button
