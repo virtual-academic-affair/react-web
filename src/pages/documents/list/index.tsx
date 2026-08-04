@@ -366,20 +366,6 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
 
       void queryClient.invalidateQueries({ queryKey: ["documents"] });
 
-      if (step === "review_required") {
-        toast.info(
-          event.message || "Cần kiểm tra văn bản đã chuyển đổi.",
-          6,
-        );
-      } else if (step === "failed") {
-        toast.error(event.message || "Xử lý thất bại.", 6);
-      } else if (step === "completed") {
-        toast.success(
-          event.message || "Bổ sung vào kho tri thức thành công.",
-          6,
-        );
-      }
-
       if (TERMINAL_UPLOAD_PROGRESS_STEPS.has(step)) {
         closeProgressSocket(clientId);
         progressClientToFileRef.current.delete(clientId);

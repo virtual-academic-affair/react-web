@@ -407,11 +407,13 @@ function EditorToolbar({
   disabled,
   contentFormat,
   headingButtons,
+  flush = false,
 }: {
   editor: Editor;
   disabled: boolean;
   contentFormat: "html" | "markdown";
   headingButtons?: Array<1 | 2 | 3 | 4 | 5 | 6>;
+  flush?: boolean;
 }) {
   const state = useEditorState({
     editor,
@@ -462,7 +464,7 @@ function EditorToolbar({
 
   return (
     <div
-      className="flex min-h-9 min-w-0 shrink-0 flex-nowrap items-center gap-0.5 overflow-x-auto overflow-y-hidden border-b border-gray-200 bg-transparent px-2 py-1.5 transition-colors duration-200 dark:border-white/10"
+      className={`flex min-h-9 min-w-0 shrink-0 flex-nowrap items-center gap-0.5 overflow-x-auto overflow-y-hidden border-b border-gray-200 bg-transparent transition-colors duration-200 dark:border-white/10 ${flush ? "px-1 py-1" : "px-2 py-1.5"}`}
       style={{ WebkitOverflowScrolling: "touch" }}
     >
       <ToolbarButton
@@ -759,7 +761,7 @@ const RichTextEditor = React.forwardRef<
           },
         },
       },
-      [extensions, compact, contentFormat, fillHeight, minHeight],
+      [extensions, compact, contentFormat, fillHeight, minHeight, flush],
     );
 
     React.useEffect(() => {
@@ -939,6 +941,7 @@ const RichTextEditor = React.forwardRef<
                 disabled={disabled}
                 contentFormat={contentFormat}
                 headingButtons={headingButtons}
+                flush={flush}
               />
               <EditorContent
                 editor={editor}
@@ -951,7 +954,11 @@ const RichTextEditor = React.forwardRef<
             />
           )}
         </div>
-        {error && <p className="mt-1 ml-3 text-xs text-red-500">{error}</p>}
+        {error && (
+          <p className={`mt-1 text-xs text-red-500 ${flush ? "px-3" : "ml-3"}`}>
+            {error}
+          </p>
+        )}
       </div>
     );
   },

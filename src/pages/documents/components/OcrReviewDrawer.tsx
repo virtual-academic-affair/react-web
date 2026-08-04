@@ -180,7 +180,7 @@ const OriginalFilePanel = ({
         ) : null}
       </header>
 
-      <div className="min-h-0 flex-1">
+      <div className="min-h-0 flex-1 overflow-hidden">
         {isLoading ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 text-gray-500 dark:text-gray-400">
             <div className="fpv-spinner" />
@@ -213,12 +213,13 @@ const OriginalFilePanel = ({
                 setNumPages={setNumPages}
                 setCurrentPage={setCurrentPage}
                 pdfScrollRef={pdfScrollRef}
+                flush
               />
             ) : null}
-            {category === "docx" ? <DocxPreview url={url} /> : null}
-            {category === "text" ? <PlainTextPreview url={url} /> : null}
+            {category === "docx" ? <DocxPreview url={url} flush /> : null}
+            {category === "text" ? <PlainTextPreview url={url} flush /> : null}
             {category === "image" ? (
-              <div className="flex h-full items-center justify-center overflow-auto p-4">
+              <div className="flex h-full items-center justify-center overflow-auto">
                 <img
                   src={url}
                   alt={fileName}
@@ -350,7 +351,6 @@ const OcrReviewDrawer = ({
         stopProgressTracking = progressCleanup;
       }
       await DocumentsService.approveOcrReview(fileId, clientId);
-      toast.success("Đã xác nhận. Đang hoàn tất tài liệu.");
       await refreshDocuments();
       closeDrawer();
     } catch (err) {
@@ -395,14 +395,14 @@ const OcrReviewDrawer = ({
 
   const convertedPanel = (
     <section className="dark:bg-navy-900 flex h-full min-h-0 flex-col overflow-hidden bg-white">
-      <header className="flex min-h-12 shrink-0 items-center gap-2 border-b border-gray-200 px-3 py-2 dark:border-white/10">
-        <p className="text-navy-700 text-sm font-semibold dark:text-white">
+      <header className="flex min-h-12 shrink-0 items-center justify-center border-b border-gray-200 px-3 py-2 dark:border-white/10">
+        <p className="text-navy-700 text-center text-sm font-semibold dark:text-white">
           Văn bản đã chuyển đổi
         </p>
       </header>
-      <div className="min-h-0 flex-1">
+      <div className="min-h-0 flex-1 overflow-hidden">
         {data?.lastProcessingError ? (
-          <div className="mx-3 mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+          <div className="border-b border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
             <p className="mb-1 font-semibold">Lỗi xử lý lần trước</p>
             <p className="whitespace-pre-line">{data.lastProcessingError}</p>
           </div>
@@ -440,7 +440,7 @@ const OcrReviewDrawer = ({
         title={`Kiểm tra văn bản${fileName ? ` · ${fileName}` : ""}`}
         width="max-w-[calc(100vw-48px)] xl:max-w-[1440px]"
         centered
-        bodyClassName="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-4 text-sm leading-relaxed md:px-6 md:py-5 lg:overflow-hidden"
+        bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0 text-sm leading-relaxed"
         footerLeft={
           <button
             type="button"
@@ -493,7 +493,7 @@ const OcrReviewDrawer = ({
             ))}
           </div>
         ) : isError ? (
-          <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-center">
+          <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 px-6 text-center">
             <p className="font-semibold text-red-500">
               Không thể tải văn bản đã chuyển đổi.
             </p>
@@ -509,7 +509,7 @@ const OcrReviewDrawer = ({
             </button>
           </div>
         ) : (
-          <div className="flex h-[min(78dvh,100%)] min-h-0 flex-col overflow-hidden rounded-2xl border border-gray-200 lg:h-full lg:flex-row dark:border-white/10">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
             <div className="h-[42%] min-h-0 min-w-0 flex-1 overflow-hidden border-b border-gray-200 lg:h-auto lg:border-b-0 dark:border-white/10">
               <OriginalFilePanel
                 key={fileId ?? "original-file"}

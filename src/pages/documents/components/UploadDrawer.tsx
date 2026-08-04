@@ -172,7 +172,6 @@ export const UploadForm: React.FC<UploadFormProps> = ({
       }
 
       await DocumentsService.uploadFile(formData);
-      toast.success("Đã tải lên. Hệ thống đang chuyển đổi văn bản.", 6);
       resetForm();
       onSuccess();
     } catch (err) {
