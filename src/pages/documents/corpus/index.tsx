@@ -216,8 +216,9 @@ function CandidatePreviewPane({
       value: (
         <Switch
           checked={Boolean(payload.lecturerOnly)}
-          disabled
+          color="red"
           readOnly
+          extra="pointer-events-none"
           onChange={() => undefined}
         />
       ),
@@ -330,6 +331,7 @@ export default function CorpusTreePage() {
   const [emptyMenu, setEmptyMenu] = useState<EmptyMenuState | null>(null);
   const [dragFolderKey, setDragFolderKey] = useState<string | null>(null);
   const [filePreviewId, setFilePreviewId] = useState<string | null>(null);
+  const [filePreviewMarkdown, setFilePreviewMarkdown] = useState(false);
   const [columnWidths, setColumnWidths] = useState<number[]>([]);
   const resizeRef = useRef<{
     index: number;
@@ -871,7 +873,10 @@ export default function CorpusTreePage() {
                         }
                         onOpenFilePreview={
                           column.preview.kind === "file"
-                            ? () => setFilePreviewId(column.preview.payload.id)
+                            ? () => {
+                                setFilePreviewMarkdown(false);
+                                setFilePreviewId(column.preview.payload.id);
+                              }
                             : undefined
                         }
                       />
@@ -1309,8 +1314,12 @@ export default function CorpusTreePage() {
                 ? preview.payload.name || "Tài liệu"
                 : "Tài liệu"
             }
+            downloadFormat={filePreviewMarkdown ? "markdown" : "original"}
             isOpen
-            onClose={() => setFilePreviewId(null)}
+            onClose={() => {
+              setFilePreviewId(null);
+              setFilePreviewMarkdown(false);
+            }}
           />
         </Suspense>
       ) : null}
@@ -1342,6 +1351,16 @@ export default function CorpusTreePage() {
           closeDetail();
         }}
         onUpdated={invalidateTree}
+        onPreview={() => {
+          if (!detailId) return;
+          setFilePreviewMarkdown(false);
+          setFilePreviewId(detailId);
+        }}
+        onPreviewMarkdown={() => {
+          if (!detailId) return;
+          setFilePreviewMarkdown(true);
+          setFilePreviewId(detailId);
+        }}
       />
 
       <FAQDetailDrawer
