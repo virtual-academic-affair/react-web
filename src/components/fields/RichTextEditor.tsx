@@ -70,6 +70,13 @@ interface RichTextEditorProps {
   fillHeight?: boolean;
   /** Chiều cao tối thiểu của vùng soạn thảo, ví dụ "55vh". */
   minHeight?: string;
+  /** Bỏ bo góc / viền ngoài — gắn liền khung cha. */
+  flush?: boolean;
+  /**
+   * Chỉ dùng khi cần hiện nút heading nhanh (vd. H1/H2) thay dropdown markdown.
+   * Không truyền = giữ toolbar mặc định theo contentFormat.
+   */
+  headingButtons?: Array<1 | 2 | 3 | 4 | 5 | 6>;
 }
 
 function ToolbarButton({
@@ -399,10 +406,12 @@ function EditorToolbar({
   editor,
   disabled,
   contentFormat,
+  headingButtons,
 }: {
   editor: Editor;
   disabled: boolean;
   contentFormat: "html" | "markdown";
+  headingButtons?: Array<1 | 2 | 3 | 4 | 5 | 6>;
 }) {
   const state = useEditorState({
     editor,
@@ -430,10 +439,11 @@ function EditorToolbar({
     },
   });
 
+  if (!state) return null;
+
   const setLink = () => {
-    if (disabled) return;
-    const prev = editor.getAttributes("link").href as string | undefined;
-    const url = window.prompt("URL liên kết", prev ?? "https://");
+    const previousUrl = editor.getAttributes("link").href as string | undefined;
+    const url = window.prompt("URL", previousUrl ?? "https://");
     if (url === null) return;
     if (url === "") {
       editor.chain().focus().extendMarkRange("link").unsetLink().run();
@@ -443,11 +453,12 @@ function EditorToolbar({
   };
 
   const insertImage = () => {
-    if (disabled) return;
-    const src = window.prompt("URL hình ảnh", "https://");
-    if (!src?.trim()) return;
-    editor.chain().focus().setImage({ src: src.trim() }).run();
+    const url = window.prompt("URL ảnh", "https://");
+    if (!url) return;
+    editor.chain().focus().setImage({ src: url }).run();
   };
+
+  const showCustomHeadingButtons = Boolean(headingButtons?.length);
 
   return (
     <div
@@ -497,14 +508,29 @@ function EditorToolbar({
         <MdCode className="h-4 w-4" />
       </ToolbarButton>
       <span className="mx-1 h-5 w-px shrink-0 bg-gray-200 transition-colors duration-200 dark:bg-white/15" />
-      {contentFormat === "markdown" && (
+      {showCustomHeadingButtons
+        ? headingButtons!.map((level) => (
+            <ToolbarButton
+              key={level}
+              title={`Tiêu đề ${level}`}
+              disabled={disabled}
+              active={state.headingLevel === level}
+              onClick={() =>
+                editor.chain().focus().toggleHeading({ level }).run()
+              }
+            >
+              <span className="text-xs font-bold">H{level}</span>
+            </ToolbarButton>
+          ))
+        : null}
+      {!showCustomHeadingButtons && contentFormat === "markdown" ? (
         <HeadingToolbarMenu
           editor={editor}
           disabled={disabled}
           activeLevel={state.headingLevel}
         />
-      )}
-      {contentFormat === "html" && (
+      ) : null}
+      {!showCustomHeadingButtons && contentFormat === "html" ? (
         <>
           <ToolbarButton
             title="Tiêu đề 2"
@@ -527,7 +553,7 @@ function EditorToolbar({
             <span className="text-xs font-bold">H3</span>
           </ToolbarButton>
         </>
-      )}
+      ) : null}
       <span className="mx-1 h-5 w-px shrink-0 bg-gray-200 transition-colors duration-200 dark:bg-white/15" />
       <ToolbarButton
         title="Danh sách bullet"
@@ -645,6 +671,8 @@ const RichTextEditor = React.forwardRef<
       contentFormat = "html",
       fillHeight = false,
       minHeight,
+      flush = false,
+      headingButtons,
     },
     ref,
   ) => {
@@ -784,9 +812,11 @@ const RichTextEditor = React.forwardRef<
           </label>
         )}
         <div
-          className={`min-w-0 rounded-2xl border transition-colors duration-200 ${
-            fillHeight ? "min-h-0 flex-1" : ""
-          } overflow-hidden ${error ? "border-red-500" : "border-gray-200 dark:border-white/10"}`}
+          className={`min-w-0 transition-colors duration-200 ${
+            flush
+              ? `rounded-none border-0 ${error ? "ring-1 ring-red-500" : ""}`
+              : `rounded-2xl border ${error ? "border-red-500" : "border-gray-200 dark:border-white/10"}`
+          } ${fillHeight ? "min-h-0 flex-1" : ""} overflow-hidden`}
         >
           <style>{`
             .tiptap-editor:not(.tiptap-editor--compact) .ProseMirror {
@@ -908,6 +938,7 @@ const RichTextEditor = React.forwardRef<
                 editor={editor}
                 disabled={disabled}
                 contentFormat={contentFormat}
+                headingButtons={headingButtons}
               />
               <EditorContent
                 editor={editor}

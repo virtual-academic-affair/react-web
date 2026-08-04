@@ -1,10 +1,10 @@
 import { message as toast } from "antd";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { MdClose, MdCloudUpload, MdDescription } from "react-icons/md";
 
 import Drawer from "@/components/drawer/Drawer";
-import SelectField from "@/components/fields/SelectField";
 import { formInputClass } from "@/components/fields/formInputClass";
+import SelectField from "@/components/fields/SelectField";
 import YearRangeControl from "@/components/fields/YearRangeControl";
 import DetailFormLayout, {
   FormRow,
@@ -61,12 +61,17 @@ interface UploadFormProps {
   onSuccess: () => void;
   onCancel?: () => void;
   actionsClassName?: string;
+  /** Parent owns the progress WebSocket; called with clientId before upload starts. */
+  onProgressClientReady?: (
+    clientId: string,
+  ) => void | (() => void) | Promise<void | (() => void)>;
 }
 
 export const UploadForm: React.FC<UploadFormProps> = ({
   onSuccess,
   onCancel,
   actionsClassName = "flex justify-end gap-2",
+  onProgressClientReady,
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [displayName, setDisplayName] = useState("");
@@ -79,16 +84,6 @@ export const UploadForm: React.FC<UploadFormProps> = ({
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const wsRef = useRef<WebSocket | null>(null);
-
-  const closeSocket = useCallback(() => {
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
-    }
-  }, []);
-
-  useEffect(() => () => closeSocket(), [closeSocket]);
 
   const resetForm = useCallback(() => {
     setSelectedFile(null);
@@ -146,6 +141,7 @@ export const UploadForm: React.FC<UploadFormProps> = ({
     }
 
     setUploading(true);
+    let stopProgressTracking: (() => void) | undefined;
     try {
       const customMetadata: Record<string, unknown> = {};
 
@@ -157,37 +153,12 @@ export const UploadForm: React.FC<UploadFormProps> = ({
       const academicRange = buildYearRange(academicFromYear, academicToYear);
       if (academicRange) customMetadata.academicYear = academicRange;
 
-      const clientId =
-        (globalThis.crypto?.randomUUID && globalThis.crypto.randomUUID()) ||
-        `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const clientId = globalThis.crypto.randomUUID();
 
-      closeSocket();
-      wsRef.current = DocumentsService.createUploadProgressSocket(clientId, {
-        onOpen: () => {},
-        onMessage: (event) => {
-          const eventName = String(
-            event.type || event.step || "",
-          ).toLowerCase();
-          if (eventName === "review_required") {
-            toast.info(
-              event.message ||
-                "OCR đã hoàn tất. Tài liệu đang chờ bạn duyệt Markdown.",
-              6,
-            );
-            onSuccess();
-            closeSocket();
-          } else if (eventName === "failed") {
-            toast.error(event.message || "OCR tài liệu thất bại.", 6);
-            onSuccess();
-            closeSocket();
-          } else if (eventName === "completed") {
-            onSuccess();
-            closeSocket();
-          }
-        },
-        onError: () => {},
-        onClose: () => {},
-      });
+      const progressCleanup = await onProgressClientReady?.(clientId);
+      if (typeof progressCleanup === "function") {
+        stopProgressTracking = progressCleanup;
+      }
 
       const formData = new FormData();
       formData.append("file", selectedFile);
@@ -201,15 +172,12 @@ export const UploadForm: React.FC<UploadFormProps> = ({
       }
 
       await DocumentsService.uploadFile(formData);
-      toast.success(
-        "Đã tải lên. Hệ thống đang OCR; bạn cần duyệt Markdown trước khi tài liệu được lập chỉ mục.",
-        6,
-      );
+      toast.success("Đã tải lên. Hệ thống đang chuyển đổi văn bản.", 6);
       resetForm();
       onSuccess();
     } catch (err) {
+      stopProgressTracking?.();
       toast.error(parseError(err));
-      closeSocket();
     } finally {
       setUploading(false);
     }
@@ -224,7 +192,7 @@ export const UploadForm: React.FC<UploadFormProps> = ({
 
   return (
     <DetailFormLayout className="gap-5">
-      <FormRow label="File tài liệu" stacked required>
+      <FormRow label="Tệp tài liệu" stacked required>
         {!selectedFile ? (
           <div
             className={`flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 transition-colors ${
@@ -379,12 +347,16 @@ interface UploadDrawerProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  onProgressClientReady?: (
+    clientId: string,
+  ) => void | (() => void) | Promise<void | (() => void)>;
 }
 
 const UploadDrawer: React.FC<UploadDrawerProps> = ({
   open,
   onClose,
   onSuccess,
+  onProgressClientReady,
 }) => (
   <Drawer isOpen={open} onClose={onClose} title="Tải lên tài liệu mới">
     <UploadForm
@@ -393,7 +365,8 @@ const UploadDrawer: React.FC<UploadDrawerProps> = ({
         onClose();
       }}
       onCancel={onClose}
-      actionsClassName="flex justify-end gap-2 border-t border-gray-100 pt-4 dark:border-white/10"
+      onProgressClientReady={onProgressClientReady}
+      actionsClassName="flex justify-end gap-2 pt-4"
     />
   </Drawer>
 );

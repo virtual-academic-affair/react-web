@@ -46,7 +46,8 @@ export interface FileListItemResponse {
 }
 
 export interface FileDetailResponse
-  extends Omit<FileListItemResponse, "fileUrl" | "markdownFileUrl">,
+  extends
+    Omit<FileListItemResponse, "fileUrl" | "markdownFileUrl">,
     Record<string, unknown> {
   fileUrl: string;
   markdownFileUrl: string;
@@ -175,6 +176,7 @@ export const DocumentsService = {
     clientId: string,
     handlers: {
       onOpen?: () => void;
+      onAuthOk?: () => void;
       onMessage?: (event: UploadProgressEvent) => void;
       onError?: (event: Event) => void;
       onClose?: (event: CloseEvent) => void;
@@ -191,7 +193,10 @@ export const DocumentsService = {
     socket.onmessage = (evt) => {
       try {
         const payload = JSON.parse(evt.data) as UploadProgressEvent;
-        if (payload.type === "auth_ok") return;
+        if (payload.type === "auth_ok") {
+          handlers.onAuthOk?.();
+          return;
+        }
         handlers.onMessage?.(payload);
       } catch {
         // ignore malformed messages
@@ -245,9 +250,14 @@ export const DocumentsService = {
   /**
    * Approve an OCR draft and atomically start background indexing.
    */
-  async approveOcrReview(fileId: string): Promise<FileDetailResponse> {
+  async approveOcrReview(
+    fileId: string,
+    clientId?: string,
+  ): Promise<FileDetailResponse> {
     const { data } = await ragHttp.post(
       API_ENDPOINTS.rag.files.approveOcrReview(fileId),
+      undefined,
+      clientId ? { headers: { "X-Client-ID": clientId } } : undefined,
     );
     return {
       ...data,
@@ -292,14 +302,11 @@ export const DocumentsService = {
       customMetadata?: Record<string, unknown>;
     },
   ): Promise<any> {
-    const { data } = await ragHttp.patch(
-      API_ENDPOINTS.rag.files.byId(fileId),
-      {
-        displayName: updates.displayName,
-        lecturerOnly: updates.lecturerOnly,
-        customMetadata: updates.customMetadata,
-      },
-    );
+    const { data } = await ragHttp.patch(API_ENDPOINTS.rag.files.byId(fileId), {
+      displayName: updates.displayName,
+      lecturerOnly: updates.lecturerOnly,
+      customMetadata: updates.customMetadata,
+    });
     return data;
   },
 
@@ -310,10 +317,13 @@ export const DocumentsService = {
     fileId: string,
     format: DownloadFileFormat = "original",
   ): Promise<Blob> {
-    const response = await ragHttp.get(API_ENDPOINTS.rag.files.download(fileId), {
-      params: { format },
-      responseType: "blob",
-    });
+    const response = await ragHttp.get(
+      API_ENDPOINTS.rag.files.download(fileId),
+      {
+        params: { format },
+        responseType: "blob",
+      },
+    );
     return response.data;
   },
 };

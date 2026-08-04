@@ -9,7 +9,12 @@ import {
   useRef,
   useState,
 } from "react";
-import { MdDeleteOutline, MdFileDownload, MdInfoOutline } from "react-icons/md";
+import {
+  MdDeleteOutline,
+  MdFileDownload,
+  MdInfoOutline,
+  MdRateReview,
+} from "react-icons/md";
 
 import TableLayout, {
   type TableAction,
@@ -18,7 +23,7 @@ import TableLayout, {
 import Tag from "@/components/tag/Tag";
 import { useIsolatedSearchParams } from "@/hooks/useIsolatedSearchParams";
 import { DocumentsService } from "@/services/documents";
-import type { FileStatus } from "@/services/documents";
+import type { FileStatus, UploadProgressEvent } from "@/services/documents";
 import { parseError } from "@/utils/parseError";
 
 import { PageTitle } from "@/components/layouts/PageTitle";
@@ -38,9 +43,14 @@ import {
 import { EMPTY_YEAR_RANGE_STRINGS, formatYearRange } from "@/utils/yearRange";
 import { LuFileText } from "react-icons/lu";
 import DocumentDetailDrawer from "../components/DocumentDetailDrawer";
+import DocumentStatusText from "../components/DocumentStatusText";
 import {
   DOCUMENT_STATUS_FILTER_OPTIONS,
   getDocumentStatusConfig,
+  getUploadProgressStepLabel,
+  normalizeDocumentStatus,
+  shouldAnimateDocumentStatusText,
+  TERMINAL_UPLOAD_PROGRESS_STEPS,
 } from "../components/documentStatus";
 import OcrReviewDrawer from "../components/OcrReviewDrawer";
 import UploadDrawer, {
@@ -65,6 +75,11 @@ const DOC_TYPE_FILTER_OPTIONS = DOCUMENT_TYPES.map((t) => ({
   displayName: t.label,
   color: t.color,
 }));
+
+type LiveFileProgress = {
+  step: string;
+  message?: string;
+};
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
@@ -108,6 +123,11 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
     fromYear: searchParams.get("acadFrom") ?? "",
     toYear: searchParams.get("acadTo") ?? "",
   }));
+  const [liveProgressByFileId, setLiveProgressByFileId] = useState<
+    Record<string, LiveFileProgress>
+  >({});
+  const progressSocketsRef = useRef<Map<string, WebSocket>>(new Map());
+  const progressClientToFileRef = useRef<Map<string, string>>(new Map());
 
   /** Bật lọc → lecturerOnly=true; tắt → không gửi query param */
   const lecturerOnlyArg = lecturerOnlyFilter ? true : undefined;
@@ -306,6 +326,134 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
 
+  const clearLiveProgress = useCallback((fileId: string) => {
+    setLiveProgressByFileId((prev) => {
+      if (!(fileId in prev)) return prev;
+      const next = { ...prev };
+      delete next[fileId];
+      return next;
+    });
+  }, []);
+
+  const closeProgressSocket = useCallback((clientId: string) => {
+    const socket = progressSocketsRef.current.get(clientId);
+    if (socket) {
+      socket.close();
+      progressSocketsRef.current.delete(clientId);
+    }
+  }, []);
+
+  const handleProgressMessage = useCallback(
+    (clientId: string, event: UploadProgressEvent) => {
+      const step = String(event.step || event.type || "").toLowerCase();
+      if (!step || step === "auth_ok") return;
+
+      const fileIdFromEvent =
+        typeof event.file_id === "string" && event.file_id
+          ? event.file_id
+          : undefined;
+      if (fileIdFromEvent) {
+        progressClientToFileRef.current.set(clientId, fileIdFromEvent);
+      }
+      const fileId =
+        fileIdFromEvent || progressClientToFileRef.current.get(clientId);
+      if (!fileId) return;
+
+      setLiveProgressByFileId((prev) => ({
+        ...prev,
+        [fileId]: { step, message: event.message },
+      }));
+
+      void queryClient.invalidateQueries({ queryKey: ["documents"] });
+
+      if (step === "review_required") {
+        toast.info(
+          event.message || "Cần kiểm tra văn bản đã chuyển đổi.",
+          6,
+        );
+      } else if (step === "failed") {
+        toast.error(event.message || "Xử lý thất bại.", 6);
+      } else if (step === "completed") {
+        toast.success(
+          event.message || "Bổ sung vào kho tri thức thành công.",
+          6,
+        );
+      }
+
+      if (TERMINAL_UPLOAD_PROGRESS_STEPS.has(step)) {
+        closeProgressSocket(clientId);
+        progressClientToFileRef.current.delete(clientId);
+        // Keep live label briefly until list refetch settles on API status.
+        window.setTimeout(() => clearLiveProgress(fileId), 1500);
+      }
+    },
+    [clearLiveProgress, closeProgressSocket, queryClient],
+  );
+
+  const startProgressTracking = useCallback(
+    (clientId: string, fileId?: string) => {
+      if (fileId) {
+        progressClientToFileRef.current.set(clientId, fileId);
+        setLiveProgressByFileId((prev) => ({
+          ...prev,
+          [fileId]: prev[fileId] ?? { step: "indexing" },
+        }));
+      }
+
+      closeProgressSocket(clientId);
+
+      const stopTracking = () => {
+        const trackedFileId = progressClientToFileRef.current.get(clientId);
+        closeProgressSocket(clientId);
+        progressClientToFileRef.current.delete(clientId);
+        if (trackedFileId) clearLiveProgress(trackedFileId);
+      };
+
+      return new Promise<() => void>((resolve) => {
+        let settled = false;
+        const finish = () => {
+          if (settled) return;
+          settled = true;
+          resolve(stopTracking);
+        };
+        const timeoutId = window.setTimeout(finish, 4000);
+
+        const socket = DocumentsService.createUploadProgressSocket(clientId, {
+          onAuthOk: () => {
+            window.clearTimeout(timeoutId);
+            finish();
+          },
+          onMessage: (event) => handleProgressMessage(clientId, event),
+          onError: () => {
+            window.clearTimeout(timeoutId);
+            finish();
+          },
+          onClose: () => {
+            window.clearTimeout(timeoutId);
+            finish();
+            if (progressSocketsRef.current.get(clientId) === socket) {
+              progressSocketsRef.current.delete(clientId);
+            }
+          },
+        });
+        progressSocketsRef.current.set(clientId, socket);
+      });
+    },
+    [clearLiveProgress, closeProgressSocket, handleProgressMessage],
+  );
+
+  useEffect(() => {
+    const sockets = progressSocketsRef.current;
+    const clientToFile = progressClientToFileRef.current;
+    return () => {
+      for (const socket of sockets.values()) {
+        socket.close();
+      }
+      sockets.clear();
+      clientToFile.clear();
+    };
+  }, []);
+
   const handleCloseDetail = useCallback(() => {
     const next = new URLSearchParams(searchParams);
     next.delete("id");
@@ -356,76 +504,76 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
       {
         key: "displayName",
         header: "Tài liệu",
-        render: (x) => (
-          <button
-            type="button"
-            className="group flex w-full min-w-0 flex-col text-left"
-            onClick={(e) => {
-              e.stopPropagation();
-              const status = String(x.status || "").toLowerCase();
-              if (status === "awaiting_review") {
-                handleOpenReview(x);
-                return;
-              }
-              if (status !== "ready") {
-                handleOpenDetail(x);
-                return;
-              }
-              wasDrawerOpenBeforePreview.current = false;
-              const next = new URLSearchParams(searchParams);
-              setViewDocumentParams(next, x.fileId);
-              setSearchParams(next, { replace: true });
-            }}
-          >
-            <Tooltip
-              label={x.displayName || x.originalFilename}
-              className="block w-full"
-              placement="topLeft"
-            >
-              <p className="text-navy-700 group-hover:text-brand-500 dark:group-hover:text-brand-400 truncate text-sm font-medium transition-colors group-hover:underline dark:text-white">
-                {x.displayName || x.originalFilename}
-              </p>
-            </Tooltip>
-            {x.lecturerOnly ? (
-              <div className="mt-1">
-                <Tag
-                  color="#ef4444"
-                  className="text-[10px]"
-                  interactive={false}
-                >
-                  Chỉ giảng viên
-                </Tag>
-              </div>
-            ) : null}
-          </button>
-        ),
-      },
-      {
-        key: "status",
-        header: "Trạng thái",
-        width: "155px",
         render: (x) => {
-          const config = getDocumentStatusConfig(x.status);
-          const awaitingReview =
-            String(x.status || "").toLowerCase() === "awaiting_review";
+          const status = normalizeDocumentStatus(x.status);
+          const liveProgress = liveProgressByFileId[x.fileId];
+          const liveLabel = liveProgress
+            ? getUploadProgressStepLabel(
+                liveProgress.step,
+                liveProgress.message,
+              )
+            : undefined;
+          const showStatus =
+            (status != null && status !== "ready") || Boolean(liveLabel);
+          const statusConfig = showStatus
+            ? getDocumentStatusConfig(status ?? "processing")
+            : null;
+          const statusLabel = liveLabel || statusConfig?.label || "";
+          const animateStatus =
+            Boolean(liveProgress) ||
+            shouldAnimateDocumentStatusText(status) ||
+            (status != null && status !== "ready" && status !== "failed");
+          const showMeta = Boolean(x.lecturerOnly) || showStatus;
+
           return (
-            <div className="flex flex-col items-start gap-1.5">
-              <Tag color={config.color} interactive={false}>
-                {config.label}
-              </Tag>
-              {awaitingReview ? (
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    handleOpenReview(x);
-                  }}
-                  className="text-brand-500 hover:text-brand-600 text-xs font-semibold underline underline-offset-2"
-                >
-                  Duyệt ngay
-                </button>
+            <button
+              type="button"
+              className="group flex w-full min-w-0 flex-col text-left"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (status === "awaiting_review") {
+                  handleOpenReview(x);
+                  return;
+                }
+                if (status !== "ready") {
+                  handleOpenDetail(x);
+                  return;
+                }
+                wasDrawerOpenBeforePreview.current = false;
+                const next = new URLSearchParams(searchParams);
+                setViewDocumentParams(next, x.fileId);
+                setSearchParams(next, { replace: true });
+              }}
+            >
+              <Tooltip
+                label={x.displayName || x.originalFilename}
+                className="block w-full"
+                placement="topLeft"
+              >
+                <p className="text-navy-700 group-hover:text-brand-500 dark:group-hover:text-brand-400 truncate text-sm font-medium transition-colors group-hover:underline dark:text-white">
+                  {x.displayName || x.originalFilename}
+                </p>
+              </Tooltip>
+              {showMeta ? (
+                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                  {x.lecturerOnly ? (
+                    <Tag
+                      color="#ef4444"
+                      className="text-[10px]"
+                      interactive={false}
+                    >
+                      Chỉ giảng viên
+                    </Tag>
+                  ) : null}
+                  {showStatus && statusLabel ? (
+                    <DocumentStatusText
+                      label={statusLabel}
+                      animate={animateStatus}
+                    />
+                  ) : null}
+                </div>
               ) : null}
-            </div>
+            </button>
           );
         },
       },
@@ -482,6 +630,7 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
       handleOpenDetail,
       handleOpenReview,
       handleUpdateType,
+      liveProgressByFileId,
       searchParams,
       setSearchParams,
     ],
@@ -489,6 +638,15 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
 
   const actions: TableAction<any>[] = useMemo(
     () => [
+      {
+        key: "review",
+        icon: <MdRateReview className="h-4 w-4" />,
+        label: "Kiểm tra & Duyệt ngay",
+        onClick: handleOpenReview,
+        visible: (x) => normalizeDocumentStatus(x.status) === "awaiting_review",
+        className:
+          "flex h-10 w-10 items-center justify-center rounded-2xl bg-purple-500 text-white transition-colors hover:bg-purple-600",
+      },
       {
         key: "detail",
         icon: <MdInfoOutline className="h-4 w-4" />,
@@ -532,7 +690,7 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
           "flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500 text-white transition-colors hover:bg-red-600",
       },
     ],
-    [handleOpenDetail, handleDelete],
+    [handleOpenDetail, handleOpenReview, handleDelete],
   );
 
   // ── Render ────────────────────────────────────────────────────────────────────
@@ -636,6 +794,7 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
       <UploadDrawer
         open={uploadOpen}
         onClose={() => setUploadOpen(false)}
+        onProgressClientReady={startProgressTracking}
         onSuccess={() => {
           queryClient.invalidateQueries({ queryKey: ["documents"] });
         }}
@@ -679,6 +838,7 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
         )}
         isOpen={reviewFileId !== null}
         onClose={handleCloseReview}
+        onProgressClientReady={startProgressTracking}
         onChanged={() => {
           queryClient.invalidateQueries({ queryKey: ["documents"] });
         }}
