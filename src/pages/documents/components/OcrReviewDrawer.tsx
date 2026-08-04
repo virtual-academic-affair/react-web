@@ -293,7 +293,7 @@ const OcrReviewDrawer = ({
     queryKey: ["file-detail-preview", fileId],
     queryFn: () => DocumentsService.getFileDetail(fileId!),
     enabled: isOpen && Boolean(fileId),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
     gcTime: 10 * 60 * 1000,
   });
 
@@ -317,6 +317,7 @@ const OcrReviewDrawer = ({
 
   const refreshDocuments = async () => {
     await queryClient.invalidateQueries({ queryKey: ["documents"] });
+    await queryClient.invalidateQueries({ queryKey: ["file-detail-preview"] });
     onChanged();
   };
 

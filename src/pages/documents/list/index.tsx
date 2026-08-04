@@ -365,6 +365,7 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
       }));
 
       void queryClient.invalidateQueries({ queryKey: ["documents"] });
+      void queryClient.invalidateQueries({ queryKey: ["file-detail-preview"] });
 
       if (TERMINAL_UPLOAD_PROGRESS_STEPS.has(step)) {
         closeProgressSocket(clientId);
@@ -457,6 +458,7 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
       await DocumentsService.deleteFile(deletingItem.fileId);
       toast.success("Đã xóa tệp.");
       queryClient.invalidateQueries({ queryKey: ["documents"] });
+      queryClient.invalidateQueries({ queryKey: ["file-detail-preview"] });
       handleCloseDetail();
       setDeletingItem(null);
     } catch (err: any) {
@@ -783,6 +785,7 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
         onProgressClientReady={startProgressTracking}
         onSuccess={() => {
           queryClient.invalidateQueries({ queryKey: ["documents"] });
+          queryClient.invalidateQueries({ queryKey: ["file-detail-preview"] });
         }}
       />
 
@@ -827,6 +830,7 @@ const DocumentListPage = ({ embedded = false }: { embedded?: boolean }) => {
         onProgressClientReady={startProgressTracking}
         onChanged={() => {
           queryClient.invalidateQueries({ queryKey: ["documents"] });
+          queryClient.invalidateQueries({ queryKey: ["file-detail-preview"] });
         }}
       />
 
