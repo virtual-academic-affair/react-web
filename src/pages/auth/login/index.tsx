@@ -5,8 +5,8 @@
 
 import { authService } from "@/services/auth";
 import { useAuthStore } from "@/stores/auth.store";
-import { hasTempAuth } from "@/utils/tempAuth.util";
 import { viewDocumentLocationSearch } from "@/utils/documentViewUrl";
+import { hasTempAuth } from "@/utils/tempAuth.util";
 import { message as toast } from "antd";
 import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
@@ -39,7 +39,10 @@ export default function LoginPage() {
         <h4 className="text-navy-700 mb-2.5 text-4xl font-bold dark:text-white">
           Đăng nhập
         </h4>
-        <p className="mb-9 ml-1 text-base text-gray-600"></p>
+        <p className="mb-9 ml-1 text-base text-xs text-gray-600">
+          Tiếp tục với email khoa CNTT{" "}
+          <span className="font-bold">fitus.edu.vn</span>
+        </p>
 
         <button
           onClick={handleGoogleSignIn}
