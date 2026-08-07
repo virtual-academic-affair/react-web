@@ -248,12 +248,13 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
   const {
     data: fileDetail,
     isLoading: isDetailLoading,
+    isFetching: isDetailFetching,
     error: detailError,
   } = useQuery({
     queryKey: ["file-detail-preview", fileId],
     queryFn: () => DocumentsService.getFileDetail(fileId!),
     enabled: useFileDetail,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000, // 30s: fresh enough for normal use; invalidated explicitly after approve/update
     gcTime: 10 * 60 * 1000,
   });
 
@@ -265,7 +266,8 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
       : fileDetail.fileUrl;
   }, [fileDetail, downloadFormat, fileUrl]);
 
-  const isLoading = useFileDetail && isDetailLoading;
+  const isLoading =
+    useFileDetail && (isDetailLoading || (isDetailFetching && !publicUrl));
   const error = useFileDetail ? detailError : null;
 
   const effectiveFileName = useMemo(
